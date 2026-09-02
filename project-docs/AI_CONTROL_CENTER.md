@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A STRUCTURAL MATRIX PROPOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R4 SOURCE+TEST AUTHORIZED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A structural matrix proposed |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4 SOURCE+TEST authorized |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -45,31 +45,30 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 3. READ-ONLY Part A finding
-
-Current `getStructuralPartABuffers()` proves only 4, 5 and 10 objective outputs. The existing test proves only total merge count, declared merge count and print-area ending for those three outputs.
-
-The next gate requires real-path coverage for objective counts 4–10 and exact structural transformation proof. Because 6–9 are not currently produced by the source helper, TEST-ONLY cannot close the gate without duplicating implementation logic inside tests. A bounded feasibility SOURCE+TEST change is therefore the smallest safe next work package.
-
-## 4. Current gate
+## 3. Current gate
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4
-PROPOSED_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R4
+ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
+AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE-SHOT
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 5. Low-credit rule
+Allowed files only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-If R4 is authorized, Antigravity may touch only the feasibility source and its existing feasibility test. It must generalize existing Part A structural outputs to all counts 4–10 and strengthen proof; it must not redesign insertion logic unless the matrix demonstrates a blocker. Preservation/reference-image source, production renderer, Kintone and deploy remain out of scope.
+R4 must exercise the real source path for 4,5,6,7,8,9,10 objectives and prove exact row/cell/style/row-height relocation, sentinel relocation, complete merge-set transformation, exact dimension/print area, non-target workbook invariants, relationship/media preservation, and empty formula inventory. No production renderer, Part B, preservation/reference-image redesign, Kintone, deploy, or D3 work is authorized.
+
+## 4. Low-credit rule
+
+Antigravity gets exactly one bounded implementation or blocker commit, then STOP. If the matrix reveals an algorithm defect beyond bounded count generalization, do not widen scope; return a blocker for ChatGPT review.
