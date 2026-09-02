@@ -34,20 +34,21 @@ D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
-D2-WP003-R3-R29 = REVIEWED / SOURCE PASS / PROOF FAIL / NOT CLOSED
-R3-R29_IMPLEMENTATION_COMMIT = 6fde9127f4b49197758723f5813978800704b8cf
+D2-WP003-R3-R30 = PASS / CLOSED
+D2_PRESERVATION_GATE = PASS / CLOSED
+R3-R30_IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 7 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 8 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R30
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
+PREFERRED_EXECUTION = CHATGPT READ-ONLY REVIEW FIRST
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-R3-R29 source is accepted. Remaining preservation corrective is proof-only: complete Option B fail-closed negatives, restore distinct counterfeit-Type proof, and restore accepted typed-privacy negatives for array typeCounts, fractional count and non-number count. No production source change is proposed.
+The OOXML preservation gate is closed. R3-R29 production source is accepted and R3-R30 completed the final bounded proof gaps without production changes. GitHub exposes no independent CI/status/workflow signal for R3-R30, so no independent runtime execution claim is made.
 
-D2 must ultimately close:
-- preservation gate;
+D2 must still close:
 - reference-image handling;
 - 5–10 Part A objectives;
 - 6→8 Part B competency blocks;
@@ -87,7 +88,7 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R30 TEST-ONLY
+NEXT_ACTION = SAY `ต่อ` TO START CHATGPT READ-ONLY REFERENCE-IMAGE CLOSURE REVIEW
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
