@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
 
-Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact two-file diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -31,7 +31,6 @@ CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 Latest Template Profile review:
 ```text
 R1_R3_AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-R1_R3_AUTHORIZATION_COMMIT = 228a38b909fd7185d9ba94cf4d53288736b4172c
 R1_R3_IMPLEMENTATION = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
 SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED FILES
 OVERALL = CORRECTIVE REQUIRED
@@ -39,23 +38,28 @@ RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Proven remaining defects:
-- unauthorized alias `OBJECTIVE_i_COMMENT` resolves as SELF_COMMENT and returns null projection path;
-- unauthorized alias `COMPETENCY_b_RATING` resolves as SELF_RATING;
-- integrity validator does not validate full safe mapping/projection integrity, especially null objective paths and Part B mapping/projection/duplicates;
-- required negative tests for malformed/null projection and alias rejection are incomplete.
+Frozen corrective defects:
+- `OBJECTIVE_i_COMMENT` alias must reject;
+- `COMPETENCY_b_RATING` alias must reject;
+- integrity validator must validate complete safe mapping/projection integrity, including null/malformed/Part-B mapping/duplicate faults;
+- missing negative mutation tests must be added.
 
+Current authorization:
 ```text
-PROPOSED_NEXT = D2-WP004-R1-R3-R1 / SOURCE+TEST / NOT AUTHORIZED
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
+AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
+
+Low-credit execution: no broad scan, no workbook inspection, no semantic re-discovery; use the closed Baseline and only the two writable files.
