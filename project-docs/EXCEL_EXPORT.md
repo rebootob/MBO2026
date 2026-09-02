@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / R1-R2-R1 SEMANTIC EVIDENCE CORRECTIVE ACTIVE**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / FINAL TEMPLATE SEMANTIC EVIDENCE CORRECTIVE REQUIRED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -19,52 +19,49 @@ PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 
 Mandatory architecture: centralized Template Profile/Mapping, no scattered important cell/range addresses, unknown template/mapping fail closed.
 
-## R1-R2 evidence review
+## R1-R2-R1 evidence review
 ```text
-AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
-EVIDENCE_COMMIT = 6e7cb1f5633dfc2a85dc181ae37f425dab3ea067
+AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
+EVIDENCE_COMMIT = 26fa18feead191c7587df82e393c73366969000d
 SCOPE = PASS / EXACT ONE MARKDOWN FILE
 PART_A_SHA = PASS
 PART_B_SHA = PASS
-HOSHIN_SEMANTICS = PASS / FREEZE
-PART_B_HEADER_SEMANTICS = PASS / FREEZE
+HOSHIN = PASS / FREEZE
+PART_B_HEADER = PASS / FREEZE
+PART_A_HEADER = PASS / FREEZE
+STATUS_COUNTS = INTERNALLY RECONCILED
 OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
 TOKEN = CONSUMED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Accepted/frozen evidence:
-- Department Hoshin -> `G16:AF19` -> `partA.hoshin.departmentHoshinTitle`.
-- Section Hoshin -> `AM16:BI19` -> `partA.hoshin.sectionHoshinTitle`.
-- `G8:S8` is appraisal-period/static content, not Hoshin.
-- Part B header workbook regions and nested `partA.header.*` projection paths are supported by static labels/merges.
+Accepted/frozen additionally:
+- Department -> `Z7:AF7` -> `partA.header.department`.
+- Section -> `AG7:AL7` -> `partA.header.section`.
+- Name-Surname primary -> `AT7:BC7` -> `partA.header.employeeName`; `employeeNameTH` alternate remains unresolved.
+- profileCode/profileFamily/partAWeightPercent with no workbook target remain `UNRESOLVED` rather than incorrectly claiming no secured source.
+- final score/grade without static template proof remain unresolved.
 
-## Active D2-WP004-R1-R2-R1 — EVIDENCE-ONLY CORRECTIVE
+Still corrective:
+- Part B chief rows in evidence still show `R:W`; frozen privacy authority is `R:X`.
+- `SUMMARY_WEIGHT_SUM` is still `SAFE_TO_MAP` with secured path `N/A`; forbidden by final mapping invariant.
+- 1st/2nd Appraiser -> Manager/GM mappings remain `PROVEN` without an accepted repository/workflow role-identity citation.
+- combined B:I objective/target region still marks title-only mapping `PROVEN` without a proven composition/source-selection rule.
+- evidence header prematurely labels itself a proven Baseline before independent acceptance.
+
+## Proposed next — NOT AUTHORIZED
 ```text
-AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+D2-WP004-R1-R2-R2 = FINAL EVIDENCE-ONLY CORRECTIVE
+WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
 PROFILE_CHANGE = FORBIDDEN
-TEMPLATE_BINARY_CHANGE = FORBIDDEN
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
-Corrective requirements:
-- re-inspect exact Part A row-6 labels/merges vs `N6:Q7`, `Z7:AF7`, `AG7:AL7`, `AM7:AP7`, `AQ7:AS7`, `AT7:BC7`, `BD7:BI7`; no duplicate exclusive target may remain `SAFE_TO_MAP`;
-- distinguish one workbook Name-Surname target from `employeeName` vs `employeeNameTH` source-selection/fallback; do not claim two independent write owners without accepted authority;
-- projection fields that exist but lack proven workbook target are `UNRESOLVED / NO_PROVEN_WORKBOOK_TARGET`, not `NO_SECURED_PROJECTION_SOURCE`;
-- cover every current secured Part A objective field and leave combined/ambiguous merged semantics unresolved instead of inferring from nearby labels;
-- do not equate Appraisee/Appraiser1/Appraiser2/Chief/Manager/GM/Final/average without accepted role-translation evidence;
-- re-inspect summary/result labels/merges; address + projection existence alone does not make a mapping `PROVEN`;
-- preserve Part B K:Q self and R:X chief authority, and separate visually proven chief target from secured chief field/path availability;
-- do not reconstruct filtered chief values for Employee-Self;
-- recalculate `PROVEN`, `UNRESOLVED`, `NO_SECURED_PROJECTION_SOURCE` counts mechanically from final matrices/decision table.
-
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R1
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
