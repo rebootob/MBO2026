@@ -21,22 +21,25 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-Latest implementation reviewed: `7c1be393bbddaf1f6b439d13229ad256c23517cf` under R7-R1 authorization `273d5ccbbb24d6aaa1b5ae23bab2a0941977d591`.
+Latest reviewed implementation: `7c1be393bbddaf1f6b439d13229ad256c23517cf` under R7-R1 authorization `273d5ccbbb24d6aaa1b5ae23bab2a0941977d591`.
 
-Accepted/frozen from R7-R1: exact 6/7/8 role mapping, row30/clone padding non-dynamic, dynamic counts 432/474/516, source-backed style/merge relocation, count-aware metadata direction, expanded package/sharedStrings token purge, zero-formula proof.
+Accepted/frozen from R7-R1: exact N6/N7/N8 row mapping, row30/clone padding non-dynamic, dynamic counts 432/474/516, style/merge source backing, count-aware metadata, expanded package token purge, caller-buffer immutability, formula inventory zero.
 
-Remaining corrective only: remove static authority bypass at B30/B34/B38; enforce source-backed normalizedType/nonblank evidence without weakening production dynamic-value behavior; add direct negative tests for type/nonblank/row30-role inconsistency.
-
+Active corrective:
 ```text
-R7-R1 = CORRECTIVE REQUIRED
-TOKEN = CONSUMED / DO NOT REUSE
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R2
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R2
+AUTHORIZATION = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 52a28d6f24a353f4a425315b730b9b9f19cd4bce
+MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO FILES
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R2-SOURCE-TEST-20260902-01
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R2 / STOP AFTER ONE PUSH+REPORT
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
 ```
 
-Full corrective contract: `AI_ACTIVE_TASK.md`.
+R7-R2 may only remove static evidence bypass/tolerance, enforce exact pre-mutation source-backed `normalizedType` + `nonblank` + static hash evidence, and add direct negative fail-closed tests. Production Renderer remains out of scope. Full contract: `AI_ACTIVE_TASK.md`.
+
+Previous standing Control Plane review/corrective authority remains exhausted / DO NOT REUSE.
