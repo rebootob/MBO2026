@@ -23,8 +23,12 @@ Current closed D2 gate Baselines:
 - `D2_PART_A_STRUCTURAL_CLOSURE.md` — frozen Part A real 4..10 objective structural matrix and zero-formula invariant.
 - `D2_PART_B_STRUCTURAL_CLOSURE.md` — frozen Part B real 6/7/8 competency structural matrix, fail-closed source/defined-name controls, zero-formula invariant, and explicit privacy-remap boundary.
 - `D2_FORMULA_AUTHORITY_CLOSURE.md` — scoring authority = Kintone/App794; secured projection = export-data authority; Excel scoring formulas/recalculation forbidden; production XLSX formula inventory must remain zero.
+- `D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md` — frozen Part B 6/7/8 privacy-role mapping, strict source evidence, sanitization/token-purge proof, and row30/clone protected-static semantics.
 
-Do not reread these closed gates by default unless the current diff touches their dependency or concrete regression evidence exists.
+Production export architecture:
+- `EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md` — mandatory centralized semantic Template Profile/Mapping; no scattered important cell/range addresses in the Production Renderer.
+
+Do not reread closed gates by default unless the current diff touches their dependency or concrete regression evidence exists.
 
 ## D1 final status
 
@@ -112,6 +116,7 @@ Frozen reference-image controls preserve exact target anchor/relationship/media 
 - `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules and Baseline promotion.
 - `ROLLBACK_RECOVERY_SAFETY.md` — mandatory Live rollback/recovery standard.
 - `SOURCE_CODE_ARCHITECTURE.md` — modular JavaScript architecture and source ownership rules.
+- `EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md` — centralized export Template Profile/Mapping architecture and future template-change policy.
 - `DOCUMENT_CONTROL.md` — lean document policy and historical/default-ignore rules.
 - `D1_CLOSURE.md` — final durable D1 PASS/closure and security ceilings.
 - `D1_AUTH_SECURITY.md` — KINTONE-ONLY HYBRID IDENTITY and shared credential model.
@@ -128,6 +133,7 @@ Frozen reference-image controls preserve exact target anchor/relationship/media 
 - `D2_PART_A_STRUCTURAL_CLOSURE.md` — Part A structural closure.
 - `D2_PART_B_STRUCTURAL_CLOSURE.md` — Part B structural closure.
 - `D2_FORMULA_AUTHORITY_CLOSURE.md` — formula/no-formula authority closure.
+- `D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md` — Part B expanded privacy closure.
 
 ## Review Rule
 
@@ -140,6 +146,4 @@ For future `review`:
 6. treat conflicts as MUST FIX/BLOCKER according to impact;
 7. update Control Center / Active Task to match promoted truth.
 
-For D1 reopen/security audit, read `D1_CLOSURE.md` first. For lifecycle work, read `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`. For Live deployment/rollback, read `ROLLBACK_RECOVERY_SAFETY.md`. For source implementation/refactor affecting module ownership, read `SOURCE_CODE_ARCHITECTURE.md`.
-
-Temporary status, blockers, transient SHAs and raw test logs belong in operational docs/evidence, not duplicated here except where a reviewed commit is part of a durable closure statement.
+For D1 reopen/security audit, read `D1_CLOSURE.md` first. For lifecycle work, read `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`. For Live deployment/rollback, read `ROLLBACK_RECOVERY_SAFETY.md`. For source implementation/refactor affecting module ownership, read `SOURCE_CODE_ARCHITECTURE.md`. For Production XLSX/PDF template-address mapping or future form-layout changes, read `EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
