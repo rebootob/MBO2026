@@ -108,17 +108,10 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
     'Raw Part B output missing <dimension> tag must be rejected by real validator with BLOCKER_WORKBOOK_PARITY_UNRESOLVED'
   );
 
-  // --- R3-R26 POSITIVE PROOF: EXACT RELATIONSHIP-TYPE + STRICT LEXICAL TARGET + SCHEMA-SLOT PRESERVATION PATH ---
+  // --- R3-R27 POSITIVE PROOF: DIRECT RAW OUTBUFA & OUTBUFB PRESERVATION PATH (OPTION B ALLOWED DRIFT) ---
   const preservedBufA = await preserveExactWorkbookDimensions(outBufA, 'A');
-
-  // Create clean raw observed Part B buffer without injected sheetPr in Sheet1 for positive Part B preservation proof
-  const wbOutBClean = await XlsxPopulate.fromDataAsync(outBufB);
-  let sheet2XmlClean = await wbOutBClean._zip.files['xl/worksheets/sheet2.xml'].async('string');
-  sheet2XmlClean = sheet2XmlClean.replace(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/, '');
-  wbOutBClean._zip.file('xl/worksheets/sheet2.xml', sheet2XmlClean);
-  const rawObservedBufB = await wbOutBClean._zip.generateAsync({ type: 'nodebuffer' });
-
-  const preservedBufB = await preserveExactWorkbookDimensions(rawObservedBufB, 'B');
+  // Direct raw outBufB is passed directly WITHOUT test-side pre-cleaning or modification
+  const preservedBufB = await preserveExactWorkbookDimensions(outBufB, 'B');
 
   // 1. Preserved buffers pass the real validator
   assert.equal(await validateWorkbookParity(preservedBufA, 'A'), true, 'Preserved Part A buffer must satisfy real workbook parity validator');
@@ -173,6 +166,206 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   assert.equal(crypto.createHash('sha256').update(origBufB).digest('hex'), shaOrigBBefore, 'Source Part B buffer must remain byte-identical');
   assert.equal(crypto.createHash('sha256').update(outBufB).digest('hex'), shaOutBBefore, 'Raw Part B buffer must remain byte-identical');
 
+  // --- MANDATORY OPTION B ALLOWED-DRIFT NEGATIVE TESTS ---
+
+  // Option B Negative 1: Changed attribute/value/content of pinned allowed sheetPr (<sheetPr pageSetUpPr="1"/>)
+  const wbBadSheetPrAttr = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet2XmlBadPr = await wbBadSheetPrAttr._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  sheet2XmlBadPr = sheet2XmlBadPr.replace('<sheetPr/>', '<sheetPr pageSetUpPr="1"/>');
+  wbBadSheetPrAttr._zip.file('xl/worksheets/sheet2.xml', sheet2XmlBadPr);
+  const bufBadSheetPrAttr = await wbBadSheetPrAttr._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufBadSheetPrAttr, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Modified sheetPr attribute must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Option B Negative 2: Duplicate sheetPr in Sheet1
+  const wbDupSheetPrB = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet2XmlDupPr = await wbDupSheetPrB._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  sheet2XmlDupPr = sheet2XmlDupPr.replace('<sheetPr/>', '<sheetPr/>\n  <sheetPr/>');
+  wbDupSheetPrB._zip.file('xl/worksheets/sheet2.xml', sheet2XmlDupPr);
+  const bufDupSheetPrB = await wbDupSheetPrB._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufDupSheetPrB, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Duplicate sheetPr in Sheet1 must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Option B Negative 3: Moved/reordered allowed sheetPr in Sheet1 (placed after sheetViews)
+  const wbMovedSheetPrB = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet2XmlMovedPr = await wbMovedSheetPrB._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  sheet2XmlMovedPr = sheet2XmlMovedPr.replace('<sheetPr/>', '');
+  sheet2XmlMovedPr = sheet2XmlMovedPr.replace('</sheetViews>', '</sheetViews>\n  <sheetPr/>');
+  wbMovedSheetPrB._zip.file('xl/worksheets/sheet2.xml', sheet2XmlMovedPr);
+  const bufMovedSheetPrB = await wbMovedSheetPrB._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufMovedSheetPrB, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Moved/reordered sheetPr in Sheet1 must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Option B Negative 4: Un-sourced sheetPr added to Part B main sheet ((Part B) Competency)
+  const wbPrPartBMain = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet1XmlExtraPr = await wbPrPartBMain._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const existingPrTag = sheet1XmlExtraPr.match(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/)[0];
+  sheet1XmlExtraPr = sheet1XmlExtraPr.replace(existingPrTag, `${existingPrTag}\n  <sheetPr/>`);
+  wbPrPartBMain._zip.file('xl/worksheets/sheet1.xml', sheet1XmlExtraPr);
+  const bufPrPartBMain = await wbPrPartBMain._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufPrPartBMain, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Extra sheetPr on Part B main sheet must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Option B Negative 5: Un-sourced sheetPr added to Part A
+  const wbPrPartA = await XlsxPopulate.fromDataAsync(outBufA);
+  let sheet1XmlPartAExtraPr = await wbPrPartA._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const existingPrTagA = sheet1XmlPartAExtraPr.match(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/)[0];
+  sheet1XmlPartAExtraPr = sheet1XmlPartAExtraPr.replace(existingPrTagA, `${existingPrTagA}\n  <sheetPr/>`);
+  wbPrPartA._zip.file('xl/worksheets/sheet1.xml', sheet1XmlPartAExtraPr);
+  const bufPrPartA = await wbPrPartA._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufPrPartA, 'A', origBufA),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Extra sheetPr on Part A must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Option B Negative 6: Unknown/different observed-only sheetPr (<sheetPr codeName="BadSheet"/>)
+  const wbUnknownSheetPr = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet2XmlUnknownPr = await wbUnknownSheetPr._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  sheet2XmlUnknownPr = sheet2XmlUnknownPr.replace('<sheetPr/>', '<sheetPr codeName="BadSheet"/>');
+  wbUnknownSheetPr._zip.file('xl/worksheets/sheet2.xml', sheet2XmlUnknownPr);
+  const bufUnknownSheetPr = await wbUnknownSheetPr._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufUnknownSheetPr, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Unknown observed-only sheetPr must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // Option B Negative 7: Source unexpectedly containing sheetPr in Sheet1
+  const wbSrcWithPr = await XlsxPopulate.fromDataAsync(origBufB);
+  let sheet2XmlSrcWithPr = await wbSrcWithPr._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  sheet2XmlSrcWithPr = sheet2XmlSrcWithPr.replace('<sheetViews>', '<sheetPr/>\n  <sheetViews>');
+  wbSrcWithPr._zip.file('xl/worksheets/sheet2.xml', sheet2XmlSrcWithPr);
+  const bufSrcWithPr = await wbSrcWithPr._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufSrcWithPr),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Source unexpectedly containing sheetPr in Sheet1 must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // --- MANDATORY XML-INVENTORY / SCHEMA NEGATIVE TESTS ---
+
+  // XML Negative 1: Namespace prefix containing dot or valid QName character (<ns.1:Relationship ...>)
+  const wbDotPrefixRel = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlDotPrefix = await wbDotPrefixRel._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlDotPrefix = relsXmlDotPrefix.replace(/(<Relationship [^>]*Id="rId1"[^>]*\/>)/, '$1\n  <ns.1:Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>');
+  wbDotPrefixRel._zip.file('xl/_rels/workbook.xml.rels', relsXmlDotPrefix);
+  const bufDotPrefixRel = await wbDotPrefixRel._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufDotPrefixRel, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Namespace prefix with dot in Relationship tag must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 2: Unknown/prefixed worksheet top-level child (<x:sheetPr> or <unknownElement>)
+  const wbUnknownChild = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet1XmlUnknownChild = await wbUnknownChild._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  sheet1XmlUnknownChild = sheet1XmlUnknownChild.replace('<sheetPr', '<unknownElement/><sheetPr');
+  wbUnknownChild._zip.file('xl/worksheets/sheet1.xml', sheet1XmlUnknownChild);
+  const bufUnknownChild = await wbUnknownChild._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufUnknownChild, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Unknown worksheet top-level child must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 3: Duplicate top-level maxOccurs=1 schema child (<sheetViews> duplicated)
+  const wbDupSheetViews = await XlsxPopulate.fromDataAsync(outBufB);
+  let sheet1XmlDupViews = await wbDupSheetViews._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const viewsMatch = sheet1XmlDupViews.match(/<sheetViews>[\s\S]*?<\/sheetViews>/)[0];
+  sheet1XmlDupViews = sheet1XmlDupViews.replace(viewsMatch, `${viewsMatch}\n  ${viewsMatch}`);
+  wbDupSheetViews._zip.file('xl/worksheets/sheet1.xml', sheet1XmlDupViews);
+  const bufDupSheetViews = await wbDupSheetViews._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufDupSheetViews, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Duplicate maxOccurs=1 sheetViews child must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 4: Repeated // Target alias
+  const wbRepeatedSlash = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlRepeatedSlash = await wbRepeatedSlash._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlRepeatedSlash = relsXmlRepeatedSlash.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets//sheet1.xml"');
+  wbRepeatedSlash._zip.file('xl/_rels/workbook.xml.rels', relsXmlRepeatedSlash);
+  const bufRepeatedSlash = await wbRepeatedSlash._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufRepeatedSlash, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Repeated slash // Target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 5: Leading ./ Target alias
+  const wbLeadingDotSlash = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlLeadingDotSlash = await wbLeadingDotSlash._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlLeadingDotSlash = relsXmlLeadingDotSlash.replace('Target="worksheets/sheet1.xml"', 'Target="./worksheets/sheet1.xml"');
+  wbLeadingDotSlash._zip.file('xl/_rels/workbook.xml.rels', relsXmlLeadingDotSlash);
+  const bufLeadingDotSlash = await wbLeadingDotSlash._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufLeadingDotSlash, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Leading ./ Target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 6: Embedded /./ Target alias
+  const wbEmbeddedDotSlash = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlEmbeddedDotSlash = await wbEmbeddedDotSlash._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlEmbeddedDotSlash = relsXmlEmbeddedDotSlash.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/./sheet1.xml"');
+  wbEmbeddedDotSlash._zip.file('xl/_rels/workbook.xml.rels', relsXmlEmbeddedDotSlash);
+  const bufEmbeddedDotSlash = await wbEmbeddedDotSlash._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufEmbeddedDotSlash, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Embedded /./ Target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 7: Full URI scheme/authority Target form (http://example.com/sheet1.xml)
+  const wbFullUriScheme = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlUriScheme = await wbFullUriScheme._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlUriScheme = relsXmlUriScheme.replace('Target="worksheets/sheet1.xml"', 'Target="http://example.com/sheet1.xml"');
+  wbFullUriScheme._zip.file('xl/_rels/workbook.xml.rels', relsXmlUriScheme);
+  const bufFullUriScheme = await wbFullUriScheme._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufFullUriScheme, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Full URI scheme/authority Target form must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 8: Query Target form (worksheets/sheet1.xml?v=1)
+  const wbQueryTarget = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlQueryTarget = await wbQueryTarget._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlQueryTarget = relsXmlQueryTarget.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/sheet1.xml?v=1"');
+  wbQueryTarget._zip.file('xl/_rels/workbook.xml.rels', relsXmlQueryTarget);
+  const bufQueryTarget = await wbQueryTarget._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufQueryTarget, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Query Target form must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
+  // XML Negative 9: Fragment Target form (worksheets/sheet1.xml#frag)
+  const wbFragTarget = await XlsxPopulate.fromDataAsync(outBufB);
+  let relsXmlFragTarget = await wbFragTarget._zip.files['xl/_rels/workbook.xml.rels'].async('string');
+  relsXmlFragTarget = relsXmlFragTarget.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/sheet1.xml#frag"');
+  wbFragTarget._zip.file('xl/_rels/workbook.xml.rels', relsXmlFragTarget);
+  const bufFragTarget = await wbFragTarget._zip.generateAsync({ type: 'nodebuffer' });
+  await assert.rejects(
+    async () => preserveExactWorkbookDimensions(bufFragTarget, 'B', origBufB),
+    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
+    'Fragment Target form must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
+  );
+
   // --- MANDATORY RESTORED R3-R24 PRESERVATION NEGATIVE TESTS ---
 
   // 1. Invalid partKey
@@ -193,13 +386,13 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   const bufWrongShaSource = Buffer.from(origBufB);
   bufWrongShaSource[bufWrongShaSource.length - 1] ^= 0xff;
   await assert.rejects(
-    async () => preserveExactWorkbookDimensions(rawObservedBufB, 'B', bufWrongShaSource),
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufWrongShaSource),
     /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
     'Arbitrary/wrong-SHA sourceBufOverride must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
   );
 
   // 4. Missing relationship (remove rId1 from workbook.xml.rels)
-  const wbMissingRel = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbMissingRel = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlMissing = await wbMissingRel._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlMissing = relsXmlMissing.replace(/<Relationship [^>]*Id="rId1"[^>]*\/>/, '');
   wbMissingRel._zip.file('xl/_rels/workbook.xml.rels', relsXmlMissing);
@@ -211,7 +404,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 5. Duplicate relationship ID
-  const wbDupRel = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbDupRel = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlDup = await wbDupRel._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlDup = relsXmlDup.replace(/(<Relationship [^>]*Id="rId1"[^>]*\/>)/, '$1\n  $1');
   wbDupRel._zip.file('xl/_rels/workbook.xml.rels', relsXmlDup);
@@ -223,7 +416,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 6. Duplicate worksheet target
-  const wbDupTarget = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbDupTarget = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlDupTarget = await wbDupTarget._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlDupTarget = relsXmlDupTarget.replace('Target="worksheets/sheet2.xml"', 'Target="worksheets/sheet1.xml"');
   wbDupTarget._zip.file('xl/_rels/workbook.xml.rels', relsXmlDupTarget);
@@ -235,7 +428,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 7. Actual relationship-target swap while sheet names/order remain unchanged
-  const wbSwapTargets = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbSwapTargets = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlSwap = await wbSwapTargets._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlSwap = relsXmlSwap.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/sheet2_TEMP.xml"');
   relsXmlSwap = relsXmlSwap.replace('Target="worksheets/sheet2.xml"', 'Target="worksheets/sheet1.xml"');
@@ -249,7 +442,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 8. Cross-sheet mapping (sheet r:id swapped in workbook.xml)
-  const wbCrossSheet = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbCrossSheet = await XlsxPopulate.fromDataAsync(outBufB);
   let wbXmlCross = await wbCrossSheet._zip.files['xl/workbook.xml'].async('string');
   wbXmlCross = wbXmlCross.replace('r:id="rId1"', 'r:id="rId_TEMP"');
   wbXmlCross = wbXmlCross.replace('r:id="rId2"', 'r:id="rId1"');
@@ -263,7 +456,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 9. Non-worksheet Type/target
-  const wbNonWsType = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbNonWsType = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlNonWs = await wbNonWsType._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlNonWs = relsXmlNonWs.replace(/Type="[^"]*\/worksheet"/, 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"');
   wbNonWsType._zip.file('xl/_rels/workbook.xml.rels', relsXmlNonWs);
@@ -275,7 +468,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 10. External target/TargetMode
-  const wbExternalTarget = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbExternalTarget = await XlsxPopulate.fromDataAsync(outBufB);
   let relsXmlExt = await wbExternalTarget._zip.files['xl/_rels/workbook.xml.rels'].async('string');
   relsXmlExt = relsXmlExt.replace('<Relationship Id="rId1"', '<Relationship Id="rId1" TargetMode="External"');
   wbExternalTarget._zip.file('xl/_rels/workbook.xml.rels', relsXmlExt);
@@ -293,7 +486,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   wbSrcNoDim._zip.file('xl/worksheets/sheet1.xml', sheet1SrcNoDim);
   const bufSrcNoDim = await wbSrcNoDim._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
-    async () => preserveExactWorkbookDimensions(rawObservedBufB, 'B', bufSrcNoDim),
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufSrcNoDim),
     /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
     'Missing source dimension tag must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
   );
@@ -306,13 +499,13 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   wbSrcDupDim._zip.file('xl/worksheets/sheet1.xml', sheet1SrcDupDim);
   const bufSrcDupDim = await wbSrcDupDim._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
-    async () => preserveExactWorkbookDimensions(rawObservedBufB, 'B', bufSrcDupDim),
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufSrcDupDim),
     /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
     'Multiple source dimension tags must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
   );
 
   // 13. Conflicting observed dimension
-  const wbObsBadDim = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbObsBadDim = await XlsxPopulate.fromDataAsync(outBufB);
   let sheet1ObsBadDim = await wbObsBadDim._zip.files['xl/worksheets/sheet1.xml'].async('string');
   sheet1ObsBadDim = sheet1ObsBadDim.replace('</sheetPr>', '</sheetPr>\n  <dimension ref="A1:Z99"/>');
   wbObsBadDim._zip.file('xl/worksheets/sheet1.xml', sheet1ObsBadDim);
@@ -324,7 +517,7 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   );
 
   // 14. Multiple observed dimensions
-  const wbObsDupDim = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbObsDupDim = await XlsxPopulate.fromDataAsync(outBufB);
   let sheet1ObsDupDim = await wbObsDupDim._zip.files['xl/worksheets/sheet1.xml'].async('string');
   sheet1ObsDupDim = sheet1ObsDupDim.replace('</sheetPr>', '</sheetPr>\n  <dimension ref="A1:X35"/>\n  <dimension ref="A1:X35"/>');
   wbObsDupDim._zip.file('xl/worksheets/sheet1.xml', sheet1ObsDupDim);
@@ -340,201 +533,19 @@ test('FEASIBILITY_NO_OP_PARITY: xlsx-populate@1.21.0 loads and outputs templates
   wbSrcMalformed._zip.file('xl/worksheets/sheet1.xml', '<worksheet><invalidXml');
   const bufSrcMalformed = await wbSrcMalformed._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
-    async () => preserveExactWorkbookDimensions(rawObservedBufB, 'B', bufSrcMalformed),
+    async () => preserveExactWorkbookDimensions(outBufB, 'B', bufSrcMalformed),
     /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
     'Malformed source XML must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
   );
 
   // 16. Malformed observed XML
-  const wbObsMalformed = await XlsxPopulate.fromDataAsync(rawObservedBufB);
+  const wbObsMalformed = await XlsxPopulate.fromDataAsync(outBufB);
   wbObsMalformed._zip.file('xl/worksheets/sheet1.xml', '<worksheet><invalidXml');
   const bufObsMalformed = await wbObsMalformed._zip.generateAsync({ type: 'nodebuffer' });
   await assert.rejects(
     async () => preserveExactWorkbookDimensions(bufObsMalformed, 'B', origBufB),
     /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
     'Malformed observed XML must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // --- MANDATORY R3-R25 & R3-R26 ADDITION NEGATIVE TESTS ---
-
-  // Addition 1: Counterfeit worksheet-like Type URI ending with /worksheet
-  const wbCounterfeitType = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlCounterfeit = await wbCounterfeitType._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlCounterfeit = relsXmlCounterfeit.replace(/Type="[^"]*\/worksheet"/, 'Type="http://example.com/custom/worksheet"');
-  wbCounterfeitType._zip.file('xl/_rels/workbook.xml.rels', relsXmlCounterfeit);
-  const bufCounterfeitType = await wbCounterfeitType._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufCounterfeitType, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Counterfeit relationship Type URI must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 2: Duplicate ID across worksheet/non-worksheet types (global rId duplicate check)
-  const wbGlobalDupId = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlGlobalDup = await wbGlobalDupId._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlGlobalDup = relsXmlGlobalDup.replace(/(<Relationship [^>]*Id="rId1"[^>]*\/>)/, '$1\n  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>');
-  wbGlobalDupId._zip.file('xl/_rels/workbook.xml.rels', relsXmlGlobalDup);
-  const bufGlobalDupId = await wbGlobalDupId._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufGlobalDupId, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Global duplicate relationship ID must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 3: Source/observed relationship Type mismatch with same ID/target
-  const wbTypeMismatch = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlMismatch = await wbTypeMismatch._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlMismatch = relsXmlMismatch.replace(/Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/worksheet"/, 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chartsheet"');
-  wbTypeMismatch._zip.file('xl/_rels/workbook.xml.rels', relsXmlMismatch);
-  const bufTypeMismatch = await wbTypeMismatch._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufTypeMismatch, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Source/observed relationship Type mismatch must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 4: Leading-slash Target alias
-  const wbLeadingSlash = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlLeadingSlash = await wbLeadingSlash._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlLeadingSlash = relsXmlLeadingSlash.replace('Target="worksheets/sheet1.xml"', 'Target="/worksheets/sheet1.xml"');
-  wbLeadingSlash._zip.file('xl/_rels/workbook.xml.rels', relsXmlLeadingSlash);
-  const bufLeadingSlash = await wbLeadingSlash._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufLeadingSlash, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Leading-slash Target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 5: Already-xl/ Target alias
-  const wbAlreadyXl = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlAlreadyXl = await wbAlreadyXl._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlAlreadyXl = relsXmlAlreadyXl.replace('Target="worksheets/sheet1.xml"', 'Target="xl/worksheets/sheet1.xml"');
-  wbAlreadyXl._zip.file('xl/_rels/workbook.xml.rels', relsXmlAlreadyXl);
-  const bufAlreadyXl = await wbAlreadyXl._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufAlreadyXl, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Already-xl/ Target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 6: ./ and /./ Target aliases
-  const wbDotSegment = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlDot = await wbDotSegment._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlDot = relsXmlDot.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/./sheet1.xml"');
-  wbDotSegment._zip.file('xl/_rels/workbook.xml.rels', relsXmlDot);
-  const bufDotSegment = await wbDotSegment._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufDotSegment, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    './ and /./ Target aliases must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 7: Repeated-slash / backslash target aliases
-  const wbBackslash = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlBackslash = await wbBackslash._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlBackslash = relsXmlBackslash.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets\\sheet1.xml"');
-  wbBackslash._zip.file('xl/_rels/workbook.xml.rels', relsXmlBackslash);
-  const bufBackslash = await wbBackslash._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufBackslash, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Backslash target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 8: Percent-encoded alias / dot-segment form
-  const wbPercentEncoded = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlPercent = await wbPercentEncoded._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlPercent = relsXmlPercent.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/%2e/sheet1.xml"');
-  wbPercentEncoded._zip.file('xl/_rels/workbook.xml.rels', relsXmlPercent);
-  const bufPercentEncoded = await wbPercentEncoded._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufPercentEncoded, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Percent-encoded target alias must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 9: URI scheme / authority / query / fragment target form
-  const wbUriQuery = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlQuery = await wbUriQuery._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlQuery = relsXmlQuery.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/sheet1.xml?v=1"');
-  wbUriQuery._zip.file('xl/_rels/workbook.xml.rels', relsXmlQuery);
-  const bufUriQuery = await wbUriQuery._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufUriQuery, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'URI query/fragment target form must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 10: Prefixed Relationship duplicate-ID attempt (<r:Relationship Id="rId1" ...>)
-  const wbPrefixedRel = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let relsXmlPrefixed = await wbPrefixedRel._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-  relsXmlPrefixed = relsXmlPrefixed.replace(/(<Relationship [^>]*Id="rId1"[^>]*\/>)/, '$1\n  <r:Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>');
-  wbPrefixedRel._zip.file('xl/_rels/workbook.xml.rels', relsXmlPrefixed);
-  const bufPrefixedRel = await wbPrefixedRel._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufPrefixedRel, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Prefixed Relationship duplicate-ID attempt must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 11: Prefixed/unknown worksheet top-level child attempt
-  const wbPrefixedChild = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let sheet1XmlPrefixed = await wbPrefixedChild._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  sheet1XmlPrefixed = sheet1XmlPrefixed.replace('<sheetPr>', '<x:sheetPr>');
-  sheet1XmlPrefixed = sheet1XmlPrefixed.replace('</sheetPr>', '</x:sheetPr>');
-  wbPrefixedChild._zip.file('xl/worksheets/sheet1.xml', sheet1XmlPrefixed);
-  const bufPrefixedChild = await wbPrefixedChild._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufPrefixedChild, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Prefixed worksheet top-level child attempt must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 12: Observed sheetPr not present in source (raw outBufB has injected sheetPr in Sheet1)
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(outBufB, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Observed sheetPr not present in source must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 13: Reordered sheetPr
-  const wbReorderedPr = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let sheet1XmlReordered = await wbReorderedPr._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const sheetPrMatch = sheet1XmlReordered.match(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/);
-  assert.ok(sheetPrMatch, '<sheetPr> must exist in test input');
-  sheet1XmlReordered = sheet1XmlReordered.replace(sheetPrMatch[0], ''); // Remove sheetPr from top
-  sheet1XmlReordered = sheet1XmlReordered.replace('</worksheet>', `${sheetPrMatch[0]}</worksheet>`); // Place sheetPr after sheetData
-  wbReorderedPr._zip.file('xl/worksheets/sheet1.xml', sheet1XmlReordered);
-  const bufReorderedPr = await wbReorderedPr._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufReorderedPr, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Reordered sheetPr element must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 14: Missing predecessor/successor boundary
-  const wbMissingBoundary = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let sheet1XmlMissing = await wbMissingBoundary._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  sheet1XmlMissing = sheet1XmlMissing.replace(/<sheetViews>[\s\S]*?<\/sheetViews>/, ''); // Remove successor sheetViews
-  wbMissingBoundary._zip.file('xl/worksheets/sheet1.xml', sheet1XmlMissing);
-  const bufMissingBoundary = await wbMissingBoundary._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufMissingBoundary, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Missing predecessor/successor boundary must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
-  );
-
-  // Addition 15: Duplicate/ambiguous schema-boundary case
-  const wbDupSheetPr = await XlsxPopulate.fromDataAsync(rawObservedBufB);
-  let sheet1XmlDupPr = await wbDupSheetPr._zip.files['xl/worksheets/sheet1.xml'].async('string');
-  const prTag = sheet1XmlDupPr.match(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>|<sheetPr[^>]*\/>/)[0];
-  sheet1XmlDupPr = sheet1XmlDupPr.replace(prTag, `${prTag}\n  ${prTag}`);
-  wbDupSheetPr._zip.file('xl/worksheets/sheet1.xml', sheet1XmlDupPr);
-  const bufDupSheetPr = await wbDupSheetPr._zip.generateAsync({ type: 'nodebuffer' });
-  await assert.rejects(
-    async () => preserveExactWorkbookDimensions(bufDupSheetPr, 'B', origBufB),
-    /BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED/,
-    'Duplicate top-level sheetPr element must throw BLOCKER_WORKBOOK_DIMENSION_PRESERVATION_UNRESOLVED'
   );
 
   // --- R3-R22 REGRESSION MUTATION NEGATIVE TESTS (FROM KNOWN-VALID SOURCE BASELINE) ---
