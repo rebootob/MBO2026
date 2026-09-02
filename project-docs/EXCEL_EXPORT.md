@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R33 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -56,19 +56,19 @@ R3-R32 correctly added exact target-tuple normalization, raw `TargetMode` identi
 
 No production source change is required.
 
-## 5. Current next gate
+## 5. Current gate — R3-R33 AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R33
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R33
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R33-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R33 / ONE-SHOT
 CLAUDE = STOP
 ```
 
-R3-R33 should only tighten the existing proof parser/tests and preserve all accepted R3-R32 target-normalized equality logic.
+R3-R33 must only tighten the existing proof parser/tests, make QName/local-name handling strict and case-sensitive, parse direct Relationship start-tag attributes exactly, and preserve all accepted R3-R32 target-normalized equality logic.
 
 ## 6. Remaining D2 path
 
@@ -81,3 +81,5 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
+
+Do not auto-start any next step.
