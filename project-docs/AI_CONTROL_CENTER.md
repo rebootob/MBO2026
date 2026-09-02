@@ -3,7 +3,7 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / REFERENCE-IMAGE PASS-CLOSED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A STRUCTURAL MATRIX PROPOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; next gate not started |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A structural matrix proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -32,7 +32,6 @@ CLAUDE_AUTO_REVIEW = NO
 ```text
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
@@ -46,36 +45,31 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 3. R3-R36 independent review
+## 3. READ-ONLY Part A finding
 
-```text
-AUTHORIZATION_COMMIT = f72e935b639da850aacc675c1ef2e30ce5f892c7
-IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
-SCOPE_REVIEW = PASS
-REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-PROOF_CODE_REVIEW = PASS
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
-STATUS = PASS / CLOSED
-D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-```
+Current `getStructuralPartABuffers()` proves only 4, 5 and 10 objective outputs. The existing test proves only total merge count, declared merge count and print-area ending for those three outputs.
 
-R3-R36 is exactly one bounded TEST-ONLY implementation commit and changes only `tests/mbo-xlsx-ooxml-feasibility.test.js`. It retains the accepted cumulative inventory/equality/adversarial proof and makes malformed prefixed `embed` QName candidates fail closed while valid `r:embed` extraction remains exact. No production source change was required. Durable closure is promoted in `CONFIRMED_BASELINE/README.md`.
+The next gate requires real-path coverage for objective counts 4–10 and exact structural transformation proof. Because 6–9 are not currently produced by the source helper, TEST-ONLY cannot close the gate without duplicating implementation logic inside tests. A bounded feasibility SOURCE+TEST change is therefore the smallest safe next work package.
 
 ## 4. Current gate
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4
+PROPOSED_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
+PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
-NEXT_D2_GATE = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX / NOT STARTED / NOT AUTHORIZED
 ```
 
 ## 5. Low-credit rule
 
-Do not invoke Antigravity or Claude for the next gate until the Owner explicitly continues/authorizes. Prefer ChatGPT READ-ONLY planning/review first.
+If R4 is authorized, Antigravity may touch only the feasibility source and its existing feasibility test. It must generalize existing Part A structural outputs to all counts 4–10 and strengthen proof; it must not redesign insertion logic unless the matrix demonstrates a blocker. Preservation/reference-image source, production renderer, Kintone and deploy remain out of scope.
