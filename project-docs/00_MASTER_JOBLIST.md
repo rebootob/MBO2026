@@ -13,34 +13,35 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping Evidence.
+D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping, XLSX Template Profile.
 
-Template Profile status:
+Template Profile closure:
 ```text
-R1_R3_R1_IMPLEMENTATION = 6386e506b85ded87a57967705066e38d56212f73
-R1_R3_R1_ALIAS_FIXES = PASS
-R1_R3_R1_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
-SEMANTIC_BASELINE = D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md
-SAFE_TO_MAP = 18
-UNRESOLVED = 22
-NO_SECURED_PROJECTION_SOURCE = 5
+FINAL_IMPLEMENTATION = b59815aa5e5bad09ad252a10cdd1914185170fc0
+FINAL_AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+SCOPE = PASS
+CANONICAL_PART_B_INTEGRITY = PASS
+PROFILE = PASS / CLOSED
+SEMANTIC_BASELINE = 18 SAFE / 22 UNRESOLVED / 5 NO_SOURCE
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Active smallest gate:
+Durable profile baseline:
+`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+
+Next proposed smallest gate:
 ```text
-D2-WP004-R1-R3-R2 = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+D2-WP004-R2 = PRODUCTION XLSX RENDERER + SANITIZER
+STATE = PROPOSED / NOT AUTHORIZED
+FIRST_STEP = CHATGPT CONTROL-PLANE READ-ONLY DESIGN
 ```
 
-Corrective focus only: exact Part B competency identity (`index`, expected rating row, exact `K{row}` target, exact `partB.competencyItems[b-1].selfRating` path) and four focused negative mutations. Preserve all accepted alias fixes, SHA/count/topology/purity behavior and semantic 18/22/5 authority.
+No renderer implementation should start until exact files, sanitizer/security boundary, structural/privacy/formula checks and focused tests are defined from repository truth.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R2
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
