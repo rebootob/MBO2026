@@ -44,10 +44,10 @@ D1 is frozen unless proven regression or explicit architecture change.
 ## 2. D2 — Excel + PDF Original/Legacy Format
 
 ```text
-D2 = IN PROGRESS / BLOCKED
+D2 = IN PROGRESS
 D2-WP001 = PASS / CLOSED
 D2-WP002 = PASS / CLOSED
-D2-WP003 = BLOCKED / NOT CLOSED
+D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R3-R17 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
@@ -55,10 +55,12 @@ D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
 R3-R26_IMPLEMENTATION_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = NONE
-OWNER_DECISION_REQUIRED = D2-PRESERVATION-PARTB-SHEETPR-DECISION-01
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
+PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
+CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
@@ -66,13 +68,18 @@ Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
 
 Accepted R3-R22 closure remains frozen: raw direct xlsx-populate output, deterministic parity blocker, actual dimension evidence, exact per-sheet print-area binding, source-backed negative proof isolation, exact source validates and raw Part A/Part B fail closed after losing dimensions.
 
-R3-R26 improved strict raw relationship Target identity and restored preservation negatives, but cannot close preservation because direct raw Part B output contains an observed-only `sheetPr` that the strict source-minus-dimension invariant rejects. The R3-R26 positive Part B test pre-cleans a derivative buffer by deleting that element before preservation, so it does not prove the direct raw path. Regex-only XML inventory also remains incomplete for valid element-name/prefix forms outside its restricted patterns.
+R3-R26 improved strict raw relationship Target identity and restored preservation negatives but proved that the prior strict source-minus-dimension policy conflicts with actual direct Part B output because xlsx-populate injects an observed-only `sheetPr` in `Sheet1`. Its positive Part B proof pre-cleaned a derivative buffer and therefore did not prove direct raw preservation. XML inventory and several proof sub-cases also remained incomplete.
 
-Owner decision required before any further implementation:
-- Option A: keep strict source-minus-dimension and redesign/replace the current direct xlsx-populate Part B preservation approach;
-- Option B: explicitly authorize a narrow deterministic allowlist for one precisely fingerprinted xlsx-populate-injected Part B `Sheet1` `sheetPr` drift, with all other drift fail-closed.
+Owner approved Option B as the preservation policy:
+- allow only one exact fingerprinted deterministic xlsx-populate-generated Part B `Sheet1` `sheetPr` drift;
+- exact source must lack it;
+- exact element/slot/structure must be pinned from SHA-verified round-trip evidence;
+- normalization/removal occurs only inside preservation on the working copy;
+- all modified/extra/reordered/moved/other-sheet/Part-A `sheetPr` and all other non-dimension drift remain fail-closed.
 
-No Antigravity or Claude execution is authorized at this decision gate.
+R3-R27 is proposed as the smallest corrective to implement Option B, close XML-inventory gaps and complete missing proof. It is NOT authorized.
+
+No Antigravity or Claude execution is authorized at this gate.
 
 D2 must ultimately close:
 - reference-image handling;
@@ -124,10 +131,10 @@ Status: `SOURCE FUNCTIONALITY CLOSED`; reopen only proven defect.
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = CHOOSE D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 OPTION A OR OPTION B
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R27 AS PROPOSED
 ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP / NOT NEEDED AT THIS GATE
 D3 = HOLD
 ```
 
