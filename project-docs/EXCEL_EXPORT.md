@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R33 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -41,34 +41,34 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Reference-image status — R3-R32 reviewed
+## 4. Reference-image status — R3-R33 reviewed
 
 ```text
-R3-R32_AUTHORIZATION_COMMIT = e1360a76fad3592ae20fd75ba14dab5422c7c01d
-R3-R32_IMPLEMENTATION_COMMIT = dbb0797187cc59047c9864c97fa3514719319a23
-R3-R32_SCOPE_REVIEW = PASS
+R3-R33_AUTHORIZATION_COMMIT = a638ee5e28b66d87768eb44d3cad32801878b9ef
+R3-R33_IMPLEMENTATION_COMMIT = adc974704898686efffd7ac121b4b58820581461
+R3-R33_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R32_PROOF_REVIEW = FAIL / XML PARSER FAIL-CLOSED CONTRACT INCOMPLETE
+R3-R33_PROOF_REVIEW = FAIL / NCNAME + ATTRIBUTE COVERAGE FAIL-CLOSED INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R32 correctly added exact target-tuple normalization, raw `TargetMode` identity, complete target-normalized equality and useful adversarial tests. Remaining gap is only TEST-ONLY XML parser strictness: element names are case-insensitive, QName prefix handling is not complete for valid XML NCName forms, and Relationship required attributes can be discovered from nested content instead of only the direct start tag.
+R3-R33 correctly tightened case-sensitive local-name handling, direct Relationship start-tag attribute extraction, duplicate required-attribute rejection and TargetMode tuple identity. Remaining gap is only TEST-ONLY proof parser strictness: the prefix matcher accepts invalid NCNames and the attribute tokenizer can silently skip malformed/unquoted attributes because it does not prove complete consumption of the start-tag attribute region.
 
 No production source change is required.
 
-## 5. Current gate — R3-R33 AUTHORIZED
+## 5. Current next gate
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R33
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R33-TEST-20260902-01
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R34
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R33 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 ```
 
-R3-R33 must only tighten the existing proof parser/tests, make QName/local-name handling strict and case-sensitive, parse direct Relationship start-tag attributes exactly, and preserve all accepted R3-R32 target-normalized equality logic.
+R3-R34 should only make prefix validation genuinely NCName-aware, require complete quoted-attribute token coverage on the Relationship start tag, and preserve all accepted R3-R33 target-normalized equality logic.
 
 ## 6. Remaining D2 path
 
@@ -81,5 +81,3 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
-
-Do not auto-start any next step.
