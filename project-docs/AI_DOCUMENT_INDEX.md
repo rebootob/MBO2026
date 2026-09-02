@@ -28,26 +28,25 @@ R3-R34_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 13 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R35
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R35
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R35-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R35 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For the next gate read:
+For the current gate read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
 5. exact R3-R33 and R3-R34 diffs in `tests/mbo-xlsx-ooxml-feasibility.test.js`.
 
-R3-R35 is proposed TEST-ONLY to restore accepted R3-R33 adversarial proof and close XML Name/NCName/QName syntax validation. Reference-image production source remains frozen.
+R3-R35 is authorized TEST-ONLY to restore accepted R3-R33 adversarial proof, retain R3-R34 proof, and close XML Name/NCName/QName plus prefixed `embed` syntax validation. Reference-image production source remains frozen.
