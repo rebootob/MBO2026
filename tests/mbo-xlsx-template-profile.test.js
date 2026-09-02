@@ -24,11 +24,11 @@ import {
   validateMappingIntegrity
 } from '../src/profiles/mbo-xlsx-template-profile.js';
 
-test('TEMPLATE_PROFILE_EXACT_SHA_AND_ROLE_COUNTS: 18 SAFE, 22 UNRESOLVED, 5 NO_SOURCE roles', () => {
+test('TEMPLATE_PROFILE_EXACT_SHA_AND_ROLE_COUNTS: 20 SAFE (candidate), 22 UNRESOLVED, 5 NO_SOURCE roles', () => {
   assert.equal(PART_A_TEMPLATE_SHA256, '03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3');
   assert.equal(PART_B_TEMPLATE_SHA256, 'c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3');
 
-  assert.equal(PROVEN_SAFE_ROLES.length, 18, 'PROVEN_SAFE_ROLES count must be exactly 18');
+  assert.equal(PROVEN_SAFE_ROLES.length, 20, 'PROVEN_SAFE_ROLES count must be 20 including candidate presentation roles');
   assert.equal(UNRESOLVED_ROLES.length, 22, 'UNRESOLVED_ROLES count must be exactly 22');
   assert.equal(NO_SECURED_SOURCE_ROLES.length, 5, 'NO_SECURED_SOURCE_ROLES count must be exactly 5');
   assert.equal(CHIEF_DYNAMIC_AUTHORITY, 'R:X', 'Chief dynamic authority metadata must be R:X');
@@ -151,6 +151,87 @@ test('TEMPLATE_PROFILE_PART_B_COMPETENCY: Self rating resolves for N6/N7/N8; Chi
       );
     }
   }
+});
+
+test('TEMPLATE_PROFILE_EXPANDED_COMPETENCY_PRESENTATION_SEMANTICS: b7/b8 title & description resolution, metadata topology & fail-closed protection', () => {
+  const profile = new MboXlsxTemplateProfile();
+
+  // 2 & 3. N7 b7 TITLE -> B31 + exact presentationTitle path, N7 b7 DESCRIPTION -> B32 + exact presentationDescription path
+  const b7TitleN7 = profile.resolveSemanticRole('COMPETENCY_7_TITLE', { partKey: 'B', competencyCount: 7 });
+  assert.equal(b7TitleN7.address, 'B31');
+  assert.equal(b7TitleN7.projectionPath, 'partB.competencyItems[6].presentationTitle');
+
+  const b7DescN7 = profile.resolveSemanticRole('COMPETENCY_7_DESCRIPTION', { partKey: 'B', competencyCount: 7 });
+  assert.equal(b7DescN7.address, 'B32');
+  assert.equal(b7DescN7.projectionPath, 'partB.competencyItems[6].presentationDescription');
+
+  // 4. N8 b7 still resolves identically
+  const b7TitleN8 = profile.resolveSemanticRole('COMPETENCY_7_TITLE', { partKey: 'B', competencyCount: 8 });
+  assert.equal(b7TitleN8.address, 'B31');
+  assert.equal(b7TitleN8.projectionPath, 'partB.competencyItems[6].presentationTitle');
+
+  // 5 & 6. N8 b8 TITLE -> B35 + exact path, N8 b8 DESCRIPTION -> B36 + exact path
+  const b8TitleN8 = profile.resolveSemanticRole('COMPETENCY_8_TITLE', { partKey: 'B', competencyCount: 8 });
+  assert.equal(b8TitleN8.address, 'B35');
+  assert.equal(b8TitleN8.projectionPath, 'partB.competencyItems[7].presentationTitle');
+
+  const b8DescN8 = profile.resolveSemanticRole('COMPETENCY_8_DESCRIPTION', { partKey: 'B', competencyCount: 8 });
+  assert.equal(b8DescN8.address, 'B36');
+  assert.equal(b8DescN8.projectionPath, 'partB.competencyItems[7].presentationDescription');
+
+  // 7. b1..6 TITLE/DESCRIPTION reject with EXPORT_TEMPLATE_PROFILE_UNRESOLVED
+  for (let b = 1; b <= 6; b++) {
+    for (const n of [6, 7, 8]) {
+      assert.throws(
+        () => profile.resolveSemanticRole(`COMPETENCY_${b}_TITLE`, { partKey: 'B', competencyCount: n }),
+        /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+      );
+      assert.throws(
+        () => profile.resolveSemanticRole(`COMPETENCY_${b}_DESCRIPTION`, { partKey: 'B', competencyCount: n }),
+        /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+      );
+    }
+  }
+
+  // 8. b8 TITLE/DESCRIPTION under N7 reject
+  assert.throws(
+    () => profile.resolveSemanticRole('COMPETENCY_8_TITLE', { partKey: 'B', competencyCount: 7 }),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
+  assert.throws(
+    () => profile.resolveSemanticRole('COMPETENCY_8_DESCRIPTION', { partKey: 'B', competencyCount: 7 }),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
+
+  // 9, 10, 11. Presentation overlay metadata for N7 and N8
+  const mapB7 = profile.getPartBMappings(7);
+  assert.equal(mapB7.presentationOverlay.b7.TITLE, 'B31');
+  assert.equal(mapB7.presentationOverlay.b7.TITLE_MERGE, 'B31:J31');
+  assert.equal(mapB7.presentationOverlay.b7.DESCRIPTION, 'B32');
+  assert.equal(mapB7.presentationOverlay.b7.DESCRIPTION_MERGE, 'B32:J32');
+  assert.equal(mapB7.presentationOverlay.b7.RATING_SCALE, 'B33:J33');
+  assert.equal(mapB7.presentationOverlay.b7.PADDING_ROW, 34);
+
+  const mapB8 = profile.getPartBMappings(8);
+  assert.equal(mapB8.presentationOverlay.b8.TITLE, 'B35');
+  assert.equal(mapB8.presentationOverlay.b8.TITLE_MERGE, 'B35:J35');
+  assert.equal(mapB8.presentationOverlay.b8.DESCRIPTION, 'B36');
+  assert.equal(mapB8.presentationOverlay.b8.DESCRIPTION_MERGE, 'B36:J36');
+  assert.equal(mapB8.presentationOverlay.b8.RATING_SCALE, 'B37:J37');
+  assert.equal(mapB8.presentationOverlay.b8.PADDING_ROW, 38);
+
+  // 11 & 12. Rating Scale metadata (B33:J33, B37:J37) & padding rows (30, 34, 38) remain static / non-dynamic
+  for (const row of [33, 37]) {
+    for (const col of ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']) {
+      assert.equal(profile.isDynamicWriteTarget('B', `${col}${row}`, 8), false, `Cell ${col}${row} must be non-dynamic`);
+    }
+  }
+
+  // 13. Presentation anchors (B31, B32 for N7/N8; B35, B36 for N8) do not collide with K:X rating authority
+  assert.equal(profile.isDynamicWriteTarget('B', 'B31', 7), true);
+  assert.equal(profile.isDynamicWriteTarget('B', 'B32', 7), true);
+  assert.equal(profile.isDynamicWriteTarget('B', 'B35', 8), true);
+  assert.equal(profile.isDynamicWriteTarget('B', 'B36', 8), true);
 });
 
 test('TEMPLATE_PROFILE_FAIL_CLOSED_FOR_ALL_22_UNRESOLVED_AND_5_NO_SOURCE_ROLES', () => {
@@ -370,6 +451,19 @@ test('TEMPLATE_PROFILE_FOCUSED_MUTATION_NEGATIVE_TESTS: validates fail-closed on
     return clone;
   };
   assert.throws(() => validateMappingIntegrity(b14), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 15. PART_B_COMPETENCY_7_WRONG_TITLE_ADDRESS = REJECT
+  const b15 = Object.create(profile);
+  b15.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    if (c >= 7) {
+      const clone = JSON.parse(JSON.stringify(m));
+      clone.competencies[6].TITLE = 'B39';
+      return clone;
+    }
+    return m;
+  };
+  assert.throws(() => validateMappingIntegrity(b15), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
 });
 
 test('TEMPLATE_PROFILE_CALLER_IMMUTABILITY: resolution options & returned mappings remain immutable', () => {

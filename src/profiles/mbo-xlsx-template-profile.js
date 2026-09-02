@@ -11,7 +11,7 @@
  * - Exact SHA256 validation for Part A and Part B.
  * - Part A objective counts domain: integer 4..10.
  * - Part B competency counts domain: integer 6, 7, 8.
- * - Exactly 18 SAFE_TO_MAP roles are production writable.
+ * - 18 SAFE_TO_MAP baseline roles (expanded to candidate 20 roles with b7/b8 title & description).
  * - All 22 UNRESOLVED roles throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
  * - All 5 NO_SECURED_PROJECTION_SOURCE roles throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
  * - OBJECTIVE_i_COMMENT and COMPETENCY_b_RATING non-canonical aliases REJECT with EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
@@ -31,7 +31,7 @@ export const CHIEF_DYNAMIC_AUTHORITY = 'R:X';
 export const SELF_DYNAMIC_AUTHORITY = 'K:Q';
 
 /**
- * Exact 18 SAFE_TO_MAP semantic roles
+ * Exact candidate 20 SAFE_TO_MAP semantic roles (18 baseline + expanded b7/b8 presentation role families)
  */
 export const PROVEN_SAFE_ROLES = Object.freeze([
   'HEADER_FISCAL_YEAR',
@@ -50,6 +50,8 @@ export const PROVEN_SAFE_ROLES = Object.freeze([
   'SUMMARY_PART_A_RAW_SCORE',
   'SUMMARY_PART_A_WEIGHTED_SCORE',
   'COMPETENCY_SELF_RATING',
+  'COMPETENCY_TITLE',
+  'COMPETENCY_DESCRIPTION',
   'SUMMARY_PART_B_RAW_SCORE',
   'SUMMARY_PART_B_WEIGHTED_SCORE'
 ]);
@@ -308,12 +310,56 @@ export class MboXlsxTemplateProfile {
 
     for (let b = 1; b <= n; b++) {
       const r = ratingRows[b - 1];
-      competencies.push(Object.freeze({
+      const compObj = {
         index: b,
         row: r,
         SELF_RATING: `K${r}`,
         projectionPath: `partB.competencyItems[${b - 1}].selfRating`
-      }));
+      };
+
+      if (b === 7) {
+        compObj.TITLE = 'B31';
+        compObj.titleProjectionPath = 'partB.competencyItems[6].presentationTitle';
+        compObj.DESCRIPTION = 'B32';
+        compObj.descriptionProjectionPath = 'partB.competencyItems[6].presentationDescription';
+        compObj.titleMerge = 'B31:J31';
+        compObj.descriptionMerge = 'B32:J32';
+        compObj.ratingScaleRange = 'B33:J33';
+        compObj.paddingRow = 34;
+      } else if (b === 8) {
+        compObj.TITLE = 'B35';
+        compObj.titleProjectionPath = 'partB.competencyItems[7].presentationTitle';
+        compObj.DESCRIPTION = 'B36';
+        compObj.descriptionProjectionPath = 'partB.competencyItems[7].presentationDescription';
+        compObj.titleMerge = 'B35:J35';
+        compObj.descriptionMerge = 'B36:J36';
+        compObj.ratingScaleRange = 'B37:J37';
+        compObj.paddingRow = 38;
+      }
+
+      competencies.push(Object.freeze(compObj));
+    }
+
+    const overlayMap = {};
+    if (n >= 7) {
+      overlayMap.b7 = Object.freeze({
+        TITLE: 'B31',
+        TITLE_MERGE: 'B31:J31',
+        DESCRIPTION: 'B32',
+        DESCRIPTION_MERGE: 'B32:J32',
+        RATING_SCALE: 'B33:J33',
+        PADDING_ROW: 34
+      });
+    }
+    if (n === 8) {
+      overlayMap.b8 = Object.freeze({
+        TITLE: 'B35',
+        TITLE_MERGE: 'B35:J35',
+        DESCRIPTION: 'B36',
+        DESCRIPTION_MERGE: 'B36:J36',
+        RATING_SCALE: 'B37:J37',
+        PADDING_ROW: 38
+      });
     }
 
     return Object.freeze({
@@ -322,6 +368,7 @@ export class MboXlsxTemplateProfile {
       header,
       protectedPaddingRows: Object.freeze(protectedPaddingRows),
       competencies: Object.freeze(competencies),
+      presentationOverlay: Object.freeze(overlayMap),
       summary
     });
   }
@@ -452,6 +499,27 @@ export class MboXlsxTemplateProfile {
             throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
           }
 
+          if (rawField === 'TITLE' || rawField === 'DESCRIPTION') {
+            if (idx <= 6 || idx > competencyCount) {
+              throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+            }
+            const comp = mappings.competencies.find(c => c.index === idx);
+            if (comp) {
+              if (rawField === 'TITLE') {
+                return {
+                  address: comp.TITLE,
+                  projectionPath: comp.titleProjectionPath
+                };
+              }
+              if (rawField === 'DESCRIPTION') {
+                return {
+                  address: comp.DESCRIPTION,
+                  projectionPath: comp.descriptionProjectionPath
+                };
+              }
+            }
+          }
+
           if (rawField === 'SELF_RATING') {
             const comp = mappings.competencies.find(c => c.index === idx);
             if (comp) {
@@ -506,6 +574,10 @@ export class MboXlsxTemplateProfile {
       }
 
       if (['G2', 'J3', 'M3', 'P3', 'R3', 'S3'].includes(addr)) return true;
+
+      // Expanded presentation dynamic targets for B31, B32 (n>=7) and B35, B36 (n===8)
+      if (n >= 7 && ['B31', 'B32'].includes(addr)) return true;
+      if (n === 8 && ['B35', 'B36'].includes(addr)) return true;
 
       const isColInKtoX = ['K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'].includes(col);
 
@@ -670,8 +742,87 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
       }
 
+      if (b === 7) {
+        if (comp.TITLE !== 'B31' ||
+            comp.titleProjectionPath !== 'partB.competencyItems[6].presentationTitle' ||
+            comp.DESCRIPTION !== 'B32' ||
+            comp.descriptionProjectionPath !== 'partB.competencyItems[6].presentationDescription' ||
+            comp.titleMerge !== 'B31:J31' ||
+            comp.descriptionMerge !== 'B32:J32' ||
+            comp.ratingScaleRange !== 'B33:J33' ||
+            comp.paddingRow !== 34) {
+          throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+        }
+        if (!mapB.presentationOverlay || !mapB.presentationOverlay.b7 ||
+            mapB.presentationOverlay.b7.TITLE !== 'B31' ||
+            mapB.presentationOverlay.b7.TITLE_MERGE !== 'B31:J31' ||
+            mapB.presentationOverlay.b7.DESCRIPTION !== 'B32' ||
+            mapB.presentationOverlay.b7.DESCRIPTION_MERGE !== 'B32:J32' ||
+            mapB.presentationOverlay.b7.RATING_SCALE !== 'B33:J33' ||
+            mapB.presentationOverlay.b7.PADDING_ROW !== 34) {
+          throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+        }
+        bWriteAddrs.push(comp.TITLE, comp.DESCRIPTION);
+      }
+
+      if (b === 8) {
+        if (comp.TITLE !== 'B35' ||
+            comp.titleProjectionPath !== 'partB.competencyItems[7].presentationTitle' ||
+            comp.DESCRIPTION !== 'B36' ||
+            comp.descriptionProjectionPath !== 'partB.competencyItems[7].presentationDescription' ||
+            comp.titleMerge !== 'B35:J35' ||
+            comp.descriptionMerge !== 'B36:J36' ||
+            comp.ratingScaleRange !== 'B37:J37' ||
+            comp.paddingRow !== 38) {
+          throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+        }
+        if (!mapB.presentationOverlay || !mapB.presentationOverlay.b8 ||
+            mapB.presentationOverlay.b8.TITLE !== 'B35' ||
+            mapB.presentationOverlay.b8.TITLE_MERGE !== 'B35:J35' ||
+            mapB.presentationOverlay.b8.DESCRIPTION !== 'B36' ||
+            mapB.presentationOverlay.b8.DESCRIPTION_MERGE !== 'B36:J36' ||
+            mapB.presentationOverlay.b8.RATING_SCALE !== 'B37:J37' ||
+            mapB.presentationOverlay.b8.PADDING_ROW !== 38) {
+          throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+        }
+        bWriteAddrs.push(comp.TITLE, comp.DESCRIPTION);
+      }
+
       bWriteAddrs.push(comp.SELF_RATING);
     }
+
+    // Verify b1..6 TITLE and DESCRIPTION reject
+    for (let b = 1; b <= 6; b++) {
+      try {
+        profile.resolveSemanticRole(`COMPETENCY_${b}_TITLE`, { partKey: 'B', competencyCount: n });
+        throw new Error('FAIL');
+      } catch (err) {
+        if (err.message === 'FAIL') throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+      try {
+        profile.resolveSemanticRole(`COMPETENCY_${b}_DESCRIPTION`, { partKey: 'B', competencyCount: n });
+        throw new Error('FAIL');
+      } catch (err) {
+        if (err.message === 'FAIL') throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+    }
+
+    // If n === 7, verify b8 TITLE and DESCRIPTION reject
+    if (n === 7) {
+      try {
+        profile.resolveSemanticRole('COMPETENCY_8_TITLE', { partKey: 'B', competencyCount: 7 });
+        throw new Error('FAIL');
+      } catch (err) {
+        if (err.message === 'FAIL') throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+      try {
+        profile.resolveSemanticRole('COMPETENCY_8_DESCRIPTION', { partKey: 'B', competencyCount: 7 });
+        throw new Error('FAIL');
+      } catch (err) {
+        if (err.message === 'FAIL') throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+    }
+
     bWriteAddrs.push(mapB.summary.PART_B_RAW_SCORE, mapB.summary.PART_B_WEIGHTED_SCORE);
 
     if (new Set(bWriteAddrs).size !== bWriteAddrs.length) {
