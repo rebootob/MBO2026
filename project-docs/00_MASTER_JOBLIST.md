@@ -20,28 +20,22 @@ Current D2 gate:
 D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
 R7-R2_IMPLEMENTATION = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
 R7-R2_SOURCE = PASS / FROZEN
-R7-R2_PROOF = CORRECTIVE REQUIRED
-R7-R2_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R3
-R7-R3 = PROPOSED / NOT AUTHORIZED / TEST-ONLY
-ACTIVE_D2_WORK_PACKAGE = NONE
+R7-R2_PROOF = CORRECTIVE REQUIRED / DIRECT NEGATIVE ISOLATION ONLY
+R7-R2_TOKEN = CONSUMED / DO NOT REUSE
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
+R7-R3 = AUTHORIZED / TEST-ONLY / ONE FILE
+R7-R3_AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
 ```
 
-Accepted/frozen privacy authority:
-- N6/N7/N8 dynamic counts 432/474/516;
-- exact clone mapping with row30/34/38 protected non-dynamic;
-- strict source-backed style/merge/normalizedType/nonblank validation;
-- static valHash enforcement where source authority has valHash;
-- expanded package/sharedStrings token purge;
-- caller-buffer immutability;
-- formula inventory zero.
+Accepted/frozen privacy authority: N6/N7/N8 counts 432/474/516; row30/34/38 protected non-dynamic; strict style/merge/type/nonblank source backing; source-applicable static valHash enforcement; expanded package token purge; caller-buffer immutability; formula inventory zero.
 
-R7-R3 closes only the remaining proof isolation gap in `tests/mbo-xlsx-ooxml-feasibility.test.js`: direct row30/clone static valHash mismatch and direct row30/clone static normalizedType mismatch must each independently fail closed. No source modification.
+R7-R3 may modify only `tests/mbo-xlsx-ooxml-feasibility.test.js` to isolate direct row30/clone normalizedType, nonblank, and source-applicable valHash blocker proof. No source modification.
 
 Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel -> PDF -> export security/privacy regression -> final independent D2 review.
 
 ```text
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / ONE-SHOT / STOP AFTER PUSH+REPORT
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
