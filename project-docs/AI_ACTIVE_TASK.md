@@ -1,178 +1,178 @@
-# AI ACTIVE TASK — D2-WP003-R4 SOURCE+TEST AUTHORIZED
+# AI ACTIVE TASK — D2-WP003-R4-R1 TEST-ONLY PROPOSED
 
-Mode: **CONTROL PLANE / LOW-CREDIT / ONE-SHOT FEASIBILITY SOURCE+TEST / EXACT TWO FILES / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / R4 SOURCE FROZEN / TEST-ONLY CORRECTIVE PROPOSED / NO ACTIVE EXECUTOR / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
 Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
 
 ```text
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+TASK_STATE = WAIT_OWNER_WORK_PACKAGE_AUTHORIZATION
 D1_OVERALL = PASS / CLOSED
 D2_STATUS = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
+D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
 D2-WP003-R3-R36 = PASS / CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 15
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 5
+R4_SCOPE_REVIEW = PASS
+R4_SOURCE_REVIEW = PASS / FROZEN
+R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
+R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_USED = 16
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUNDS_REMAINING = 4
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP003-R4
-ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
+PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / EXISTING FEASIBILITY TEST FILE ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN FOR CORRECTIVE
 PRIVACY_PURGE_REQUIRED = NO
 D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE-SHOT BOUNDED EXECUTION
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 ```
 
-## 1. Owner authorization
-
-Owner explicitly authorized:
+## 1. R4 authorization consumed — corrective
 
 ```text
-D2-WP003-R4 SOURCE+TEST ตามขอบเขตที่เสนอ
+AUTHORIZATION = D2-WP003-R4-SOURCE-TEST-20260902-01
+AUTHORIZATION_COMMIT = 8df05db6535a8ce871e987853e5a356ad67f4232
+IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
+AUTHORIZATION_STATUS = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Authorization token:
+Independent review:
+- exactly one implementation commit after authorization;
+- exactly two changed files, both authorized;
+- no production renderer, Part B, preservation/reference-image, privacy, dependency, Kintone, deploy or D3 scope change;
+- `getStructuralPartABuffers()` now exposes real-path buffers for objective counts 4,5,6,7,8,9,10 while retaining `bufA4`, `bufA5`, `bufA10` compatibility;
+- exact Part A SHA gate is present;
+- full computed merge inventory deep equality is present;
+- exact dimensions A1:BL52 through A1:BL58 are asserted;
+- exact print areas through BJ52..BJ58 are asserted;
+- normalized inserted/downstream cell-ref/style/row-height mappings are asserted;
+- sentinel relocation/uniqueness is asserted;
+- relationship/media equality and formula-empty proof are asserted;
+- GitHub exposes no combined CI status and no workflow runs for this commit.
 
-```text
-D2-WP003-R4-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / EXACT TWO FILES / DO NOT WIDEN / DO NOT REUSE
-```
+## 2. Why R4 is not closed
 
-This authorization permits only the bounded feasibility SOURCE+TEST work below. It does not authorize production renderer changes, Part B structural work, preservation/reference-image changes, evidence publication, Kintone writes, deploys, Live UAT, PDF work, D3, or any next work package.
+The authorization required proof that no downstream row is lost, duplicated, or left at its old row, and required full non-target workbook/sheet invariant parity.
 
-## 2. Frozen Part A authority
+Current test does not assert:
+1. exact `inspN.rowRefs` sequence against a computed expected row sequence;
+2. uniqueness of `inspN.rowRefs` (`Set.size === rowRefs.length`), so duplicate `<row r="...">` nodes are not explicitly rejected;
+3. exact `fpN.sheetStates === baselineFp.sheetStates`;
+4. exact main-sheet `showGridLines` equality against baseline;
+5. exact main-sheet `fitToPage` equality against baseline;
+6. exact main-sheet `pageMargins` equality against baseline;
+7. remaining non-target per-sheet setup invariants available from the existing fingerprint helper, including `horizontalCentered`, `verticalCentered`, `sheetProtection`, and `sheetRels` where applicable.
 
-Exact owner-template SHA:
+`getWorkbookFingerprint()` already exposes the required fields and `inspectRawWorksheetOOXML()` already exposes `rowRefs`. Therefore no source change is required.
 
-```text
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-```
+## 3. Accepted R4 source — freeze / retain
 
-Frozen structural facts:
-- main sheet = `MBO Staff & Chief`;
-- used range = A1:BL52;
-- print area = A1:BJ52;
-- 193 base merge refs;
-- objective rows = 25:28 for four base objectives;
-- row 28 is the current source clone row for additional objective rows;
-- each additional objective row currently implies 14 cloned merge refs;
-- zero legacy formulas;
-- A3 landscape;
-- scale 58%;
-- fit-to-page retained;
-- gridlines hidden.
+R4 source implementation commit:
 
-Preservation and reference-image gates are already PASS/CLOSED and must not be reopened without a proven regression.
+`bf9ef7e82c78efc2e725614046745a3ccf394054`
 
-## 3. Exact write scope — TWO FILES ONLY
+Retain without modification unless a new independently proven source defect appears:
+- objective count loop 4–10;
+- same bounded raw insertion algorithm;
+- backwards-compatible `bufA4`..`bufA10` outputs and `buffers` map;
+- sentinel setup;
+- row/cell shifting and row-28 cloning;
+- merge shifting/cloning/count update;
+- exact dimension synthesis for 52..58;
+- exact print-area synthesis for 52..58.
 
-Antigravity may modify exactly:
+R4-R1 does NOT authorize source changes.
 
-1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+## 4. Proposed R4-R1 exact write scope — NOT AUTHORIZED
 
-Source permission is limited to the existing Part A feasibility structural helper area required to expose/prove objective counts 4–10.
+If and only if Owner explicitly authorizes R4-R1, Antigravity may modify ONLY:
 
-Preferred bounded source direction:
-- preserve existing 4/5/10 behavior;
-- generalize the existing Part A feasibility helper to produce all seven objective counts 4,5,6,7,8,9,10 from the same insertion algorithm;
-- maintain backward compatibility for existing `bufA4`, `bufA5`, `bufA10` callers if practical;
-- do not duplicate production insertion logic inside tests;
-- do not redesign the raw insertion algorithm merely because additional proof is being added;
-- if exact matrix proof exposes an algorithm defect beyond bounded count generalization, STOP and deliver a blocker commit rather than widening scope.
+`tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-## 4. Mandatory structural matrix
+READ-ONLY:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`;
+- exact R4 authorization/implementation diff;
+- package metadata;
+- exact ignored Part A owner template after SHA verification.
 
-Exercise the REAL feasibility source path for every objective count:
+## 5. Mandatory TEST-ONLY corrective if authorized
 
-```text
-4, 5, 6, 7, 8, 9, 10
-```
+Preserve every accepted R4 matrix assertion. Add only the missing proof.
 
-For objective count `N`:
+For every objective count 4–10:
 
-```text
-extraRows = N - 4
-expectedLastRow = 52 + extraRows = 48 + N
-expectedMergeCount = 193 + (14 * extraRows)
-expectedDimension = A1:BL{expectedLastRow}
-expectedPrintArea = 'MBO Staff & Chief'!$A$1:$BJ${expectedLastRow}
-```
+### A. Exact row-node sequence and uniqueness
+Compute expected row refs from the 4-objective baseline:
+- baseline rows <=28 remain unchanged;
+- inserted refs are exactly 29 through `28 + extraRows`;
+- every baseline row ref >=29 shifts to `r + extraRows`.
 
-### A. Exact source identity
-- verify exact Part A SHA before template-dependent matrix proof;
-- do not reconstruct, substitute, publish, or commit the owner template binary.
+Then require:
+- `assert.deepEqual(inspN.rowRefs, expectedRowRefs)` after deterministic numeric ordering compatible with the inspector;
+- `new Set(inspN.rowRefs).size === inspN.rowRefs.length`;
+- no unexpected row refs outside the exact expected sequence.
 
-### B. Full count matrix
-- exercise all seven counts 4–10 from the actual source helper;
-- no test-side duplicate insertion implementation may substitute for the real source path.
+This must close no-loss/no-duplicate/no-old-row relocation proof rather than relying only on cell/style checks.
 
-### C. Exact row/cell transformation
-Using the 4-objective structural buffer as transformation baseline:
-- rows 1:28 remain structurally unchanged;
-- each inserted row 29 through `28 + extraRows` is an exact structural clone of baseline row 28 after deterministic row/cell reference substitution only;
-- cell-address pattern and style-id pattern of every inserted row equals row 28 after row-number normalization;
-- row-height/customHeight behavior of every inserted row equals row 28;
-- every original downstream row `r >= 29` appears exactly once at `r + extraRows` with equivalent normalized cell refs/style pattern/row-height;
-- no downstream row or cell is lost, duplicated, or left at its old row.
+### B. Workbook sheet invariants
+Require exact equality to the 4-objective baseline:
+- `sheetNames`;
+- `sheetStates`.
 
-### D. Downstream sentinel relocation
-- retain a privacy-safe sentinel on baseline downstream row 29;
-- for every count prove sentinel moves to exactly `29 + extraRows`;
-- prove sentinel is absent from old row 29 when `extraRows > 0`;
-- prove sentinel appears exactly once at the expected shifted row.
+No extra worksheet may appear.
 
-### E. Exact merge transformation — NOT COUNT ONLY
-- start from the complete sorted 4-objective merge inventory;
-- retain every unaffected pre-insertion merge exactly;
-- shift every applicable downstream merge by exactly `extraRows`;
-- clone the complete row-28 merge pattern into each inserted objective row;
-- require exact deep equality between computed expected merge inventory and actual merge inventory;
-- declared `<mergeCells count>` equals actual merge inventory length;
-- actual merge inventory length equals `193 + 14 * extraRows` for every count.
+### C. Main-sheet non-target invariants
+Using `fpN.sheets['MBO Staff & Chief']` versus the baseline main sheet, require exact equality for all non-intentionally-changing fields available from the existing fingerprint helper, including at minimum:
+- `colsHash`;
+- `showGridLines`;
+- `pageMargins`;
+- `paperSize`;
+- `orientation`;
+- `scale`;
+- `fitToPage`;
+- `horizontalCentered`;
+- `verticalCentered`;
+- `sheetProtection`;
+- `sheetRels`.
 
-### F. Exact dimension and print area
-For every count:
-- exact worksheet dimension = `A1:BL{expectedLastRow}`;
-- exact print area = `'MBO Staff & Chief'!$A$1:$BJ${expectedLastRow}`;
-- includes/endsWith-only assertions are insufficient.
+Dimension, merge inventory/count and print area remain intentionally count-dependent and must retain the existing exact R4 assertions rather than be compared unchanged.
 
-### G. Non-target structural invariants
-Across the matrix, compared to the 4-objective structural baseline where applicable:
-- sheet names/order/state unchanged;
-- column structure/hash unchanged;
-- paper size remains 8 / A3;
-- orientation remains landscape;
-- scale remains 58;
-- fit-to-page, gridline, page-margin and page-setup properties unchanged except intentional dimension/print-area growth;
-- relationship tuples unchanged;
-- media inventory unchanged;
-- no extra worksheet introduced.
+### D. Retain existing R4 proof
+Do not remove or weaken:
+- exact owner SHA gate;
+- full 4–10 real-path matrix;
+- full merge-set deep equality;
+- inserted/downstream cell-ref/style/row-height proof;
+- sentinel exact relocation/uniqueness;
+- exact dimension and print-area assertions;
+- relationship/media equality;
+- formula inventory exactly empty.
 
-### H. Formula authority
-- formula inventory remains exactly empty for every objective count;
-- R4 must not introduce formula-generation behavior.
+### E. Safety
+- no source modification;
+- no test-side insertion implementation duplication;
+- no employee-bearing values logged/committed;
+- no generated workbook/image/PDF/evidence binary committed;
+- if owner template is unavailable, skip only template-dependent proof explicitly; do not invent evidence.
 
-### I. Privacy/artifact safety
-- do not log employee-bearing template contents;
-- do not commit generated workbook/image/PDF/evidence binaries;
-- use only refs, counts, styles, hashes and privacy-safe sentinel values in proof.
-
-## 5. Required execution sequence
+## 6. Required execution sequence if authorized
 
 Run exactly:
 
 ```bash
-node --check scripts/export/mbo-xlsx-ooxml-feasibility.js
 node --check tests/mbo-xlsx-ooxml-feasibility.test.js
 node --test tests/mbo-xlsx-ooxml-feasibility.test.js
 npm audit --omit=dev
@@ -180,29 +180,19 @@ git status --porcelain
 ```
 
 Delivery rules:
-- exactly ONE bounded implementation or blocker commit;
+- exactly ONE bounded TEST-ONLY implementation or blocker commit;
 - push to `ai/antigravity-wp002c`;
-- STOP immediately after push/report;
-- executor must not self-declare PASS/CLOSED;
-- if owner template is unavailable or matrix reveals an out-of-scope algorithm defect, deliver a blocker rather than inventing evidence or widening source changes.
+- STOP immediately;
+- do not self-declare PASS/CLOSED;
+- do not start Part B or any next work package.
 
-Report only:
-- implementation/blocker commit SHA;
-- exact changed files;
-- both `node --check` results;
-- `node --test` result;
-- `npm audit --omit=dev` result;
-- `git status --porcelain`;
-- blocker if any.
+## 7. Frozen / out of scope
 
-## 6. Frozen / out of scope
-
-Do NOT modify or reopen:
-- D2 preservation source or Option B policy;
-- `preserveExactWorkbookDimensions()` / `preserveWorksheetXmlDimensions()` except read-only inspection;
-- `getReferenceImageBuffers()` or accepted reference-image proof;
-- Part B structural insertion logic;
-- privacy/sanitization logic;
+Do NOT modify:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js` under R4-R1;
+- preservation / Option B / reference-image source or proof;
+- Part B structural insertion;
+- privacy/sanitization source;
 - dependencies;
 - production XLSX renderer/sanitizer;
 - combined Excel;
@@ -211,20 +201,21 @@ Do NOT modify or reopen:
 - Kintone/App53/App794/App795/App801;
 - ACL/process/deploy/Live UAT/rollback;
 - D3;
-- any next work package after R4.
+- any next work package after R4-R1.
 
-Claude second review is not authorized or needed for this bounded R4 execution unless ChatGPT later finds material ambiguity during independent review.
+Claude is not authorized or needed for this bounded proof corrective.
 
-## 7. Authorization ledger
+## 8. Authorization ledger
 
 ```text
 D2-WP003-R3-R36-TEST-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP003-R4-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / EXACT TWO FILES
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 15 OF 20
+D2-WP003-R4-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R4-R1 = PROPOSED / NOT AUTHORIZED
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 16 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_APP794_DEPLOY_AUTH = NONE
@@ -233,15 +224,14 @@ ROLLBACK = NO
 D3_EXECUTION = HOLD
 ```
 
-## 8. Exact next action
+## 9. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R4-SOURCE-TEST-20260902-01
-EXPECTED_CHANGED_FILES = EXACTLY scripts/export/mbo-xlsx-ooxml-feasibility.js + tests/mbo-xlsx-ooxml-feasibility.test.js
-EXPECTED_COMMITS = EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT
-ANTIGRAVITY = STOP IMMEDIATELY AFTER PUSH/REPORT
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R4-R1 TEST-ONLY AS PROPOSED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-CHATGPT = INDEPENDENT REVIEW AFTER IMPLEMENTATION ARRIVES
+CHATGPT = INDEPENDENT REVIEW AFTER ANY AUTHORIZED IMPLEMENTATION ARRIVES
 D3 = HOLD
 ```
