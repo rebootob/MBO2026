@@ -14,7 +14,7 @@ Open in this order:
 6. `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness matters;
 7. `project-docs/EXCEL_EXPORT.md` for D2;
 8. `project-docs/CONFIRMED_BASELINE/README.md`;
-9. only directly relevant Baseline/source/evidence.
+9. only directly relevant source/tests/Baseline.
 
 ## 2. Current checkpoint
 
@@ -23,13 +23,11 @@ D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
-R3-R36_SCOPE_REVIEW = PASS
-R3-R36_PROOF_CODE_REVIEW = PASS
-R3-R36_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE
-REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
+D2-WP003-R3-R36 = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
 ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4
+PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
@@ -42,13 +40,12 @@ D3 = HOLD
 
 ## 3. Current D2 routing
 
-Reference-image durable closure is in `CONFIRMED_BASELINE/README.md`.
-
-The next D2 gate is **Part A objective insertion structural matrix**, but it is NOT STARTED and NOT AUTHORIZED. For continuation read:
+For Part A structural-matrix continuation read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. the reference-image Baseline only if regression/reopen is suspected.
+5. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — only `getStructuralPartABuffers()` area unless implementation is authorized;
+6. `tests/mbo-xlsx-ooxml-feasibility.test.js` — existing Part A structural feasibility test.
 
-Do not reopen preservation/reference-image gates without proven regression.
+Do not reopen preservation/reference-image gates without proven regression. R4 is proposed only and is not authorized.
