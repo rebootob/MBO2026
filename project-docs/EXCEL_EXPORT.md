@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE CORRECTIVE REQUIRED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE STRICT CORRECTIVE AUTHORIZED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -31,7 +31,6 @@ CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ## R1-R3 independent review
 ```text
 AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-AUTHORIZATION_COMMIT = 228a38b909fd7185d9ba94cf4d53288736b4172c
 IMPLEMENTATION_COMMIT = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
 SCOPE = PASS / EXACT TWO AUTHORIZED FILES
 OVERALL = CORRECTIVE REQUIRED
@@ -39,27 +38,30 @@ TOKEN = CONSUMED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Proven defects:
-- non-canonical `OBJECTIVE_i_COMMENT` alias becomes writable and returns null projection path;
+Proven narrow defects:
+- non-canonical `OBJECTIVE_i_COMMENT` alias becomes writable and can return null projection path;
 - non-canonical `COMPETENCY_b_RATING` alias becomes writable;
-- validator does not validate the complete actual safe mapping/projection set, especially null objective paths and Part B header/competency mapping/projection/duplicate integrity;
-- tests omit required negative proof for these alias/null/malformed integrity conditions.
+- validator does not validate the complete actual safe mapping/projection set;
+- required negative mutation proof is incomplete.
 
-## Proposed next — NOT AUTHORIZED
+## Active D2-WP004-R1-R3-R1
 ```text
-D2-WP004-R1-R3-R1 = TEMPLATE PROFILE STRICT ALLOWLIST + INTEGRITY CORRECTIVE
-WRITABLE_FILES_IF_AUTHORIZED =
+AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+WRITABLE_FILES_ONLY =
   src/profiles/mbo-xlsx-template-profile.js
   tests/mbo-xlsx-template-profile.test.js
-SOURCE_TEST_ONLY = YES
+SOURCE_CHANGE = AUTHORIZED ONLY FOR PROFILE FILE
+TEST_CHANGE = AUTHORIZED ONLY FOR PROFILE TEST FILE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
-No semantic Baseline expansion is proposed. R1-R3-R1 must only make the profile enforce the already-closed Baseline exactly.
+No semantic Baseline expansion is authorized. Correct only strict canonical allowlist enforcement, successful-resolution non-null path integrity, actual Part A/Part B safe mapping validation, and focused negative tests. No broad scan, workbook inspection, Renderer, Kintone write, deploy, Live UAT, parity/security regression or D3.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
