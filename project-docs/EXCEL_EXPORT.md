@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / PRODUCTION XLSX RENDERER NEXT PROPOSED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / TEMPLATE PROFILE FOUNDATION NEXT PROPOSED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -17,22 +17,14 @@ EXCEL_SCORE_FORMULAS = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 ```
 
-Privacy closure:
-```text
-R7-R2_SOURCE = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a / PASS FROZEN
-R7-R3_TEST_ONLY = 69891d82996f83a0442ee6dc268dd20b7ef8ee99 / PASS CLOSED
-COUNTS = N6 432 / N7 474 / N8 516
-ROW30_AND_CLONES = PROTECTED NON-DYNAMIC / FROZEN
-STRICT_SOURCE_EVIDENCE = STYLE + MERGE + TYPE + NONBLANK + STATIC HASH WHEN APPLICABLE
-EXPANDED_PACKAGE_TOKEN_PURGE = PASS / FROZEN
-CALLER_BUFFER_IMMUTABILITY = PASS / FROZEN
-ZERO_FORMULA = PASS / FROZEN
-```
-
-Durable privacy authority: `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`.
+Durable authorities:
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
+- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
 ## Production Renderer Template Mapping Architecture
-
 Owner-confirmed mandatory rule:
 ```text
 NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = YES
@@ -49,16 +41,37 @@ Kintone/App794 truth
   -> owner template
 ```
 
-Important cell/range addresses must be centralized in the Template Profile/Mapping layer. Future template versions should normally be handled by profile/mapping change + focused structural/privacy regression, not by scattering address edits across business logic.
+## Proposed foundation — D2-WP004-R1
+```text
+WORK_PACKAGE = D2-WP004-R1
+NAME = MBO2026 PRODUCTION XLSX TEMPLATE PROFILE / MAPPING FOUNDATION
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / PURE MAPPING / NO WORKBOOK MUTATION
+EXPECTED_WRITABLE_FILES =
+  src/profiles/mbo-xlsx-template-profile.js
+  tests/mbo-xlsx-template-profile.test.js
+```
 
-Durable authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
+R1 must define one immutable/fail-closed template profile for the accepted MBO2026 template family and centralize semantic workbook role mapping needed by later rendering. It must bind exact accepted Part A/Part B template SHA identity, support Part A objective counts 4..10 and Part B competency counts 6..8, and fail closed for unknown template/profile/count/semantic role.
+
+R1 must NOT:
+- render or write workbook values;
+- create generated XLSX/PDF/evidence binaries;
+- modify `src/services/mbo-export-service.js`;
+- copy scoring/business logic into the profile;
+- change feasibility/structural/privacy source;
+- modify dependencies/package-lock;
+- touch Kintone/deploy/Live UAT/D3.
+
+After R1 passes, the Production XLSX Renderer/Sanitizer can consume the profile rather than scattering addresses.
 
 ## Remaining D2
-1. Production XLSX Renderer/Sanitizer — PROPOSED / NOT AUTHORIZED
-2. Combined Excel parity
-3. PDF parity
-4. Export authorization/security/privacy regression
-5. Final independent D2 closure
+1. D2-WP004-R1 Template Profile / Mapping Foundation — PROPOSED / NOT AUTHORIZED
+2. Production XLSX Renderer/Sanitizer implementation
+3. Combined Excel parity
+4. PDF parity
+5. Export authorization/security/privacy regression
+6. Final independent D2 closure
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
