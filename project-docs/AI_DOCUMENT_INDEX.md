@@ -26,16 +26,15 @@ D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS
 REFERENCE_IMAGE_PROOF_REVIEW = FAIL / FULL TARGET-NORMALIZED INVENTORY EQUALITY ABSENT
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 9 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R31
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R31-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R31 / ONE BOUNDED COMMIT
+CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
@@ -46,10 +45,11 @@ Read:
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. current `getReferenceImageBuffers()` and `FEASIBILITY_REFERENCE_IMAGE_REMOVAL` only as needed;
-6. historical R3-R5 through R3-R9 review truth only when checking the recovered inventory-equality contract.
+5. `tests/mbo-xlsx-ooxml-feasibility.test.js` as the only authorized write target;
+6. current `scripts/export/mbo-xlsx-ooxml-feasibility.js` READ-ONLY as needed;
+7. historical R3-R5 through R3-R9 review truth only when checking the recovered inventory-equality contract.
 
-Current source is accepted for the reference-image corrective. Missing closure proof is target-normalized exact equality for complete drawing-anchor, drawing-relationship and media path/hash inventories. R3-R31 is proposed TEST-ONLY and is NOT authorized.
+Current source is accepted and frozen for R3-R31. Missing closure proof is target-normalized exact equality for complete drawing-anchor, drawing-relationship and media path/hash inventories. Owner explicitly authorized R3-R31 TEST-ONLY on 2026-09-02.
 
 ## 4. Task -> document routing
 
