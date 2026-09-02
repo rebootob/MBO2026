@@ -13,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — Template Profile strict allowlist/integrity corrective active |
+| D2 | IN PROGRESS — Template Profile canonical integrity corrective proposed |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -29,25 +29,24 @@ UNRESOLVED = 22
 NO_SECURED_PROJECTION_SOURCE = 5
 CHIEF_FROZEN_AUTHORITY = R:X
 
-R1_R3_IMPLEMENTATION = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
-R1_R3_SCOPE = PASS
-R1_R3_STATUS = CORRECTIVE REQUIRED
-R1_R3_TOKEN = CONSUMED / DO NOT REUSE
-R1_R3_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_R3_R1_IMPLEMENTATION = 6386e506b85ded87a57967705066e38d56212f73
+R1_R3_R1_SCOPE = PASS
+R1_R3_R1_ALIAS_FIXES = PASS
+R1_R3_R1_STATUS = CORRECTIVE REQUIRED
+R1_R3_R1_TOKEN = CONSUMED / DO NOT REUSE
+R1_R3_R1_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
-ACTIVE_AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT / EXACT TWO EXISTING FILES
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
+PROPOSED_NEXT = D2-WP004-R1-R3-R2 SOURCE+TEST / NOT AUTHORIZED / LOW-CREDIT
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R3-R1 may modify only the existing profile/test pair. It must remove the two unauthorized aliases, enforce strict canonical role resolution, complete runtime mapping-integrity validation and focused negative mutation tests. No semantic expansion, broad scan, workbook inspection, renderer or wider work is authorized.
+R1-R3-R2, if authorized, may modify only the existing Template Profile source/test pair. It must complete exact canonical Part B competency integrity checks/tests: expected index, expected row, exact K-row self target, exact selfRating secured path, plus direct wrong-index/wrong-valid-address/wrong-nonempty-path negatives. No semantic re-research or renderer work.
