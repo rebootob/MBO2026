@@ -38,20 +38,19 @@ R1_R1_TOKEN = CONSUMED / DO NOT REUSE
 INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Remaining semantic defects:
-1. Department/Section Hoshin both resolve to the same workbook address while current accepted evidence does not prove that shared ownership.
-2. Multiple claimed writable roles have null/no secured projection path, including Part B header-value roles, Part B summary/comment/signature roles, `CHIEF_NAME`, and legacy Part A evaluator aliases.
-3. `validateMappingIntegrity()` does not require a non-null secured projection path for every claimed writable semantic role, so the default profile can validate despite unresolved semantics.
-4. `MboExportService` does not currently project Part B overall-comment/signature fields; profile must not invent them as writable data sources.
-
-## Proposed next — NOT AUTHORIZED
+## Active evidence gate — D2-WP004-R1-R2
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R1-R2
+WORK_PACKAGE = D2-WP004-R1-R2
 NAME = XLSX TEMPLATE SEMANTIC MAPPING EVIDENCE
-MODE = EVIDENCE-ONLY / OWNER-TEMPLATE READ-ONLY / NO SOURCE CHANGE
+STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
+AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
+MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / OWNER-TEMPLATE READ-ONLY
 EXPECTED_EVIDENCE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+SOURCE_CHANGE = FORBIDDEN
+TEST_CHANGE = FORBIDDEN
+TEMPLATE_BINARY_CHANGE = FORBIDDEN
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -59,4 +58,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2 should inspect only exact SHA-approved owner templates and existing read-only projection/evidence, record static label/merge/address semantics without personal data, and explicitly mark unresolved/no-secured-projection roles. Do not change profile source until that evidence is independently reviewed.
+Evidence must use exact SHA-approved owner templates and current read-only `MboExportService`, contain no personal employee values, distinguish workbook semantic evidence from secured projection availability and frozen structural/privacy authority, and explicitly mark unsupported mappings `UNRESOLVED` or `NO_SECURED_PROJECTION_SOURCE` rather than guessing.
