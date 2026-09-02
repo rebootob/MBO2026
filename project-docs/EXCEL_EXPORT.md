@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R32 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -41,7 +41,7 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Reference-image status — R3-R31 reviewed
+## 4. Reference-image status
 
 ```text
 R3-R31_AUTHORIZATION_COMMIT = 0d208db2a9c874eec5942fd8d76d284453070d16
@@ -52,23 +52,21 @@ R3-R31_PROOF_REVIEW = FAIL / FAIL-CLOSED INVENTORY COVERAGE INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R31 added intended target-normalized BEFORE/AFTER equality for drawing anchors, drawing relationships and media SHA-256 inventory. However the test extractors still permit silent omission of relevant anchor/relationship markup and normalize `TargetMode`, so exact inventory proof is not yet fail-closed.
+R3-R31 added target-normalized BEFORE/AFTER equality for drawing anchors, drawing relationships and media SHA-256 inventory. Remaining issues are only TEST-ONLY proof extraction gaps; no production source change is required.
 
-No production source change is required.
-
-## 5. Current next gate
+## 5. Current gate — R3-R32 AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R32
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R32
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R32-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R32 / ONE-SHOT
 CLAUDE = STOP
 ```
 
-R3-R32 should only make inventory extraction coverage-complete/fail-closed, retain raw tuple identity, bind normalization to the exact target tuple, and add adversarial proof that skipped variants cannot evade inventory equality.
+R3-R32 must only make inventory extraction coverage-complete/fail-closed, retain exact raw tuple identity, bind normalization to the exact target tuple, and add always-runnable adversarial proof that XML variants cannot evade inventory equality.
 
 ## 6. Remaining D2 path
 
@@ -81,3 +79,5 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
+
+Do not auto-start any next step.
