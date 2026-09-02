@@ -48,20 +48,20 @@ Accepted/frozen evidence from R1-R2:
 - Part B header mapping: fiscal year `G2:H3`, department `J3:L3`, section `M3:O3`, position `P3:Q3`, employee code `R3`, employee name `S3:W3`, consuming nested `partA.header.*` projection paths.
 - Existing frozen Part B structural/privacy topology remains authoritative.
 
-Evidence corrective is still required because the submitted evidence contains internal semantic conflicts/unsupported claims, including duplicate Part A header target ownership, incorrect status taxonomy for fields that do have secured projection paths but no proven workbook target, incomplete/unsupported objective/evaluator mappings, Part B chief-rating secured-path ambiguity, and incorrect status counts.
-
-## Proposed corrective — NOT AUTHORIZED
+## Active corrective — D2-WP004-R1-R2-R1
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R1-R2-R1
+WORK_PACKAGE = D2-WP004-R1-R2-R1
 NAME = XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
+STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
+AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
 MODE = EVIDENCE-ONLY / SAME ONE MARKDOWN FILE / OWNER-TEMPLATE READ-ONLY
-STATE = PROPOSED / NOT AUTHORIZED
-EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
 PROFILE_CHANGE = FORBIDDEN
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+TEMPLATE_BINARY_CHANGE = FORBIDDEN
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -69,4 +69,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2-R1 must correct evidence only; no production mapping may be promoted until every `PROVEN` claim has exclusive workbook ownership plus a compatible secured projection path.
+Corrective focus: exclusive Part A header ownership; source-selection ambiguity for employeeName/employeeNameTH; correct projection-vs-workbook-missing status taxonomy; complete objective/evaluator/summary semantic inventory without inference; Part B K:Q self and R:X chief reconciliation with exact secured field paths only; mechanically correct status counts; no duplicate exclusive `SAFE_TO_MAP` target.
