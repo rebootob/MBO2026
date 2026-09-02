@@ -823,14 +823,125 @@ test('FEASIBILITY_REFERENCE_IMAGE_REMOVAL: identifies drawings and proves refere
     return;
   }
 
-  const { outBufA, drawingXmlPath, drawingRelsPath } = await getReferenceImageBuffers();
+  // 1. Verify exact Part A owner-template identity before template-dependent proof
+  assert.equal(found.shaA, EXPECTED_PART_A_SHA, 'Part A SHA-256 must match baseline');
+
+  const { origBufA, outBufA, drawingXmlPath, drawingRelsPath } = await getReferenceImageBuffers();
+
+  const wbOrigA = await XlsxPopulate.fromDataAsync(origBufA);
   const wbOutA = await XlsxPopulate.fromDataAsync(outBufA);
+
+  // Helper functions for deterministic inventory extraction
+  async function extractDrawingAnchorInventory(wb) {
+    const anchors = [];
+    for (const fileName in wb._zip.files) {
+      if (fileName.startsWith('xl/drawings/') && fileName.endsWith('.xml') && !fileName.includes('_rels')) {
+        const xml = await wb._zip.files[fileName].async('string');
+        const matches = [...xml.matchAll(/<(?:xdr:twoCellAnchor|xdr:oneCellAnchor)[\s\S]*?<\/(?:xdr:twoCellAnchor|xdr:oneCellAnchor)>/g)];
+        for (const m of matches) {
+          const anchorXml = m[0];
+          const rIdMatch = anchorXml.match(/\br:embed="([^"]+)"/);
+          const blipRId = rIdMatch ? rIdMatch[1] : null;
+          anchors.push({
+            part: fileName,
+            blipRId,
+            xml: anchorXml
+          });
+        }
+      }
+    }
+    anchors.sort((a, b) => (a.part + ':' + (a.blipRId || '') + ':' + a.xml).localeCompare(b.part + ':' + (b.blipRId || '') + ':' + b.xml));
+    return anchors;
+  }
+
+  async function extractDrawingRelsInventory(wb) {
+    const rels = [];
+    for (const fileName in wb._zip.files) {
+      if (fileName.startsWith('xl/drawings/_rels/') && fileName.endsWith('.rels')) {
+        const xml = await wb._zip.files[fileName].async('string');
+        const matches = [...xml.matchAll(/<Relationship\s+([^>]*)\/?>/g)];
+        for (const m of matches) {
+          const tag = m[0];
+          const idMatch = tag.match(/\bId="([^"]+)"/);
+          const typeMatch = tag.match(/\bType="([^"]+)"/);
+          const targetMatch = tag.match(/\bTarget="([^"]+)"/);
+          const modeMatch = tag.match(/\bTargetMode="([^"]+)"/);
+
+          rels.push({
+            part: fileName,
+            Id: idMatch ? idMatch[1] : null,
+            Type: typeMatch ? typeMatch[1] : null,
+            Target: targetMatch ? targetMatch[1] : null,
+            TargetMode: modeMatch ? modeMatch[1] : 'Internal'
+          });
+        }
+      }
+    }
+    rels.sort((a, b) => (a.part + ':' + a.Id).localeCompare(b.part + ':' + b.Id));
+    return rels;
+  }
+
+  async function extractMediaInventory(wb) {
+    const media = [];
+    for (const fileName in wb._zip.files) {
+      if (fileName.startsWith('xl/media/')) {
+        const buf = await wb._zip.files[fileName].async('nodebuffer');
+        const sha256 = crypto.createHash('sha256').update(buf).digest('hex');
+        media.push({
+          path: fileName,
+          sha256
+        });
+      }
+    }
+    media.sort((a, b) => a.path.localeCompare(b.path));
+    return media;
+  }
+
+  // 2. Snapshot complete BEFORE and AFTER drawing-anchor inventories
+  const anchorsBefore = await extractDrawingAnchorInventory(wbOrigA);
+  const anchorsAfter = await extractDrawingAnchorInventory(wbOutA);
+
+  // 3. Snapshot complete BEFORE and AFTER drawing-relationship inventories
+  const relsBefore = await extractDrawingRelsInventory(wbOrigA);
+  const relsAfter = await extractDrawingRelsInventory(wbOutA);
+
+  // 4. Snapshot complete BEFORE and AFTER xl/media/* inventories
+  const mediaBefore = await extractMediaInventory(wbOrigA);
+  const mediaAfter = await extractMediaInventory(wbOutA);
+
+  // 5. Prove exact target identity exists BEFORE
+  const targetAnchorsBefore = anchorsBefore.filter(a => a.blipRId === 'rId3');
+  assert.equal(targetAnchorsBefore.length, 1, 'BEFORE drawing anchor inventory MUST contain exactly 1 anchor embedding rId3');
+  assert.equal(targetAnchorsBefore[0].part, drawingXmlPath, 'Target anchor part MUST equal expected drawingXmlPath');
+
+  const targetRelsBefore = relsBefore.filter(r => r.Id === 'rId3');
+  assert.equal(targetRelsBefore.length, 1, 'BEFORE drawing relationship inventory MUST contain exactly 1 relationship rId3');
+  assert.equal(targetRelsBefore[0].part, drawingRelsPath, 'Target relationship part MUST equal expected drawingRelsPath');
+  assert.equal(targetRelsBefore[0].Type, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image', 'Target relationship Type MUST be canonical image relationship Type');
+  assert.equal(targetRelsBefore[0].Target, '../media/image3.png', 'Target relationship Target MUST resolve to ../media/image3.png');
+
+  const targetMediaBefore = mediaBefore.filter(m => m.path === 'xl/media/image3.png');
+  assert.equal(targetMediaBefore.length, 1, 'BEFORE media inventory MUST contain xl/media/image3.png');
+
+  // 6. Normalize ONLY those exact target items out of BEFORE
+  const normalizedAnchorsBefore = anchorsBefore.filter(a => !(a.part === drawingXmlPath && a.blipRId === 'rId3'));
+  const normalizedRelsBefore = relsBefore.filter(r => !(r.part === drawingRelsPath && r.Id === 'rId3'));
+  const normalizedMediaBefore = mediaBefore.filter(m => m.path !== 'xl/media/image3.png');
+
+  // 7. Require exact deep equality
+  assert.deepEqual(normalizedAnchorsBefore, anchorsAfter, 'Target-normalized BEFORE drawing anchors MUST equal AFTER drawing anchors exactly');
+  assert.deepEqual(normalizedRelsBefore, relsAfter, 'Target-normalized BEFORE drawing relationships MUST equal AFTER drawing relationships exactly');
+  assert.deepEqual(normalizedMediaBefore, mediaAfter, 'Target-normalized BEFORE media inventory MUST equal AFTER media inventory exactly');
+
+  // 8. Retain explicit target-absence assertions
   const drawingXml = await wbOutA._zip.files[drawingXmlPath].async('string');
   const drawingRels = await wbOutA._zip.files[drawingRelsPath].async('string');
 
   assert.equal(drawingXml.includes('rId3'), false, 'Target drawing rId3 must be removed from drawing1.xml');
   assert.equal(drawingRels.includes('rId3'), false, 'Target relationship rId3 must be removed from drawing1.xml.rels');
   assert.equal(wbOutA._zip.files['xl/media/image3.png'] === undefined, true, 'Target media xl/media/image3.png must be removed');
+
+  // 9. Retain explicit branding/non-target survival assertions
   assert.equal(drawingRels.includes('rId1'), true, 'Branding rId1 must be preserved');
   assert.equal(drawingRels.includes('rId2'), true, 'Branding rId2 must be preserved');
 });
