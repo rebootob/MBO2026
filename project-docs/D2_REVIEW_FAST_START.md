@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> authorization→implementation diff -> changed file only.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only the Baseline touched by the current gate -> exact diff.
 
 ## Project truth
 ```text
@@ -26,38 +26,50 @@ REFERENCE_IMAGE = PASS / CLOSED
 PART_A_STRUCTURAL = PASS / CLOSED
 PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
+PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 ```
-Durable Baselines: `D2_PART_A_STRUCTURAL_CLOSURE.md`, `D2_PART_B_STRUCTURAL_CLOSURE.md`, `D2_FORMULA_AUTHORITY_CLOSURE.md`.
 
-## Privacy gate truth
-R7-R2 implementation: `6975b1f076b9b3f4baa3b6cb4ca844767f513f0a`
+Direct durable Baselines:
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
 
+## Latest closed gate — R7-R3
 ```text
+R7-R3_AUTHORIZATION_COMMIT = 97f2517d368f150569b953aca735b704e244668e
+R7-R3_IMPLEMENTATION = 69891d82996f83a0442ee6dc268dd20b7ef8ee99
+SCOPE = PASS / ONE COMMIT / ONE AUTHORIZED TEST FILE
+ROW30_CLONE_NORMALIZEDTYPE_SINGLE_FIELD_NEGATIVE = PASS
+ROW30_CLONE_NONBLANK_SINGLE_FIELD_NEGATIVE = PASS
+SOURCE_ROW30_VALHASH_APPLICABILITY = PROVEN NONE / DO NOT FABRICATE
 R7-R2_SOURCE = PASS / FROZEN
-STRICT_SOURCE_EVIDENCE = PASS / FROZEN
-ROW_MAPPING_COUNTS = PASS / FROZEN 432/474/516
-TOKEN_PURGE = PASS / FROZEN
-ZERO_FORMULA = PASS / FROZEN
-R7-R2_PROOF = CORRECTIVE REQUIRED / DIRECT NEGATIVE ISOLATION ONLY
-D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
+D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-## Active R7-R3
+## Production Renderer architecture — Owner-confirmed
+Read `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md` before renderer work.
+
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
-MODE = TEST-ONLY / ONE-SHOT / EXACT ONE FILE
-WRITABLE_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js
-SOURCE_CHANGES = FORBIDDEN
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / STOP AFTER PUSH+REPORT
+NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
+CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
+```
+
+Important cell/range addresses must live in centralized semantic Template Profile/Mapping, not be scattered across renderer/business logic.
+
+## Current gate
+```text
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
+PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R7-R3 may only add isolated direct fail-closed proof for row30/clone `normalizedType`, `nonblank`, and static `valHash` when source row30 actually has a valHash. Do not fabricate valHash authority. Full contract: `AI_ACTIVE_TASK.md`.
-
-Remaining D2 after privacy closure: Production XLSX renderer/sanitizer -> Combined Excel parity -> PDF parity -> export security/privacy regression -> final D2 closure -> then D3 may leave HOLD.
+Remaining D2 path: Production XLSX Renderer/Sanitizer -> Combined Excel parity -> PDF parity -> export authorization/security/privacy regression -> final independent D2 closure -> then D3 may leave HOLD.
