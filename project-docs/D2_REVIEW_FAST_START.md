@@ -18,10 +18,6 @@ Normal D2 continuation/review order:
 
 Do not re-read closed-gate internals unless the current diff touches them or concrete regression evidence exists.
 
-Repository truth and accepted newer Live evidence always win.
-
----
-
 ## 1. Owner objective / controls
 
 ```text
@@ -35,12 +31,7 @@ CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
-Previous standing review window:
-`CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE`.
-
-One-shot Owner instructions may continue; do not silently create a new standing cycle.
-
----
+Previous standing review window is exhausted / DO NOT REUSE. R7 is a separate one-shot Owner authorization only.
 
 ## 2. D1–D7 scoreboard
 
@@ -54,9 +45,7 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
----
-
-## 3. D2 closed/frozen gates — do not re-review by default
+## 3. D2 closed/frozen gates
 
 ```text
 D2_PRESERVATION_GATE = PASS / CLOSED
@@ -71,132 +60,69 @@ Durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-### Part A frozen summary
-- real 4..10 objective matrix;
-- exact row/downstream/merge/dimension/print-area proof;
-- exact sheet/page/relationship/media invariants;
-- formula inventory exactly zero.
+Frozen authority includes real Part A 4..10 matrix, real Part B 6/7/8 matrix, exact layout/preservation controls, and production formula inventory requirement = 0.
 
-Source baseline: `bf9ef7e82c78efc2e725614046745a3ccf394054`  
-Final test closure: `98da94a07259effd95dcf539de3454b1f94745a8`
-
-### Part B frozen summary
-- real 6/7/8 competency matrix;
-- source rows 27:30 clone authority; downstream threshold row 31;
-- dimensions X35/X39/X43; merges 79/85/91; exact Print_Area;
-- raw-source fail-closed and defined-name controls;
-- A4/portrait/75/protected main sheet; exact `Sheet1` stability;
-- relationships/media stable; formula inventory exactly zero.
-
-Matrix implementation: `068e719a7b6c0fee66613619a7aa7ed359960cb5`  
-Final structural closure: `223f293057219efe0e6410029523bd904c92c6ae`
-
-### Formula Authority frozen summary
-```text
-SCORING_SOURCE_OF_TRUTH = KINTONE / APP794 + CONFIRMED SCORING CONFIG
-EXPORT_DATA_AUTHORITY = SECURED MboExportService PROJECTION
-LEGACY_EXCEL_TEMPLATE_AUTHORITY = VISUAL / LAYOUT ONLY
-EXCEL_SCORE_FORMULAS = FORBIDDEN
-EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
-EMPLOYEE_SELF_CONFIDENTIAL_SCORE_FIELDS = OMIT / BLANK; NEVER RECALCULATE
-PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
-```
-
----
-
-## 4. Current open gate — R7 Part B Expanded Privacy Remap
+## 4. Active gate — R7 Part B Expanded Privacy Remap
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R7
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST / TWO EXISTING FILES ONLY
+ACTIVE_WORK_PACKAGE = D2-WP003-R7
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
+MODE = SOURCE+TEST / ONE-SHOT / EXACT TWO FILES
 FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
         tests/mbo-xlsx-ooxml-feasibility.test.js
-ANTIGRAVITY = STOP
 ```
 
-Why this gate exists:
-- current Part B sensitive/privacy ranges are fixed to the original 6-block layout;
-- N=7 inserts rows 31:34, moving original summary/signature rows to 35:38;
-- N=8 inserts rows 31:38, moving original summary/signature rows to 39:42;
-- reusing the old rows 31:34 summary map would sanitize/classify the wrong cells.
-
 R7 target:
-- preserve exact N=6 mapping;
-- derive N=7/8 roles from accepted source rows 27:30 clone semantics;
-- relocate summary/signature roles by exact `extraRows`;
-- protect cloned static competency text;
-- sanitize every count-aware dynamic address and no others;
-- prove sensitive tokens absent after sanitization;
-- prove typed privacy metadata against the exact count-aware address inventory;
-- fail closed on unsupported count or structural-role mismatch.
+- preserve exact N=6 privacy behavior;
+- support only N=6/7/8 and fail closed otherwise;
+- use real `getStructuralPartBBuffers()` outputs;
+- derive each inserted 4-row block's roles from source rows 27:30 semantics, including static-vs-dynamic distinctions;
+- N=7 summary/signature => rows 35:38;
+- N=8 summary/signature => rows 39:42;
+- no stale summary classification at rows 31:34 in expanded variants;
+- protected cloned static competency text must never be cleared;
+- exact dynamic-address inventory must be unique/non-conflicting;
+- count-aware sanitization must purge sensitive tokens from worksheet/sharedStrings/package evidence;
+- typed privacy metadata must exactly match the count-aware dynamic inventory;
+- structural/role ambiguity must fail closed.
 
-Full proposed contract is in `AI_ACTIVE_TASK.md`.
+Production renderer is explicitly NOT part of R7.
 
----
-
-## 5. Remaining D2 after R7
-
-1. Expanded Part B privacy remap 6/7/8;
-2. Production XLSX renderer/sanitizer using secured projection + frozen structural/privacy/formula contracts;
-3. Combined Excel parity;
-4. PDF parity;
-5. Export authorization/security/privacy regression;
-6. Final independent D2 closure;
-7. only then may D3 leave HOLD.
-
----
-
-## 6. Fast independent-review checklist
-
-When Owner says `review` after an executor push:
-1. fresh-fetch canonical HEAD;
-2. read this file + `AI_ACTIVE_TASK.md`;
-3. confirm authorization token/commit/exact files;
-4. compare authorization→implementation;
-5. unauthorized scope = BLOCKED;
-6. inspect only changed code + directly touched frozen contract;
-7. verify prior accepted proof was not removed/weakened;
-8. verify fail-closed privacy/security behavior;
-9. check combined status/workflow runs;
-10. no CI/workflow => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
-11. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
-12. promote durable Baseline only when gate truly closes;
-13. do not auto-start the next WP.
-
-Avoid repeated scans of Preservation, Reference Image, Part A, Part B structural, Formula Authority, D1, or D7 unless triggered by current diff/regression evidence.
-
----
-
-## 7. Current authorization state
+## 5. Current authorization/safety state
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / STOP AFTER ONE PUSH+REPORT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
----
+## 6. Remaining D2 after R7
 
-## 8. New-chat minimal context
+1. production XLSX renderer/sanitizer;
+2. combined Excel parity;
+3. PDF parity;
+4. export authorization/security/privacy regression;
+5. final independent D2 closure;
+6. only then may D3 leave HOLD.
 
-```text
-Repository: rebootob/MBO2026
-Branch: ai/antigravity-wp002c
-Goal: COMPLETE D2 FULLY BEFORE D3
-Read: D2_REVIEW_FAST_START.md -> AI_ACTIVE_TASK.md
-D1: PASS/CLOSED
-D2: IN PROGRESS
-Closed: Preservation / Reference Image / Part A Structural / Part B Structural / Formula Authority
-Next proposed: D2-WP003-R7 Part B Expanded Privacy Remap 6/7/8
-Antigravity: STOP unless exact Owner authorization exists
-Claude: STOP unless materially justified
-Kintone/Deploy: NONE
-D3: HOLD
-```
+## 7. Fast review checklist
+
+When Owner says `review` after R7 push:
+1. fresh-fetch HEAD;
+2. read this file + `AI_ACTIVE_TASK.md`;
+3. confirm authorization commit/token/files;
+4. compare authorization→implementation;
+5. require exactly one bounded implementation/blocker commit and only two authorized files;
+6. inspect changed privacy code/test plus directly touched frozen Part B contract;
+7. verify N=6 behavior and accepted structural/formula proof were not weakened;
+8. verify N=7/8 role relocation/static protection/fail-closed behavior;
+9. check GitHub status/workflow runs; no signal => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
+10. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
+11. do not auto-start Production Renderer.
