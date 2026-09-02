@@ -13,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — R1-R2 semantic evidence ACTIVE |
+| D2 | IN PROGRESS — Template Profile semantic evidence corrective required |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -26,21 +26,24 @@ Closed D2 gates: Preservation, Reference Image, Part A Structural, Part B Struct
 R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
 R1_R1_PART_B_TOPOLOGY = PASS / FREEZE
 R1_R1_BASIC_INTEGRITY = PASS / FREEZE
-R1_R1_SEMANTIC_AUTHORITY = CORRECTIVE REQUIRED
-R1_R1_TOKEN = CONSUMED / DO NOT REUSE
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2
-ACTIVE_AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
-MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / ONE EVIDENCE FILE
+R1_R1_PROFILE_SEMANTIC_AUTHORITY = NOT CLOSED
+R1_R2_EVIDENCE = 6e7cb1f5633dfc2a85dc181ae37f425dab3ea067
+R1_R2_SCOPE_SHA = PASS
+R1_R2_HOSHIN_EVIDENCE = PASS / FREEZE
+R1_R2_PART_B_HEADER_EVIDENCE = PASS / FREEZE
+R1_R2_OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
+R1_R2_TOKEN = CONSUMED / DO NOT REUSE
+PROPOSED_NEXT = D2-WP004-R1-R2-R1 EVIDENCE-ONLY / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-EVIDENCE-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2 writes only `project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md`. Source/test/profile/template binaries remain frozen. Evidence must come from exact SHA-approved owner-template labels/merged ranges plus current read-only secured projection; ambiguity must remain unresolved rather than guessed.
+R1-R2-R1 is limited to correcting the same semantic evidence markdown from exact SHA-approved owner templates READ-ONLY. Do not modify profile source until corrected evidence independently proves exclusive workbook ownership and compatible secured projection paths.
