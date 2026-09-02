@@ -5,24 +5,24 @@
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
-## 0. How to use this file
+## 0. Fast use
 
 Fresh-fetch current branch HEAD first.
 
-For normal D2 continuation/review, read in this order:
-1. `project-docs/D2_REVIEW_FAST_START.md` (this file)
-2. `project-docs/AI_ACTIVE_TASK.md`
-3. only the directly relevant `CONFIRMED_BASELINE/` file
-4. exact authorization→implementation diff
-5. exact changed source/test files only as needed
+Normal D2 continuation/review order:
+1. this file;
+2. `project-docs/AI_ACTIVE_TASK.md`;
+3. only the directly relevant `CONFIRMED_BASELINE/` file;
+4. exact authorization→implementation diff;
+5. exact changed source/test files only as needed.
 
-Use `CHAT_HANDOFF.md`, `AI_CONTROL_CENTER.md`, `AI_DOCUMENT_INDEX.md`, `00_MASTER_JOBLIST.md`, and `EXCEL_EXPORT.md` when whole-project reconciliation is needed. Repository truth and accepted newer Live evidence always win.
+Do not re-read closed-gate internals unless the current diff touches them or concrete regression evidence exists.
 
-This file is a routing/summary document. Durable Baseline files remain authoritative for closed gates.
+Repository truth and accepted newer Live evidence always win.
 
 ---
 
-## 1. Owner objective and non-negotiable controls
+## 1. Owner objective / controls
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -35,21 +35,14 @@ CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
-ChatGPT = Control Plane / Project Lead / Architect / independent reviewer.  
-Antigravity = bounded implementation only when necessary.  
-Claude = read-only second reviewer only if material ambiguity/risk justifies cost.
+Previous standing review window:
+`CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE`.
 
-The earlier standing Control Plane corrective window is exhausted:
-
-```text
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / 20 OF 20 / DO NOT REUSE
-```
-
-Do not silently infer another standing review cycle. Owner may establish a new cycle explicitly. Read-only planning and exact one-off owner-authorized documentation updates remain allowed.
+One-shot Owner instructions may continue; do not silently create a new standing cycle.
 
 ---
 
-## 2. Current D1–D7 scoreboard
+## 2. D1–D7 scoreboard
 
 ```text
 D1 = PASS / CLOSED
@@ -61,160 +54,121 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-Do not reopen D1 or D7 without a proven regression. Do not start D3 while D2 is open.
-
 ---
 
-## 3. D2 closed/frozen gates — DO NOT RE-REVIEW BY DEFAULT
+## 3. D2 closed/frozen gates — do not re-review by default
 
 ```text
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
+D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 ```
 
-### Preservation / Option B
-- exact owner-template SHA gates;
-- narrow deterministic allowed-drift policy;
-- Part B `Sheet1` specific approved `<sheetPr/>` drift only;
-- all other non-dimension drift fail-closed;
-- caller buffers immutable;
-- relationship and worksheet topology controls frozen.
+Durable Baselines:
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-### Reference image
-- accepted removal path is frozen;
-- target anchor/relationship/media removal is package-reference safe;
-- do not redesign unless regression is proven.
-
-### Part A structural matrix
-Durable authority: `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-
-Frozen:
-- real matrix 4..10 objectives;
-- exact row sequence/uniqueness and downstream relocation;
-- row 28 clone authority;
-- exact merge inventory/count;
-- dimensions `A1:BL52` .. `A1:BL58`;
-- print area `BJ52` .. `BJ58`;
+### Part A frozen summary
+- real 4..10 objective matrix;
+- exact row/downstream/merge/dimension/print-area proof;
 - exact sheet/page/relationship/media invariants;
-- workbook formula inventory exactly zero.
+- formula inventory exactly zero.
 
-Accepted source baseline:
-`bf9ef7e82c78efc2e725614046745a3ccf394054`
+Source baseline: `bf9ef7e82c78efc2e725614046745a3ccf394054`  
+Final test closure: `98da94a07259effd95dcf539de3454b1f94745a8`
 
-Final Part A corrective implementation:
-`98da94a07259effd95dcf539de3454b1f94745a8`
+### Part B frozen summary
+- real 6/7/8 competency matrix;
+- source rows 27:30 clone authority; downstream threshold row 31;
+- dimensions X35/X39/X43; merges 79/85/91; exact Print_Area;
+- raw-source fail-closed and defined-name controls;
+- A4/portrait/75/protected main sheet; exact `Sheet1` stability;
+- relationships/media stable; formula inventory exactly zero.
 
-### Part B structural matrix
-Durable authority: `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+Matrix implementation: `068e719a7b6c0fee66613619a7aa7ed359960cb5`  
+Final structural closure: `223f293057219efe0e6410029523bd904c92c6ae`
 
-Frozen:
-- real matrix 6/7/8 competencies;
-- source rows 27:30 clone authority;
-- downstream threshold row 31;
-- merge counts 79/85/91;
-- dimensions `A1:X35` / `A1:X39` / `A1:X43`;
-- exact main Print_Area X35/X39/X43;
-- raw-source fail-closed dimension/merge/defined-name guards;
-- exact `Sheet1` stability and empty Sheet1 print area;
-- A4 / portrait / scale 75 / horizontal-centered / protected;
-- relationships/media stable;
-- workbook formula inventory exactly zero.
-
-R5 source implementation:
-`068e719a7b6c0fee66613619a7aa7ed359960cb5`
-
-Final Part B corrective implementation:
-`223f293057219efe0e6410029523bd904c92c6ae`
-
----
-
-## 4. Frozen D2 authority model
-
+### Formula Authority frozen summary
 ```text
-LEGACY TEMPLATE = VISUAL / LAYOUT AUTHORITY
-CONFIRMED_BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
-SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
 SCORING_SOURCE_OF_TRUTH = KINTONE / APP794 + CONFIRMED SCORING CONFIG
-```
-
-Owner template SHA256:
-- Part A: `03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3`
-- Part B: `c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3`
-
-Do not use Excel as a second scoring engine.
-
-`MboExportService` currently projects stored App794 score/result fields; Employee-Self projections intentionally omit confidential score/result fields.
-
----
-
-## 5. Current open D2 path — REVIEW ONLY THESE NEXT
-
-### R6 — Formula / No-Formula Authority
-Target contract:
-
-```text
+EXPORT_DATA_AUTHORITY = SECURED MboExportService PROJECTION
+LEGACY_EXCEL_TEMPLATE_AUTHORITY = VISUAL / LAYOUT ONLY
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
-AUTHORIZED_APPROVER_EXPORT = WRITE SCALAR VALUES FROM SECURED PROJECTION ONLY
 EMPLOYEE_SELF_CONFIDENTIAL_SCORE_FIELDS = OMIT / BLANK; NEVER RECALCULATE
 PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
 ```
 
-Expected implementation need: none for authority decision itself; production renderer later must prove zero formulas.
+---
 
-### Next implementation gate — Production XLSX Renderer + Sanitizer + Part B Privacy Remap
-This is the next likely Antigravity-worthy gate after formula authority closes.
-
-Mandatory open privacy boundary:
+## 4. Current open gate — R7 Part B Expanded Privacy Remap
 
 ```text
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
+PROPOSED_WORK_PACKAGE = D2-WP003-R7
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / TWO EXISTING FILES ONLY
+FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
+        tests/mbo-xlsx-ooxml-feasibility.test.js
+ANTIGRAVITY = STOP
 ```
 
-Existing Part B privacy address mapping is authoritative only for the original 6-block layout. 7/8 competency variants shift summary/signature rows and require explicit role/address remapping before production/security closure.
+Why this gate exists:
+- current Part B sensitive/privacy ranges are fixed to the original 6-block layout;
+- N=7 inserts rows 31:34, moving original summary/signature rows to 35:38;
+- N=8 inserts rows 31:38, moving original summary/signature rows to 39:42;
+- reusing the old rows 31:34 summary map would sanitize/classify the wrong cells.
 
-### Then
-1. Combined Excel parity
-2. PDF parity
-3. Export authorization/security/privacy regression
-4. Final independent D2 review
-5. only after D2 PASS/CLOSED may D3 move from HOLD
+R7 target:
+- preserve exact N=6 mapping;
+- derive N=7/8 roles from accepted source rows 27:30 clone semantics;
+- relocate summary/signature roles by exact `extraRows`;
+- protect cloned static competency text;
+- sanitize every count-aware dynamic address and no others;
+- prove sensitive tokens absent after sanitization;
+- prove typed privacy metadata against the exact count-aware address inventory;
+- fail closed on unsupported count or structural-role mismatch.
+
+Full proposed contract is in `AI_ACTIVE_TASK.md`.
+
+---
+
+## 5. Remaining D2 after R7
+
+1. Expanded Part B privacy remap 6/7/8;
+2. Production XLSX renderer/sanitizer using secured projection + frozen structural/privacy/formula contracts;
+3. Combined Excel parity;
+4. PDF parity;
+5. Export authorization/security/privacy regression;
+6. Final independent D2 closure;
+7. only then may D3 leave HOLD.
 
 ---
 
 ## 6. Fast independent-review checklist
 
-When Owner says `review` for a D2 executor implementation:
-
+When Owner says `review` after an executor push:
 1. fresh-fetch canonical HEAD;
-2. confirm authorization commit/token and exact authorized files;
-3. compare authorization→implementation;
-4. require expected commit count/scope; unauthorized scope = BLOCKED;
-5. inspect only changed code + directly dependent frozen contract;
-6. verify accepted prior proof was not removed/weakened;
-7. verify privacy/security fail-closed behavior;
-8. check GitHub combined status/workflow runs;
-9. if no CI/workflow signal, state `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`; never invent runtime PASS;
-10. verdict = `PASS / CLOSED`, `CORRECTIVE REQUIRED`, or `BLOCKED`;
-11. executor cannot self-certify;
-12. promote to `CONFIRMED_BASELINE/` only when durable gate truly closes;
-13. do not auto-start next work package.
+2. read this file + `AI_ACTIVE_TASK.md`;
+3. confirm authorization token/commit/exact files;
+4. compare authorization→implementation;
+5. unauthorized scope = BLOCKED;
+6. inspect only changed code + directly touched frozen contract;
+7. verify prior accepted proof was not removed/weakened;
+8. verify fail-closed privacy/security behavior;
+9. check combined status/workflow runs;
+10. no CI/workflow => `INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE`;
+11. verdict = PASS/CLOSED, CORRECTIVE REQUIRED, or BLOCKED;
+12. promote durable Baseline only when gate truly closes;
+13. do not auto-start the next WP.
 
-### Avoid these repeated scans unless triggered
-- closed Preservation internals;
-- closed Reference-Image internals;
-- Part A 4..10 matrix source/tests;
-- Part B 6/7/8 matrix source/tests;
-- D1 security design;
-- D7 source functionality.
-
-Reopen only when the current diff touches a frozen dependency or provides concrete regression evidence.
+Avoid repeated scans of Preservation, Reference Image, Part A, Part B structural, Formula Authority, D1, or D7 unless triggered by current diff/regression evidence.
 
 ---
 
-## 7. Current executor / authorization state
+## 7. Current authorization state
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
@@ -228,25 +182,19 @@ CLAUDE = STOP
 D3 = HOLD
 ```
 
-Never reuse consumed authorization tokens.
-
 ---
 
-## 8. Minimal context to carry into a new chat
+## 8. New-chat minimal context
 
 ```text
 Repository: rebootob/MBO2026
 Branch: ai/antigravity-wp002c
 Goal: COMPLETE D2 FULLY BEFORE D3
-Read first: project-docs/D2_REVIEW_FAST_START.md
-Then: project-docs/AI_ACTIVE_TASK.md
+Read: D2_REVIEW_FAST_START.md -> AI_ACTIVE_TASK.md
 D1: PASS/CLOSED
 D2: IN PROGRESS
-Preservation: PASS/CLOSED
-Reference Image: PASS/CLOSED
-Part A Structural: PASS/CLOSED
-Part B Structural: PASS/CLOSED
-Next: Formula Authority -> Production XLSX Renderer+Privacy Remap -> Combined Excel -> PDF -> Security/Privacy Regression -> Final D2 Closure
+Closed: Preservation / Reference Image / Part A Structural / Part B Structural / Formula Authority
+Next proposed: D2-WP003-R7 Part B Expanded Privacy Remap 6/7/8
 Antigravity: STOP unless exact Owner authorization exists
 Claude: STOP unless materially justified
 Kintone/Deploy: NONE
