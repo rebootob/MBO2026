@@ -78,6 +78,13 @@ test('PREPARER_SYNTHETIC_FAIL_CLOSED_VALIDATION: validates SHA, counts, profile 
     (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
   );
 
+  await assert.rejects(
+    async () => {
+      await preparePartATemplate(fakeBytes, { objectiveCount: '4' });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  );
+
   // 3. Malformed profile fails closed
   const badProfile = Object.create(new MboXlsxTemplateProfile());
   badProfile.getPartALayoutTopology = function(n) {
@@ -93,7 +100,69 @@ test('PREPARER_SYNTHETIC_FAIL_CLOSED_VALIDATION: validates SHA, counts, profile 
   );
 });
 
-test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 structural expansion, sanitization, image removal & preservation', async (t) => {
+test('PREPARER_ADVERSARIAL_REFERENCE_IMAGE_FAIL_CLOSED: rejects malformed drawing rels, anchors, media & orphan references', async (t) => {
+  const templateBytes = loadLocalTemplate();
+  if (!templateBytes) {
+    t.skip('Local Part A owner template unavailable or SHA mismatch');
+    return;
+  }
+
+  // 1. Missing rId3 relationship fails closed
+  const wbNoRel = await XlsxPopulate.fromDataAsync(templateBytes);
+  let relsNoRel = await wbNoRel._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
+  relsNoRel = relsNoRel.replace(/<Relationship[^>]*Id="rId3"[^>]*\/>/, '');
+  wbNoRel._zip.file('xl/drawings/_rels/drawing1.xml.rels', relsNoRel);
+  const bytesNoRel = await wbNoRel._zip.generateAsync({ type: 'uint8array' });
+
+  await assert.rejects(
+    async () => {
+      await preparePartATemplate(bytesNoRel, { objectiveCount: 4 });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  );
+
+  // 2. Duplicate rId3 relationship fails closed
+  const wbDupRel = await XlsxPopulate.fromDataAsync(templateBytes);
+  let relsDupRel = await wbDupRel._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
+  relsDupRel = relsDupRel.replace('rId3', 'rId3" extra="dup').replace('</Relationships>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/></Relationships>');
+  wbDupRel._zip.file('xl/drawings/_rels/drawing1.xml.rels', relsDupRel);
+  const bytesDupRel = await wbDupRel._zip.generateAsync({ type: 'uint8array' });
+
+  await assert.rejects(
+    async () => {
+      await preparePartATemplate(bytesDupRel, { objectiveCount: 4 });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  );
+
+  // 3. External TargetMode fails closed
+  const wbExtRel = await XlsxPopulate.fromDataAsync(templateBytes);
+  let relsExtRel = await wbExtRel._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
+  relsExtRel = relsExtRel.replace('Id="rId3"', 'Id="rId3" TargetMode="External"');
+  wbExtRel._zip.file('xl/drawings/_rels/drawing1.xml.rels', relsExtRel);
+  const bytesExtRel = await wbExtRel._zip.generateAsync({ type: 'uint8array' });
+
+  await assert.rejects(
+    async () => {
+      await preparePartATemplate(bytesExtRel, { objectiveCount: 4 });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  );
+
+  // 4. Missing xl/media/image3.png fails closed
+  const wbNoMedia = await XlsxPopulate.fromDataAsync(templateBytes);
+  wbNoMedia._zip.remove('xl/media/image3.png');
+  const bytesNoMedia = await wbNoMedia._zip.generateAsync({ type: 'uint8array' });
+
+  await assert.rejects(
+    async () => {
+      await preparePartATemplate(bytesNoMedia, { objectiveCount: 4 });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  );
+});
+
+test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix, structural expansion, sanitization & preservation', async (t) => {
   const templateBytes = loadLocalTemplate();
   if (!templateBytes) {
     t.skip('Local Part A owner template unavailable or SHA mismatch');
@@ -142,11 +211,43 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 structural expansion, 
     assert.equal(sheetXml.includes('orientation="landscape"'), true);
     assert.equal(sheetXml.includes('scale="58"'), true);
 
-    // E. Formula inventory exactly zero
-    const formulaMatches = [...sheetXml.matchAll(/<f[^>]*>[\s\S]*?<\/f>/g)];
-    assert.equal(formulaMatches.length, 0, `Formula inventory must be 0 for N=${n}`);
+    // E. Workbook-wide formula inventory across ALL sheets is EXACTLY ZERO
+    for (const fileName in wb._zip.files) {
+      if (fileName.startsWith('xl/worksheets/') && fileName.endsWith('.xml')) {
+        const sXml = await wb._zip.files[fileName].async('string');
+        const fMatches = [...sXml.matchAll(/<f[^>]*>[\s\S]*?<\/f>/g)];
+        assert.equal(fMatches.length, 0, `Workbook formula inventory in ${fileName} must be 0 for N=${n}`);
+      }
+    }
 
-    // F. Effective sanitization ranges cleared
+    // F. Structural RowRefs sequence inspection:
+    // Rows 1:28 preserved, inserted rows 29..(28+n-4) cloned from row 28, downstream rows >=29 relocated by +(n-4)
+    const rowRefs = [...sheetXml.matchAll(/<row r="(\d+)"/g)].map(m => parseInt(m[1], 10));
+    assert.equal(rowRefs.length, expectedLastRow, `Row count must equal ${expectedLastRow} for N=${n}`);
+    assert.equal(new Set(rowRefs).size, rowRefs.length, 'rowRefs sequence must be strictly unique');
+
+    for (let r = 1; r <= 28; r++) {
+      assert.equal(rowRefs[r - 1], r, `Row ${r} must preserve index`);
+    }
+
+    const extra = n - 4;
+    for (let i = 0; i < extra; i++) {
+      const targetR = 29 + i;
+      assert.equal(rowRefs[28 + i], targetR, `Inserted row ${targetR} must exist`);
+    }
+
+    for (let r = 29; r <= 52; r++) {
+      const targetR = r + extra;
+      assert.equal(rowRefs[28 + extra + (r - 29)], targetR, `Downstream row ${r} must relocate to ${targetR}`);
+    }
+
+    // G. Merge count & inventory deep equality
+    const rawMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
+    const countAttr = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1];
+    assert.equal(countAttr, String(rawMerges.length), 'Declared merge count attr must equal actual merge array length');
+    assert.equal(rawMerges.length, 193 + extra * 14, `Merge count must equal ${193 + extra * 14} for N=${n}`);
+
+    // H. Effective sanitization ranges cleared
     const sheet = wb.sheet(0);
     const layout = profile.getPartALayoutTopology(n);
     const sensitiveAddrs = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
@@ -156,7 +257,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 structural expansion, 
       assert.equal(val == null, true, `Sanitized cell ${addr} must be cleared/null/undefined for N=${n}`);
     }
 
-    // G. Reference image rId3 / image3.png removed, rId1 / rId2 / rId4 branding preserved
+    // I. Reference image rId3 / image3.png removed, rId1 / rId2 / rId4 branding preserved
     const drawingXml = await wb._zip.files['xl/drawings/drawing1.xml'].async('string');
     const drawingRels = await wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
 
@@ -175,11 +276,15 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 structural expansion, 
     assert.equal(Boolean(wb._zip.files['xl/media/image2.jpeg']), true, 'Branding image2.jpeg must be preserved');
     assert.equal(Boolean(wb._zip.files['xl/media/image4.png']), true, 'Branding image4.png must be preserved');
 
-    // H. No semantic value writes
+    // J. No semantic value writes
     for (let i = 1; i <= n; i++) {
       const r = 24 + i;
       assert.equal(sheet.cell(`T${r}`).value() == null, true, `Objective ${i} Measurement must be unwritten`);
       assert.equal(sheet.cell(`Y${r}`).value() == null, true, `Objective ${i} Weight must be unwritten`);
     }
+
+    // K. Sheet names & states preserved
+    const sheetNames = [...wbXml.matchAll(/<sheet [^>]*name="([^"]+)"/g)].map(m => m[1]);
+    assert.deepEqual(sheetNames, ['MBO Staff &amp; Chief']);
   }
 });
