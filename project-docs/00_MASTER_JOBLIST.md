@@ -28,25 +28,29 @@ D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 18 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 2
-ACTIVE_D2_WORK_PACKAGE = D2-WP003-R5
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R5-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R5-SOURCE-TEST-20260902-01
+D2_PART_B_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+R5_IMPLEMENTATION_COMMIT = 068e719a7b6c0fee66613619a7aa7ed359960cb5
+R5_STATUS = CORRECTIVE REQUIRED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 19 OF 20
+CONTROL_PLANE_ROUNDS_REMAINING = 1
+ACTIVE_D2_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R5-R1
+PROPOSED_SCOPE = SOURCE+TEST / EXACT SAME TWO FEASIBILITY FILES ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ```
 
-R5 = Part B Competency Insertion Structural Matrix Closure.
+R5 accepted/frozen matrix behavior includes real 6/7/8 structural variants, exact row/block/downstream/sentinel transformations, full merge sets 79/85/91, exact output dimensions/print areas, Part B A4/portrait/75/protection setup, `Sheet1` stability, package relationship/media equality and zero formulas.
 
-Writable files only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+R5-R1 is proposed only to close:
+- raw owner-template fail-closed prerequisite proof before mutation (exact dimension A1:X35, actual+declared merges 79, six source-block merges, exact single main Print_Area/localSheetId0 and required structures);
+- explicit defined-name stability/binding proof for 6/7/8.
 
-Required real matrix = 6/7/8 competency blocks with exact row/block relocation, full merge-set proof, exact dimensions/print areas, main setup invariants, `Sheet1` stability, defined-name control, relationship/media preservation and zero formulas.
+R5-R1 is NOT AUTHORIZED. Antigravity and Claude remain stopped.
 
-R5 is structural only. Expanded Part B privacy/address remapping remains mandatory before production renderer/security closure.
-
-Remaining after R5:
+Remaining after Part B closure:
 - formula/no-formula authority;
 - production XLSX renderer/sanitizer + expanded Part B privacy remap;
 - combined Excel parity;
@@ -82,11 +86,10 @@ Admin Support Center: `SOURCE FUNCTIONALITY CLOSED`.
 ## 8. Exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R5-SOURCE-TEST-20260902-01
-EXPECTED_CHANGED_FILES = EXACT TWO AUTHORIZED FEASIBILITY FILES ONLY
-EXPECTED_COMMITS = EXACTLY ONE IMPLEMENTATION/BLOCKER COMMIT
-ANTIGRAVITY = STOP AFTER PUSH/REPORT
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R5-R1 SOURCE+TEST
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
