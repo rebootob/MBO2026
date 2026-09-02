@@ -27,13 +27,14 @@ D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
 D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
-R3-R27_IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+D2-WP003-R3-R28 = REVIEWED / NOT PASS / NOT CLOSED
+R3-R28_IMPLEMENTATION_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R29
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+CORRECTIVE_BASELINE_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -53,20 +54,18 @@ Read in this order:
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact current feasibility source/tests when R3-R28 is authorized or under review;
+5. exact current feasibility source/tests when R3-R29 is authorized or under review;
 6. exact SHA-verified owner templates only when explicitly required;
 7. D1/security Baselines only for export authorization/confidentiality review.
 
 Current D2 checkpoint:
 - R3-R22 accepted proof remains frozen;
-- Owner approved Option B narrow deterministic Part B `Sheet1` `sheetPr` allowed drift;
-- R3-R27 moved Option B into preservation and restored direct raw Part B positive input, but remains CORRECTIVE;
-- normalization is not persisted when observed dimension is already correct;
-- regex-only XML inventory remains fail-open for QName forms outside ASCII classes because no complete direct-child gap consumption is proved;
-- valid R3-R25/R3-R26 negatives regressed again and several source-structure labels still test the SHA gate rather than structural logic;
-- no always-runnable privacy-safe synthetic proof or GitHub CI runtime signal exists;
-- R3-R28 is proposed and NOT authorized;
-- no new Claude review is needed at this gate;
+- Owner-approved Option B remains the only allowed Part B `Sheet1` drift;
+- R3-R28 fixed persistent Option B write-back and improved XML gap/token coverage;
+- R3-R28 remains CORRECTIVE because worksheet singleton semantics are wrong/incomplete, source structural proof still hits SHA first, required print-area/Sheet1 colsHash proof and much prior regression coverage were removed, actual Unicode proof is absent, Option B negative proof is incomplete, and accepted header/privacy negative guards were reduced;
+- no GitHub CI/runtime signal exists for R3-R28;
+- R3-R29 is proposed and NOT authorized;
+- no Claude review is needed at this gate;
 - D3 remains HOLD.
 
 ## 4. Task -> document routing
