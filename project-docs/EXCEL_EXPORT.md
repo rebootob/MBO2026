@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4-R2 TEST-ONLY AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A STRUCTURAL CLOSED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -33,7 +33,7 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-D2-WP003-R3-R36 = PASS / CLOSED
+D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -42,48 +42,53 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Part A source baseline
+## 4. Part A structural closure
 
 ```text
-R4_IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
-R4_SOURCE_REVIEW = PASS / FROZEN
-```
-
-Accepted source behavior remains frozen: real feasibility path for objective counts 4–10, row/cell shifting, row-28 cloning, merge shifting/cloning, exact dimensions A1:BL52..58, exact print areas BJ52..58, sentinel setup and backwards-compatible buffer outputs.
-
-## 5. R4-R1 review
-
-```text
-R4-R1_AUTHORIZATION_COMMIT = 8b0eb2ca2058c458c40286b6b2d5f55bdb34d703
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / PASS / FROZEN
 R4-R1_IMPLEMENTATION_COMMIT = 8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6
-R4-R1_SCOPE_REVIEW = PASS
-R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
-R4-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
-D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+R4-R2_AUTHORIZATION_COMMIT = 2bb18bedc060955019bcf9c57efe6f27c52cafa3
+R4-R2_IMPLEMENTATION_COMMIT = 98da94a07259effd95dcf539de3454b1f94745a8
+R4-R2_SCOPE_REVIEW = PASS
+R4-R2_PROOF_CODE_REVIEW = PASS
+R4-R2_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 ```
 
-Accepted R4-R1 proof additions are frozen: exact `rowRefs` sequence/uniqueness, exact `sheetNames`/`sheetStates`, and baseline equality for `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, centered flags, protection and sheet relationships, plus all prior R4 structural proof.
+Durable closure authority:
+`CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 
-## 6. R4-R2 TEST-ONLY authorization
+Frozen Part A proof covers all objective counts 4–10 and retains:
+- exact SHA gate;
+- exact rowRefs sequence/uniqueness;
+- exact inserted/downstream row structural relocation;
+- sentinel relocation;
+- complete merge inventory equality;
+- exact dimensions A1:BL52..A1:BL58;
+- exact print areas BJ52..BJ58;
+- sheet names/states and non-target layout/setup invariant equality;
+- absolute A3 landscape scale-58 authority assertions together with relative baseline equality;
+- relationship/media preservation;
+- zero formula inventory.
+
+## 5. Current gate
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R4-R2
-ACTIVE_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-OWNER_APPROVAL_BASELINE_HEAD = f566fa300818e53e78342710332573e0294d4c4b
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
-R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_KINTONE_WRITE_AUTH = NONE
+ACTIVE_DEPLOY_AUTH = NONE
+NEXT_D2_PLANNING_GATE = PART B COMPETENCY INSERTION STRUCTURAL MATRIX
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP
+D3 = HOLD
 ```
 
-R4-R2 must retain every current R4/R4-R1 assertion and add back exact per-count authority assertions:
-- `currentMain.paperSize === '8'`;
-- `currentMain.orientation === 'landscape'`;
-- `currentMain.scale === '58'`.
+Part B is not started and not authorized.
 
-Baseline-relative equality must remain alongside the absolute assertions. No source, Part B, preservation/reference-image, renderer, Kintone, deploy, evidence or D3 work is authorized.
-
-## 7. Remaining D2 path after Part A closure
+## 6. Remaining D2 path
 
 1. Part B competency insertion structural matrix;
 2. formula/no-formula authority;
