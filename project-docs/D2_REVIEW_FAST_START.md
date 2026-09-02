@@ -27,6 +27,8 @@ PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
 PRE2_R1_R1 = PASS / CLOSED
 PRE2_R2 = PASS / CLOSED
 PRE2_R3 = PASS / CLOSED AFTER CORRECTIVE CHAIN THROUGH R4
+R2_A = PASS / CLOSED AFTER R1
+R2_A_R1 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -69,22 +71,35 @@ PADDING = 30 / 34 / 38 / PROTECTED
 FORMULA_INVENTORY = 0
 ```
 
-Final exact-set authority:
-- expected effective dynamic set is derived from source-backed base privacy topology + only authorized presentation additions;
-- observed addresses are normalized and unique;
-- exact set equality rejects missing, duplicate, extra or same-count substituted addresses;
-- pre-sanitize B31/B35/B32/B36/B33/B37 validation occurs before mutation;
-- relationship/media/reference-image/auxiliary Sheet1 preservation remains required.
+## Closed R2-A production layout + sanitization profile authority
+R2-A-R1 closes the two R2-A review blockers.
+
+Part A profile topology remains count-aware for N=4..10 with exact dimensions/Print_Area/page setup and deterministic sanitization authority.
+
+Part B sanitization is segmented so protected rows are never crossed:
+```text
+BASE RATING SANITIZATION = K7:Q29 + R7:X29
+N7 CLONE = K31:Q33 + R31:X33
+N8 EXTRA CLONE = K35:Q37 + R35:X37
+PADDING = rows 30 / 34 / 38 / ZERO SANITIZATION OVERLAP
+RATING_SCALE_STATIC = B29:J29 / B33:J33 / B37:J37 / ZERO SANITIZATION OVERLAP
+```
+
+`validateMappingIntegrity()` now fail-closes on malformed production topology including dimension, Print_Area, merge counts, summary relocation, privacy counts, exact sensitive/sanitization ranges, duplicates and protected-static contamination. Mutation tests call the production validator.
+
+Closure identity:
+```text
+R2_A_INITIAL_IMPLEMENTATION = 6dcfba1277462f230a5cd9379aacb96193253ac1 / CORRECTED
+R2_A_R1_IMPLEMENTATION = 9a93adf69a0d029fc810b6121f3f8dfe228f0c42 / PASS / CLOSES R2_A
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+```
 
 ## Exact next control-plane decision — NOT AUTHORIZED
-R2 design now has all PRE2 prerequisites closed. Next production implementation must be separately bounded and authorized.
-
-Planned layers:
 ```text
-R2-B = sentinel-free production template preparation/sanitizer engine
-R2-C = secured semantic value renderer
+R2_B = SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER ENGINE
+STATE = PROPOSED / NOT AUTHORIZED
+R2_C = SECURED SEMANTIC VALUE RENDERER / NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = later D2 gate
 ```
 
-No production renderer/sanitizer source change is currently authorized.
-Read `AI_ACTIVE_TASK.md` for the exact current gate. Do not auto-start Antigravity, Kintone, deploy or D3.
+R2-B exact writable file/test contract still requires Control Plane planning and separate Owner authorization. Do not auto-start Antigravity, production renderer/preparer, Kintone, deploy or D3.
