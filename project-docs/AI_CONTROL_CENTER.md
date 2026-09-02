@@ -3,14 +3,14 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R3-R36 TEST-ONLY AUTHORIZED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / REFERENCE-IMAGE PASS-CLOSED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 14 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 6
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
+CONTROL_PLANE_ROUNDS_REMAINING = 5
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ```
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation closed; reference-image source accepted/frozen; R3-R36 TEST-ONLY authorized |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; next gate not started |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -35,6 +35,9 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
+D2-WP003-R3-R36 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -43,36 +46,36 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 3. R3-R35 independent review
+## 3. R3-R36 independent review
 
 ```text
-AUTHORIZATION_COMMIT = 3eb083b9d5920f1002ce3bf069d60d87325f0136
-IMPLEMENTATION_COMMIT = 2ea39f1d10dca9ba4b830e4207a4abf7cf797644
+AUTHORIZATION_COMMIT = f72e935b639da850aacc675c1ef2e30ce5f892c7
+IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
 SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
-STATUS = CORRECTIVE REQUIRED / NOT CLOSED
+PROOF_CODE_REVIEW = PASS
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+STATUS = PASS / CLOSED
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 ```
 
-R3-R35 correctly implemented XML 1.0 NameStartChar/NameChar code-point handling, NCName/QName attribute validation, restored R3-R33 adversarial proof and retained the R3-R34 matrix. The remaining defect is TEST-ONLY and narrow: malformed prefixed `embed` is ignored instead of throwing/failing closed.
+R3-R36 is exactly one bounded TEST-ONLY implementation commit and changes only `tests/mbo-xlsx-ooxml-feasibility.test.js`. It retains the accepted cumulative inventory/equality/adversarial proof and makes malformed prefixed `embed` QName candidates fail closed while valid `r:embed` extraction remains exact. No production source change was required. Durable closure is promoted in `CONFIRMED_BASELINE/README.md`.
 
 ## 4. Current gate
 
 ```text
-D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R36
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R36 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
+NEXT_D2_GATE = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX / NOT STARTED / NOT AUTHORIZED
 ```
 
 ## 5. Low-credit rule
 
-R3-R36 is TEST-ONLY. Change only malformed prefixed-`embed` fail-closed behavior/proof while preserving all accepted R3-R35 tests and helpers. Do not modify reference-image production source and do not invoke Claude unless material ambiguity later remains.
+Do not invoke Antigravity or Claude for the next gate until the Owner explicitly continues/authorizes. Prefer ChatGPT READ-ONLY planning/review first.
