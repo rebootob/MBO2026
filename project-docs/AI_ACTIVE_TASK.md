@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-B1-R3 AUTHORIZED / ACTIVE
+# AI ACTIVE TASK — R2-B1-R3 NEEDS CORRECTIVE / R4 PROPOSED
 
-Mode: **CONTROL PLANE / BOUNDED EXECUTOR AUTHORIZED / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
@@ -12,231 +12,173 @@ Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this fil
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
-D2_PRESERVATION = PASS / CLOSED
-D2_REFERENCE_IMAGE = PASS / CLOSED
 D2_PART_A_STRUCTURAL = PASS / CLOSED
-D2_PART_B_STRUCTURAL = PASS / CLOSED
-D2_FORMULA_AUTHORITY = PASS / CLOSED
-D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = NEEDS CORRECTIVE / NOT CLOSED
 D2_WP004_R2_B1_R1 = NEEDS CORRECTIVE / NOT CLOSED
 D2_WP004_R2_B1_R2 = NEEDS CORRECTIVE / NOT CLOSED
-D2_WP004_R2_B1_R3 = AUTHORIZED / ACTIVE
+D2_WP004_R2_B1_R3 = NEEDS CORRECTIVE / NOT CLOSED
 
 SAFE_TO_MAP = 20 EXACT
 UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-B1-R3
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-B1-R3-SOURCE-TEST-CORRECTIVE-20260903-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-B1-R3-SOURCE-TEST-CORRECTIVE-20260903-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
-ACTIVE_D2_RENDERER_CHANGE_AUTH = D2-WP004-R2-B1-R3-SOURCE-TEST-CORRECTIVE-20260903-01 / PART-A PREPARER CORRECTIVE ONLY
+ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = AUTHORIZED / BOUNDED CORRECTIVE / ONE-SHOT / ONE COMMIT -> PUSH -> STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-PRODUCTION_RENDERER = B1 CORRECTIVE ONLY / B2+C NOT AUTHORIZED
+PRODUCTION_RENDERER = B1 NOT CLOSED / B2+C NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. Authorization identity
+## 2. R3 implementation identity / scope review
 
 ```text
-WORK_PACKAGE = D2-WP004-R2-B1-R3
-NAME = PART A COVERAGE-COMPLETE REFERENCE + DEEP PARITY CORRECTIVE
-STATE = AUTHORIZED / ACTIVE
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
-AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R3-SOURCE-TEST-CORRECTIVE-20260903-01
-AUTHORIZATION_BASIS_HEAD = c5fdfd6a48772660d28c388c3f2288bfe80327ba
-MAX_EXECUTOR_COMMITS = 1
-EXECUTOR = ANTIGRAVITY
-FINAL_EXECUTOR_STATE = CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW
+R3_AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R3-SOURCE-TEST-CORRECTIVE-20260903-01
+R3_AUTHORIZATION_COMMIT = ee2cd8edcac49efd900435feed5d78381e0ee01c
+R3_IMPLEMENTATION_COMMIT = 4f7ea4a4f4e84c1f8e88f2aee1ac17f4f067f0df
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES = EXACTLY TWO AUTHORIZED FILES
+  src/services/mbo-xlsx-template-preparer.js
+  tests/mbo-xlsx-template-preparer.test.js
+SCOPE_REVIEW = PASS
+TOKEN_STATE = CONSUMED / DO NOT REUSE
+GITHUB_COMBINED_STATUS = NONE
+GITHUB_WORKFLOW_RUNS = NONE
+RUNTIME_CERTIFICATION = NOT INDEPENDENTLY AVAILABLE
 ```
 
-Owner authorization received exactly:
-`อนุมัติ D2-WP004-R2-B1-R3 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
-
-The token is single-use. Antigravity must not self-declare PASS/CLOSED and must STOP immediately after one corrective implementation commit is pushed.
-
-## 3. Prior R2 identity / accepted improvements
-
-```text
-R2_AUTHORIZATION_COMMIT = 5b2f81d1c3353e7333d7d9d59e767c75e307ec41
-R2_IMPLEMENTATION_COMMIT = ffb76e9d92a66eeeb268e648f3433db0781e893e
-R2_REVIEW_STATE_COMMIT = c5fdfd6a48772660d28c388c3f2288bfe80327ba
-R2_SCOPE_REVIEW = PASS
-R2_TOKEN = CONSUMED / DO NOT REUSE
-```
-
-Preserve these accepted R2 improvements:
-- production remains browser-safe; no Node fs/path/crypto import and no feasibility import;
-- exact owner-template SHA validation remains before workbook/package mutation;
-- caller bytes are copied before mutation;
-- Part A only, N4..N10, sentinel-free;
-- exact reference Target is `../media/image3.png` only;
-- any TargetMode attribute is rejected;
-- exact embed count checks exist;
-- production reference-image logic is shared through `validateAndRemoveReferenceImage()`;
-- real preparer calls that same helper after SHA validation;
-- adversarial tests call the same production helper directly, so SHA does not mask the intended validator path;
-- workbook-wide formula scan remains in focused integration test;
+Accepted R3 improvements that MUST NOT regress:
+- exact owner SHA gate remains before workbook/package mutation;
+- production remains browser-safe and Part-A-only;
+- shared production helper remains used by real preparer and adversarial tests;
+- exact Target `../media/image3.png`, TargetMode absent, exact embed cardinality and media existence remain enforced;
+- rId3 occurrence accounting now sees mixed syntactic evidence instead of self-closing-only discovery;
+- namespace-prefixed / duplicate / open-only malformed cases are explicitly tested;
+- updated drawing rels are checked for zero surviving `rId3` / `image3.png`;
+- complete merge set is now source-derived and deep-compared;
+- stale source tokens are checked against final sharedStrings;
+- same-count sanitization substitution is tested through production profile validation;
 - no semantic writer, scoring, Part B, Kintone or deploy scope expansion.
 
-## 4. Exact writable scope
+## 3. MATERIAL BLOCKER A — canonical rId3 syntax is still widened
 
-Antigravity may modify ONLY:
+R3 contract required non-self-closing rId3 relationship evidence to reject. Current helper explicitly treats a paired form such as:
 
-```text
-src/services/mbo-xlsx-template-preparer.js
-tests/mbo-xlsx-template-preparer.test.js
-```
+`<Relationship ... Id="rId3" ...></Relationship>`
 
-Forbidden:
+as valid when it is the only rId3 relationship and the tuple otherwise matches, because `isPairedClosing` is accepted.
 
-```text
-src/services/mbo-export-service.js
-src/profiles/mbo-xlsx-template-profile.js
-scripts/export/mbo-xlsx-ooxml-feasibility.js
-tests/mbo-xlsx-ooxml-feasibility.test.js
-project-docs/*
-package.json
-package-lock.json
-dist/*
-UI / integration
-Part B production implementation
-R2-C semantic renderer
-Combined Excel
-Kintone write/deploy/Live UAT
-D3
-```
+Required next correction:
+- canonical accepted rId3 relationship syntax must be exactly one self-closing `<Relationship .../>` element;
+- a single paired/non-self-closing rId3 relationship must reject, not only a duplicate paired relationship;
+- open-only, paired, namespace-prefixed, mixed duplicate and malformed rId3 evidence must all fail closed;
+- retain exact Type/Target/TargetMode/embed/media gates and post-removal zero-reference proof.
 
-No redesign and no broad generic framework.
+## 4. MATERIAL BLOCKER B — frozen Part A deep row identity proof still incomplete
 
-## 5. R3 SOURCE CORRECTIVE — coverage-complete relationship validation
+Frozen baseline requires rows 1:28 exact structural identity; inserted rows exact normalized row-28 clones for cell refs, style pattern, row height and custom-height behavior; and downstream rows >=29 exact relocated structural identity.
 
-Do NOT weaken or bypass the exact owner-template SHA gate.
+Current R3 test still mainly proves:
+- row number sequence/uniqueness;
+- rows 1:28 presence plus height/customHeight spot checks;
+- inserted rows presence plus fixed `ht` / `customFormat` spot checks;
+- downstream target row numbers.
 
-Production exact accepted reference tuple remains ONLY:
+It does NOT yet deep-compare source-derived normalized row identities for:
+- cell reference inventory;
+- cell style indices/pattern;
+- exact row attributes including height/customHeight/customFormat where applicable;
+- inserted row-28 normalized clone identity;
+- downstream original-row normalized identity after relocation;
+- stale/lost/duplicate downstream structural identity.
 
-```text
-Id = rId3
-Type = http://schemas.openxmlformats.org/officeDocument/2006/relationships/image
-Target = ../media/image3.png
-TargetMode = ABSENT
-MEDIA = xl/media/image3.png
-EXACT_EMBED = r:embed="rId3" exactly once globally in accepted drawing anchor evidence
-```
+## 5. MATERIAL BLOCKER C — frozen sheet/package parity still incomplete
 
-Required source correction:
-1. relationship parsing/validation must account for every Relationship element/evidence in `drawing1.xml.rels`, not only self-closing `<Relationship .../>` forms;
-2. reject malformed/non-self-closing/namespace-prefixed/duplicate rId3 relationship evidence rather than silently ignoring it;
-3. require exactly one canonical rId3 relationship tuple before mutation;
-4. after removing the accepted target relationship, explicitly prove UPDATED `drawing1.xml.rels` contains ZERO `rId3` and ZERO `image3.png` references;
-5. then scan all other `.rels` files and prove ZERO `image3.png` references before removing media;
-6. retain exact Type/Target/TargetMode-absent/embed-cardinality/media-existence validation;
-7. preserve unrelated relationship/media/drawing inventory after normalizing only accepted target removal;
-8. preserve browser safety, exact SHA gate, zero formulas, zero semantic writes and Part A-only boundary.
+`D2_PART_A_STRUCTURAL_CLOSURE.md` requires exact baseline equality for:
+- `sheetNames` and `sheetStates`;
+- `colsHash`;
+- `showGridLines`;
+- `pageMargins`;
+- `paperSize`, `orientation`, `scale`;
+- `fitToPage`;
+- `horizontalCentered`, `verticalCentered`;
+- `sheetProtection`;
+- `sheetRels`;
+- relationship tuples;
+- media inventory;
+- formula inventory empty.
 
-The existing shared production helper may be strengthened; do not create a parallel validator or broad XML framework unless strictly necessary.
+Current R3 tests prove page setup, sheet name, exact normalized drawing1 rels/drawing XML, and selected media presence, but not the complete baseline matrix above.
 
-## 6. R3 TEST CORRECTIVE — parser/post-removal fail-closed proof
+Required next proof:
+- derive these authorities from the exact source template and deep-equal N4..N10 output;
+- deep-equal complete non-target relationship tuple inventory and complete media inventory after normalizing only accepted rId3/image3 removal;
+- add protected/static topology mutation rejection through production profile validation;
+- extend stale sensitive token proof to relevant final XML/package text required by the frozen privacy contract, not sharedStrings only.
 
-Focused tests must call the SAME production helper used by the preparer and add adversarial cases for at minimum:
-- valid canonical self-closing rId3 relationship = PASS;
-- valid rId3 + non-self-closing duplicate rId3 = REJECT;
-- malformed/open-only rId3 evidence = REJECT;
-- namespace-prefixed rId3 relationship evidence = REJECT unless explicitly canonicalized and still exact/fail-closed;
-- duplicate rId3 in mixed syntactic forms = REJECT;
-- surviving rId3/image3 reference in updated `drawing1.xml.rels` = REJECT;
-- surviving image3 reference in another `.rels` file = REJECT through the real preparer/package path where practical;
-- existing wrong Type/Target/TargetMode/missing media/embed-cardinality cases remain passing.
+## 6. Runtime evidence
 
-Assertions must identify the intended reference-validation failure, not generic SHA rejection.
-
-## 7. R3 TEST CORRECTIVE — deep frozen Part A structural parity
-
-Use the REAL `preparePartATemplate()` as the mutation path and test-side inspection/oracle logic only.
-
-For every N=4..10 prove against the exact source baseline:
-1. exact numeric rowRefs sequence and uniqueness;
-2. rows 1:28 exact normalized structural identity, including cell references, cell style indices/pattern, row height and custom-height behavior;
-3. every inserted objective row exact normalized structural clone of source row 28 for those same dimensions;
-4. every original downstream row >=29 exact normalized structural identity relocated by N-4, with no stale/lost/duplicate row identity;
-5. complete expected merge SET deep equality derived from source baseline plus accepted row-28 clone/shift rules — count-only arithmetic is insufficient;
-6. declared merge count equals exact merge inventory length;
-7. exact dimensions A1:BL52..A1:BL58;
-8. exact Print_Area BJ52..BJ58;
-9. page setup paperSize=8 / orientation=landscape / scale=58;
-10. sheet names, sheet state and directly relevant frozen metadata required by `D2_PART_A_STRUCTURAL_CLOSURE.md` remain preserved.
-
-Do not duplicate production mutation logic as the implementation under test; deriving expected normalized identities in test-side oracle code is allowed.
-
-## 8. R3 TEST CORRECTIVE — privacy/package parity
-
-For N4..N10 prove:
-1. every Profile `effectiveSanitizationRanges` address is cleared;
-2. collect stale sensitive string tokens from the exact source template before sanitization and prove those tokens are absent from final sensitive cells, final `xl/sharedStrings.xml`, and relevant final XML/package text where frozen privacy proof requires purge;
-3. same-count sanitization topology substitution rejects through production `validateMappingIntegrity()`/Profile validation, not a test-only throw;
-4. protected/static topology mutation rejects through production Profile validation;
-5. capture complete source drawing relationship inventory + media inventory + relevant drawing inventory, normalize by removing ONLY accepted rId3/image3 target, and deep-equal against final output inventory;
-6. rId1/rId2 branding and every other non-target relationship/media entry remain exact after normalization;
-7. workbook-wide formula inventory remains exactly zero;
-8. caller bytes remain identical on success and failure;
-9. zero semantic/user writes, scoring/recalculation or Part B mutation.
-
-## 9. Real-template runtime evidence
-
-Antigravity must run:
+Repository truth for R3 exposes no combined CI status and no GitHub workflow run. The integration test still has a local-template skip path. Executor must run:
 
 `node --test tests/mbo-xlsx-template-preparer.test.js`
 
-with the exact owner Part A template present and SHA matching.
+with the exact owner template present and report exact PASS/FAIL/SKIP plus `real owner-template integration = EXECUTED / NOT SKIPPED` and `N4..N10 matrix = PASS`.
 
-Final executor report must state explicitly:
-- exact command;
-- pass count;
-- fail count;
-- skip count;
-- real owner-template integration = EXECUTED / NOT SKIPPED;
-- N4..N10 matrix = PASS/FAIL.
-
-If the owner template is unavailable or integration skips, report that limitation and do not claim closure.
-
-## 10. Executor protocol
+## 7. Exact next proposed corrective — NOT AUTHORIZED
 
 ```text
-fresh-fetch canonical branch
--> verify HEAD equals Control Plane authorization HEAD
--> read D2_REVIEW_FAST_START.md
--> read this AI_ACTIVE_TASK.md
--> read R2 renderer/sanitizer design
--> inspect only relevant Part A baseline/profile/B1 source+test/reference proof
--> correct only two authorized files
--> run focused real-template tests
--> verify git diff contains only two authorized files
--> exactly one corrective implementation commit
--> push canonical branch
--> report SHA + exact files + pass/fail/skip + real-template execution status
--> STOP
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-B1-R4
+NAME = PART A CANONICAL RELATIONSHIP + FROZEN BASELINE PARITY COMPLETION
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+
+PROPOSED_WRITABLE_FILES =
+  src/services/mbo-xlsx-template-preparer.js
+  tests/mbo-xlsx-template-preparer.test.js
+
+MAX_EXECUTOR_COMMITS = 1
 ```
 
-Do not modify control docs. Do not begin R2-B2/R2-C. Do not deploy. Do not perform Kintone writes.
+R4 must correct ONLY Blockers A-C and provide the required real-template run report. Production source change should remain minimal: close the single non-self-closing canonical-syntax gap without redesigning the preparer.
 
-Expected executor final status:
-`R2-B1-R3 CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`
-
-## 11. Remaining work — NOT AUTHORIZED
+## 8. Forbidden scope remains
 
 ```text
-R2-B2 = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
-R2-C = SECURED SEMANTIC VALUE RENDERER
-COMBINED_EXCEL_PARITY = later D2 gate
-D2_FINAL_CLOSURE = after production preparer + semantic renderer + parity closure
-D3 = HOLD UNTIL D2 PASS / CLOSED
+src/services/mbo-export-service.js = FORBIDDEN
+src/profiles/mbo-xlsx-template-profile.js = FORBIDDEN
+scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
+tests/mbo-xlsx-ooxml-feasibility.test.js = FORBIDDEN
+project-docs/* = FORBIDDEN TO EXECUTOR
+package.json / package-lock.json = FORBIDDEN
+UI / dist / integration = FORBIDDEN
+R2-B2 = NOT AUTHORIZED
+R2-C = NOT AUTHORIZED
+Combined Excel = NOT AUTHORIZED
+Kintone write/deploy/Live UAT = FORBIDDEN
+D3 = HOLD
+```
+
+## 9. Owner decision
+
+No execution is authorized now.
+
+Recommended approval phrase:
+`อนุมัติ D2-WP004-R2-B1-R4 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+
+```text
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+PRODUCTION_RENDERER = B1 NOT CLOSED
+R2-B2 = NOT AUTHORIZED
+R2-C = NOT AUTHORIZED
+D3 = HOLD
 ```
