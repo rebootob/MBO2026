@@ -14,22 +14,7 @@ Read only:
 4. exact authorization→implementation diff
 5. exact changed source/test files as needed
 
-Do not automatically re-read closed-gate internals.
-
-## 2. Full reconciliation — only when whole-project state matters
-
-1. fresh HEAD;
-2. `D2_REVIEW_FAST_START.md`;
-3. `CHAT_HANDOFF.md`;
-4. `AI_CONTROL_CENTER.md`;
-5. `AI_ACTIVE_TASK.md`;
-6. this file;
-7. `00_MASTER_JOBLIST.md`;
-8. `EXCEL_EXPORT.md`;
-9. directly relevant Baselines;
-10. exact source/tests only as needed.
-
-## 3. Current checkpoint
+## 2. Current checkpoint
 
 ```text
 D1 = PASS / CLOSED
@@ -39,34 +24,40 @@ D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
 D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
-PROPOSED_WORK_PACKAGE = D2-WP003-R7 / PART B EXPANDED PRIVACY REMAP 6/7/8
-R7_STATE = PROPOSED / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R7
+R7_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7_AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-## 4. Relevant durable D2 Baselines
+## 3. Relevant durable D2 Baselines
 
 Read only when directly relevant:
 - `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-Do not reopen these gates without proven regression.
+## 4. Active R7 file scope
 
-## 5. Remaining D2 routing
+Writable only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-1. R7 expanded Part B privacy address remap 6/7/8;
-2. production XLSX renderer/sanitizer;
-3. combined Excel parity;
-4. PDF parity;
-5. export authorization/security/privacy regression;
-6. final independent D2 closure.
+Full contract is in `AI_ACTIVE_TASK.md`. Production renderer, `MboExportService`, dependency changes, generated artifacts, Kintone/deploy/D3 are not authorized.
 
-Previous 20-round standing Control Plane authorization is exhausted and must not be silently reused. Antigravity remains one-shot only after exact Owner authorization. Kintone/deploy authorization remains separate.
+## 5. Remaining D2 after R7
+
+1. production XLSX renderer/sanitizer;
+2. combined Excel parity;
+3. PDF parity;
+4. export authorization/security/privacy regression;
+5. final independent D2 closure.
+
+The previous 20-round standing Control Plane authorization remains exhausted / DO NOT REUSE. R7 execution is one-shot only.
