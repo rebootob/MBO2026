@@ -1454,7 +1454,24 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
     assert.equal(inspN.dimension, expectedDimensionTag, `Part A ${n} objectives dimension must be exact string ${expectedDimensionTag}`);
     assert.equal(inspN.printArea, expectedPrintArea, `Part A ${n} objectives print area must be exact string ${expectedPrintArea}`);
 
-    // B. Merge inventory full deep equality
+    // B. Exact row-node sequence + uniqueness
+    const expectedRowRefs = [];
+    for (const r of inspBaseline.rowRefs) {
+      if (r <= 28) {
+        expectedRowRefs.push(r);
+      } else {
+        expectedRowRefs.push(r + extraRows);
+      }
+    }
+    for (let i = 0; i < extraRows; i++) {
+      expectedRowRefs.push(29 + i);
+    }
+    expectedRowRefs.sort((a, b) => a - b);
+
+    assert.deepEqual(inspN.rowRefs, expectedRowRefs, `Part A ${n} objectives rowRefs must match expected sequence exactly`);
+    assert.equal(new Set(inspN.rowRefs).size, inspN.rowRefs.length, `Part A ${n} objectives rowRefs must contain 0 duplicates`);
+
+    // C. Merge inventory full deep equality
     const expectedMerges = [];
     for (const m of inspBaseline.rawMerges) {
       const match = m.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
@@ -1477,14 +1494,14 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
     assert.equal(inspN.mergeCountAttr, String(expectedMergeCount), `Part A ${n} objectives mergeCountAttr must equal ${expectedMergeCount}`);
     assert.deepEqual(inspN.rawMerges, expectedMerges, `Part A ${n} objectives raw merge set must match computed expected merge set exactly`);
 
-    // C. Rows 1-28 structurally unchanged
+    // D. Rows 1-28 structurally unchanged
     for (let r = 1; r <= 28; r++) {
       assert.deepEqual(inspN.cellRefs[r], inspBaseline.cellRefs[r], `Row ${r} cell refs in ${n} objectives must match baseline`);
       assert.deepEqual(inspN.stylePattern[r], inspBaseline.stylePattern[r], `Row ${r} style pattern in ${n} objectives must match baseline`);
       assert.deepEqual(inspN.rowHeights[r], inspBaseline.rowHeights[r], `Row ${r} height in ${n} objectives must match baseline`);
     }
 
-    // D. Inserted rows 29..(28+extraRows) are exact normalized structural clones of row 28
+    // E. Inserted rows 29..(28+extraRows) are exact normalized structural clones of row 28
     for (let i = 0; i < extraRows; i++) {
       const targetR = 29 + i;
       const normalizedCellRefs = (inspN.cellRefs[targetR] || []).map(c => c.replace(new RegExp(`${targetR}$`), '28'));
@@ -1493,7 +1510,7 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
       assert.deepEqual(inspN.rowHeights[targetR], inspBaseline.rowHeights[28], `Inserted row ${targetR} height must match row 28 baseline`);
     }
 
-    // E. Downstream original rows >= 29 moved exactly by +extraRows
+    // F. Downstream original rows >= 29 moved exactly by +extraRows
     for (let r = 29; r <= 52; r++) {
       const shiftedR = r + extraRows;
       const normalizedShiftedCellRefs = (inspN.cellRefs[shiftedR] || []).map(c => c.replace(new RegExp(`${shiftedR}$`), String(r)));
@@ -1502,7 +1519,7 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
       assert.deepEqual(inspN.rowHeights[shiftedR], inspBaseline.rowHeights[r], `Downstream row ${r} shifted to ${shiftedR} height must match baseline row ${r}`);
     }
 
-    // F. Privacy-safe sentinel relocation
+    // G. Privacy-safe sentinel relocation
     const targetSentinelCell = `B${29 + extraRows}`;
     assert.equal(sheetN.cell(targetSentinelCell).value(), 'SENTINEL_ROW_29', `Sentinel must exist at ${targetSentinelCell}`);
     if (extraRows > 0) {
@@ -1516,16 +1533,31 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
     }
     assert.equal(sentinelCount, 1, `Sentinel 'SENTINEL_ROW_29' must exist exactly once in ${n} objectives sheet`);
 
-    // G. Non-target structural invariants
-    assert.deepEqual(fpN.sheetNames, ['MBO Staff & Chief'], `Sheet names for ${n} objectives must match baseline`);
-    assert.equal(fpN.colsHash, baselineFp.colsHash, `Column structure hash for ${n} objectives must match baseline`);
-    assert.equal(inspN.pageSetup.paperSize, '8', `Paper size must be 8 (A3) for ${n} objectives`);
-    assert.equal(inspN.pageSetup.orientation, 'landscape', `Orientation must be landscape for ${n} objectives`);
-    assert.equal(inspN.pageSetup.scale, '58', `Scale must be 58 for ${n} objectives`);
+    // H. Workbook sheet invariants
+    assert.deepEqual(fpN.sheetNames, baselineFp.sheetNames, `Sheet names for ${n} objectives must match baseline exactly`);
+    assert.deepEqual(fpN.sheetStates, baselineFp.sheetStates, `Sheet states for ${n} objectives must match baseline exactly`);
+
+    // I. Main-sheet non-target invariant equality
+    const baselineMain = baselineFp.sheets['MBO Staff & Chief'];
+    const currentMain = fpN.sheets['MBO Staff & Chief'];
+    assert.ok(baselineMain && currentMain, 'Main sheet entry must exist in both baseline and current fingerprints');
+
+    assert.equal(currentMain.colsHash, baselineMain.colsHash, `Cols hash for ${n} objectives must match baseline`);
+    assert.equal(currentMain.showGridLines, baselineMain.showGridLines, `showGridLines for ${n} objectives must match baseline`);
+    assert.equal(currentMain.pageMargins, baselineMain.pageMargins, `pageMargins for ${n} objectives must match baseline`);
+    assert.equal(currentMain.paperSize, baselineMain.paperSize, `paperSize for ${n} objectives must match baseline`);
+    assert.equal(currentMain.orientation, baselineMain.orientation, `orientation for ${n} objectives must match baseline`);
+    assert.equal(currentMain.scale, baselineMain.scale, `scale for ${n} objectives must match baseline`);
+    assert.equal(currentMain.fitToPage, baselineMain.fitToPage, `fitToPage for ${n} objectives must match baseline`);
+    assert.equal(currentMain.horizontalCentered, baselineMain.horizontalCentered, `horizontalCentered for ${n} objectives must match baseline`);
+    assert.equal(currentMain.verticalCentered, baselineMain.verticalCentered, `verticalCentered for ${n} objectives must match baseline`);
+    assert.equal(currentMain.sheetProtection, baselineMain.sheetProtection, `sheetProtection for ${n} objectives must match baseline`);
+    assert.deepEqual(currentMain.sheetRels, baselineMain.sheetRels, `sheetRels for ${n} objectives must match baseline`);
+
     assert.deepEqual(fpN.relTuples, baselineFp.relTuples, `Relationship tuples for ${n} objectives must match baseline`);
     assert.deepEqual(fpN.mediaFiles, baselineFp.mediaFiles, `Media inventory for ${n} objectives must match baseline`);
 
-    // H. Formula inventory remains empty
+    // J. Formula inventory remains empty
     const formulaSet = await getWorksheetFormulaSet(bufN);
     assert.equal(formulaSet.size, 0, `Formula inventory must equal 0 for ${n} objectives`);
   }
