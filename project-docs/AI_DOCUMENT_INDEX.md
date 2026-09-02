@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT.
 
-Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/design/evidence -> exact diff.
 
 ```text
 D1 = PASS / CLOSED
@@ -30,15 +30,16 @@ Durable D2 Baselines:
 - `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-Template Profile closure:
+R2 design:
+- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
+
+R2 current state:
 ```text
-FINAL_IMPLEMENTATION = b59815aa5e5bad09ad252a10cdd1914185170fc0
-SCOPE = PASS / EXACT TWO FILES
-CANONICAL_PART_B_COMPETENCY_INTEGRITY = PASS
-SEMANTIC_AUTHORITY = 18 SAFE / 22 UNRESOLVED / 5 NO_SOURCE
-STATUS = PASS / CLOSED
-TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
-RUNTIME_SIGNAL = UNAVAILABLE
+R2_READ_ONLY_DESIGN = COMPLETE
+R2_IMPLEMENTATION = NOT AUTHORIZED
+PRE_RENDER_BLOCKER = PART B N7/N8 COMPETENCY PRESENTATION MAPPING/SOURCE AUTHORITY UNPROVEN
+PROPOSED_PRE1 = D2-WP004-R2-PRE1 EVIDENCE-ONLY / NOT AUTHORIZED
+EXPECTED_PRE1_EVIDENCE = phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
 ```
 
-Next proposed: `D2-WP004-R2 — PRODUCTION XLSX RENDERER + SANITIZER`, NOT AUTHORIZED. ChatGPT should first perform low-credit READ-ONLY design from closed Baselines/current repository and define exact files/tests before any executor authorization.
+Read the R2 design before any renderer authorization. PRE1 must prove exact visible presentation targets plus deterministic secured projection/source-selection authority or leave them unresolved. Production Renderer remains NOT AUTHORIZED.
