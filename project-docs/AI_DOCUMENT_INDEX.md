@@ -22,18 +22,19 @@ Open in this order:
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
-D2-WP003-R3-R30 = PASS / CLOSED
-R3-R30_IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 8 OF 20
+D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS
+REFERENCE_IMAGE_PROOF_REVIEW = FAIL / FULL TARGET-NORMALIZED INVENTORY EQUALITY ABSENT
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 9 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_NEXT_D2_ACTION = REFERENCE-IMAGE CLOSURE
-PREFERRED_EXECUTION = CHATGPT READ-ONLY REVIEW FIRST
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R31
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
@@ -45,11 +46,10 @@ Read:
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. exact current reference-image source/tests for the next READ-ONLY closure review.
+5. current `getReferenceImageBuffers()` and `FEASIBILITY_REFERENCE_IMAGE_REMOVAL` only as needed;
+6. historical R3-R5 through R3-R9 review truth only when checking the recovered inventory-equality contract.
 
-R3-R29 production preservation source is accepted. R3-R30 completed the missing TEST-ONLY proof and is PASS/CLOSED. The OOXML preservation gate is now PASS/CLOSED. GitHub has no independent CI/status/workflow signal for R3-R30, so no independent runtime claim is made.
-
-Next use ChatGPT READ-ONLY review on existing reference-image handling before spending Antigravity or Claude credits.
+Current source is accepted for the reference-image corrective. Missing closure proof is target-normalized exact equality for complete drawing-anchor, drawing-relationship and media path/hash inventories. R3-R31 is proposed TEST-ONLY and is NOT authorized.
 
 ## 4. Task -> document routing
 
