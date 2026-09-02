@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE CANONICAL INTEGRITY ACTIVE**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / XLSX SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE CLOSED / RENDERER NOT AUTHORIZED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -14,54 +14,49 @@ PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
+XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 ```
 
-Durable semantic authority:
-`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
+Durable authorities:
+- `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
+Template Profile final closure:
 ```text
-SAFE_TO_MAP = 18 EXACT
-UNRESOLVED = 22 EXACT
-NO_SECURED_PROJECTION_SOURCE = 5 EXACT
-CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
-```
-
-## R1-R3-R1 independent review
-```text
-IMPLEMENTATION_COMMIT = 6386e506b85ded87a57967705066e38d56212f73
+AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+AUTHORIZATION_COMMIT = 368dcb4890621400fd9b6fabfb979599bf453a07
+IMPLEMENTATION_COMMIT = b59815aa5e5bad09ad252a10cdd1914185170fc0
 SCOPE = PASS / EXACT TWO AUTHORIZED FILES
-OBJECTIVE_i_COMMENT_ALIAS = FIXED / REJECTS
-COMPETENCY_b_RATING_ALIAS = FIXED / REJECTS
-NULL_PATH_BASIC_GUARD = PASS
-OVERALL = CORRECTIVE REQUIRED
-TOKEN = CONSUMED / DO NOT REUSE
+CANONICAL_PART_B_COMPETENCY_INTEGRITY = PASS
+SEMANTIC_AUTHORITY = 18 SAFE / 22 UNRESOLVED / 5 NO_SOURCE
+PROFILE = PASS / CLOSED
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Remaining defect: canonical Part B competency integrity must require exact expected `index`, rating `row`, exact `K{row}` self target and exact `partB.competencyItems[b-1].selfRating` path.
+Production semantic rules remain frozen:
+- renderer may consume only mappings allowed by the closed Template Profile;
+- 22 unresolved roles remain fail closed/non-writable;
+- 5 no-source roles must never be synthesized;
+- Chief R:X remains structural/privacy authority only; no secured Chief writable role;
+- Employee-Self confidential omissions must never be reconstructed;
+- Excel scoring/recalculation/formulas remain forbidden;
+- template addresses remain centralized in the Template Profile.
 
-## Active D2-WP004-R1-R3-R2
-```text
-AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE_FILES_ONLY =
-  src/profiles/mbo-xlsx-template-profile.js
-  tests/mbo-xlsx-template-profile.test.js
-SOURCE_CHANGE = AUTHORIZED ONLY FOR PROFILE FILE
-TEST_CHANGE = AUTHORIZED ONLY FOR PROFILE TEST FILE
-PRODUCTION_RENDERER = NOT AUTHORIZED
-```
+## Next proposed — D2-WP004-R2
+`PRODUCTION XLSX RENDERER + SANITIZER` is **NOT AUTHORIZED**.
 
-No semantic Baseline expansion is authorized. R1-R3-R2 must only complete exact canonical integrity validation/tests and preserve all already-corrected behavior. No workbook inspection or semantic re-research.
+Before any SOURCE authorization, ChatGPT Control Plane must perform a READ-ONLY repository design pass and define exact renderer/sanitizer files, secured projection boundary, workbook mutation sequence, privacy sanitizer behavior, structural preservation checks, zero-formula proof, unknown-template fail-closed behavior, focused tests and rollback/error handling.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R2
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
+PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
