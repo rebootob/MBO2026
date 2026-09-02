@@ -13,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — semantic mapping evidence closed; Template Profile alignment next proposed |
+| D2 | IN PROGRESS — Template Profile semantic alignment active |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -40,17 +40,19 @@ SAFE_TO_MAP_WITHOUT_SECURED_PATH = 0
 CHIEF_FROZEN_AUTHORITY = R:X
 INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 
-PROPOSED_NEXT = D2-WP004-R1-R3 SOURCE+TEST / TEMPLATE PROFILE SEMANTIC ALIGNMENT / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3
+ACTIVE_AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / EXACT TWO EXISTING FILES
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3 SOURCE+TEST
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-No production source change is authorized. R1-R3 may start only after exact Owner approval and must align the existing pure Template Profile to the closed semantic Baseline without widening authority or implementing the renderer.
+R1-R3 may modify only the existing Template Profile source/test pair. It must align production writable mappings to exactly the 18-role semantic closure Baseline, fail closed for every unresolved/no-source semantic, preserve pure/no-workbook-I/O architecture, and STOP before renderer implementation.
