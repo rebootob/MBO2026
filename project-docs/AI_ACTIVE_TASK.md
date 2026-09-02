@@ -1,227 +1,148 @@
-# AI ACTIVE TASK — D2-WP003-R7-R1 SOURCE+TEST AUTHORIZED
+# AI ACTIVE TASK — D2 R7-R1 CORRECTIVE / R7-R2 PROPOSED / NO ACTIVE EXECUTOR
 
-Mode: **LOW-CREDIT / BOUNDED / ONE-SHOT / EXACT TWO FILES / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / PRIVACY FAIL-CLOSED CORRECTIVE / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Repository truth and accepted newer Live evidence always win. Fresh-fetch current branch HEAD before acting.
-
-## 0. Fast read path
-
-1. `project-docs/D2_REVIEW_FAST_START.md`
-2. this file
-3. `project-docs/CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-4. `project-docs/CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
-5. exact R7 implementation diff only as needed
-
-Do not re-scan closed gates by default.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> directly relevant Baseline -> exact diff.
 
 ## 1. Current truth
-
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
-D1_OVERALL = PASS / CLOSED
-D2_STATUS = IN PROGRESS
-D2_PRESERVATION_GATE = PASS / CLOSED
-D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
-D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
-D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
-D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
-D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / 20 OF 20 / DO NOT REUSE
-ANTIGRAVITY_AUTO_AUTH = NO
-CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R1
-ACTIVE_WORK_PACKAGE_NAME = PART B EXPANDED PRIVACY ROLE + FAIL-CLOSED + TOKEN-PURGE CORRECTIVE
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+D1 = PASS / CLOSED
+D2 = IN PROGRESS
+D2_PRESERVATION = PASS / CLOSED
+D2_REFERENCE_IMAGE = PASS / CLOSED
+D2_PART_A_STRUCTURAL = PASS / CLOSED
+D2_PART_B_STRUCTURAL = PASS / CLOSED
+D2_FORMULA_AUTHORITY = PASS / CLOSED
+D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-D3_EXECUTION = HOLD UNTIL D2 PASS / CLOSED
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
+D3 = HOLD
 ```
 
-The prior 20-round standing review/corrective authorization remains exhausted and is NOT renewed by R7-R1. After implementation Antigravity stops. Owner/ChatGPT will explicitly initiate independent review.
+## 2. R7-R1 independent review
+Authorization commit: `273d5ccbbb24d6aaa1b5ae23bab2a0941977d591`  
+Implementation commit: `7c1be393bbddaf1f6b439d13229ad256c23517cf`
 
-## 2. Authorization identity
+Authorization -> implementation = exactly one commit and exactly two authorized files.
 
 ```text
-WORK_PACKAGE = D2-WP003-R7-R1
-AUTHORIZATION_TOKEN = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT
-OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
-EXPECTED_COMMITS = EXACTLY ONE IMPLEMENTATION OR BLOCKER COMMIT AFTER THIS AUTHORIZATION COMMIT
+R7-R1_SCOPE_REVIEW = PASS
+R7-R1_ROW30_ROLE_MAPPING = PASS / FROZEN
+R7-R1_DYNAMIC_CARDINALITY = PASS / FROZEN (432 / 474 / 516)
+R7-R1_STYLE_MERGE_SOURCE_BACKING = PASS / FROZEN
+R7-R1_EXPANDED_PACKAGE_TOKEN_PURGE = PASS / FROZEN
+R7-R1_ZERO_FORMULA_PROOF = PASS / FROZEN
+R7-R1_FAIL_CLOSED_SOURCE_EVIDENCE = CORRECTIVE REQUIRED
+R7-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R7-R1_STATUS = CORRECTIVE REQUIRED
+D2-WP003-R7-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Writable files ONLY:
-1. `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-2. `tests/mbo-xlsx-ooxml-feasibility.test.js`
+No Claude review is needed; remaining defects are directly provable from source/test.
 
-Any other changed file is out of scope and must block completion.
+## 3. Freeze accepted R7-R1 work — DO NOT REDESIGN
+Keep exactly:
+- support only N=6/7/8;
+- real `getStructuralPartBBuffers()` usage;
+- source-role row mapping: original rows unchanged, clones 27/28/29 dynamic pattern + row30 padding static, shifted summary normalized by `extraRows`;
+- exact dynamic counts N6=432, N7=474, N8=516;
+- row30 and clones 34/38 excluded from dynamic inventory;
+- source-backed styleId + normalized merge relocation;
+- count-aware typed metadata API/cardinality;
+- expanded package/sharedStrings synthetic sensitive-token purge proof;
+- caller buffer immutability proof;
+- formula inventory = 0;
+- all Preservation / Reference Image / Part A / Part B Structural / Formula Authority proof.
 
-## 3. R7 review truth / frozen accepted portions
-
-R7 authorization:
-`D2-WP003-R7-SOURCE-TEST-20260902-01`
-
-R7 implementation:
-`993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6`
-
+## 4. Remaining proven defects
+### DEFECT A — protected-static authority bypass
+Current resolver contains an exception equivalent to:
 ```text
-R7_SCOPE_REVIEW = PASS
-R7_SOURCE_REVIEW = CORRECTIVE REQUIRED
-R7_PROOF_CODE_REVIEW = CORRECTIVE REQUIRED
-R7_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-R7_STATUS = CORRECTIVE REQUIRED
-D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+if ([30,34,38].includes(r) && cStr === 'B') allow valHash/normalizedType drift
 ```
+This weakens source-backed authority. Synthetic static proof data must be injected only AFTER authoritative role validation, not by teaching the resolver to tolerate protected-static drift.
 
-KEEP/FREEZE from R7:
-- exactly two-file scope discipline;
-- competency support restricted to N=6,7,8;
-- real `getStructuralPartBBuffers()` path;
-- summary/signature destinations 31:34 / 35:38 / 39:42 for N=6/7/8;
-- count-aware typed metadata API direction;
-- source-6 privacy behavior;
-- Formula Authority / zero formula inventory;
-- all Preservation / Reference Image / Part A / Part B structural proof.
+R7-R2 must remove every such production-like source-authority bypass. Source row30 and every clone must remain exact protected-static authority before proof mutation.
 
-Do NOT redesign Part B structural insertion.
+### DEFECT B — exact normalizedType/nonblank source evidence not enforced for all pre-mutation structural roles
+R7-R1 validates style and merge for all rows, but the authoritative pre-mutation role proof does not directly enforce source-relative `normalizedType` and `nonblank` for dynamic evidence, and does not directly compare `nonblank` even for static evidence.
 
-## 4. Exact corrective contract
+R7-R2 must separate:
+1. authoritative role validation on the untouched real structural buffer; from
+2. later disposable proof-token mutation/sanitization.
 
-### A. Exact source-row role mapping — no contiguous-row assumption
+Before any synthetic mutation, validate each relevant observed target record against its normalized source authority for:
+- styleId;
+- normalized merge identity;
+- normalizedType;
+- nonblank;
+- protected-static valHash when source static valHash exists.
 
-Accepted source authority:
+After that authoritative validation succeeds, synthetic dynamic/static proof mutation may occur on a disposable copy without weakening the resolver.
+
+### DEFECT C — direct negative proof missing
+Add direct fail-closed tests proving at minimum:
+- dynamic target normalizedType mismatch on untouched structural inventory => `BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`;
+- dynamic target nonblank mismatch => blocker;
+- protected row30/clone static valHash mismatch => blocker;
+- protected row30/clone normalizedType mismatch => blocker;
+- missing/changed style and merge negative tests remain;
+- unsupported N remains blocker.
+
+## 5. Proposed corrective — D2-WP003-R7-R2
 ```text
-SOURCE_DYNAMIC_COMPETENCY_ROWS = 7..29
-CLONE_SOURCE_DYNAMIC_ROWS = 27,28,29
-CLONE_SOURCE_PADDING_ROW = 30 / NON-DYNAMIC
-DYNAMIC_COLUMNS_PER_RATING_ROW = K:X = 14
-N=6_DYNAMIC_COUNT = 432
-N=7_DYNAMIC_COUNT = 474
-N=8_DYNAMIC_COUNT = 516
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R2
+NAME = PART B PRIVACY SOURCE-EVIDENCE FAIL-CLOSED FINAL CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT WHEN AUTHORIZED
+EXPECTED_WRITABLE_FILES =
+  scripts/export/mbo-xlsx-ooxml-feasibility.js
+  tests/mbo-xlsx-ooxml-feasibility.test.js
 ```
 
-For each inserted block index `b = 0..extraBlocks-1`:
-```text
-blockStart = 31 + (4 * b)
-blockStart+0 maps to source row 27
-blockStart+1 maps to source row 28
-blockStart+2 maps to source row 29
-blockStart+3 maps to source row 30 and MUST be NON-DYNAMIC
-```
+No authorization token exists yet.
 
-Requirements:
-- original source row 30 remains non-dynamic for every N;
-- K:X on every target clone of source row 30 must NOT enter `dynamicAddresses`;
-- cloned source rows 27:29 preserve static B:J / dynamic K:X semantics;
-- summary/signature rows relocate exactly by `extraRows = 4 * (N-6)`;
-- no stale summary role remains inside inserted blocks;
-- exact dynamic counts = 432 / 474 / 516;
-- dynamic addresses are unique and disjoint from protected static addresses.
+## 6. Exact R7-R2 corrective contract
+If Owner authorizes:
 
-Do not solve by introducing another blanket rectangle or second unrelated classification table.
+### SOURCE
+1. Remove B30/B34/B38 static hash/type bypasses and any equivalent tolerance.
+2. Preserve exact accepted row mapping/counts/style+merge logic.
+3. Implement/retain an authoritative pre-mutation resolver/proof path that compares expected source-relative `styleId`, relocated `mergeRef`, `normalizedType`, `nonblank`, and static `valHash` where applicable.
+4. Count-aware sanitizer may use a prevalidated role map/dynamic inventory or otherwise avoid rerunning strict source validation after synthetic proof-token injection.
+5. Do not add generic tolerance or production renderer behavior.
 
-### B. Source-backed structural-role FAIL-CLOSED validation
+### TEST
+1. Retain all accepted R7-R1 6/7/8 cardinality/row30/token-purge/metadata/formula tests.
+2. Prove untouched real structural N6/N7/N8 buffers pass strict source evidence validation before token injection.
+3. Add negative inventory mutations for dynamic normalizedType, dynamic nonblank, row30-clone static hash, row30-clone normalizedType; all must fail closed.
+4. Only after strict role validation, inject synthetic sensitive/static proof tokens on disposable copies and run existing count-aware sanitization/package scan.
+5. No real employee-bearing source values in logs/evidence.
 
-Before accepting any count-aware role for N=7/8, map observed target evidence to expected source authority:
-- original header/competency row => same source row;
-- inserted block row => source 27/28/29/30 by exact block offset;
-- shifted summary row => source summary 31/32/33/34 after exact `extraRows` normalization.
-
-For evidence needed to classify safely, prove source-relative identity of:
-- `styleId`;
-- merge identity normalized only for exact row relocation/cloning;
-- `normalizedType`;
-- `nonblank` state;
-- static value hash when protected static source value participates in role authority.
-
-Missing, malformed, mismatched or ambiguous evidence MUST throw exactly the existing blocker family:
-`BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED`.
-
-Do not weaken exact owner-template SHA gates or the frozen structural matrix.
-
-### C. Required negative expanded structural-role proof
-
-Using only privacy-safe in-memory/cloned inventories or disposable buffers, prove at minimum:
-- changed style on a cloned target role => blocker;
-- wrong/missing merge identity on a cloned target role => blocker;
-- missing target inventory record => blocker;
-- source-row-30 clone presented as dynamic/role-inconsistent => blocker;
-- unsupported competency count => blocker.
-
-Do not modify or commit owner template binaries.
-
-### D. Expanded feasibility sanitization + package token-purge proof
-
-R7-R1 may add/extend feasibility-only helper(s) in the authorized source file. This is NOT Production Renderer.
-
-For each N=6,7,8:
-1. obtain the real structural buffer from `getStructuralPartBBuffers()`;
-2. resolve corrected exact count-aware dynamic addresses;
-3. inject privacy-safe synthetic sensitive proof tokens into representative dynamic locations, including for expanded variants at minimum:
-   - inserted rating cell for N=7/N=8;
-   - shifted summary/signature cell for N=7/N=8;
-4. optionally use a distinct static proof token in a protected clone/padding cell only after role authority validation so static survival can be proved without changing the authority evidence;
-5. sanitize every exact dynamic address;
-6. purge sensitive strings left in sharedStrings/package evidence using the existing accepted disposable-sanitization strategy; clearing worksheet references alone is insufficient;
-7. prove every synthetic sensitive token is absent from relevant `xl/*.xml` and `.rels` parts, including `xl/sharedStrings.xml` when present;
-8. prove protected static proof token/fingerprint survives where applicable;
-9. prove original caller structural buffer bytes are unchanged;
-10. prove formula inventory remains exactly zero.
-
-Never log or commit real employee/template values.
-
-### E. Typed privacy metadata proof
-
-For each N=6,7,8:
-- metadata address set equals corrected `dynamicAddresses` exactly;
-- `uniqueCount` equals 432 / 474 / 516 respectively;
-- `totalReconciled === uniqueCount`;
-- accepted normalized types only;
-- source row30 and every row30 clone are absent from dynamic metadata;
-- duplicate/missing/extra/malformed metadata remains fail-closed.
-
-Retain the previously accepted typed-privacy negative regression matrix unless a strictly stronger equivalent replaces it with no coverage loss.
-
-### F. Preserve non-target proof
-
-Do not remove/weaken:
-- R5/R5-R1 Part B structural matrix proof;
-- Preservation / Option B;
-- Reference Image;
-- Part A proof;
-- Formula Authority / zero-formula proof;
-- `Sheet1`, relationship/media, dimensions/merges/Print_Area proof in the shared test file;
-- exact source-6 privacy mapping.
-
-If corrective work would require weakening these, STOP and report blocker instead of widening scope.
-
-## 5. Explicitly OUT OF SCOPE
-
+## 7. Explicitly OUT OF SCOPE
 Do NOT:
+- redesign row mapping/cardinality or Part B structural insertion;
 - create Production XLSX Renderer;
 - modify `src/services/mbo-export-service.js`;
-- implement or recalculate scoring;
+- recalculate scores;
 - modify dependencies/package-lock;
 - commit generated XLSX/PDF/image/evidence binaries;
-- modify Part A source behavior;
-- redesign Part B structural insertion;
-- touch Kintone records/apps/settings/ACL/process/customization;
-- deploy anything;
-- perform Live UAT;
-- start Combined Excel, PDF, security-regression, D3, or any later WP;
+- modify Part A behavior;
+- touch Kintone/ACL/process/deploy/Live UAT;
+- start Combined Excel/PDF/security regression/D3;
 - invoke Claude.
 
-## 6. Required commands
-
-Run exactly:
-
+## 8. Required commands if authorized
 ```bash
 node --check scripts/export/mbo-xlsx-ooxml-feasibility.js
 node --check tests/mbo-xlsx-ooxml-feasibility.test.js
@@ -229,51 +150,21 @@ node --test tests/mbo-xlsx-ooxml-feasibility.test.js
 npm audit --omit=dev
 git status --porcelain
 ```
+Report template-dependent skips exactly; skipped proof is not runtime PASS.
 
-If local owner-template binaries are unavailable and template-dependent proof skips, report that truth exactly. Skipped proof is NOT runtime PASS.
+## 9. Commit contract if authorized
+Exactly one implementation OR blocker commit after authorization commit; exactly the two authorized files; push canonical branch; STOP; no self-PASS/CLOSED; no next gate.
 
-## 7. Commit/push contract
-
-After implementation/testing:
-- create exactly ONE bounded R7-R1 implementation commit OR exactly ONE blocker commit;
-- commit must change only the two authorized files;
-- push to `ai/antigravity-wp002c`;
-- STOP immediately after push/report;
-- do not self-declare PASS/CLOSED;
-- do not start Production Renderer or another gate.
-
-Report only:
-- commit SHA;
-- exact changed files;
-- both `node --check` results;
-- `node --test` result including skip count if any;
-- `npm audit --omit=dev` result;
-- `git status --porcelain`;
-- blocker, if any.
-
-## 8. Authorization ledger
-
+## 10. Authorization ledger / next action
 ```text
 D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP003-R7-R1-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / SOURCE+TEST
+D2-WP003-R7-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R7-R2 = PROPOSED / NOT AUTHORIZED
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-D3_EXECUTION = HOLD
-```
-
-## 9. Exact next action
-
-```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R7-R1-SOURCE-TEST-20260902-01; CREATE EXACTLY ONE BOUNDED IMPLEMENTATION/BLOCKER COMMIT; PUSH; REPORT; STOP
-EXPECTED_CHANGED_FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js + tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R7-R2 SOURCE+TEST UNDER THIS EXACT TWO-FILE CONTRACT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-CHATGPT = INDEPENDENT REVIEW ONLY AFTER OWNER INITIATES REVIEW
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
