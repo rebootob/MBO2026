@@ -54,13 +54,14 @@ D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R24 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R25 = REVIEWED / NOT PASS / NOT CLOSED
 D2-WP003-R3-R26 = REVIEWED / BLOCKED / NOT CLOSED
-R3-R26_IMPLEMENTATION_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
+R3-R27_IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 4 OF 20
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
 ACTIVE_D2_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R27
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
 PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = b8cd007483e6e3ffbdc5767571e4f90d34973d2b
+CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
@@ -68,20 +69,14 @@ Canonical D2 contract: `project-docs/EXCEL_EXPORT.md`.
 
 Accepted R3-R22 closure remains frozen: raw direct xlsx-populate output, deterministic parity blocker, actual dimension evidence, exact per-sheet print-area binding, source-backed negative proof isolation, exact source validates and raw Part A/Part B fail closed after losing dimensions.
 
-R3-R26 improved strict raw relationship Target identity and restored preservation negatives but proved that the prior strict source-minus-dimension policy conflicts with actual direct Part B output because xlsx-populate injects an observed-only `sheetPr` in `Sheet1`. Its positive Part B proof pre-cleaned a derivative buffer and therefore did not prove direct raw preservation. XML inventory and several proof sub-cases also remained incomplete.
+Owner-approved Option B allows only one exact deterministic Part B `Sheet1` `<sheetPr/>` round-trip drift to be normalized inside preservation. It is not generic `sheetPr` tolerance; all other non-dimension drift remains fail-closed.
 
-Owner approved Option B as the preservation policy:
-- allow only one exact fingerprinted deterministic xlsx-populate-generated Part B `Sheet1` `sheetPr` drift;
-- exact source must lack it;
-- exact element/slot/structure must be pinned from SHA-verified round-trip evidence;
-- normalization/removal occurs only inside preservation on the working copy;
-- all modified/extra/reordered/moved/other-sheet/Part-A `sheetPr` and all other non-dimension drift remain fail-closed.
+R3-R27 successfully removed test-side pre-cleaning and uses direct raw Part B output, but remains corrective because Option B normalization is not persisted when the dimension is already correct, XML QName inventory can still skip Unicode/direct-child markup, prior negative proof regressed, source-structure tests hit SHA gates rather than their labels, and no always-runnable privacy-safe unit proof/CI signal exists.
 
-R3-R27 is proposed as the smallest corrective to implement Option B, close XML-inventory gaps and complete missing proof. It is NOT authorized.
-
-No Antigravity or Claude execution is authorized at this gate.
+R3-R28 is proposed as the smallest next corrective and is NOT authorized.
 
 D2 must ultimately close:
+- preservation gate;
 - reference-image handling;
 - 5–10 Part A objectives;
 - 6→8 Part B competency blocks;
@@ -131,10 +126,10 @@ Status: `SOURCE FUNCTIONALITY CLOSED`; reopen only proven defect.
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R27 AS PROPOSED
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R28 AS PROPOSED
 ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP / NOT NEEDED AT THIS GATE
+ANTIGRAVITY = STOP
+CLAUDE = STOP
 D3 = HOLD
 ```
 
