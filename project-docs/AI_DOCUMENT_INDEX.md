@@ -30,27 +30,27 @@ R4-R1_IMPLEMENTATION_COMMIT = 8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6
 R4-R1_SCOPE_REVIEW = PASS
 R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 17 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ACTIVE_WORK_PACKAGE = D2-WP003-R4-R2
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+OWNER_APPROVAL_BASELINE_HEAD = f566fa300818e53e78342710332573e0294d4c4b
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R2-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R2 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For R4-R2 continuation read:
+For R4-R2 execution/review read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — proposed only writable file;
+5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — only writable file;
 6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — READ-ONLY accepted R4 source.
 
-R4-R2 is proposed only to restore the accepted absolute assertions `paperSize=8`, `orientation=landscape`, `scale=58` while retaining all R4-R1 proof. Do not reopen preservation/reference-image or modify Part B/renderer.
+R4-R2 is authorized only to restore the absolute assertions `paperSize=8`, `orientation=landscape`, `scale=58` while retaining all R4/R4-R1 proof. Do not reopen preservation/reference-image or modify Part B/renderer.
