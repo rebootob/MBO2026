@@ -19,8 +19,8 @@ ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_OWNER_AUTH = YES
 COMPLETE_D2_FULLY_BEFORE_D3 = YES
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
-ROUNDS_REMAINING = 4
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 17 OF 20
+ROUNDS_REMAINING = 3
 ```
 
 ## 2. Startup order
@@ -40,7 +40,7 @@ ROUNDS_REMAINING = 4
 | ID | Status | Checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R1 TEST-ONLY authorized |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4-R1 corrective required |
 | D3 | ⏸ HOLD | No write authorization; complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh route/identity required |
@@ -63,46 +63,55 @@ D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 ```
 
-## 5. Latest review — D2-WP003-R4
+## 5. Latest review — D2-WP003-R4-R1
 
-Authorization `D2-WP003-R4-SOURCE-TEST-20260902-01` was consumed by implementation:
+Authorization:
+`D2-WP003-R4-R1-TEST-20260902-01`
 
-`bf9ef7e82c78efc2e725614046745a3ccf394054`
+Authorization commit:
+`8b0eb2ca2058c458c40286b6b2d5f55bdb34d703`
+
+Implementation commit:
+`8a49a9af11f03ec3c2d2e2e3b5cafebe5befd8c6`
 
 ```text
-R4_SCOPE_REVIEW = PASS
+R4-R1_SCOPE_REVIEW = PASS
 R4_SOURCE_REVIEW = PASS / FROZEN
-R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
-R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+R4-R1_PROOF_REVIEW = FAIL / ACCEPTED ABSOLUTE PAGE-SETUP ASSERTIONS REGRESSED
+R4-R1_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
 D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Accepted R4 progress is frozen. Remaining proof gaps are TEST-ONLY: exact `rowRefs` sequence/uniqueness, `sheetStates`, and exact non-target sheet invariants already exposed by the fingerprint helper.
+Accepted/frozen R4-R1 progress:
+- exact rowRefs sequence and uniqueness proof added;
+- sheetNames and sheetStates equality added;
+- main-sheet `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels` baseline equality added;
+- all accepted R4 merge/row/sentinel/dimension/print-area/relationship/media/formula proof remains.
 
-## 6. Exact current gate — R4-R1 AUTHORIZED
+Remaining defect:
+- R4-R1 removed previously accepted absolute per-count assertions `paperSize = 8`, `orientation = landscape`, `scale = 58` and replaced them only with baseline-relative equality. R4-R1 explicitly required preserving every accepted R4 matrix assertion, so these constants must be restored without removing the new relative-equality proof.
 
-Owner explicitly authorized `D2-WP003-R4-R1 TEST-ONLY` on 2026-09-02.
+R4 source implementation `bf9ef7e82c78efc2e725614046745a3ccf394054` remains PASS/FROZEN.
+
+## 6. Exact current gate
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R4-R1
-ACTIVE_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-OWNER_APPROVAL_BASELINE_HEAD = 5f22caf6ffc9d539ce0df0c23663dd934385d923
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R2
+PROPOSED_WORK_PACKAGE_NAME = PART A ABSOLUTE PAGE-SETUP ASSERTION RETENTION CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-R1-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4-R1 / ONE BOUNDED TEST-ONLY COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD
 ```
 
-Allowed file only:
-`tests/mbo-xlsx-ooxml-feasibility.test.js`
-
-Do not modify accepted R4 source. Do not start Part B or any next work package.
+Do not auto-start R4-R2. Do not modify accepted R4 source.
 
 ## 7. D2 remaining path after Part A closure
 
