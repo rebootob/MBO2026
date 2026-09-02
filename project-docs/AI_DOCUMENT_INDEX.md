@@ -18,6 +18,8 @@ XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 PRE1 = PASS / CLOSED
 PRE1_R1 = PASS / CLOSED
 PRE2 = READ-ONLY DESIGN COMPLETE
+PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
+PRE2_R1_R1 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -34,45 +36,52 @@ Durable D2 Baselines:
 - `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-R2 design chain:
-- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` — original Production Renderer/Sanitizer architecture design.
-- `phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md` — PRE1/PRE1-R1 accepted presentation evidence.
-- `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` — current expanded presentation authority design.
+R2 design/evidence chain:
+- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
+- `phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md`
+- `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`
 
-R2 current state:
+Accepted PRE2 secured projection implementation:
 ```text
-R2_READ_ONLY_DESIGN = COMPLETE
-PRE1 = PASS / CLOSED
-PRE1_R1 = PASS / CLOSED
-PRE2 = READ-ONLY DESIGN COMPLETE
-R2_IMPLEMENTATION = NOT AUTHORIZED
+PRE2_R1_IMPLEMENTATION = 9154ab33f2fd6262fa5d3e7717f7eed4f4052e0a / NEEDS CORRECTIVE
+PRE2_R1_R1_CORRECTIVE = fb3765f81b635b2bdc1f4fb8a1cf50fdbe6ea222 / PASS INDEPENDENT SOURCE+TEST-CONTRACT REVIEW
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Current frozen semantic authority remains:
+Canonical expanded secured presentation now accepted at `MboExportService` boundary:
+```text
+b7 exact code COMP_LEAD
+  presentationTitle = 7. Leadership & People Management
+  presentationDescription = exact nonblank item.description
+b8 exact code COMP_STRAT
+  presentationTitle = 8. Strategy & Coaching
+  presentationDescription = exact nonblank item.description
+EXACT_CODE = CASE-SENSITIVE / NO NORMALIZATION
+ALIAS_PRECEDENCE = FORBIDDEN
+N1..6 BACKWARD COMPATIBILITY = PRESERVED
+```
+
+Current Template Profile semantic authority remains frozen:
 ```text
 SAFE_TO_MAP = 18 EXACT
 UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 ```
 
-PRE2 proposes, but does not yet authorize or close:
+PRE2 proposes future expanded-only profile roles and geometry:
 ```text
-EXPANDED_DYNAMIC_PRESENTATION = competency 7/8 only
-CANONICAL_IDENTITY = code
-b7 = COMP_LEAD
-b8 = COMP_STRAT
-CANONICAL_TITLE_FIELD = presentationTitle
-CANONICAL_DESCRIPTION_FIELD = presentationDescription
-N7_TITLE_OVERLAY = B31:J31
-N8_TITLE_OVERLAY = B31:J31 + B35:J35
+COMPETENCY_b_TITLE / b7,b8 only
+COMPETENCY_b_DESCRIPTION / b7,b8 only
+b7 TITLE B31 / DESCRIPTION B32 / TITLE MERGE B31:J31
+b8 TITLE B35 / DESCRIPTION B36 / TITLE MERGE B35:J35
 FUTURE_SAFE_TO_MAP_IF_INDEPENDENTLY_CLOSED = 20 EXACT
 ```
 
 Exact next proposed gate:
 ```text
-D2-WP004-R2-PRE2-R1
-EXPANDED COMPETENCY CANONICAL PRESENTATION PROJECTION
-SOURCE+TEST / NOT AUTHORIZED
+D2-WP004-R2-PRE2-R2
+EXPANDED COMPETENCY TEMPLATE PROFILE PRESENTATION AUTHORITY
+PROFILE+TEST / NOT AUTHORIZED
 ```
 
-Read `AI_ACTIVE_TASK.md` for the exact proposed writable files and authorization phrase. Do not auto-start Production Renderer, Kintone work, deployment or D3.
+Read `AI_ACTIVE_TASK.md` for exact proposed writable files and authorization phrase. Do not auto-start OOXML work, Production Renderer, Kintone work, deployment or D3.
