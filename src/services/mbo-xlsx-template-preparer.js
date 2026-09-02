@@ -71,15 +71,28 @@ export function validateAndRemoveReferenceImage(zipFiles) {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Drawing files must be strings');
   }
 
-  // 1. Validate Relationships for rId3
-  const relMatches = [...drawingRels.matchAll(/<Relationship\s+[^>]*\/>/gi)];
+  // 1. Account for ALL Relationship evidence in drawing1.xml.rels
+  const rId3Occurrences = [...drawingRels.matchAll(/\brId3\b/g)];
+  if (rId3Occurrences.length === 0) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing rId3 relationship');
+  }
+
+  // Match all Relationship elements (self-closing or open/close paired, including optional namespace prefix)
+  const relMatches = [...drawingRels.matchAll(/<(?:\w+:)?Relationship\b[^>]*>(?:[\s\S]*?<\/(?:\w+:)?Relationship>)?|<(?:\w+:)?Relationship\b[^>]*\/>/gi)];
   const matchingRels = [];
 
   for (const m of relMatches) {
-    const tag = m[0];
-    const idMatch = tag.match(/\bId="([^"]+)"/);
+    const tag = m[0].trim();
+    if (tag.includes('rId3')) {
+      // Open-only tag validation: tag must either end with '/>' or end with a proper closing tag </Relationship>
+      const isSelfClosing = tag.endsWith('/>');
+      const isPairedClosing = /<\/(?:\w+:)?Relationship>$/i.test(tag);
+      if (!isSelfClosing && !isPairedClosing) {
+        throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Malformed non-self-closing relationship tag for rId3');
+      }
 
-    if (idMatch && idMatch[1] === 'rId3') {
+      const fullTagName = tag.match(/<([^>\s/]+)/)?.[1] || '';
+      const idMatch = tag.match(/\bId="([^"]+)"/);
       const typeMatch = tag.match(/\bType="([^"]+)"/);
       const targetMatch = tag.match(/\bTarget="([^"]+)"/);
       const hasTargetMode = /\bTargetMode=/i.test(tag);
@@ -87,7 +100,8 @@ export function validateAndRemoveReferenceImage(zipFiles) {
 
       matchingRels.push({
         tag,
-        id: idMatch[1],
+        fullTagName,
+        id: idMatch ? idMatch[1] : null,
         type: typeMatch ? typeMatch[1] : null,
         target: targetMatch ? targetMatch[1] : null,
         hasTargetMode,
@@ -96,15 +110,21 @@ export function validateAndRemoveReferenceImage(zipFiles) {
     }
   }
 
-  if (matchingRels.length === 0) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing rId3 relationship');
-  }
-
-  if (matchingRels.length > 1) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Duplicate rId3 relationship');
+  // Must have EXACTLY ONE Relationship element matching rId3 AND total rId3 occurrences in rels text must be exactly 1
+  if (matchingRels.length !== 1 || rId3Occurrences.length !== 1) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Expected exactly 1 canonical rId3 relationship');
   }
 
   const rel = matchingRels[0];
+
+  // Must be exact canonical element name 'Relationship' (no namespace prefix like 'r:Relationship')
+  if (rel.fullTagName !== 'Relationship') {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Namespace-prefixed relationship forbidden for rId3');
+  }
+
+  if (rel.id !== 'rId3') {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid relationship Id for rId3');
+  }
 
   const expectedType = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
   if (rel.type !== expectedType) {
@@ -157,6 +177,11 @@ export function validateAndRemoveReferenceImage(zipFiles) {
   }
 
   let updatedDrawingRels = drawingRels.replace(rel.tag, '');
+
+  // Verify UPDATED drawing1.xml.rels contains ZERO rId3 and ZERO image3.png
+  if (updatedDrawingRels.includes('rId3') || updatedDrawingRels.includes('image3.png')) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Surviving rId3 or image3.png reference in updated drawing rels');
+  }
 
   return {
     updatedDrawingXml,
@@ -220,8 +245,15 @@ export async function preparePartATemplate(templateBytes, options = {}) {
     }
   }
 
-  // Purge sensitive string tokens from xl/sharedStrings.xml if present
-  const ssFile = wbSanitize._zip.files['xl/sharedStrings.xml'];
+  const sanitizedBytes = await wbSanitize.outputAsync();
+
+  // --------------------------------------------------------------------------
+  // PASS 2: Raw OOXML Structural Row/Merge Shift, Dimension Tag, Shared Strings Purge & Reference Image Removal
+  // --------------------------------------------------------------------------
+  const wbStruct = await XlsxPopulate.fromDataAsync(sanitizedBytes);
+
+  // Purge sensitive string tokens from xl/sharedStrings.xml directly on zip
+  const ssFile = wbStruct._zip.files['xl/sharedStrings.xml'];
   if (ssFile && sensitiveTokens.length > 0) {
     let ssXml = await ssFile.async('string');
     let ssModified = false;
@@ -232,16 +264,9 @@ export async function preparePartATemplate(templateBytes, options = {}) {
       }
     }
     if (ssModified) {
-      wbSanitize._zip.file('xl/sharedStrings.xml', ssXml);
+      wbStruct._zip.file('xl/sharedStrings.xml', ssXml);
     }
   }
-
-  const sanitizedBytes = await wbSanitize.outputAsync();
-
-  // --------------------------------------------------------------------------
-  // PASS 2: Raw OOXML Structural Row/Merge Shift, Dimension Tag & Reference Image Removal
-  // --------------------------------------------------------------------------
-  const wbStruct = await XlsxPopulate.fromDataAsync(sanitizedBytes);
 
   const sheetFile = wbStruct._zip.files['xl/worksheets/sheet1.xml'];
   if (!sheetFile) {
