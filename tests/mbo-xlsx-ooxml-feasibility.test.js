@@ -200,10 +200,14 @@ export function parseDrawingAnchorsXml(xml, partName = 'xl/drawings/drawing1.xml
 
       if (fullAttrName === 'embed') {
         blipRId = attrVal;
-      } else if (fullAttrName.endsWith(':embed')) {
-        const prefix = fullAttrName.slice(0, -6);
-        if (isValidNCName(prefix)) {
-          blipRId = attrVal;
+      } else if (fullAttrName.includes(':')) {
+        const parts = fullAttrName.split(':');
+        if (parts[parts.length - 1] === 'embed') {
+          if (parts.length === 2 && parts[0].length > 0 && isValidNCName(parts[0])) {
+            blipRId = attrVal;
+          } else {
+            throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
+          }
         }
       }
     }
@@ -428,7 +432,7 @@ test('UNIT_REFERENCE_IMAGE_INVENTORY_PARSERS: synthetic & adversarial drawing an
   assert.equal(mixedRels[0].Id, 'rId1');
   assert.equal(mixedRels[0].TargetMode, 'Internal');
 
-  // --- NEW MANDATORY R3-R35 ADVERSARIAL MATRIX ---
+  // --- FULL R3-R35 ADVERSARIAL MATRIX ---
 
   // 21. Valid middle-dot NCName continuation passes (U+00B7)
   const middleDotXml = `<a·b:wsDr xmlns:a·b="http://example.com"><a·b:twoCellAnchor><a:blip r:embed="rId1"/></a·b:twoCellAnchor></a·b:wsDr>`;
@@ -477,13 +481,32 @@ test('UNIT_REFERENCE_IMAGE_INVENTORY_PARSERS: synthetic & adversarial drawing an
   assert.equal(qualRels.length, 1, 'Valid unrelated qualified extra attribute must parse cleanly');
   assert.equal(qualRels[0].Id, 'rId1');
 
-  // 29. Malformed prefixed embed QName cannot yield target rId
-  const malformedEmbedAnchorXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  // --- MANDATORY R3-R36 PREFIXED EMBED FAIL-CLOSED SUITE ---
+
+  // 29. Valid r:embed="rId3" extraction returns exact rId3
+  const validEmbedXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <xdr:twoCellAnchor><a:blip r:embed="rId3"/></xdr:twoCellAnchor>
+</wsDr>`;
+  const validEmbedAnchors = parseDrawingAnchorsXml(validEmbedXml);
+  assert.equal(validEmbedAnchors[0].blipRId, 'rId3', 'Valid r:embed="rId3" must yield blipRId rId3');
+
+  // 30. Malformed prefixed embed QName 1bad:embed must THROW BLOCKER_DRAWING_ANCHOR_PARSING_FAILED
+  const digitEmbedXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
   <xdr:twoCellAnchor><a:blip 1bad:embed="rId3"/></xdr:twoCellAnchor>
 </wsDr>`;
-  const malformedEmbedAnchors = parseDrawingAnchorsXml(malformedEmbedAnchorXml);
-  assert.equal(malformedEmbedAnchors.length, 1);
-  assert.equal(malformedEmbedAnchors[0].blipRId, null, 'Malformed prefixed embed QName 1bad:embed must NOT yield target rId');
+  assert.throws(() => parseDrawingAnchorsXml(digitEmbedXml), /BLOCKER_DRAWING_ANCHOR_PARSING_FAILED/, '1bad:embed="rId3" must fail closed and throw');
+
+  // 31. Malformed prefixed embed QName :embed must THROW BLOCKER_DRAWING_ANCHOR_PARSING_FAILED
+  const leadingColonEmbedXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  <xdr:twoCellAnchor><a:blip :embed="rId3"/></xdr:twoCellAnchor>
+</wsDr>`;
+  assert.throws(() => parseDrawingAnchorsXml(leadingColonEmbedXml), /BLOCKER_DRAWING_ANCHOR_PARSING_FAILED/, ':embed="rId3" must fail closed and throw');
+
+  // 32. Malformed prefixed embed QName foo::embed must THROW BLOCKER_DRAWING_ANCHOR_PARSING_FAILED
+  const multiColonEmbedXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  <xdr:twoCellAnchor><a:blip foo::embed="rId3"/></xdr:twoCellAnchor>
+</wsDr>`;
+  assert.throws(() => parseDrawingAnchorsXml(multiColonEmbedXml), /BLOCKER_DRAWING_ANCHOR_PARSING_FAILED/, 'foo::embed="rId3" must fail closed and throw');
 });
 
 test('UNIT_TARGET_LEXICAL_VALIDATION: strict raw Target lexical identity enforcement', () => {
