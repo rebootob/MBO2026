@@ -18,7 +18,6 @@ D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, 
 Template Profile status:
 ```text
 R1_R3_R1_IMPLEMENTATION = 6386e506b85ded87a57967705066e38d56212f73
-R1_R3_R1_SCOPE = PASS
 R1_R3_R1_ALIAS_FIXES = PASS
 R1_R3_R1_OVERALL = CORRECTIVE REQUIRED / TOKEN CONSUMED
 SEMANTIC_BASELINE = D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md
@@ -27,18 +26,21 @@ UNRESOLVED = 22
 NO_SECURED_PROJECTION_SOURCE = 5
 ```
 
-Next proposed smallest gate:
+Active smallest gate:
 ```text
 D2-WP004-R1-R3-R2 = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
-MODE = SOURCE+TEST / NOT AUTHORIZED / LOW-CREDIT
-EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 60f236be437d3ff1af4bcbaa322ab486c6baee20
+WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
 ```
 
-Corrective focus only: exact Part B competency identity (`index`, expected rating row, exact `K{row}` target, exact `partB.competencyItems[i-1].selfRating` path) and focused wrong-index/wrong-valid-address/wrong-nonempty-path negative tests. Preserve all accepted alias fixes, SHA/count/topology/purity behavior and semantic 18/22/5 authority.
+Corrective focus only: exact Part B competency identity (`index`, expected rating row, exact `K{row}` target, exact `partB.competencyItems[b-1].selfRating` path) and four focused negative mutations. Preserve all accepted alias fixes, SHA/count/topology/purity behavior and semantic 18/22/5 authority.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R2
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R2 SOURCE+TEST
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
