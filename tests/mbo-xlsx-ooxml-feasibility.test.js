@@ -10,6 +10,7 @@ import {
   preserveWorksheetXmlDimensions,
   getMutatedHeaderValueBuffers,
   getSanitizedDisposableBuffers,
+  getSanitizedDisposableBuffersPartB,
   getReferenceImageBuffers,
   getStructuralPartABuffers,
   getStructuralPartBBuffers,
@@ -1163,18 +1164,71 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
   // --- PART B EXPANDED PRIVACY REMAP MATRIX (6, 7, 8 COMPETENCIES) ---
   const partBBuffers = await getStructuralPartBBuffers();
 
+  // --- REQUIRED NEGATIVE EXPANDED STRUCTURAL-ROLE PROOF ---
+  const bufB7_base = partBBuffers.buffers ? partBBuffers.buffers[7] : partBBuffers.bufB7;
+
+  // Test 1: Changed style on a cloned target role => blocker
+  const invStyleMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invStyleMutated['K31'].styleId = '999999';
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invStyleMutated, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Changed style on cloned target role MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 2: Wrong/missing merge identity on a cloned target role => blocker
+  const invMergeMutated = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  invMergeMutated['B32'].mergeRef = null;
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMergeMutated, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Missing merge identity on cloned target role MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 3: Missing target inventory record => blocker
+  const invMissingRecord = await buildPartBSourceEvidenceInventory(bufB7_base, 38);
+  delete invMissingRecord['B31'];
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(invMissingRecord, 7),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Missing target inventory record MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // Test 4: Unsupported competency count => blocker
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(null, 5),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Unsupported competency count 5 MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+  await assert.rejects(
+    async () => resolvePartBPrivacyRoles(null, 9),
+    /BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED/,
+    'Unsupported competency count 9 MUST throw BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED'
+  );
+
+  // --- PART B EXPANDED PRIVACY REMAP MATRIX (6, 7, 8 COMPETENCIES) ---
   for (const n of [6, 7, 8]) {
-    const bufN = partBBuffers.buffers ? partBBuffers.buffers[n] : (n === 6 ? partBBuffers.bufB6 : (n === 7 ? partBBuffers.bufB7 : partBBuffers.bufB8));
+    const origBufN = partBBuffers.buffers ? partBBuffers.buffers[n] : (n === 6 ? partBBuffers.bufB6 : (n === 7 ? partBBuffers.bufB7 : partBBuffers.bufB8));
+    const bufN = Buffer.from(origBufN);
     const resolvedN = await resolvePartBPrivacyRoles(null, n, bufN);
     const classMapN = resolvedN.classificationMap;
 
     const extraBlocks = n - 6;
     const extraRows = 4 * extraBlocks;
     const summaryStart = 31 + extraRows;
-    const expectedDynamicCount = 432 + (14 * 4 * extraBlocks);
+    const expectedDynamicCount = n === 6 ? 432 : (n === 7 ? 474 : 516);
 
     assert.equal(resolvedN.dynamicAddresses.length, expectedDynamicCount, `Dynamic address count for ${n} competencies must be ${expectedDynamicCount}`);
     assert.equal(new Set(resolvedN.dynamicAddresses).size, resolvedN.dynamicAddresses.length, `Dynamic addresses for ${n} competencies must be 100% unique`);
+
+    // Verify row 30 and every row 30 clone padding cell (row 30 for N=6, 30/34 for N=7, 30/34/38 for N=8) are ABSENT from dynamicAddresses
+    const paddingRowsN = n === 6 ? [30] : (n === 7 ? [30, 34] : [30, 34, 38]);
+    for (const padRow of paddingRowsN) {
+      for (const col of ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X']) {
+        const padAddr = `${col}${padRow}`;
+        assert.equal(resolvedN.dynamicAddresses.includes(padAddr), false, `Padding cell ${padAddr} in ${n} competencies must NOT be in dynamicAddresses`);
+      }
+    }
 
     // Verify static competency text protection in cloned blocks
     if (n >= 7) {
@@ -1182,6 +1236,8 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
       assert.equal(classMapN['B31'].isDynamic, false, `B31 in ${n} competencies must NOT be dynamic`);
       assert.equal(classMapN['K31'].classification, 'COMPETENCY_RATING_VALUE', `K31 in ${n} competencies must be dynamic rating value`);
       assert.equal(classMapN['K31'].isDynamic, true, `K31 in ${n} competencies must be dynamic`);
+      assert.equal(classMapN['B34'].classification, 'PROTECTED_STATIC_COMPETENCY_TEXT', `B34 (row 30 clone) in ${n} competencies must be static padding`);
+      assert.equal(classMapN['B34'].isDynamic, false, `B34 (row 30 clone) in ${n} competencies must NOT be dynamic`);
     }
 
     if (n === 8) {
@@ -1189,6 +1245,8 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
       assert.equal(classMapN['B35'].isDynamic, false, `B35 in 8 competencies must NOT be dynamic`);
       assert.equal(classMapN['K35'].classification, 'COMPETENCY_RATING_VALUE', `K35 in 8 competencies must be dynamic rating value`);
       assert.equal(classMapN['K35'].isDynamic, true, `K35 in 8 competencies must be dynamic`);
+      assert.equal(classMapN['B38'].classification, 'PROTECTED_STATIC_COMPETENCY_TEXT', `B38 (row 30 clone) in 8 competencies must be static padding`);
+      assert.equal(classMapN['B38'].isDynamic, false, `B38 (row 30 clone) in 8 competencies must NOT be dynamic`);
     }
 
     // Verify relocated summary/signature classification
@@ -1199,30 +1257,60 @@ test('FEASIBILITY_RANGE_DRIVEN_PRIVACY_PROOF: range clearing and shared string p
     // Verify typed privacy metadata for N
     const metaN = await getTypedPrivacyMetadata('B', bufN, n);
     assert.equal(validateTypedPrivacyMetadata(metaN, resolvedN.dynamicAddresses), true, `Part B typed privacy metadata for ${n} competencies must be valid`);
+    assert.equal(metaN.uniqueCount, expectedDynamicCount, `Metadata uniqueCount for N=${n} must equal ${expectedDynamicCount}`);
+    assert.equal(metaN.totalReconciled, expectedDynamicCount, `Metadata totalReconciled for N=${n} must equal ${expectedDynamicCount}`);
 
-    // Verify count-aware sanitization on bufN
-    const wbN = await XlsxPopulate.fromDataAsync(bufN);
-    const sheetN = wbN.sheet(0);
-    for (const addr of resolvedN.dynamicAddresses) {
-      sheetN.cell(addr).value(null);
+    // Inject synthetic sensitive tokens into real structural variant bufN
+    const wbInject = await XlsxPopulate.fromDataAsync(bufN);
+    const sheetInject = wbInject.sheet(0);
+
+    const sensitiveTokenHeader = `SYNTHETIC_SENSITIVE_HEADER_N${n}`;
+    const sensitiveTokenRating = `SYNTHETIC_SENSITIVE_RATING_N${n}`;
+    const sensitiveTokenInserted = `SYNTHETIC_SENSITIVE_INSERTED_RATING_N${n}`;
+    const sensitiveTokenShiftedSummary = `SYNTHETIC_SENSITIVE_SHIFTED_SUMMARY_N${n}`;
+    const staticProofToken = `STATIC_PROTECTED_PADDING_PROOF_N${n}`;
+
+    sheetInject.cell('S3').value(sensitiveTokenHeader);
+    sheetInject.cell('K7').value(sensitiveTokenRating);
+
+    if (n === 7) {
+      sheetInject.cell('K31').value(sensitiveTokenInserted);
+      sheetInject.cell('E35').value(sensitiveTokenShiftedSummary);
+      sheetInject.cell('B34').value(staticProofToken);
+    } else if (n === 8) {
+      sheetInject.cell('K31').value(sensitiveTokenInserted);
+      sheetInject.cell('K35').value(sensitiveTokenInserted);
+      sheetInject.cell('E39').value(sensitiveTokenShiftedSummary);
+      sheetInject.cell('B38').value(staticProofToken);
     }
-    const sanitizedBufN = await wbN.outputAsync();
+
+    const injectedBufN = await wbInject.outputAsync();
+
+    // Sanitize injectedBufN using getSanitizedDisposableBuffersPartB
+    const { bufB: sanitizedBufN } = await getSanitizedDisposableBuffersPartB(n, injectedBufN);
+
+    // Verify original caller bufN buffer bytes were UNCHANGED
+    assert.deepEqual(bufN, origBufN, `Original structural buffer for N=${n} must remain unchanged`);
+
+    // Verify all synthetic sensitive tokens are ABSENT from output package XML files
     const sanitizedWbN = await XlsxPopulate.fromDataAsync(sanitizedBufN);
-    const sanitizedSheetN = sanitizedWbN.sheet(0);
-
-    for (const addr of resolvedN.dynamicAddresses) {
-      const val = sanitizedSheetN.cell(addr).value();
-      assert.equal(val === null || val === undefined, true, `Cell ${addr} in ${n} competencies must be blank after sanitization`);
+    for (const fileName in sanitizedWbN._zip.files) {
+      if (fileName.startsWith('xl/') && (fileName.endsWith('.xml') || fileName.endsWith('.rels'))) {
+        const xmlText = await sanitizedWbN._zip.files[fileName].async('string');
+        assert.equal(xmlText.includes(sensitiveTokenHeader), false, `Sensitive header token must be absent from ${fileName} for N=${n}`);
+        assert.equal(xmlText.includes(sensitiveTokenRating), false, `Sensitive rating token must be absent from ${fileName} for N=${n}`);
+        if (n >= 7) {
+          assert.equal(xmlText.includes(sensitiveTokenInserted), false, `Inserted rating token must be absent from ${fileName} for N=${n}`);
+          assert.equal(xmlText.includes(sensitiveTokenShiftedSummary), false, `Shifted summary token must be absent from ${fileName} for N=${n}`);
+        }
+      }
     }
 
+    // Verify static proof token SURVIVES in padding row clone
     if (n >= 7) {
-      assert.equal(resolvedN.dynamicAddresses.includes('B31'), false, `B31 in ${n} competencies must NOT be in dynamic clear set`);
-      assert.equal(resolvedN.protectedStaticAddresses.includes('B31'), true, `B31 in ${n} competencies MUST be in protected static set`);
-    }
-
-    if (n === 8) {
-      assert.equal(resolvedN.dynamicAddresses.includes('B35'), false, `B35 in 8 competencies must NOT be in dynamic clear set`);
-      assert.equal(resolvedN.protectedStaticAddresses.includes('B35'), true, `B35 in 8 competencies MUST be in protected static set`);
+      const sheetSanitized = sanitizedWbN.sheet(0);
+      const paddingVal = sheetSanitized.cell(n === 7 ? 'B34' : 'B38').value();
+      assert.equal(paddingVal, staticProofToken, `Static proof token in padding cell must survive for N=${n}`);
     }
 
     const formulaSetN = await getWorksheetFormulaSet(sanitizedBufN);

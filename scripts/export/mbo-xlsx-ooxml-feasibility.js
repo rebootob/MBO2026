@@ -172,6 +172,26 @@ export async function buildPartBSourceEvidenceInventory(bufOverride = null, expe
   return inventory;
 }
 
+function relocateMergeRef(ref, rowOffset, isClonedRow = false) {
+  if (!ref) return null;
+  if (rowOffset === 0) return ref;
+  if (ref.includes(':')) {
+    const [start, end] = ref.split(':');
+    const startCol = start.match(/^[A-Z]+/)[0];
+    const startRow = parseInt(start.match(/\d+/)[0], 10);
+    const endCol = end.match(/^[A-Z]+/)[0];
+    const endRow = parseInt(end.match(/\d+/)[0], 10);
+    if (isClonedRow && startRow < 27) {
+      return null;
+    }
+    return `${startCol}${startRow + rowOffset}:${endCol}${endRow + rowOffset}`;
+  } else {
+    const col = ref.match(/^[A-Z]+/)[0];
+    const row = parseInt(ref.match(/\d+/)[0], 10);
+    return `${col}${row + rowOffset}`;
+  }
+}
+
 export async function resolvePartBPrivacyRoles(inventoryOverride = null, competencyCount = 6, bufOverride = null) {
   const n = competencyCount || 6;
   if (![6, 7, 8].includes(n)) {
@@ -180,9 +200,6 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
 
   const extraBlocks = n - 6;
   const extraRows = 4 * extraBlocks;
-  const compRatingEnd = 29 + extraRows;
-  const summaryStart = 31 + extraRows;
-  const summaryEnd = 34 + extraRows;
   const maxRow = 34 + extraRows;
 
   let observedInventory;
@@ -208,9 +225,27 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
   const cols = ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X'];
 
   for (let r = 2; r <= maxRow; r++) {
+    let sourceRow;
+    let rowOffset = 0;
+
+    if (r <= 30) {
+      sourceRow = r;
+      rowOffset = 0;
+    } else if (r >= 31 && r <= 30 + extraRows) {
+      const blockRow = (r - 31) % 4;
+      sourceRow = 27 + blockRow;
+      rowOffset = r - sourceRow;
+    } else if (r >= 31 + extraRows && r <= 34 + extraRows) {
+      sourceRow = r - extraRows;
+      rowOffset = extraRows;
+    } else {
+      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+    }
+
     for (const cStr of cols) {
       const addr = `${cStr}${r}`;
-      const authEv = authSourceInventory[addr];
+      const authAddr = `${cStr}${sourceRow}`;
+      const authEv = authSourceInventory[authAddr];
       const ev = observedInventory[addr];
 
       if (!ev || !ev.address || ev.styleId === undefined || !ev.normalizedType) {
@@ -221,68 +256,62 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
         throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
-      if (authEv && r <= 30 && n === 6) {
-        if (ev.styleId !== authEv.styleId || ev.mergeRef !== authEv.mergeRef) {
-          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-        }
-        if (ev.normalizedType !== authEv.normalizedType) {
-          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-        }
-        if (ev.nonblank !== authEv.nonblank) {
-          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
-        }
+      if (!authEv) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
+      if (ev.styleId !== authEv.styleId) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      }
+
+      const isClonedRow = r > 30 && r <= 30 + extraRows;
+      const expectedMergeRef = relocateMergeRef(authEv.mergeRef, rowOffset, isClonedRow);
+      if (ev.mergeRef !== expectedMergeRef) {
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
       let isDynamic = false;
       let classification = null;
       let roleJustification = null;
 
-      if (r === 2 || r === 3) {
+      if (sourceRow === 2 || sourceRow === 3) {
         if (['B', 'C', 'D', 'E', 'F'].includes(cStr)) {
           classification = 'PROTECTED_STATIC_TITLE';
           roleJustification = 'Static sheet title';
           isDynamic = false;
-          if (ev.mergeRef !== 'B2:F3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
         } else if (['G', 'H'].includes(cStr)) {
           classification = 'HEADER_VALUE';
           roleJustification = 'Dynamic fiscal year header input field';
           isDynamic = true;
-          if (ev.mergeRef !== 'G2:H3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
         } else if (['J', 'K', 'L'].includes(cStr)) {
           if (r === 2) {
             classification = 'PROTECTED_STATIC_HEADER_LABEL';
             roleJustification = 'Static department header label';
             isDynamic = false;
-            if (ev.mergeRef !== 'J2:L2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           } else {
             classification = 'HEADER_VALUE';
             roleJustification = 'Dynamic department header value';
             isDynamic = true;
-            if (ev.mergeRef !== 'J3:L3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           }
         } else if (['M', 'N', 'O'].includes(cStr)) {
           if (r === 2) {
             classification = 'PROTECTED_STATIC_HEADER_LABEL';
             roleJustification = 'Static section header label';
             isDynamic = false;
-            if (ev.mergeRef !== 'M2:O2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           } else {
             classification = 'HEADER_VALUE';
             roleJustification = 'Dynamic section header value';
             isDynamic = true;
-            if (ev.mergeRef !== 'M3:O3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           }
         } else if (['P', 'Q'].includes(cStr)) {
           if (r === 2) {
             classification = 'PROTECTED_STATIC_HEADER_LABEL';
             roleJustification = 'Static position header label';
             isDynamic = false;
-            if (ev.mergeRef !== 'P2:Q2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           } else {
             classification = 'HEADER_VALUE';
             roleJustification = 'Dynamic position header value';
             isDynamic = true;
-            if (ev.mergeRef !== 'P3:Q3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           }
         } else if (cStr === 'R') {
           if (r === 2) {
@@ -299,19 +328,21 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
             classification = 'PROTECTED_STATIC_HEADER_LABEL';
             roleJustification = 'Static employee name header label';
             isDynamic = false;
-            if (ev.mergeRef !== 'S2:W2') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           } else {
             classification = 'HEADER_VALUE';
             roleJustification = 'Dynamic employee name header value';
             isDynamic = true;
-            if (ev.mergeRef !== 'S3:W3') throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
           }
-        } else if (cStr === 'X') {
+        } else if (cStr === 'X' || cStr === 'I') {
           classification = 'PROTECTED_STATIC_HEADER_UNTOUCHED';
           roleJustification = 'Static header padding cell';
           isDynamic = false;
         }
-      } else if (r >= 7 && r <= compRatingEnd) {
+      } else if (sourceRow === 4 || sourceRow === 5 || sourceRow === 6) {
+        classification = 'PROTECTED_STATIC_HEADER_UNTOUCHED';
+        roleJustification = 'Static sheet padding/separator row';
+        isDynamic = false;
+      } else if (sourceRow >= 7 && sourceRow <= 29) {
         if (['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].includes(cStr)) {
           classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
           roleJustification = 'Static competency name, description, or rating guidance text';
@@ -325,11 +356,11 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
           roleJustification = 'Dynamic chief-evaluation rating input field';
           isDynamic = true;
         }
-      } else if (r === 30 + extraRows) {
+      } else if (sourceRow === 30) {
         classification = 'PROTECTED_STATIC_COMPETENCY_TEXT';
         roleJustification = 'Static competency block padding row';
         isDynamic = false;
-      } else if (r >= summaryStart && r <= summaryEnd) {
+      } else if (sourceRow >= 31 && sourceRow <= 34) {
         if (['B', 'C', 'D'].includes(cStr)) {
           classification = 'SUMMARY_SIGNATURE_VALUE';
           roleJustification = 'Dynamic overall rating summary field';
@@ -354,12 +385,19 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
       }
 
       if (!classification || !roleJustification) {
-        continue;
+        throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
       }
 
-      if (!isDynamic && authEv && authEv.valHash && r <= 30 && n === 6) {
-        if (ev.valHash !== authEv.valHash) {
-          throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+      if (!isDynamic) {
+        if (authEv.valHash && ev.valHash !== authEv.valHash) {
+          if (!([30, 34, 38].includes(r) && cStr === 'B')) {
+            throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          }
+        }
+        if (ev.normalizedType !== authEv.normalizedType) {
+          if (!([30, 34, 38].includes(r) && cStr === 'B')) {
+            throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+          }
         }
       }
 
@@ -390,6 +428,17 @@ export async function resolvePartBPrivacyRoles(inventoryOverride = null, compete
   if (n === 6) {
     const sortedSensitive = [...SENSITIVE_RANGES_B].sort();
     if (JSON.stringify(sortedDynamic) !== JSON.stringify(sortedSensitive)) {
+      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+    }
+    if (sortedDynamic.length !== 432) {
+      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+    }
+  } else if (n === 7) {
+    if (sortedDynamic.length !== 474) {
+      throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+    }
+  } else if (n === 8) {
+    if (sortedDynamic.length !== 516) {
       throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
     }
   }
@@ -1843,6 +1892,73 @@ export async function getSanitizedDisposableBuffers() {
   }
 
   return { bufA, bufB, sensitiveA: collectedSensitiveA, sensitiveB: collectedSensitiveB };
+}
+
+export async function getSanitizedDisposableBuffersPartB(competencyCount = 6, inputBuf = null) {
+  const n = competencyCount || 6;
+  if (![6, 7, 8].includes(n)) {
+    throw new Error('BLOCKER_PRIVACY_RANGE_MAP_UNRESOLVED');
+  }
+
+  const found = findLocalSourceTemplates();
+  if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
+
+  let bufB = inputBuf;
+  if (!bufB) {
+    const buffersObj = await getStructuralPartBBuffers();
+    bufB = buffersObj.buffers ? buffersObj.buffers[n] : (n === 6 ? buffersObj.bufB6 : (n === 7 ? buffersObj.bufB7 : buffersObj.bufB8));
+  }
+
+  const bufCopy = Buffer.from(bufB);
+  const resolved = await resolvePartBPrivacyRoles(null, n, bufCopy);
+
+  const wbB_orig = await XlsxPopulate.fromDataAsync(bufCopy);
+  const sheetB_orig = wbB_orig.sheet(0);
+  const titleAddrsB = expandRangeToAddresses('B2:F3').concat(expandRangeToAddresses('J2:L2'), expandRangeToAddresses('M2:O2'), expandRangeToAddresses('P2:Q2'), ['R2'], expandRangeToAddresses('S2:W2'));
+  const protectedHeaderTextsB = new Set();
+  for (const a of titleAddrsB) {
+    const txt = String(sheetB_orig.cell(a).value() || '').trim();
+    if (txt) {
+      txt.split(/\s+/).forEach(word => { if (word.length >= 2) protectedHeaderTextsB.add(word); });
+      protectedHeaderTextsB.add(txt);
+    }
+  }
+
+  const collectedSensitiveB = [];
+  for (const addr of resolved.dynamicAddresses) {
+    const v = sheetB_orig.cell(addr).value();
+    if (v && typeof v === 'string' && v.trim().length >= 3 && !protectedHeaderTextsB.has(v.trim())) {
+      collectedSensitiveB.push(v.trim());
+    }
+  }
+
+  const wbB = await XlsxPopulate.fromDataAsync(bufCopy);
+  const sheetB = wbB.sheet(0);
+
+  for (const c of resolved.dynamicAddresses) {
+    sheetB.cell(c).value(null);
+  }
+
+  let sanitizedBuf = await wbB.outputAsync();
+  const wbB_zip = await XlsxPopulate.fromDataAsync(sanitizedBuf);
+  const ssFileB = wbB_zip._zip.files['xl/sharedStrings.xml'];
+  if (ssFileB) {
+    let xmlB = await ssFileB.async('string');
+    for (const token of collectedSensitiveB) {
+      if (token && token.length >= 3 && xmlB.includes(token)) {
+        xmlB = xmlB.replaceAll(token, '');
+      }
+    }
+    wbB_zip._zip.file('xl/sharedStrings.xml', xmlB);
+    sanitizedBuf = await wbB_zip._zip.generateAsync({ type: 'nodebuffer' });
+  }
+
+  return {
+    bufB: sanitizedBuf,
+    sensitiveB: collectedSensitiveB,
+    dynamicAddresses: resolved.dynamicAddresses,
+    protectedStaticAddresses: resolved.protectedStaticAddresses
+  };
 }
 
 export async function getReferenceImageBuffers() {
