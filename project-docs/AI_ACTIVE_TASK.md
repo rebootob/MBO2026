@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — D2-WP004-R2-PRE2-R1 SOURCE+TEST AUTHORIZED
+# AI ACTIVE TASK — D2-WP004-R2-PRE2-R1 NEEDS CORRECTIVE
 
-Mode: **CONTROL PLANE / ANTIGRAVITY BOUNDED ONE-SHOT / SOURCE+TEST ONLY / LOW-CREDIT / NO PROFILE AUTH / NO OOXML AUTH / NO RENDERER AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO PROFILE AUTH / NO OOXML AUTH / NO RENDERER AUTH / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Read `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> only the two authorized source/test files and directly referenced code needed to implement this exact contract.
+Fresh-fetch current HEAD first. Read `D2_REVIEW_FAST_START.md` -> this file -> `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md` -> exact PRE2-R1 source/test diff only.
 
 ## 1. Current truth
 
@@ -24,77 +24,87 @@ R2_READ_ONLY_DESIGN = COMPLETE
 D2_WP004_R2_PRE1 = PASS / CLOSED
 D2_WP004_R2_PRE1_R1 = PASS / CLOSED
 D2_WP004_R2_PRE2 = READ-ONLY DESIGN COMPLETE
+D2_WP004_R2_PRE2_R1 = NEEDS CORRECTIVE / NOT CLOSED
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-PRE2-R1
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-PRE2-R1-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-PRE2-R1-SOURCE-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = AUTHORIZED / BOUNDED SOURCE+TEST / ONE COMMIT -> PUSH -> STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Owner authorization phrase:
-`อนุมัติ D2-WP004-R2-PRE2-R1 SOURCE+TEST ตามขอบเขตที่เสนอ`
-
-Authorization token:
-`D2-WP004-R2-PRE2-R1-SOURCE-TEST-20260902-01`
-
-## 2. Frozen PRE2 design authority
-
-Design:
-`project-docs/phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`
-
-Mandatory decisions:
+## 2. PRE2-R1 implementation review
 
 ```text
-COMPETENCY_1_TO_6_PRESENTATION = OWNER TEMPLATE STATIC AUTHORITY / DO NOT REWRITE
-EXPANDED_ORDINAL_7 = COMP_LEAD
-EXPANDED_ORDINAL_8 = COMP_STRAT
-CANONICAL_EXPANDED_IDENTITY = code
-ALIAS_PRECEDENCE = FORBIDDEN
-```
-
-Required secured projection fields for expanded items only:
-
-```text
-partB.competencyItems[b-1].presentationTitle
-partB.competencyItems[b-1].presentationDescription
-```
-
-Exact titles:
-
-```text
-b=7 + code=COMP_LEAD  -> 7. Leadership & People Management
-b=8 + code=COMP_STRAT -> 8. Strategy & Coaching
-```
-
-Exact description rule:
-
-```text
-presentationDescription = exact nonblank item.description
-```
-
-No fallback to `name`, `title`, `competencyName`, legacy label text, stale workbook text, translation, concatenation, or first-nonblank guessing.
-
-Proposed fail-closed error family:
-`EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED`
-
-## 3. AUTHORIZED WORK PACKAGE — D2-WP004-R2-PRE2-R1
-
-```text
-WORK_PACKAGE = D2-WP004-R2-PRE2-R1
-NAME = EXPANDED COMPETENCY CANONICAL PRESENTATION PROJECTION
 AUTHORIZATION = D2-WP004-R2-PRE2-R1-SOURCE-TEST-20260902-01
-STATE = AUTHORIZED / ACTIVE
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION_COMMIT = b8c3de176da8d90b35d2b53ce1cf37c2bb5a7833
+IMPLEMENTATION_COMMIT = 9154ab33f2fd6262fa5d3e7717f7eed4f4052e0a
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES =
+  src/services/mbo-export-service.js
+  tests/mbo-export-service.test.js
+SCOPE_REVIEW = PASS
+CONTENT_REVIEW = NEEDS CORRECTIVE
+TOKEN = CONSUMED / DO NOT REUSE
+GITHUB_RUNTIME_SIGNAL = UNAVAILABLE / NO STATUS / NO WORKFLOW RUN
+```
 
+## 3. Material blockers
+
+### A. N1..6 backward compatibility regression
+Before PRE2-R1, a non-object competency item was returned unchanged by the projection mapper. The implementation now throws `EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED` for every non-object item, including ordinals 1..6.
+
+This violates the PRE2-R1 contract:
+
+```text
+COMPETENCY_1_TO_6 = PRESERVE EXISTING PROJECTION BEHAVIOR
+NO BACKWARD-COMPATIBILITY REGRESSION
+```
+
+Corrective rule:
+- preserve the previous behavior for ordinals 1..6;
+- apply expanded presentation validation only where required for ordinals 7/8;
+- unsupported ordinal >8 may fail closed.
+
+### B. Expanded-only presentation fields are exposed for N1..6 Employee-Self input
+The implementation added `presentationTitle` and `presentationDescription` to the Employee-Self `safeKeys` list. This lets caller-supplied presentation fields pass through for ordinals 1..6, even though PRE2 design requires new presentation authority for inserted competencies 7/8 only.
+
+Corrective rule:
+- do NOT globally whitelist caller-supplied `presentationTitle` / `presentationDescription`;
+- for Employee-Self, assign these fields only from the canonical values computed for b7/b8;
+- b1..6 must not gain new presentation fields through this WP.
+
+### C. Exact code validation is not exact
+The implementation currently uses `String(item.code || '').trim().toUpperCase()` before comparison. Therefore non-exact values such as lowercase or whitespace variants can be accepted.
+
+PRE2-R1 requires exact code identity:
+
+```text
+b7 code === COMP_LEAD
+b8 code === COMP_STRAT
+```
+
+Corrective rule:
+- require the exact canonical string; do not case-normalize or trim into acceptance.
+
+### D. Focused tests do not cover all required fail-closed cases
+Current tests cover b7 missing code and b8 wrong code, but do not directly prove b8 missing code. They also do not prove rejection of lowercase/whitespace code variants or N1..6 non-object backward compatibility.
+
+## 4. Proposed smallest corrective — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-PRE2-R1-R1
+NAME = EXPANDED COMPETENCY CANONICAL PRESENTATION PROJECTION CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
 WRITABLE_FILES =
   src/services/mbo-export-service.js
   tests/mbo-export-service.test.js
@@ -111,110 +121,27 @@ DEPLOY = FORBIDDEN
 D3 = HOLD
 ```
 
-No other file may be edited.
+Required R1-R1 corrective:
+1. restore exact pre-PRE2-R1 projection behavior for ordinals 1..6, including non-object handling;
+2. canonical presentation validation remains only for ordinals 7/8;
+3. Employee-Self gets `presentationTitle/presentationDescription` only from computed b7/b8 canonical values, never arbitrary caller-supplied fields for b1..6;
+4. require exact case-sensitive code strings `COMP_LEAD` / `COMP_STRAT` with no trim/uppercase normalization into acceptance;
+5. preserve exact nonblank `description` passthrough for b7/b8;
+6. add direct tests for b8 missing code, lowercase/whitespace code rejection, and N1..6 backward compatibility;
+7. preserve all existing authorization/privacy behavior;
+8. exactly one corrective implementation commit -> push -> report -> STOP.
 
-## 4. Exact implementation contract
+Recommended Owner phrase:
+`อนุมัติ D2-WP004-R2-PRE2-R1-R1 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
 
-Modify `MboExportService.projectCombinedExport()` only as needed to canonicalize expanded competency presentation at the secured projection boundary.
-
-For each `competencyItems` entry:
-
-### A. N6 / competencies 1..6
-- preserve existing projection behavior;
-- do not require `presentationTitle` or `presentationDescription`;
-- do not rewrite or normalize existing aliases merely for this WP;
-- no backward-compatibility regression.
-
-### B. Expanded competency 7
-When ordinal/index 7 is present:
-- exact `code` must be `COMP_LEAD`;
-- emit `presentationTitle = "7. Leadership & People Management"`;
-- `description` must be a nonblank string;
-- emit `presentationDescription` equal to the exact `description` value;
-- if code is missing/wrong or description blank/missing, throw `EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED`.
-
-### C. Expanded competency 8
-When ordinal/index 8 is present:
-- exact `code` must be `COMP_STRAT`;
-- emit `presentationTitle = "8. Strategy & Coaching"`;
-- `description` must be a nonblank string;
-- emit `presentationDescription` equal to the exact `description` value;
-- if code is missing/wrong or description blank/missing, throw `EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED`.
-
-### D. Ordinal determination
-Use deterministic array ordinal in `partB.competencyItems` / source `competencyItems` position for this bounded WP unless existing code already provides an equally strict canonical ordinal. Do not introduce a new schema guess.
-
-### E. Alias resistance
-Conflicting values in:
-`name`, `title`, `competencyName`, or legacy labels
-must not override the code-derived canonical `presentationTitle`.
-
-### F. Privacy
-Employee-Self projection may expose only the new safe presentation fields plus the already-allowed safe keys; evaluator fields must remain omitted exactly as before.
-Approver projection must produce the same canonical presentation identity while preserving existing authorized full projection behavior.
-
-Do not change export authorization rules, profile weighting, score calculations, Part A projection, or Chief authority.
-
-## 5. Required focused tests
-
-Add/adjust tests in `tests/mbo-export-service.test.js` only.
-
-At minimum prove:
-1. b7 `COMP_LEAD` -> exact canonical `presentationTitle`;
-2. b8 `COMP_STRAT` -> exact canonical `presentationTitle`;
-3. expanded `presentationDescription` equals exact input `description`;
-4. conflicting `name/title/competencyName` cannot override canonical title;
-5. b7 wrong/missing code fails closed;
-6. b8 wrong/missing code fails closed;
-7. b7/b8 missing or blank description fails closed;
-8. N6 remains backward-compatible and does not require expanded canonical fields;
-9. Employee-Self still strips manager/GM/evaluator/score fields while retaining canonical presentation values;
-10. Approver gets the same canonical presentation title/description for expanded items;
-11. no regression to existing export authorization/security tests.
-
-Run the focused export-service test file. If practical under the existing repository test contract, run the existing relevant export-service suite only; do not broaden into unrelated repository work.
-
-## 6. Executor protocol
+## 5. Authorization ledger
 
 ```text
-fresh-fetch authorization HEAD
--> verify branch ai/antigravity-wp002c
--> read this control file + PRE2 design
--> inspect only exact authorized source/test scope
--> implement minimal source change
--> add focused tests
--> run tests
--> verify git diff contains exactly the two authorized files (or fewer if one legitimately unchanged)
--> commit exactly once
--> push ai/antigravity-wp002c
--> report commit SHA + exact changed files + test command/result
--> STOP
-```
-
-Antigravity must NOT:
-- edit Template Profile;
-- edit OOXML feasibility source/tests;
-- implement title merges;
-- implement renderer/sanitizer;
-- alter Baselines/control docs;
-- change package/package-lock/dist;
-- perform Kintone writes/deploys;
-- start D3;
-- self-declare PRE2-R1 PASS/CLOSED.
-
-Final status from executor must remain:
-`IMPLEMENTATION COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`.
-
-## 7. Authorization ledger
-
-```text
-D2-WP004-R2-PRE1-EVIDENCE-20260902-01 = CONSUMED / CLOSED / DO NOT REUSE
-D2-WP004-R2-PRE1-R1-EVIDENCE-CORRECTIVE-20260902-01 = CONSUMED / PASS / CLOSED / DO NOT REUSE
-D2-WP004-R2-PRE2 = READ-ONLY DESIGN COMPLETE
-D2-WP004-R2-PRE2-R1-SOURCE-TEST-20260902-01 = ACTIVE / ONE-SHOT / CONSUME ON ONE IMPLEMENTATION COMMIT
-
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE PRE2-R1 SOURCE+TEST EXACTLY, PUSH, REPORT, STOP
+D2-WP004-R2-PRE2-R1-SOURCE-TEST-20260902-01 = CONSUMED / NEEDS CORRECTIVE / DO NOT REUSE
+D2-WP004-R2-PRE2-R1-R1 = PROPOSED / NOT AUTHORIZED
+NEXT_EXECUTOR = OWNER / CHATGPT CONTROL PLANE
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE PRE2-R1-R1
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
