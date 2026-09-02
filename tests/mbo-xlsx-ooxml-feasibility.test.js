@@ -1566,22 +1566,173 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
   }
 });
 
-test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block insertion, merge cloning & totals shifting for 6 and 8 competencies', async (t) => {
+test('FEASIBILITY_TRUE_PART_B_RAW_OOXML_BLOCK_INSERTION: proves raw OOXML block insertion, merge cloning & totals shifting for full 6-8 competency matrix', async (t) => {
   const found = findLocalSourceTemplates();
   if (!found) {
     t.skip('Local owner templates unavailable in this environment');
     return;
   }
 
-  const { bufB6, bufB8 } = await getStructuralPartBBuffers();
+  // 1. Exact Part B SHA gate
+  assert.equal(found.shaB, EXPECTED_PART_B_SHA, 'Part B SHA-256 must match baseline exactly');
 
-  const inspB6 = await inspectRawWorksheetOOXML(bufB6);
-  assert.equal(inspB6.rawMerges.length, 79, 'Part B 6 competencies merge count must equal 79');
-  assert.equal(inspB6.printArea.includes('X$35'), true, 'Part B 6 competencies print area must end at X35');
+  const partBBuffers = await getStructuralPartBBuffers();
+  const baselineBufB = partBBuffers.bufB6;
+  const inspBaselineB = await inspectRawWorksheetOOXML(baselineBufB);
+  const baselineWbB = await XlsxPopulate.fromDataAsync(baselineBufB);
+  const baselineSheetB = baselineWbB.sheet(0);
+  const baselineFpB = await getWorkbookFingerprint(baselineBufB);
 
-  const inspB8 = await inspectRawWorksheetOOXML(bufB8);
-  assert.equal(inspB8.rawMerges.length, 91, 'Part B 8 competencies raw merge count must equal 91');
-  assert.equal(inspB8.printArea.includes('X$43'), true, 'Part B 8 competencies print area must end at X43');
+  // Extract source block 27:30 merges from baseline merge inventory
+  const block27_30Merges = [];
+  for (const m of inspBaselineB.rawMerges) {
+    const match = m.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+    if (match) {
+      const r1 = parseInt(match[2], 10);
+      const r2 = parseInt(match[4], 10);
+      if (r1 >= 27 && r2 <= 30) {
+        block27_30Merges.push({ c1: match[1], r1Offset: r1 - 27, c2: match[3], r2Offset: r2 - 27 });
+      }
+    }
+  }
+  assert.equal(block27_30Merges.length, 6, 'Baseline Part B source block 27:30 must contain exactly 6 merges');
+
+  for (let n = 6; n <= 8; n++) {
+    const extraBlocks = n - 6;
+    const extraRows = 4 * extraBlocks;
+    const expectedLastRow = 35 + extraRows;
+    const expectedMergeCount = 79 + (6 * extraBlocks);
+    const expectedDimensionTag = `<dimension ref="A1:X${expectedLastRow}"/>`;
+    const expectedPrintArea = `'(Part B) Competency'!$A$1:$X$${expectedLastRow}`;
+
+    const bufN = partBBuffers.buffers ? partBBuffers.buffers[n] : (n === 6 ? partBBuffers.bufB6 : (n === 7 ? partBBuffers.bufB7 : partBBuffers.bufB8));
+    const inspB = await inspectRawWorksheetOOXML(bufN);
+    const wbB = await XlsxPopulate.fromDataAsync(bufN);
+    const sheetB = wbB.sheet(0);
+    const fpB = await getWorkbookFingerprint(bufN);
+
+    // A. Dimension & Print Area exact string equality (unconditional exact match)
+    assert.equal(inspB.dimension, expectedDimensionTag, `Part B ${n} competencies dimension must be exact string ${expectedDimensionTag}`);
+    assert.equal(inspB.printArea, expectedPrintArea, `Part B ${n} competencies print area must be exact string ${expectedPrintArea}`);
+
+    // B. Exact row-node sequence + uniqueness
+    const expectedRowRefs = [];
+    for (const r of inspBaselineB.rowRefs) {
+      if (r <= 30) {
+        expectedRowRefs.push(r);
+      } else {
+        expectedRowRefs.push(r + extraRows);
+      }
+    }
+    for (let i = 0; i < extraRows; i++) {
+      expectedRowRefs.push(31 + i);
+    }
+    expectedRowRefs.sort((a, b) => a - b);
+
+    assert.deepEqual(inspB.rowRefs, expectedRowRefs, `Part B ${n} competencies rowRefs must match expected sequence exactly`);
+    assert.equal(new Set(inspB.rowRefs).size, inspB.rowRefs.length, `Part B ${n} competencies rowRefs must contain 0 duplicates`);
+
+    // C. Merge inventory full deep equality
+    const expectedMerges = [];
+    for (const m of inspBaselineB.rawMerges) {
+      const match = m.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+      assert.ok(match, `Invalid merge format in baseline: ${m}`);
+      let r1 = parseInt(match[2], 10);
+      let r2 = parseInt(match[4], 10);
+      if (r1 >= 31) r1 += extraRows;
+      if (r2 >= 31) r2 += extraRows;
+      expectedMerges.push(`${match[1]}${r1}:${match[3]}${r2}`);
+    }
+    for (let b = 1; b <= extraBlocks; b++) {
+      const startR = 27 + 4 * b;
+      for (const m of block27_30Merges) {
+        expectedMerges.push(`${m.c1}${startR + m.r1Offset}:${m.c2}${startR + m.r2Offset}`);
+      }
+    }
+    expectedMerges.sort();
+
+    assert.equal(inspB.rawMerges.length, expectedMergeCount, `Part B ${n} competencies merge count must equal ${expectedMergeCount}`);
+    assert.equal(inspB.mergeCountAttr, String(expectedMergeCount), `Part B ${n} competencies mergeCountAttr must equal ${expectedMergeCount}`);
+    assert.deepEqual(inspB.rawMerges, expectedMerges, `Part B ${n} competencies raw merge set must match computed expected merge set exactly`);
+
+    // D. Rows 1-30 structurally unchanged
+    for (let r = 1; r <= 30; r++) {
+      assert.deepEqual(inspB.cellRefs[r], inspBaselineB.cellRefs[r], `Row ${r} cell refs in ${n} competencies must match baseline`);
+      assert.deepEqual(inspB.stylePattern[r], inspBaselineB.stylePattern[r], `Row ${r} style pattern in ${n} competencies must match baseline`);
+      assert.deepEqual(inspB.rowHeights[r], inspBaselineB.rowHeights[r], `Row ${r} height in ${n} competencies must match baseline`);
+    }
+
+    // E. Inserted rows in blocks b=1..extraBlocks are exact normalized structural clones of rows 27:30
+    for (let b = 1; b <= extraBlocks; b++) {
+      for (let offset = 0; offset <= 3; offset++) {
+        const targetR = 27 + 4 * b + offset;
+        const sourceR = 27 + offset;
+        const normalizedCellRefs = (inspB.cellRefs[targetR] || []).map(c => c.replace(new RegExp(`${targetR}$`), String(sourceR)));
+        assert.deepEqual(normalizedCellRefs, inspBaselineB.cellRefs[sourceR], `Inserted row ${targetR} normalized cell refs must match source row ${sourceR}`);
+        assert.deepEqual(inspB.stylePattern[targetR], inspBaselineB.stylePattern[sourceR], `Inserted row ${targetR} style pattern must match source row ${sourceR}`);
+        assert.deepEqual(inspB.rowHeights[targetR], inspBaselineB.rowHeights[sourceR], `Inserted row ${targetR} height must match source row ${sourceR}`);
+      }
+    }
+
+    // F. Downstream original rows >= 31 moved exactly by +extraRows
+    for (let r = 31; r <= 35; r++) {
+      const shiftedR = r + extraRows;
+      const normalizedShiftedCellRefs = (inspB.cellRefs[shiftedR] || []).map(c => c.replace(new RegExp(`${shiftedR}$`), String(r)));
+      assert.deepEqual(normalizedShiftedCellRefs, inspBaselineB.cellRefs[r], `Downstream row ${r} shifted to ${shiftedR} cell refs must match baseline row ${r}`);
+      assert.deepEqual(inspB.stylePattern[shiftedR], inspBaselineB.stylePattern[r], `Downstream row ${r} shifted to ${shiftedR} style pattern must match baseline row ${r}`);
+      assert.deepEqual(inspB.rowHeights[shiftedR], inspBaselineB.rowHeights[r], `Downstream row ${r} shifted to ${shiftedR} height must match baseline row ${r}`);
+    }
+
+    // G. Privacy-safe sentinel relocation & uniqueness
+    const targetSentinelCell = `B${31 + extraRows}`;
+    assert.equal(sheetB.cell(targetSentinelCell).value(), 'SENTINEL_ROW_31', `Sentinel must exist at ${targetSentinelCell}`);
+    if (extraRows > 0) {
+      assert.notEqual(sheetB.cell('B31').value(), 'SENTINEL_ROW_31', 'Sentinel must be absent from old row B31 when extraRows > 0');
+    }
+    let sentinelCount = 0;
+    for (let checkR = 1; checkR <= expectedLastRow; checkR++) {
+      if (sheetB.cell(`B${checkR}`).value() === 'SENTINEL_ROW_31') {
+        sentinelCount++;
+      }
+    }
+    assert.equal(sentinelCount, 1, `Sentinel 'SENTINEL_ROW_31' must exist exactly once in ${n} competencies sheet`);
+
+    // H. Workbook sheet invariants
+    assert.deepEqual(fpB.sheetNames, baselineFpB.sheetNames, `Sheet names for ${n} competencies must match baseline exactly`);
+    assert.deepEqual(fpB.sheetStates, baselineFpB.sheetStates, `Sheet states for ${n} competencies must match baseline exactly`);
+
+    // I. Main-sheet non-target invariant equality
+    const baselineMainB = baselineFpB.sheets['(Part B) Competency'];
+    const currentMainB = fpB.sheets['(Part B) Competency'];
+    assert.ok(baselineMainB && currentMainB, 'Main sheet entry must exist in both baseline and current fingerprints');
+
+    assert.equal(currentMainB.colsHash, baselineMainB.colsHash, `Cols hash for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.showGridLines, baselineMainB.showGridLines, `showGridLines for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.pageMargins, baselineMainB.pageMargins, `pageMargins for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.paperSize, baselineMainB.paperSize, `paperSize for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.paperSize, '9', `paperSize for ${n} competencies must equal absolute constant 9 (A4)`);
+    assert.equal(currentMainB.orientation, baselineMainB.orientation, `orientation for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.orientation, 'portrait', `orientation for ${n} competencies must equal absolute constant portrait`);
+    assert.equal(currentMainB.scale, baselineMainB.scale, `scale for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.scale, '75', `scale for ${n} competencies must equal absolute constant 75%`);
+    assert.equal(currentMainB.fitToPage, baselineMainB.fitToPage, `fitToPage for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.horizontalCentered, baselineMainB.horizontalCentered, `horizontalCentered for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.horizontalCentered, true, `horizontalCentered for ${n} competencies must equal absolute constant true`);
+    assert.equal(currentMainB.verticalCentered, baselineMainB.verticalCentered, `verticalCentered for ${n} competencies must match baseline`);
+    assert.equal(currentMainB.sheetProtection, baselineMainB.sheetProtection, `sheetProtection for ${n} competencies must match baseline`);
+    assert.ok(currentMainB.sheetProtection && currentMainB.sheetProtection !== 'none' && currentMainB.sheetProtection !== '', `sheetProtection for ${n} competencies must be present and non-none`);
+    assert.deepEqual(currentMainB.sheetRels, baselineMainB.sheetRels, `sheetRels for ${n} competencies must match baseline`);
+
+    // J. Auxiliary Sheet1 exact stability
+    assert.deepEqual(fpB.sheets['Sheet1'], baselineFpB.sheets['Sheet1'], `Auxiliary Sheet1 fingerprint for ${n} competencies must match baseline Sheet1 exactly`);
+
+    // K. Package / Formulas
+    assert.deepEqual(fpB.relTuples, baselineFpB.relTuples, `Relationship tuples for ${n} competencies must match baseline`);
+    assert.deepEqual(fpB.mediaFiles, baselineFpB.mediaFiles, `Media inventory for ${n} competencies must match baseline`);
+
+    const formulaSet = await getWorksheetFormulaSet(bufN);
+    assert.equal(formulaSet.size, 0, `Formula inventory must equal 0 for ${n} competencies`);
+  }
 });
 
 test('FEASIBILITY_DIFFICULTY_LEVEL_BLANK: Difficulty Level cells remain blank per R3 Owner Decision', async (t) => {

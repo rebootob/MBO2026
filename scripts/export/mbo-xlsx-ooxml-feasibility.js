@@ -1986,104 +1986,156 @@ export async function getStructuralPartBBuffers() {
   if (!found) throw new Error('BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE');
 
   const origBufB = fs.readFileSync(found.partB);
+  const sourceSha = crypto.createHash('sha256').update(origBufB).digest('hex');
+  if (sourceSha !== EXPECTED_PART_B_SHA) {
+    throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Source SHA mismatch');
+  }
 
-  // --- 6 COMPETENCIES (Unchanged) ---
-  const wbB6 = await XlsxPopulate.fromDataAsync(origBufB);
-  const sheetB6 = wbB6.sheet(0);
-  sheetB6.cell('B31').value('SENTINEL_ROW_31');
-  const bufB6 = await wbB6.outputAsync();
+  // --- RAW OOXML HELPER FOR PART B BLOCK INSERTION & MERGE CLONING ---
+  async function performRawPartBInsertion(extraBlocks) {
+    const extraRows = 4 * extraBlocks;
+    const expectedLastRow = 35 + extraRows;
 
-  // --- 8 COMPETENCIES (+8 RAW OOXML BLOCK INSERTION & MERGE CLONING) ---
-  const wbTemp = await XlsxPopulate.fromDataAsync(origBufB);
-  wbTemp.sheet(0).cell('B31').value('SENTINEL_ROW_31');
-  const tempBuf = await wbTemp.outputAsync();
-  const wbB8 = await XlsxPopulate.fromDataAsync(tempBuf);
+    const wbTemp = await XlsxPopulate.fromDataAsync(origBufB);
+    wbTemp.sheet(0).cell('B31').value('SENTINEL_ROW_31');
+    const tempBuf = await wbTemp.outputAsync();
 
-  const sheetFile = wbB8._zip.files['xl/worksheets/sheet1.xml'];
-  let sheetXml = await sheetFile.async('string');
-
-  const extraRows = 8;
-
-  // Extract source block 27:30 mergeCells
-  const block27_30Merges = [];
-  const mergeCellMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
-  for (const m of mergeCellMatches) {
-    const r1 = parseInt(m[2], 10);
-    const r2 = parseInt(m[4], 10);
-    if (r1 >= 27 && r2 <= 30) {
-      block27_30Merges.push({ c1: m[1], r1Offset: r1 - 27, c2: m[3], r2Offset: r2 - 27 });
+    const wb = await XlsxPopulate.fromDataAsync(tempBuf);
+    const sheetFile = wb._zip.files['xl/worksheets/sheet1.xml'];
+    if (!sheetFile) {
+      throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: sheet1.xml missing');
     }
-  }
+    let sheetXml = await sheetFile.async('string');
 
-  // Shift rows r >= 31 by +8
-  sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
-    const r = parseInt(rStr, 10);
-    if (r >= 31) {
-      return `<row r="${r + extraRows}"${rest}>`;
+    // Fail-closed checks on prerequisites
+    for (let r = 27; r <= 31; r++) {
+      const matches = [...sheetXml.matchAll(new RegExp(`<row r="${r}"[^>]*>`, 'g'))];
+      if (matches.length !== 1) {
+        throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Row ${r} must be present exactly once`);
+      }
     }
-    return match;
-  });
 
-  sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
-    const r = parseInt(rStr, 10);
-    if (r >= 31) {
-      return `<c r="${col}${r + extraRows}"`;
+    // Extract source block 27:30 mergeCells
+    const block27_30Merges = [];
+    const mergeCellMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
+    for (const m of mergeCellMatches) {
+      const r1 = parseInt(m[2], 10);
+      const r2 = parseInt(m[4], 10);
+      if (r1 >= 27 && r2 <= 30) {
+        block27_30Merges.push({ c1: m[1], r1Offset: r1 - 27, c2: m[3], r2Offset: r2 - 27 });
+      }
     }
-    return match;
-  });
 
-  let block27_30 = '';
-  for (let r = 27; r <= 30; r++) {
-    const m = sheetXml.match(new RegExp(`<row r="${r}"[^>]*>[\\s\\S]*?<\\/row>`));
-    if (m) block27_30 += m[0] + '\n';
+    if (block27_30Merges.length !== 6) {
+      throw new Error(`BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Expected 6 merges in source block 27:30, found ${block27_30Merges.length}`);
+    }
+
+    const countMatchB = sheetXml.match(/<mergeCells count="(\d+)">/);
+    if (!countMatchB || parseInt(countMatchB[1], 10) !== 79) {
+      throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Baseline merge count must be 79');
+    }
+
+    if (extraBlocks > 0) {
+      // Shift rows r >= 31 by +extraRows
+      sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (match, rStr, rest) => {
+        const r = parseInt(rStr, 10);
+        if (r >= 31) {
+          return `<row r="${r + extraRows}"${rest}>`;
+        }
+        return match;
+      });
+
+      sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (match, col, rStr) => {
+        const r = parseInt(rStr, 10);
+        if (r >= 31) {
+          return `<c r="${col}${r + extraRows}"`;
+        }
+        return match;
+      });
+
+      // Extract source block 27:30 XML
+      let block27_30 = '';
+      for (let r = 27; r <= 30; r++) {
+        const m = sheetXml.match(new RegExp(`<row r="${r}"[^>]*>[\\s\\S]*?<\\/row>`));
+        if (m) block27_30 += m[0] + '\n';
+      }
+
+      const clonedBlocksXml = [];
+      for (let b = 1; b <= extraBlocks; b++) {
+        const offset = 4 * b;
+        const clonedBlock = block27_30
+          .replace(/r="(\d+)"/g, (m, rStr) => `r="${parseInt(rStr, 10) + offset}"`)
+          .replace(/<c r="([A-Z]+)(\d+)"/g, (m, col, rStr) => `<c r="${col}${parseInt(rStr, 10) + offset}"`);
+        clonedBlocksXml.push(clonedBlock);
+      }
+
+      const row30Match = sheetXml.match(/<row r="30"[^>]*>[\s\S]*?<\/row>/);
+      if (row30Match) {
+        sheetXml = sheetXml.replace(row30Match[0], row30Match[0] + '\n' + clonedBlocksXml.join('\n'));
+      }
+
+      // Shift mergeCells for rows >= 31
+      sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
+        let r1 = parseInt(r1Str, 10);
+        let r2 = parseInt(r2Str, 10);
+        if (r1 >= 31) r1 += extraRows;
+        if (r2 >= 31) r2 += extraRows;
+        return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
+      });
+
+      // Append cloned mergeCells for inserted blocks
+      const clonedMergesXmlB = [];
+      for (let b = 1; b <= extraBlocks; b++) {
+        const startR = 27 + 4 * b;
+        for (const m of block27_30Merges) {
+          clonedMergesXmlB.push(`<mergeCell ref="${m.c1}${startR + m.r1Offset}:${m.c2}${startR + m.r2Offset}"/>`);
+        }
+      }
+
+      if (clonedMergesXmlB.length > 0) {
+        sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXmlB.join('\n') + '\n</mergeCells>');
+      }
+
+      // Update <mergeCells count="N">
+      const currentCount = parseInt(countMatchB[1], 10);
+      const newCount = currentCount + clonedMergesXmlB.length;
+      sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newCount}">`);
+    }
+
+    // Ensure dimension ref is present and exact
+    const dimensionTag = `<dimension ref="A1:X${expectedLastRow}"/>`;
+    if (/<dimension [^>]*\/>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<dimension [^>]*\/>/, dimensionTag);
+    } else if (/<sheetPr[^>]*\/>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<sheetPr[^>]*\/>/, `$& \n  ${dimensionTag}`);
+    } else if (/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>/.test(sheetXml)) {
+      sheetXml = sheetXml.replace(/<sheetPr[^>]*>[\s\S]*?<\/sheetPr>/, `$& \n  ${dimensionTag}`);
+    } else {
+      sheetXml = sheetXml.replace(/<worksheet[^>]*>/, `$& \n  ${dimensionTag}`);
+    }
+
+    wb._zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+    let wbXml = await wb._zip.files['xl/workbook.xml'].async('string');
+    if (!wbXml.includes('_xlnm.Print_Area')) {
+      throw new Error('BLOCKER_PART_B_STRUCTURAL_PREREQUISITE_FAILED: Print_Area missing');
+    }
+    wbXml = wbXml.replace(/<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/, `<definedName name="_xlnm.Print_Area" localSheetId="0">'(Part B) Competency'!$A$1:$X$${expectedLastRow}</definedName>`);
+    wb._zip.file('xl/workbook.xml', wbXml);
+
+    return wb._zip.generateAsync({ type: 'nodebuffer' });
   }
 
-  const block31_34 = block27_30.replace(/r="(\d+)"/g, (m, rStr) => `r="${parseInt(rStr, 10) + 4}"`).replace(/<c r="([A-Z]+)(\d+)"/g, (m, col, rStr) => `<c r="${col}${parseInt(rStr, 10) + 4}"`);
-  const block35_38 = block27_30.replace(/r="(\d+)"/g, (m, rStr) => `r="${parseInt(rStr, 10) + 8}"`).replace(/<c r="([A-Z]+)(\d+)"/g, (m, col, rStr) => `<c r="${col}${parseInt(rStr, 10) + 8}"`);
-
-  const row30Match = sheetXml.match(/<row r="30"[^>]*>[\s\S]*?<\/row>/);
-  if (row30Match) {
-    sheetXml = sheetXml.replace(row30Match[0], row30Match[0] + '\n' + block31_34 + '\n' + block35_38);
+  const buffers = {};
+  for (let n = 6; n <= 8; n++) {
+    const extraBlocks = n - 6;
+    buffers[n] = await performRawPartBInsertion(extraBlocks);
   }
 
-  // Shift mergeCells for rows >= 31
-  sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
-    let r1 = parseInt(r1Str, 10);
-    let r2 = parseInt(r2Str, 10);
-    if (r1 >= 31) r1 += extraRows;
-    if (r2 >= 31) r2 += extraRows;
-    return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
-  });
-
-  // Append cloned mergeCells for block 31:34 (+4) and block 35:38 (+8)
-  const clonedMergesXmlB = [];
-  for (const m of block27_30Merges) {
-    clonedMergesXmlB.push(`<mergeCell ref="${m.c1}${31 + m.r1Offset}:${m.c2}${31 + m.r2Offset}"/>`);
-    clonedMergesXmlB.push(`<mergeCell ref="${m.c1}${35 + m.r1Offset}:${m.c2}${35 + m.r2Offset}"/>`);
-  }
-
-  if (clonedMergesXmlB.length > 0) {
-    sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXmlB.join('\n') + '\n</mergeCells>');
-  }
-
-  // Update <mergeCells count="N">
-  const countMatchB = sheetXml.match(/<mergeCells count="(\d+)">/);
-  if (countMatchB) {
-    const currentCount = parseInt(countMatchB[1], 10);
-    const newCount = currentCount + clonedMergesXmlB.length;
-    sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newCount}">`);
-  }
-
-  sheetXml = sheetXml.replace(/<dimension ref="([A-Z0-9]+:)([A-Z]+)(\d+)"\s*\/>/, (m, prefix, col, rStr) => {
-    return `<dimension ref="${prefix}${col}${parseInt(rStr, 10) + extraRows}"/>`;
-  });
-  wbB8._zip.file('xl/worksheets/sheet1.xml', sheetXml);
-
-  let wbXml = await wbB8._zip.files['xl/workbook.xml'].async('string');
-  wbXml = wbXml.replace(/<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/, `<definedName name="_xlnm.Print_Area" localSheetId="0">'(Part B) Competency'!$A$1:$X$43</definedName>`);
-  wbB8._zip.file('xl/workbook.xml', wbXml);
-
-  const bufB8 = await wbB8._zip.generateAsync({ type: 'nodebuffer' });
-
-  return { bufB6, bufB8 };
+  return {
+    bufB6: buffers[6],
+    bufB7: buffers[7],
+    bufB8: buffers[8],
+    buffers
+  };
 }
