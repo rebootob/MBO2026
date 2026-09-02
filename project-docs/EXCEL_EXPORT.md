@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4 SOURCE+TEST AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4 CORRECTIVE REQUIRED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -42,35 +42,49 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Part A R4 authorization
+## 4. Part A R4 review
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R4
-ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
+R4_AUTHORIZATION_COMMIT = 8df05db6535a8ce871e987853e5a356ad67f4232
+R4_IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
+R4_SCOPE_REVIEW = PASS
+R4_SOURCE_REVIEW = PASS / FROZEN
+R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
+R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-Allowed files only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+Accepted progress:
+- real feasibility source helper now exposes all objective counts 4–10;
+- exact Part A SHA gate retained;
+- exact dimension/print-area progression proven;
+- complete computed merge inventory is deep-compared, not count-only;
+- inserted/downstream row cell-ref/style/row-height mappings are asserted;
+- sentinel relocation, relationship/media preservation and formula-empty proof are present.
 
-R4 must use the real Part A feasibility path for all objective counts 4–10 and prove:
-- exact Part A SHA before template-dependent proof;
-- exact rows/cells/styles/row-height transformation;
-- exact sentinel relocation;
-- full merge-set equality, not count only;
-- exact dimensions A1:BL52 through A1:BL58;
-- exact print areas `$A$1:$BJ$52` through `$A$1:$BJ$58`;
-- sheet/column/page setup/gridline/fit-to-page invariants;
-- relationships/media unchanged;
-- formula inventory exactly empty.
+Remaining TEST-ONLY proof gaps:
+- exact `rowRefs` sequence and uniqueness are not asserted, so row-loss/duplication/old-row absence is not fully closed;
+- `sheetStates` is not asserted;
+- hidden gridline, fit-to-page, page-margin and remaining non-target per-sheet setup invariants are not asserted against the 4-objective baseline.
 
-No production renderer, Part B structural logic, preservation/reference-image change, generated artifact publication, Kintone, deploy, or D3 work is authorized. If matrix proof exposes an insertion-algorithm defect beyond bounded 4–10 generalization, executor must STOP with a blocker.
+The R4 source implementation is frozen for the corrective. Existing fingerprint helpers already expose the missing fields.
 
-## 5. Remaining D2 path after R4 review
+## 5. Proposed R4-R1 — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
+PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP
+```
+
+R4-R1 must retain all accepted R4 matrix assertions and only add the missing exact structural invariant proof. No source change is proposed.
+
+## 6. Remaining D2 path after Part A closure
 
 1. Part B competency insertion structural matrix;
 2. formula/no-formula authority;
@@ -79,5 +93,3 @@ No production renderer, Part B structural logic, preservation/reference-image ch
 5. PDF parity;
 6. export authorization/security/privacy regression;
 7. final independent D2 closure.
-
-Do not auto-start any next step.
