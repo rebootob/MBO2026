@@ -24,27 +24,33 @@ D2 = IN PROGRESS
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2-WP003-R3-R36 = PASS / CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
-ACTIVE_WORK_PACKAGE = D2-WP003-R4
-AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+R4_IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
+R4_SCOPE_REVIEW = PASS
+R4_SOURCE_REVIEW = PASS / FROZEN
+R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For R4 execution/review read:
+For R4-R1 continuation read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — only the Part A feasibility structural helper area;
-6. `tests/mbo-xlsx-ooxml-feasibility.test.js` — Part A structural matrix proof.
+5. `tests/mbo-xlsx-ooxml-feasibility.test.js` — Part A structural matrix proof;
+6. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — READ-ONLY accepted R4 source unless a proven regression appears.
 
-Do not reopen preservation/reference-image gates without proven regression. Do not touch Part B structural logic or production renderer under R4.
+R4-R1 is proposed TEST-ONLY to close missing rowRefs uniqueness/sequence and workbook/sheet invariant assertions. Do not reopen preservation/reference-image or modify Part B/renderer.
