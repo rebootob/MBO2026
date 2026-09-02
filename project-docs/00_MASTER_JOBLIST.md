@@ -21,36 +21,27 @@ D2 closed:
 - Formula Authority
 - Part B Expanded Privacy
 
-Latest privacy closure:
-```text
-R7-R2_SOURCE = PASS / FROZEN / 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
-R7-R3_TEST_ONLY = PASS / CLOSED / 69891d82996f83a0442ee6dc268dd20b7ef8ee99
-D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-```
-
-Frozen privacy authority includes N6/N7/N8 counts 432/474/516, exact row30/34/38 protected-static semantics, strict source-backed style/merge/type/nonblank/static-hash-when-applicable validation, expanded package token purge, immutable caller buffers and zero formulas.
-
-Production Renderer requirement:
+Production Renderer architecture requirement:
 ```text
 NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
 CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 ```
 Authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
 
-Remaining D2:
-1. Production XLSX Renderer/Sanitizer
-2. Combined Excel parity
-3. PDF parity
-4. Export authorization/security/privacy regression
-5. Final independent D2 closure
-6. only then D3 may leave HOLD
-
+Current D2 execution:
 ```text
-PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1
+NAME = TEMPLATE PROFILE / MAPPING FOUNDATION
+AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
+SCOPE = SOURCE+TEST / ONE-SHOT / TWO NEW FILES / PURE MAPPING
+WORKBOOK_MUTATION = FORBIDDEN
+PRODUCTION_RENDERER = NOT YET
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
 ```
+
+Remaining D2 after R1 review: Production XLSX Renderer/Sanitizer -> Combined Excel parity -> PDF parity -> export authorization/security/privacy regression -> final independent D2 closure -> only then D3 may leave HOLD.
