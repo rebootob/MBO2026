@@ -25,27 +25,26 @@ D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2-WP003-R3-R36 = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R4
-PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R4
+AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
 
 ## 3. Current D2 routing
 
-For Part A structural-matrix continuation read:
+For R4 execution/review read:
 1. `CHAT_HANDOFF.md`;
 2. `AI_CONTROL_CENTER.md`;
 3. `AI_ACTIVE_TASK.md`;
 4. `EXCEL_EXPORT.md`;
-5. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — only `getStructuralPartABuffers()` area unless implementation is authorized;
-6. `tests/mbo-xlsx-ooxml-feasibility.test.js` — existing Part A structural feasibility test.
+5. `scripts/export/mbo-xlsx-ooxml-feasibility.js` — only the Part A feasibility structural helper area;
+6. `tests/mbo-xlsx-ooxml-feasibility.test.js` — Part A structural matrix proof.
 
-Do not reopen preservation/reference-image gates without proven regression. R4 is proposed only and is not authorized.
+Do not reopen preservation/reference-image gates without proven regression. Do not touch Part B structural logic or production renderer under R4.
