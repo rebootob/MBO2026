@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / FINAL TEMPLATE SEMANTIC EVIDENCE CORRECTIVE AUTHORIZED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / XLSX TEMPLATE SEMANTIC MAPPING CLOSED / TEMPLATE PROFILE ALIGNMENT NEXT PROPOSED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -13,59 +13,56 @@ PART_A_STRUCTURAL = PASS / CLOSED
 PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
+XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 ```
 
 Mandatory architecture: centralized Template Profile/Mapping, no scattered important cell/range addresses, unknown template/mapping fail closed.
 
-## R1-R2-R1 evidence review
+## Closed semantic mapping evidence
 ```text
-AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
-EVIDENCE_COMMIT = 26fa18feead191c7587df82e393c73366969000d
+AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
+EVIDENCE_COMMIT = bc141f355d7714302801d5adca3d5652b83c4de1
 SCOPE = PASS / EXACT ONE MARKDOWN FILE
 PART_A_SHA = PASS
 PART_B_SHA = PASS
-HOSHIN = PASS / FREEZE
-PART_B_HEADER = PASS / FREEZE
-PART_A_HEADER = PASS / FREEZE
-OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
-TOKEN = CONSUMED / DO NOT REUSE
+SEMANTIC_EVIDENCE = PASS / CLOSED
+PROVEN_SAFE_TO_MAP = 18
+UNRESOLVED = 22
+NO_SECURED_PROJECTION_SOURCE = 5
+DUPLICATE_SAFE_TARGETS = 0
+SAFE_TO_MAP_WITHOUT_SECURED_PATH = 0
+CHIEF_FROZEN_AUTHORITY = R:X
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
 
-Accepted/frozen additionally:
-- Department -> `Z7:AF7` -> `partA.header.department`.
-- Section -> `AG7:AL7` -> `partA.header.section`.
-- Name-Surname primary -> `AT7:BC7` -> `partA.header.employeeName`; `employeeNameTH` alternate remains unresolved.
-- profileCode/profileFamily/partAWeightPercent with no workbook target remain `UNRESOLVED`.
-- final score/grade without static template proof remain unresolved.
+Durable authority:
+`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-## Active D2-WP004-R1-R2-R2 — FINAL EVIDENCE-ONLY CORRECTIVE
+Production semantic rules now frozen:
+- only the exact 18 roles in the semantic closure Baseline may be production writable today;
+- 22 unresolved roles remain fail-closed/non-writable;
+- 5 visually identifiable roles with no secured projection source must not be synthesized or mapped;
+- Part B Chief frozen dynamic authority remains `R:X`, but no stable secured chief item key is proven;
+- combined objective/target regions, evaluator alias translations, final score/grade without static proof and formula-derived weight sum remain unresolved;
+- Employee-Self confidential omissions must never be reconstructed;
+- Excel scoring/recalculation remains forbidden and generated workbook formula inventory remains exactly zero.
+
+## Proposed next — NOT AUTHORIZED
 ```text
-AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
-SOURCE_CHANGE = FORBIDDEN
-TEST_CHANGE = FORBIDDEN
-PROFILE_CHANGE = FORBIDDEN
-TEMPLATE_BINARY_CHANGE = FORBIDDEN
+D2-WP004-R1-R3 = TEMPLATE PROFILE SEMANTIC ALIGNMENT
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
-Final corrections only:
-- preserve full Part B chief dynamic authority `R:X`; distinguish narrower visual merge if any rather than replacing authority;
-- no `SAFE_TO_MAP` where secured projection path is null/unknown, including `SUMMARY_WEIGHT_SUM`;
-- Appraiser1/2 -> Manager/GM requires exact accepted role-identity evidence or must remain `UNRESOLVED`;
-- B:I is a combined objective/target region, so standalone title mapping requires an exact composition rule or remains `UNRESOLVED`;
-- evidence header must be neutral until independent Control Plane PASS;
-- recalculate all semantic decision counts mechanically and require zero duplicate exclusive `SAFE_TO_MAP` targets.
-
-If direct authority is not readily available in accepted sources, downgrade the claim rather than conduct broad scans.
+R1-R3 must update the existing pure Template Profile to consume this closed semantic authority only. No Renderer, workbook I/O, scoring recalculation, Kintone write, deploy, Live UAT, Combined Excel/PDF regression or D3 is authorized.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R2
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
