@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A STRUCTURAL MATRIX PROPOSED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A R4 SOURCE+TEST AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -42,67 +42,42 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Part A source truth before R4
-
-Part A base template facts remain:
-- main sheet `MBO Staff & Chief`;
-- used range A1:BL52;
-- print area A1:BJ52;
-- 193 merge ranges;
-- four base objective rows;
-- zero formulas;
-- A3 landscape, scale 58%, fit-to-page, hidden gridlines.
-
-Current feasibility source can produce only 4, 5 and 10 objective variants. Current feasibility proof checks only merge count/declaration and print-area ending for those three variants. This is insufficient for a 5–10 structural matrix closure.
-
-## 5. Proposed D2-WP003-R4 — NOT AUTHORIZED
+## 4. Part A R4 authorization
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R4
-PROPOSED_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-PROPOSED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-PROPOSED_FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js + tests/mbo-xlsx-ooxml-feasibility.test.js
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_WORK_PACKAGE = D2-WP003-R4
+ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
+AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
 ```
 
-If authorized, R4 must generalize the existing feasibility Part A helper to expose every objective count 4–10 and prove exact structural transformation for each count. The production renderer is not part of R4.
+Allowed files only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Required matrix characteristics:
-- exact owner-template SHA gate before template-dependent proof;
-- counts 4,5,6,7,8,9,10 from the real feasibility source path;
-- `extraRows = objectiveCount - 4`;
-- exact dimension progression from `A1:BL52` to `A1:BL58`;
-- exact print-area progression from `$A$1:$BJ$52` to `$A$1:$BJ$58`;
-- exact merge-set transformation, not count-only proof;
-- base 193 merges plus exactly 14 cloned row-28 merges for every inserted objective row;
-- rows/cells/styles/row-height mapping: rows before insertion unchanged, inserted rows structural clones of row 28, every downstream row shifted by exactly `extraRows` without loss/duplication;
-- sentinel downstream row relocation proof;
-- sheet names/order/state unchanged;
-- columns/page setup/margins/gridlines/fit-to-page properties unchanged except intentional row/dimension/print-area growth;
-- relationship/media inventory unchanged;
-- formula set remains exactly empty;
-- no generated workbook/evidence committed.
+R4 must use the real Part A feasibility path for all objective counts 4–10 and prove:
+- exact Part A SHA before template-dependent proof;
+- exact rows/cells/styles/row-height transformation;
+- exact sentinel relocation;
+- full merge-set equality, not count only;
+- exact dimensions A1:BL52 through A1:BL58;
+- exact print areas `$A$1:$BJ$52` through `$A$1:$BJ$58`;
+- sheet/column/page setup/gridline/fit-to-page invariants;
+- relationships/media unchanged;
+- formula inventory exactly empty.
 
-If the matrix exposes a defect in the existing insertion algorithm beyond bounded count generalization, executor must stop with a blocker rather than redesigning the algorithm under the same authorization.
+No production renderer, Part B structural logic, preservation/reference-image change, generated artifact publication, Kintone, deploy, or D3 work is authorized. If matrix proof exposes an insertion-algorithm defect beyond bounded 4–10 generalization, executor must STOP with a blocker.
 
-## 6. Current gate
+## 5. Remaining D2 path after R4 review
 
-```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-CLAUDE = STOP
-D3 = HOLD
-```
+1. Part B competency insertion structural matrix;
+2. formula/no-formula authority;
+3. production sanitizer/XLSX renderer;
+4. combined Excel parity;
+5. PDF parity;
+6. export authorization/security/privacy regression;
+7. final independent D2 closure.
 
-## 7. Remaining D2 path
-
-1. Part A objective insertion structural matrix;
-2. Part B competency insertion structural matrix;
-3. formula/no-formula authority;
-4. production sanitizer/XLSX renderer;
-5. combined Excel parity;
-6. PDF parity;
-7. export authorization/security/privacy regression;
-8. final independent D2 closure.
+Do not auto-start any next step.
