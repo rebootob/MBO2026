@@ -573,3 +573,90 @@ test('TEMPLATE_PROFILE_R2_A_LAYOUT_AND_SANITIZATION_TOPOLOGY: proves Part A and 
   assert.throws(() => profile.getPartBLayoutTopology(5), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
   assert.throws(() => profile.getPartBLayoutTopology(9), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
 });
+
+test('TEMPLATE_PROFILE_R2_A_R1_MUTATION_NEGATIVE_TESTS: production validateMappingIntegrity deeply rejects topology anomalies', () => {
+  const profile = new MboXlsxTemplateProfile();
+
+  // 1. Wrong Part A dimension -> REJECT
+  const badDimA = Object.create(profile);
+  badDimA.getPartALayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartALayoutTopology.call(this, n);
+    if (n === 4) return { ...l, dimension: 'A1:BL53' };
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badDimA), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 2. Wrong Part A Print_Area -> REJECT
+  const badPrintA = Object.create(profile);
+  badPrintA.getPartALayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartALayoutTopology.call(this, n);
+    if (n === 4) return { ...l, printArea: "'MBO Staff & Chief'!$A$1:$BJ$53" };
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badPrintA), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 3. Part A same-count sensitive range substitution -> REJECT
+  const badSubstA = Object.create(profile);
+  badSubstA.getPartALayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartALayoutTopology.call(this, n);
+    if (n === 4) {
+      const eff = [...l.effectiveSanitizationRanges];
+      eff[1] = 'Z99:AF99';
+      return { ...l, effectiveSanitizationRanges: Object.freeze(eff) };
+    }
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badSubstA), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 4. Wrong Part B final overlay merge count -> REJECT
+  const badMergeB = Object.create(profile);
+  badMergeB.getPartBLayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartBLayoutTopology.call(this, n);
+    if (n === 7) return { ...l, finalOverlayMergeCount: 87 };
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badMergeB), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 5. Wrong Part B summary start -> REJECT
+  const badSumB = Object.create(profile);
+  badSumB.getPartBLayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartBLayoutTopology.call(this, n);
+    if (n === 7) return { ...l, summaryStartRow: 36 };
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badSumB), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 6. Wrong Part B effective dynamic count -> REJECT
+  const badDynCountB = Object.create(profile);
+  badDynCountB.getPartBLayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartBLayoutTopology.call(this, n);
+    if (n === 7) return { ...l, effectiveDynamicCount: 490 };
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badDynCountB), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 7. Part B same-count sensitive range substitution -> REJECT
+  const badSubstB = Object.create(profile);
+  badSubstB.getPartBLayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartBLayoutTopology.call(this, n);
+    if (n === 7) {
+      const eff = [...l.effectiveSanitizationRanges];
+      eff[8] = 'K99:Q99';
+      return { ...l, effectiveSanitizationRanges: Object.freeze(eff) };
+    }
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badSubstB), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 8. Protected padding address introduced into effective sanitization -> REJECT
+  const badPadContamB = Object.create(profile);
+  badPadContamB.getPartBLayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartBLayoutTopology.call(this, n);
+    if (n === 7) {
+      const eff = [...l.effectiveSanitizationRanges, 'K30:Q30'];
+      return { ...l, effectiveSanitizationRanges: Object.freeze(eff) };
+    }
+    return l;
+  };
+  assert.throws(() => validateMappingIntegrity(badPadContamB), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+});

@@ -402,14 +402,24 @@ export class MboXlsxTemplateProfile {
       'P3:Q3',
       'R3',
       'S3:W3',
-      `K7:Q${29 + extraRows}`,
-      `R7:X${29 + extraRows}`,
+      'K7:Q29',
+      'R7:X29'
+    ];
+    if (n >= 7) {
+      effectiveSanitizationRanges.push('K31:Q33', 'R31:X33');
+    }
+    if (n === 8) {
+      effectiveSanitizationRanges.push('K35:Q37', 'R35:X37');
+    }
+
+    effectiveSanitizationRanges.push(
       `B${summaryStartRow}:D${summaryEndRow}`,
       `E${summaryStartRow}:H${summaryEndRow}`,
       `I${summaryStartRow}:P${summaryEndRow}`,
       `Q${summaryStartRow}:S${summaryEndRow}`,
       `T${summaryStartRow}:X${summaryEndRow}`
-    ];
+    );
+
     if (n >= 7) effectiveSanitizationRanges.push('B31:J32');
     if (n === 8) effectiveSanitizationRanges.push('B35:J36');
 
@@ -851,10 +861,38 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
   for (const n of ACCEPTED_PART_A_OBJECTIVE_COUNTS) {
     const mapA = profile.getPartAMappings(n);
     const layoutA = profile.getPartALayoutTopology(n);
-    if (!layoutA || layoutA.objectiveCount !== n || layoutA.mainSheetName !== 'MBO Staff & Chief' ||
-        layoutA.sourceCloneRow !== 28 || layoutA.downstreamThresholdRow !== 29 ||
-        layoutA.pageSetup.paperSize !== 8 || layoutA.pageSetup.orientation !== 'landscape' || layoutA.pageSetup.scale !== 58 ||
+    if (!layoutA || layoutA.profileId !== MBO2026_PROFILE_ID || layoutA.objectiveCount !== n ||
+        layoutA.mainSheetName !== PART_A_MAIN_SHEET_NAME ||
+        layoutA.baseObjectiveCount !== PART_A_BASE_OBJECTIVE_COUNT ||
+        layoutA.sourceCloneRow !== PART_A_SOURCE_CLONE_ROW ||
+        layoutA.downstreamThresholdRow !== PART_A_DOWNSTREAM_THRESHOLD_ROW ||
+        layoutA.extraRows !== n - 4 ||
+        layoutA.dimension !== `A1:BL${48 + n}` ||
+        layoutA.printArea !== `'${PART_A_MAIN_SHEET_NAME}'!$A$1:$BJ$${48 + n}` ||
+        !layoutA.pageSetup || layoutA.pageSetup.paperSize !== 8 || layoutA.pageSetup.orientation !== 'landscape' || layoutA.pageSetup.scale !== 58 ||
         layoutA.formulaCount !== 0) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    if (JSON.stringify(layoutA.baseSensitiveRanges) !== JSON.stringify(PART_A_BASE_SENSITIVE_RANGES)) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    const expectedEffA = [
+      'N6:Q7', 'Z7:AF7', 'AG7:AL7', 'AM7:AP7', 'AQ7:AS7', 'AT7:BC7', 'BD7:BI7',
+      'G8:S8', 'G16:AF19', 'AM16:BI19',
+      `B25:BI${24 + n}`,
+      `BC${25 + n}:BI${31 + n}`,
+      `B${33 + n}:S${38 + n}`,
+      `AI${33 + n}:AY${38 + n}`,
+      `B${43 + n}:N${46 + n}`
+    ];
+    if (JSON.stringify(layoutA.effectiveSanitizationRanges) !== JSON.stringify(expectedEffA)) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    const addrsA = layoutA.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+    if (new Set(addrsA).size !== addrsA.length) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
     }
 
@@ -921,11 +959,95 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
   for (const n of ACCEPTED_PART_B_COMPETENCY_COUNTS) {
     const mapB = profile.getPartBMappings(n);
     const layoutB = profile.getPartBLayoutTopology(n);
-    if (!layoutB || layoutB.competencyCount !== n || layoutB.mainSheetName !== '(Part B) Competency' ||
-        layoutB.auxiliarySheetName !== 'Sheet1' || layoutB.sourceBlockHeight !== 4 || layoutB.downstreamThresholdRow !== 31 ||
-        layoutB.pageSetup.paperSize !== 9 || layoutB.pageSetup.orientation !== 'portrait' || layoutB.pageSetup.scale !== 75 ||
-        layoutB.formulaCount !== 0) {
+
+    const expectedExtraBlocks = n - 6;
+    const expectedExtraRows = 4 * expectedExtraBlocks;
+    const expectedDimB = `A1:X${35 + expectedExtraRows}`;
+    const expectedPrintB = `'${PART_B_MAIN_SHEET_NAME}'!$A$1:$X$${35 + expectedExtraRows}`;
+    const expectedInterMerges = n === 6 ? 79 : (n === 7 ? 85 : 91);
+    const expectedFinalMerges = n === 6 ? 79 : (n === 7 ? 86 : 93);
+    const expectedSummaryStartRow = 31 + expectedExtraRows;
+    const expectedSummaryEndRow = expectedSummaryStartRow + 3;
+    const expectedBaseDynCount = n === 6 ? 432 : (n === 7 ? 474 : 516);
+    const expectedEffDynCount = n === 6 ? 432 : (n === 7 ? 492 : 552);
+
+    const expectedPadding = [30];
+    if (n >= 7) expectedPadding.push(34);
+    if (n === 8) expectedPadding.push(38);
+
+    const expectedRatingScaleStatic = ['B29:J29'];
+    if (n >= 7) expectedRatingScaleStatic.push('B33:J33');
+    if (n === 8) expectedRatingScaleStatic.push('B37:J37');
+
+    const expectedPresDyn = [];
+    if (n >= 7) expectedPresDyn.push('B31:J32');
+    if (n === 8) expectedPresDyn.push('B35:J36');
+
+    if (!layoutB || layoutB.profileId !== MBO2026_PROFILE_ID || layoutB.competencyCount !== n ||
+        layoutB.mainSheetName !== PART_B_MAIN_SHEET_NAME || layoutB.auxiliarySheetName !== PART_B_AUXILIARY_SHEET_NAME ||
+        layoutB.baseCompetencyCount !== PART_B_BASE_COMPETENCY_COUNT ||
+        layoutB.sourceCloneBlockRows !== PART_B_SOURCE_CLONE_BLOCK || layoutB.sourceBlockHeight !== PART_B_SOURCE_BLOCK_HEIGHT ||
+        layoutB.downstreamThresholdRow !== PART_B_DOWNSTREAM_THRESHOLD_ROW ||
+        layoutB.extraBlocks !== expectedExtraBlocks || layoutB.extraRows !== expectedExtraRows ||
+        layoutB.dimension !== expectedDimB || layoutB.printArea !== expectedPrintB ||
+        layoutB.intermediateMergeCount !== expectedInterMerges || layoutB.finalOverlayMergeCount !== expectedFinalMerges ||
+        layoutB.summaryStartRow !== expectedSummaryStartRow || layoutB.summaryEndRow !== expectedSummaryEndRow ||
+        !layoutB.pageSetup || layoutB.pageSetup.paperSize !== 9 || layoutB.pageSetup.orientation !== 'portrait' || layoutB.pageSetup.scale !== 75 ||
+        layoutB.formulaCount !== 0 ||
+        layoutB.baseDynamicCount !== expectedBaseDynCount || layoutB.effectiveDynamicCount !== expectedEffDynCount ||
+        JSON.stringify(layoutB.protectedPaddingRows) !== JSON.stringify(expectedPadding) ||
+        JSON.stringify(layoutB.ratingScaleStaticRanges) !== JSON.stringify(expectedRatingScaleStatic) ||
+        JSON.stringify(layoutB.presentationDynamicRanges) !== JSON.stringify(expectedPresDyn) ||
+        JSON.stringify(layoutB.baseSensitiveRanges) !== JSON.stringify(PART_B_BASE_SENSITIVE_RANGES)) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    const expectedEffB = [
+      'G2:H3', 'J3:L3', 'M3:O3', 'P3:Q3', 'R3', 'S3:W3',
+      'K7:Q29', 'R7:X29'
+    ];
+    if (n >= 7) expectedEffB.push('K31:Q33', 'R31:X33');
+    if (n === 8) expectedEffB.push('K35:Q37', 'R35:X37');
+
+    expectedEffB.push(
+      `B${expectedSummaryStartRow}:D${expectedSummaryEndRow}`,
+      `E${expectedSummaryStartRow}:H${expectedSummaryEndRow}`,
+      `I${expectedSummaryStartRow}:P${expectedSummaryEndRow}`,
+      `Q${expectedSummaryStartRow}:S${expectedSummaryEndRow}`,
+      `T${expectedSummaryStartRow}:X${expectedSummaryEndRow}`
+    );
+    if (n >= 7) expectedEffB.push('B31:J32');
+    if (n === 8) expectedEffB.push('B35:J36');
+
+    if (JSON.stringify(layoutB.effectiveSanitizationRanges) !== JSON.stringify(expectedEffB)) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    const addrsB = layoutB.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+    if (new Set(addrsB).size !== addrsB.length) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    // Zero overlap check with protected padding rows
+    const padSet = new Set();
+    const colsB = ['B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X'];
+    for (const pRow of layoutB.protectedPaddingRows) {
+      for (const col of colsB) {
+        padSet.add(`${col}${pRow}`);
+      }
+    }
+    for (const addr of addrsB) {
+      if (padSet.has(addr)) {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+    }
+
+    // Zero overlap check with rating scale static ranges
+    const scaleSet = new Set(layoutB.ratingScaleStaticRanges.flatMap(r => expandRangeToAddresses(r)));
+    for (const addr of addrsB) {
+      if (scaleSet.has(addr)) {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
     }
 
     const reqBHeaders = ['FISCAL_YEAR', 'DEPARTMENT', 'SECTION', 'POSITION', 'EMPLOYEE_CODE', 'EMPLOYEE_NAME'];
@@ -934,10 +1056,6 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
       }
     }
-
-    const expectedPadding = [30];
-    if (n >= 7) expectedPadding.push(34);
-    if (n === 8) expectedPadding.push(38);
 
     if (!Array.isArray(mapB.protectedPaddingRows) || JSON.stringify(mapB.protectedPaddingRows) !== JSON.stringify(expectedPadding)) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
