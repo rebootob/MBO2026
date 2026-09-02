@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT.
 
-Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact two-file diff.
+Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 D1 = PASS / CLOSED
@@ -14,8 +14,8 @@ PART_B_STRUCTURAL = PASS / CLOSED
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3-R1
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
 ```
@@ -30,16 +30,14 @@ Durable D2 Baselines:
 
 Template Profile state:
 ```text
-R1_R3_IMPLEMENTATION = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
-R1_R3_SCOPE = PASS / EXACT TWO FILES
-R1_R3_STATUS = CORRECTIVE REQUIRED
-R1_R3_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+R1_R3_R1_IMPLEMENTATION = 6386e506b85ded87a57967705066e38d56212f73
+R1_R3_R1_SCOPE = PASS / EXACT TWO FILES
+R1_R3_R1_ALIAS_FIXES = PASS
+R1_R3_R1_INTEGRITY = CORRECTIVE REQUIRED
+R1_R3_R1_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE
 
-D2-WP004-R1-R3-R1 = AUTHORIZED / SOURCE+TEST / LOW-CREDIT / ONE-SHOT
-AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+PROPOSED_CORRECTIVE = D2-WP004-R1-R3-R2 SOURCE+TEST / NOT AUTHORIZED / LOW-CREDIT
 ```
 
-R1-R3-R1 is strict and bounded: reject non-canonical aliases, require non-null secured projection for every successful writable resolution, and complete integrity negative tests for malformed/null/Part-B mapping faults. No semantic expansion or Production Renderer is authorized.
+R1-R3-R2 must complete exact canonical Part B competency identity validation and focused mutation tests only. It must not re-open semantic evidence or create the Production Renderer.
