@@ -114,6 +114,34 @@ Frozen preservation controls:
 
 GitHub exposed no independent CI/status/workflow run for R3-R30. This closure records the independent repository scope/source/proof-code review and does not claim a separate CI/runtime certification.
 
+## D2 reference-image gate — durable closure
+
+Independent Control Plane review on 2026-09-02 ICT accepted the frozen reference-image source path plus the cumulative TEST-ONLY proof completion through R3-R36:
+
+```text
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
+REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
+D2-WP003-R3-R36 = PASS / CLOSED
+R3-R36_AUTHORIZATION_COMMIT = f72e935b639da850aacc675c1ef2e30ce5f892c7
+R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
+```
+
+Frozen reference-image controls:
+- exact Part A owner-template SHA identity gates template-dependent proof;
+- target removal identity remains the exact Part A drawing anchor embedding `rId3`, exact drawing relationship tuple for `rId3`, and exact `xl/media/image3.png` media target;
+- complete BEFORE/AFTER drawing-anchor inventories are compared after normalizing only the exact approved target item;
+- complete BEFORE/AFTER drawing-relationship inventories preserve exact part, Id, Type, raw Target, and raw TargetMode identity and are compared after normalizing only the exact approved target tuple;
+- complete BEFORE/AFTER `xl/media/*` inventories use exact media path plus SHA-256 content hash and are compared after normalizing only `xl/media/image3.png`;
+- deterministic stable sorting, exact target cardinality, target absence, `rId1`/`rId2` branding survival, and package-wide orphan safety remain required;
+- drawing anchor coverage includes `twoCellAnchor`, `oneCellAnchor`, and `absoluteAnchor` with exact case-sensitive local names;
+- XML 1.0-compatible NameStartChar/NameChar/NCName/QName handling is retained for parser proof, including valid Unicode continuation cases and fail-closed malformed QName cases;
+- drawing Relationship start-tag attribute parsing is direct-start-tag only, complete-region consuming, quote-safe, duplicate-safe, and fail-closed for malformed/unconsumed syntax;
+- TargetMode absent / explicit Internal / explicit External remain distinct raw tuple identities;
+- malformed prefixed `embed` candidates including `1bad:embed`, `:embed`, and `foo::embed` fail closed; valid `r:embed="rId3"` retains exact rId extraction;
+- reference-image production source was not modified by the R3-R31 through R3-R36 proof-corrective sequence and remains accepted/frozen.
+
+GitHub exposed no independent CI/status/workflow run for R3-R36. This closure records independent repository scope/proof-code review and does not claim a separate CI/runtime certification.
+
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules, Control Center/Active Task model, Baseline promotion and reusable-skill rules.
