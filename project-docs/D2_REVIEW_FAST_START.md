@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant Baseline/evidence -> exact diff.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only directly relevant Baseline -> exact diff.
 
 ## Project truth
 ```text
@@ -15,7 +15,7 @@ D2 = IN PROGRESS
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-Closed/frozen D2 gates: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
+Closed/frozen D2 gates: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping Evidence.
 
 Mandatory renderer architecture:
 ```text
@@ -24,52 +24,47 @@ CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
 UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
 ```
 
-## Latest independent review — D2-WP004-R1-R2-R1
+## Latest independent review — D2-WP004-R1-R2-R2
 ```text
-AUTHORIZATION_COMMIT = b4e45c15ada92cfe0a8d9f84d01e4f56f0af9ed2
-EVIDENCE_COMMIT = 26fa18feead191c7587df82e393c73366969000d
+AUTHORIZATION_COMMIT = ef9f9ca1fbfef224372150226a5db8ba7a5ba12c
+EVIDENCE_COMMIT = bc141f355d7714302801d5adca3d5652b83c4de1
 AUTH_TO_EVIDENCE = EXACTLY ONE COMMIT
 CHANGED_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
 SCOPE = PASS
 PART_A_SHA = PASS / EXACT MATCH
 PART_B_SHA = PASS / EXACT MATCH
-HOSHIN = PASS / FREEZE
-PART_B_HEADER = PASS / FREEZE
-PART_A_HEADER_EXCLUSIVE_OWNERSHIP = PASS / FREEZE
-STATUS_TAXONOMY = IMPROVED
-OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
+SEMANTIC_EVIDENCE = PASS / CLOSED
+PROVEN_SAFE_TO_MAP = 18
+UNRESOLVED_KEEP_UNRESOLVED = 22
+NO_SECURED_PROJECTION_SOURCE = 5
+DUPLICATE_EXCLUSIVE_SAFE_TO_MAP_TARGETS = 0
+SAFE_TO_MAP_WITH_NULL_OR_UNKNOWN_SECURED_PATH = 0
+CHIEF_FROZEN_AUTHORITY = R:X
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
 ```
 
-Accepted/frozen additionally from R1-R2-R1:
-- Part A Department `Z7:AF7` -> `partA.header.department`.
-- Part A Section `AG7:AL7` -> `partA.header.section`.
-- primary Name-Surname `AT7:BC7` -> `partA.header.employeeName`; `employeeNameTH` alternate remains unresolved.
-- projection fields with no proven workbook target remain `UNRESOLVED`.
-- Part A final score/grade without static proof remain unresolved.
-- Part B standalone comments/signatures remain `NO_SECURED_PROJECTION_SOURCE`.
+Durable authority:
+`CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-Remaining final evidence defects:
-1. chief rows must preserve complete frozen `R:X` authority, not present `R:W` as full authority;
-2. `SUMMARY_WEIGHT_SUM` must not be `SAFE_TO_MAP` without a secured projection path;
-3. 1st/2nd Appraiser -> Manager/GM requires exact accepted role-identity authority or must be downgraded to `UNRESOLVED`;
-4. combined B:I objective/target region cannot prove standalone title ownership without an accepted composition rule;
-5. evidence must not self-promote to a durable Baseline before independent review.
+Key freeze:
+- Part A Department `Z7:AF7`, Section `AG7:AL7`, Employee Name primary `AT7:BC7`.
+- Department Hoshin `G16:AF19`; Section Hoshin `AM16:BI19`; `G8:S8` is not Hoshin.
+- only 18 semantic roles are currently production `SAFE_TO_MAP`.
+- all 22 unresolved roles must fail closed/remain non-writable.
+- 5 roles with no secured projection source must not be synthesized or mapped.
+- Part B self authority K:Q; Chief frozen authority R:X; only self rating has proven secured item path.
+- scoring/recalculation/formulas remain forbidden; production XLSX formula inventory must be zero.
 
-## Active final evidence corrective — D2-WP004-R1-R2-R2
+## Proposed next — NOT AUTHORIZED
 ```text
-WORK_PACKAGE = D2-WP004-R1-R2-R2
-NAME = FINAL XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
-STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
-AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
-MODE = EVIDENCE-ONLY / SAME ONE MARKDOWN FILE / BOUNDED / ONE-SHOT
-WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
-SOURCE_CHANGE = FORBIDDEN
-TEST_CHANGE = FORBIDDEN
-PROFILE_CHANGE = FORBIDDEN
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R3
+NAME = TEMPLATE PROFILE SEMANTIC ALIGNMENT
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+STATE = PROPOSED / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -77,4 +72,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-If evaluator/composition authority is not directly available from accepted authority, mark it `UNRESOLVED`; do not perform broad repository scans or guess.
+R1-R3, if authorized, must align the existing pure Template Profile to the closed semantic Baseline only. It must not create the Production Renderer or widen semantic authority beyond the 18 accepted `SAFE_TO_MAP` roles.
