@@ -70,7 +70,7 @@ test('TEMPLATE_PROFILE_PART_A_HEADER_AND_HOSHIN: proves exact Department, Sectio
   assert.equal(profile.isDynamicWriteTarget('A', 'G8', 4), false, 'G8 must not be a dynamic write target');
 });
 
-test('TEMPLATE_PROFILE_OBJECTIVE_SEMANITCS: 5 proven objective roles resolve for N=4..10; all others reject', () => {
+test('TEMPLATE_PROFILE_OBJECTIVE_SEMANTICS: 5 proven objective roles resolve for N=4..10; all others & COMMENT alias reject', () => {
   const profile = new MboXlsxTemplateProfile();
 
   for (const n of ACCEPTED_PART_A_OBJECTIVE_COUNTS) {
@@ -98,6 +98,13 @@ test('TEMPLATE_PROFILE_OBJECTIVE_SEMANITCS: 5 proven objective roles resolve for
       assert.equal(avg.address, `BC${r}`);
       assert.equal(avg.projectionPath, `partA.objectives[${i-1}].averageScore`);
 
+      // OBJECTIVE_i_COMMENT alias MUST REJECT (DEFECT A)
+      assert.throws(
+        () => profile.resolveSemanticRole(`OBJECTIVE_${i}_COMMENT`, { partKey: 'A', objectiveCount: n }),
+        /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/,
+        `OBJECTIVE_${i}_COMMENT must reject`
+      );
+
       // Unresolved objective roles MUST reject
       for (const unresField of [
         'TITLE', 'DESCRIPTION', 'KPI', 'TARGET', 'PROGRESS_PERCENT',
@@ -114,7 +121,7 @@ test('TEMPLATE_PROFILE_OBJECTIVE_SEMANITCS: 5 proven objective roles resolve for
   }
 });
 
-test('TEMPLATE_PROFILE_PART_B_COMPETENCY: Self rating resolves for N6/N7/N8; Chief rating rejects', () => {
+test('TEMPLATE_PROFILE_PART_B_COMPETENCY: Self rating resolves for N6/N7/N8; Chief & RATING aliases reject', () => {
   const profile = new MboXlsxTemplateProfile();
 
   for (const n of ACCEPTED_PART_B_COMPETENCY_COUNTS) {
@@ -129,6 +136,13 @@ test('TEMPLATE_PROFILE_PART_B_COMPETENCY: Self rating resolves for N6/N7/N8; Chi
       const selfRes = profile.resolveSemanticRole(`COMPETENCY_${b}_SELF_RATING`, { partKey: 'B', competencyCount: n });
       assert.equal(selfRes.address, `K${r}`);
       assert.equal(selfRes.projectionPath, `partB.competencyItems[${b-1}].selfRating`);
+
+      // COMPETENCY_b_RATING alias MUST REJECT (DEFECT B)
+      assert.throws(
+        () => profile.resolveSemanticRole(`COMPETENCY_${b}_RATING`, { partKey: 'B', competencyCount: n }),
+        /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/,
+        `COMPETENCY_${b}_RATING must reject`
+      );
 
       // Chief rating MUST reject
       assert.throws(
@@ -214,31 +228,108 @@ test('TEMPLATE_PROFILE_INVARIANTS_AND_VALIDATOR: zero duplicate targets, zero nu
       }
     }
   }
+});
 
-  // In-memory broken profile validator tests using Object.create
-  const brokenProfile1 = Object.create(profile);
-  brokenProfile1.getPartAMappings = function(count) {
-    const map = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, count);
-    const clone = JSON.parse(JSON.stringify(map));
+test('TEMPLATE_PROFILE_FOCUSED_MUTATION_NEGATIVE_TESTS: validates fail-closed on all profile anomalies', () => {
+  const profile = new MboXlsxTemplateProfile();
+
+  // 1. Missing Part A required header mapping
+  const b1 = Object.create(profile);
+  b1.getPartAMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
     delete clone.header.EMPLOYEE_NAME;
     return clone;
   };
-  assert.throws(
-    () => validateMappingIntegrity(brokenProfile1),
-    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
-  );
+  assert.throws(() => validateMappingIntegrity(b1), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
 
-  const brokenProfile2 = Object.create(profile);
-  brokenProfile2.getPartAMappings = function(count) {
-    const map = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, count);
-    const clone = JSON.parse(JSON.stringify(map));
-    clone.header.SECTION = clone.header.DEPARTMENT; // Duplicate cell address
+  // 2. Duplicate Part A exclusive safe target mutation
+  const b2 = Object.create(profile);
+  b2.getPartAMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.header.SECTION = clone.header.DEPARTMENT;
     return clone;
   };
-  assert.throws(
-    () => validateMappingIntegrity(brokenProfile2),
-    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
-  );
+  assert.throws(() => validateMappingIntegrity(b2), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 3. Null required objective projection path mutation
+  const b3 = Object.create(profile);
+  b3.getPartAMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.objectives[0].projectionPaths.measurement = null;
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b3), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 4. Malformed Part A safe summary address mutation
+  const b4 = Object.create(profile);
+  b4.getPartAMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartAMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.summary.PART_A_RAW_SCORE = 'INVALID_ADDR_999';
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b4), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 5. Broken Part B safe header mutation
+  const b5 = Object.create(profile);
+  b5.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.header.DEPARTMENT = 'INVALID_CELL_$$';
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b5), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 6. Broken Part B safe summary mutation
+  const b6 = Object.create(profile);
+  b6.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    delete clone.summary.PART_B_RAW_SCORE;
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b6), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 7. Missing Part B competency mapping / invalid address
+  const b7 = Object.create(profile);
+  b7.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[0].SELF_RATING = '';
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b7), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 8. Null Part B competency projection path
+  const b8 = Object.create(profile);
+  b8.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[0].projectionPath = null;
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b8), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 9. Duplicate Part B exclusive safe target mutation
+  const b9 = Object.create(profile);
+  b9.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[1].SELF_RATING = clone.competencies[0].SELF_RATING;
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b9), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 10. Protected row 30 exposure
+  const b10 = Object.create(profile);
+  b10.isDynamicWriteTarget = function(partKey, cellAddress, count) {
+    if (cellAddress === 'K30') return true;
+    return MboXlsxTemplateProfile.prototype.isDynamicWriteTarget.call(this, partKey, cellAddress, count);
+  };
+  assert.throws(() => validateMappingIntegrity(b10), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
 });
 
 test('TEMPLATE_PROFILE_CALLER_IMMUTABILITY: resolution options & returned mappings remain immutable', () => {

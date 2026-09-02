@@ -14,6 +14,7 @@
  * - Exactly 18 SAFE_TO_MAP roles are production writable.
  * - All 22 UNRESOLVED roles throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
  * - All 5 NO_SECURED_PROJECTION_SOURCE roles throw EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
+ * - OBJECTIVE_i_COMMENT and COMPETENCY_b_RATING non-canonical aliases REJECT with EXPORT_TEMPLATE_PROFILE_UNRESOLVED.
  * - Zero formula/scoring recreation.
  * - Zero duplicate exclusive writable targets.
  * - Zero writable roles with null projection path.
@@ -390,25 +391,26 @@ export class MboXlsxTemplateProfile {
           const idx = parseInt(match[1], 10);
           const rawField = match[2];
 
-          // Reject unresolved objective roles
+          // Reject unresolved objective roles and non-canonical COMMENT alias
           const forbiddenFields = [
             'TITLE', 'NAME', 'OBJECTIVE_NAME_AND_TARGET', 'DESCRIPTION', 'KPI', 'PLAN_TARGET',
             'TARGET', 'PROGRESS_PERCENT', 'MID_TERM_PROGRESS', 'SELF_ACHIEVEMENT', 'SELF_RATING',
             'MANAGER_ACHIEVEMENT', 'MANAGER_SCORE', 'MANAGER_COMMENT',
-            'GM_ACHIEVEMENT', 'GM_SCORE', 'GM_COMMENT', 'DIFFICULTY'
+            'GM_ACHIEVEMENT', 'GM_SCORE', 'GM_COMMENT', 'DIFFICULTY', 'COMMENT'
           ];
           if (forbiddenFields.includes(rawField)) {
             throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
           }
 
-          let propKey = rawField;
-          if (rawField === 'COMMENT') propKey = 'SELF_COMMENT';
-
           const obj = mappings.objectives.find(o => o.index === idx);
-          if (obj && obj[propKey]) {
+          if (obj && obj[rawField]) {
+            const pathStr = getObjectiveProjectionPath(idx, rawField.toLowerCase());
+            if (!pathStr) {
+              throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+            }
             return {
-              address: obj[propKey],
-              projectionPath: getObjectiveProjectionPath(idx, rawField.toLowerCase())
+              address: obj[rawField],
+              projectionPath: pathStr
             };
           }
         }
@@ -446,11 +448,11 @@ export class MboXlsxTemplateProfile {
           const idx = parseInt(match[1], 10);
           const rawField = match[2];
 
-          if (rawField === 'CHIEF_RATING') {
+          if (rawField === 'CHIEF_RATING' || rawField === 'RATING') {
             throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
           }
 
-          if (rawField === 'SELF_RATING' || rawField === 'RATING') {
+          if (rawField === 'SELF_RATING') {
             const comp = mappings.competencies.find(c => c.index === idx);
             if (comp) {
               return {
@@ -565,6 +567,7 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
     if (!Array.isArray(mapA.objectives) || mapA.objectives.length !== n) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
     }
+
     const reqObjFields = ['MEASUREMENT', 'WEIGHT', 'ACTUAL_RESULT', 'SELF_COMMENT', 'AVERAGE_SCORE'];
     for (const obj of mapA.objectives) {
       for (const f of reqObjFields) {
@@ -573,6 +576,23 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
         }
       }
       if (!obj.projectionPaths || typeof obj.projectionPaths !== 'object') {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+      for (const f of reqObjFields) {
+        const key = f === 'MEASUREMENT' ? 'measurement'
+          : f === 'WEIGHT' ? 'weight'
+          : f === 'ACTUAL_RESULT' ? 'actualResult'
+          : f === 'SELF_COMMENT' ? 'selfComment'
+          : 'averageScore';
+        if (typeof obj.projectionPaths[key] !== 'string' || !obj.projectionPaths[key]) {
+          throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+        }
+      }
+    }
+
+    const reqASummary = ['PART_A_RAW_SCORE', 'PART_A_WEIGHTED_SCORE'];
+    for (const k of reqASummary) {
+      if (!mapA.summary || !mapA.summary[k] || !validateAddressFormat(mapA.summary[k])) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
       }
     }
@@ -592,6 +612,13 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
 
   for (const n of ACCEPTED_PART_B_COMPETENCY_COUNTS) {
     const mapB = profile.getPartBMappings(n);
+
+    const reqBHeaders = ['FISCAL_YEAR', 'DEPARTMENT', 'SECTION', 'POSITION', 'EMPLOYEE_CODE', 'EMPLOYEE_NAME'];
+    for (const k of reqBHeaders) {
+      if (!mapB.header || !mapB.header[k] || !validateAddressFormat(mapB.header[k])) {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+    }
 
     const expectedPadding = [30];
     if (n >= 7) expectedPadding.push(34);
@@ -615,6 +642,27 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
       if (!mapB.summary || !mapB.summary[k] || !validateAddressFormat(mapB.summary[k])) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
       }
+    }
+
+    if (!Array.isArray(mapB.competencies) || mapB.competencies.length !== n) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+    }
+
+    const bWriteAddrs = [];
+    bWriteAddrs.push(...Object.values(mapB.header));
+    for (const comp of mapB.competencies) {
+      if (!comp.SELF_RATING || !validateAddressFormat(comp.SELF_RATING)) {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+      if (typeof comp.projectionPath !== 'string' || !comp.projectionPath) {
+        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
+      }
+      bWriteAddrs.push(comp.SELF_RATING);
+    }
+    bWriteAddrs.push(mapB.summary.PART_B_RAW_SCORE, mapB.summary.PART_B_WEIGHTED_SCORE);
+
+    if (new Set(bWriteAddrs).size !== bWriteAddrs.length) {
+      throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
     }
   }
 
