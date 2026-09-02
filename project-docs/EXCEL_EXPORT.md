@@ -1,13 +1,13 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION + REFERENCE IMAGE + PART A + PART B STRUCTURAL + FORMULA AUTHORITY CLOSED**  
+> Status: **IN PROGRESS / R7 PRIVACY REMAP AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
 ## 0. Fast review entry
 
-Read `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff. Do not repeat full closed-gate scans unless current changes touch those dependencies or regression evidence exists.
+Read `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
 
 ## 1. Objective
 
@@ -22,8 +22,6 @@ LEGACY TEMPLATE = VISUAL / LAYOUT AUTHORITY
 CONFIRMED_BASELINE + CURRENT APP CONFIG = BUSINESS RULE AUTHORITY
 SECURED MboExportService PROJECTION = EXPORT DATA AUTHORITY
 SCORING_SOURCE_OF_TRUTH = KINTONE / APP794 + CONFIRMED SCORING CONFIG
-PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
@@ -34,52 +32,44 @@ EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
 ```
 
-Formula authority:
-`CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`.
+Durable Baselines:
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-## 3. Structural Baselines
-
-Part A:
-`CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-
-Part B:
-`CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-
-Frozen Part B matrix:
-- N=6 => `A1:X35`, 79 merges, summary privacy rows 31:34 in source layout;
-- N=7 => `A1:X39`, 85 merges, inserted block rows 31:34, original summary shifts to 35:38;
-- N=8 => `A1:X43`, 91 merges, inserted blocks rows 31:38, original summary shifts to 39:42.
-
-## 4. Current open gate — expanded Part B privacy remap
+## 3. Active R7 — expanded Part B privacy remap
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R7
-STATE = PROPOSED / NOT AUTHORIZED
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
+ACTIVE_WORK_PACKAGE = D2-WP003-R7
+R7_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7_AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
+PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = ACTIVE R7 CLOSURE TARGET
 ```
 
-Current `PART_B_SENSITIVE_RANGES` / source privacy classification is valid only for the original 6-block layout. R7 must make privacy/sanitization count-aware for 6/7/8 while preserving the accepted structural matrix.
+Writable only:
+- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
+- `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Required R7 behavior:
-- exact N=6 behavior preserved;
-- cloned blocks derive privacy roles from source rows 27:30;
-- cloned static competency text remains protected;
-- dynamic competency rating cells in inserted blocks are sanitized;
-- summary/signature roles relocate exactly to 35:38 or 39:42 for expanded layouts;
-- no stale summary classification remains at rows 31:34 in N=7/8;
-- sanitizer clears only exact count-aware dynamic addresses;
-- typed privacy metadata/evidence is exact and fail-closed;
-- unsupported count or structural-role mismatch fails closed.
+Frozen structural layout facts:
+- N=6 => summary/signature rows 31:34;
+- N=7 => inserted block rows 31:34; summary/signature rows 35:38;
+- N=8 => inserted blocks rows 31:38; summary/signature rows 39:42.
 
-Full contract: `AI_ACTIVE_TASK.md`.
+R7 must preserve source-6 privacy behavior; derive inserted block role semantics from source rows 27:30; protect cloned static competency text; sanitize exact count-aware dynamic cells only; eliminate stale source-6 summary classification from expanded variants; use real structural buffers; and fail closed on unsupported count or structural-role mismatch.
 
-## 5. Remaining D2 path
+R7 must also prove sensitive-token purge and typed privacy metadata against the exact count-aware inventory.
 
-1. R7 expanded Part B privacy remap 6/7/8;
-2. production XLSX renderer/sanitizer consuming secured projection + frozen formula/structural/privacy contracts;
-3. combined Excel parity;
-4. PDF parity;
-5. export authorization/security/privacy regression;
-6. final independent D2 closure.
+## 4. Explicit R7 exclusions
 
-No source/test/renderer/Kintone/deploy work is currently authorized. Antigravity remains one-shot only after exact Owner authorization. D3 remains HOLD.
+No Production XLSX renderer yet. No `MboExportService` change. No dependency/package-lock change. No generated XLSX/PDF/image/evidence binary. No Kintone/deploy/ACL/process/Live UAT/D3.
+
+## 5. Remaining D2 after R7
+
+1. production XLSX renderer/sanitizer using secured projection + frozen structural/privacy/formula contracts;
+2. combined Excel parity;
+3. PDF parity;
+4. export authorization/security/privacy regression;
+5. final independent D2 closure.
+
+Antigravity is authorized for R7 one-shot only and must stop after one bounded implementation/blocker push+report.
