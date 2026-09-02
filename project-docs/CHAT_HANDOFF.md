@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
 
-Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
+Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -13,7 +13,7 @@ D2_REFERENCE_IMAGE = PASS / CLOSED
 D2_PART_A_STRUCTURAL = PASS / CLOSED
 D2_PART_B_STRUCTURAL = PASS / CLOSED
 D2_FORMULA_AUTHORITY = PASS / CLOSED
-D2_PART_B_EXPANDED_PRIVACY = CORRECTIVE REQUIRED / NOT CLOSED
+D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 D3 = HOLD
 D4 = IN PROGRESS / NOT ACTIVE
 D5 = IN PROGRESS / NOT ACTIVE
@@ -21,27 +21,34 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-Latest reviewed implementation: `6975b1f076b9b3f4baa3b6cb4ca844767f513f0a` under R7-R2.
+Expanded Privacy closure:
+- R7-R2 source: `6975b1f076b9b3f4baa3b6cb4ca844767f513f0a` = PASS / FROZEN.
+- R7-R3 test-only: `69891d82996f83a0442ee6dc268dd20b7ef8ee99` = PASS / CLOSED.
+- authorization -> R7-R3 implementation = one commit / one authorized test file.
+- direct isolated row30-clone normalizedType/nonblank fail-closed proof accepted.
+- pristine source row30 B:X has no non-empty valHash authority; no fabricated row30 hash authority permitted.
+- independent runtime signal unavailable because GitHub has no status/workflow run for the commit.
 
-R7-R2 source is PASS/FROZEN: strict pre-mutation source evidence enforces styleId, normalized merge, normalizedType, nonblank, protected-static valHash where applicable; static bypass removed; validation is separated from disposable synthetic mutation. Existing mapping/count/token-purge/metadata/formula proof remains frozen.
+Durable closure: `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`.
+
+Owner-confirmed Production Renderer architecture: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
 
 ```text
-R7-R2_SOURCE = PASS / FROZEN
-R7-R2_PROOF = CORRECTIVE REQUIRED / DIRECT NEGATIVE ISOLATION ONLY
-R7-R2_TOKEN = CONSUMED / DO NOT REUSE
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
-R7-R3_AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
-MODE = TEST-ONLY / EXACT ONE FILE
+NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
+CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
+```
+
+Current state:
+```text
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R3-TEST-20260902-01
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / STOP AFTER ONE PUSH+REPORT
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
+PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
 D3 = HOLD
 ```
-
-Writable file ONLY: `tests/mbo-xlsx-ooxml-feasibility.test.js`. Source changes are forbidden. Full contract: `AI_ACTIVE_TASK.md`.
 
 Previous standing Control Plane review/corrective authority remains exhausted / DO NOT REUSE.
