@@ -1546,8 +1546,11 @@ test('FEASIBILITY_TRUE_PART_A_RAW_OOXML_INSERTION: proves raw OOXML row shifting
     assert.equal(currentMain.showGridLines, baselineMain.showGridLines, `showGridLines for ${n} objectives must match baseline`);
     assert.equal(currentMain.pageMargins, baselineMain.pageMargins, `pageMargins for ${n} objectives must match baseline`);
     assert.equal(currentMain.paperSize, baselineMain.paperSize, `paperSize for ${n} objectives must match baseline`);
+    assert.equal(currentMain.paperSize, '8', `paperSize for ${n} objectives must equal absolute constant 8 (A3)`);
     assert.equal(currentMain.orientation, baselineMain.orientation, `orientation for ${n} objectives must match baseline`);
+    assert.equal(currentMain.orientation, 'landscape', `orientation for ${n} objectives must equal absolute constant landscape`);
     assert.equal(currentMain.scale, baselineMain.scale, `scale for ${n} objectives must match baseline`);
+    assert.equal(currentMain.scale, '58', `scale for ${n} objectives must equal absolute constant 58%`);
     assert.equal(currentMain.fitToPage, baselineMain.fitToPage, `fitToPage for ${n} objectives must match baseline`);
     assert.equal(currentMain.horizontalCentered, baselineMain.horizontalCentered, `horizontalCentered for ${n} objectives must match baseline`);
     assert.equal(currentMain.verticalCentered, baselineMain.verticalCentered, `verticalCentered for ${n} objectives must match baseline`);
