@@ -34,21 +34,21 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
-D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 14 OF 20
-ACTIVE_D2_WORK_PACKAGE = D2-WP003-R3-R36
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
+D2-WP003-R3-R36 = PASS / CLOSED
+R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
+ACTIVE_D2_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ```
 
-R3-R35 implementation `2ea39f1d10dca9ba4b830e4207a4abf7cf797644` stayed within TEST-ONLY scope and correctly closed XML Name/NCName/QName plus regression-retention defects. R3-R36 is authorized TEST-ONLY to close only malformed prefixed-`embed` fail-closed behavior; reference-image production source remains frozen.
+Reference-image durable closure is promoted to `CONFIRMED_BASELINE/README.md`. GitHub exposed no CI/status/workflow signal for R3-R36, so no independent runtime certification is claimed. Production reference-image source remains frozen.
 
 D2 must still close:
-- reference-image strict fail-closed inventory proof;
-- 5–10 Part A objectives;
-- 6→8 Part B competency blocks;
+- 5–10 Part A objective structural insertion matrix;
+- 6→8 Part B competency structural insertion matrix;
 - no-formula authority;
 - production sanitizer/XLSX renderer;
 - combined Excel parity;
@@ -84,11 +84,10 @@ Admin Support Center. `admin-form` is technical/recovery only. Status: `SOURCE F
 ## 8. Current exact next action
 
 ```text
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP003-R3-R36-TEST-20260902-01
-EXPECTED_CHANGED_FILE = tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
-EXPECTED_COMMITS = EXACTLY ONE BOUNDED TEST-ONLY IMPLEMENTATION/BLOCKER COMMIT
-ANTIGRAVITY = STOP AFTER PUSH/REPORT
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO CONTINUE TO PART A OBJECTIVE INSERTION STRUCTURAL MATRIX
+NEXT_GATE_STATUS = NOT STARTED / NOT AUTHORIZED
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 D3 = HOLD
 ```
