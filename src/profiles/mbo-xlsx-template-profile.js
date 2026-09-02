@@ -648,15 +648,28 @@ export function validateMappingIntegrity(profileOrOptions = {}) {
       throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
     }
 
+    const expectedRatingRows = [9, 13, 17, 21, 25, 29];
+    if (n >= 7) expectedRatingRows.push(33);
+    if (n === 8) expectedRatingRows.push(37);
+
     const bWriteAddrs = [];
     bWriteAddrs.push(...Object.values(mapB.header));
-    for (const comp of mapB.competencies) {
-      if (!comp.SELF_RATING || !validateAddressFormat(comp.SELF_RATING)) {
+
+    for (let b = 1; b <= n; b++) {
+      const comp = mapB.competencies[b - 1];
+      const expectedRow = expectedRatingRows[b - 1];
+      const expectedSelfRating = `K${expectedRow}`;
+      const expectedProjectionPath = `partB.competencyItems[${b - 1}].selfRating`;
+
+      if (!comp || 
+          comp.index !== b || 
+          comp.row !== expectedRow || 
+          comp.SELF_RATING !== expectedSelfRating || 
+          !validateAddressFormat(comp.SELF_RATING) || 
+          comp.projectionPath !== expectedProjectionPath) {
         throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
       }
-      if (typeof comp.projectionPath !== 'string' || !comp.projectionPath) {
-        throw new Error('EXPORT_TEMPLATE_PROFILE_UNRESOLVED');
-      }
+
       bWriteAddrs.push(comp.SELF_RATING);
     }
     bWriteAddrs.push(mapB.summary.PART_B_RAW_SCORE, mapB.summary.PART_B_WEIGHTED_SCORE);

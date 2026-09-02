@@ -98,7 +98,7 @@ test('TEMPLATE_PROFILE_OBJECTIVE_SEMANTICS: 5 proven objective roles resolve for
       assert.equal(avg.address, `BC${r}`);
       assert.equal(avg.projectionPath, `partA.objectives[${i-1}].averageScore`);
 
-      // OBJECTIVE_i_COMMENT alias MUST REJECT (DEFECT A)
+      // OBJECTIVE_i_COMMENT alias MUST REJECT
       assert.throws(
         () => profile.resolveSemanticRole(`OBJECTIVE_${i}_COMMENT`, { partKey: 'A', objectiveCount: n }),
         /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/,
@@ -137,7 +137,7 @@ test('TEMPLATE_PROFILE_PART_B_COMPETENCY: Self rating resolves for N6/N7/N8; Chi
       assert.equal(selfRes.address, `K${r}`);
       assert.equal(selfRes.projectionPath, `partB.competencyItems[${b-1}].selfRating`);
 
-      // COMPETENCY_b_RATING alias MUST REJECT (DEFECT B)
+      // COMPETENCY_b_RATING alias MUST REJECT
       assert.throws(
         () => profile.resolveSemanticRole(`COMPETENCY_${b}_RATING`, { partKey: 'B', competencyCount: n }),
         /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/,
@@ -230,7 +230,7 @@ test('TEMPLATE_PROFILE_INVARIANTS_AND_VALIDATOR: zero duplicate targets, zero nu
   }
 });
 
-test('TEMPLATE_PROFILE_FOCUSED_MUTATION_NEGATIVE_TESTS: validates fail-closed on all profile anomalies', () => {
+test('TEMPLATE_PROFILE_FOCUSED_MUTATION_NEGATIVE_TESTS: validates fail-closed on all profile anomalies including Part B canonical identity', () => {
   const profile = new MboXlsxTemplateProfile();
 
   // 1. Missing Part A required header mapping
@@ -330,6 +330,46 @@ test('TEMPLATE_PROFILE_FOCUSED_MUTATION_NEGATIVE_TESTS: validates fail-closed on
     return MboXlsxTemplateProfile.prototype.isDynamicWriteTarget.call(this, partKey, cellAddress, count);
   };
   assert.throws(() => validateMappingIntegrity(b10), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 11. PART_B_COMPETENCY_WRONG_INDEX = REJECT
+  const b11 = Object.create(profile);
+  b11.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[0].index = 99;
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b11), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 12. PART_B_COMPETENCY_WRONG_ROW = REJECT
+  const b12 = Object.create(profile);
+  b12.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[0].row = 10;
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b12), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 13. PART_B_COMPETENCY_WRONG_BUT_VALID_SELF_RATING_ADDRESS = REJECT
+  const b13 = Object.create(profile);
+  b13.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[0].SELF_RATING = 'K10';
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b13), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
+
+  // 14. PART_B_COMPETENCY_WRONG_NONEMPTY_PROJECTION_PATH = REJECT
+  const b14 = Object.create(profile);
+  b14.getPartBMappings = function(c) {
+    const m = MboXlsxTemplateProfile.prototype.getPartBMappings.call(this, c);
+    const clone = JSON.parse(JSON.stringify(m));
+    clone.competencies[0].projectionPath = 'partB.competencyItems[5].selfRating';
+    return clone;
+  };
+  assert.throws(() => validateMappingIntegrity(b14), /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/);
 });
 
 test('TEMPLATE_PROFILE_CALLER_IMMUTABILITY: resolution options & returned mappings remain immutable', () => {
