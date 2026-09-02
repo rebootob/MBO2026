@@ -87,6 +87,33 @@ Durable meaning:
 
 This decision changes only the D2 preservation policy. It does not by itself authorize source changes, evidence publication, Kintone access/write, deploy, Live UAT, rollback or D3.
 
+## D2 OOXML preservation gate — durable closure
+
+Independent Control Plane review on 2026-09-02 ICT accepted the bounded preservation implementation and final TEST-ONLY proof completion:
+
+```text
+D2_PRESERVATION_GATE = PASS / CLOSED
+R3-R29_SOURCE_BASELINE = PASS / FROZEN
+D2-WP003-R3-R30 = PASS / CLOSED
+R3-R30_IMPLEMENTATION_COMMIT = d15261eadbc726ea87f11085253c026fedada381
+```
+
+Frozen preservation controls:
+- exact SHA-verified owner-template identity;
+- exact worksheet relationship Type/ID/raw-Target tuple identity;
+- fail-closed target lexical validation and duplicate relationship-ID rejection;
+- coverage/gap XML inventory and worksheet occurrence/order validation;
+- pure dimension/sequence/boundary preservation validation used by production;
+- direct raw Part A/Part B preservation path;
+- byte-immutable caller source/raw buffers;
+- `getNoOpParityBuffers()` remains unrepaired/frozen;
+- Option B is the only allowed non-dimension drift and remains exact/fail-closed;
+- duplicate, extra, moved, other-sheet and Part-A observed-only `sheetPr` cases are rejected;
+- distinct counterfeit worksheet-like relationship Type is rejected;
+- exact print-area, Part B `Sheet1.colsHash`, header-fingerprint and typed-privacy regression guards remain part of accepted proof.
+
+GitHub exposed no independent CI/status/workflow run for R3-R30. This closure records the independent repository scope/source/proof-code review and does not claim a separate CI/runtime certification.
+
 ## Canonical Files
 
 - `AI_OPERATING_GOVERNANCE.md` — Multi-AI role model, low-credit policy, review rules, Control Center/Active Task model, Baseline promotion and reusable-skill rules.
@@ -119,8 +146,7 @@ For every future `review`, reviewer must:
 
 For any D1 reopen/security audit, read `D1_CLOSURE.md` first, then only the detailed D1 Baselines directly relevant to the suspected regression.
 For employee resignation/transfer/promotion/principal/approver lifecycle work, `EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md` is mandatory reading before planning or implementation.
-
 For any Live deployment/rollback/recovery review, `ROLLBACK_RECOVERY_SAFETY.md` is mandatory reading.
 For any source implementation/refactor review, `SOURCE_CODE_ARCHITECTURE.md` is mandatory reading when functional ownership or module boundaries are affected.
 
-Temporary status, blockers, transient commit SHAs and raw test logs belong in `AI_CONTROL_CENTER.md` / evidence, not duplicated here.
+Temporary status, blockers, transient commit SHAs and raw test logs belong in `AI_CONTROL_CENTER.md` / evidence, not duplicated here except where a reviewed commit is part of an explicit durable closure statement.
