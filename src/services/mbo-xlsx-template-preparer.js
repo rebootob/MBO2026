@@ -44,6 +44,127 @@ export async function computeSha256(data) {
   throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Browser crypto.subtle unavailable');
 }
 
+/**
+ * Browser-safe pure production helper to validate and remove reference image (rId3 / image3.png).
+ * 
+ * Production exact accepted reference tuple:
+ *   Id = "rId3"
+ *   Type = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+ *   Target = "../media/image3.png" (EXACTLY, reject "media/image3.png" or any other Target)
+ *   TargetMode = ABSENT (reject TargetMode="Internal", TargetMode="External", or any TargetMode attribute)
+ *   Media = "xl/media/image3.png"
+ *   r:embed="rId3" occurrences = EXACTLY 1 across all drawing anchors
+ */
+export function validateAndRemoveReferenceImage(zipFiles) {
+  const drawingXmlPath = 'xl/drawings/drawing1.xml';
+  const drawingRelsPath = 'xl/drawings/_rels/drawing1.xml.rels';
+  const mediaPath = 'xl/media/image3.png';
+
+  if (!zipFiles || !zipFiles[drawingXmlPath] || !zipFiles[drawingRelsPath] || !zipFiles[mediaPath]) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Reference image files missing in package');
+  }
+
+  const drawingRels = zipFiles[drawingRelsPath];
+  const drawingXml = zipFiles[drawingXmlPath];
+
+  if (typeof drawingRels !== 'string' || typeof drawingXml !== 'string') {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Drawing files must be strings');
+  }
+
+  // 1. Validate Relationships for rId3
+  const relMatches = [...drawingRels.matchAll(/<Relationship\s+[^>]*\/>/gi)];
+  const matchingRels = [];
+
+  for (const m of relMatches) {
+    const tag = m[0];
+    const idMatch = tag.match(/\bId="([^"]+)"/);
+
+    if (idMatch && idMatch[1] === 'rId3') {
+      const typeMatch = tag.match(/\bType="([^"]+)"/);
+      const targetMatch = tag.match(/\bTarget="([^"]+)"/);
+      const hasTargetMode = /\bTargetMode=/i.test(tag);
+      const modeMatch = tag.match(/\bTargetMode="([^"]+)"/);
+
+      matchingRels.push({
+        tag,
+        id: idMatch[1],
+        type: typeMatch ? typeMatch[1] : null,
+        target: targetMatch ? targetMatch[1] : null,
+        hasTargetMode,
+        mode: modeMatch ? modeMatch[1] : null
+      });
+    }
+  }
+
+  if (matchingRels.length === 0) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing rId3 relationship');
+  }
+
+  if (matchingRels.length > 1) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Duplicate rId3 relationship');
+  }
+
+  const rel = matchingRels[0];
+
+  const expectedType = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
+  if (rel.type !== expectedType) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid relationship Type for rId3');
+  }
+
+  if (rel.target !== '../media/image3.png') {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid relationship Target for rId3 (must be ../media/image3.png)');
+  }
+
+  if (rel.hasTargetMode) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: TargetMode attribute must be absent for rId3');
+  }
+
+  // 2. Validate Drawing Anchors for exact r:embed="rId3"
+  const embedMatches = [...drawingXml.matchAll(/\br:embed="rId3"/g)];
+  const genericEmbedMatches = [...drawingXml.matchAll(/\bembed="rId3"/g)];
+  const totalEmbedCount = Math.max(embedMatches.length, genericEmbedMatches.length);
+
+  if (totalEmbedCount === 0) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Zero exact r:embed="rId3" occurrences found');
+  }
+
+  if (totalEmbedCount > 1) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Duplicate r:embed="rId3" occurrences found');
+  }
+
+  const allId3Matches = [...drawingXml.matchAll(/\brId3\b/g)];
+  if (allId3Matches.length > totalEmbedCount) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Incidental rId3 text found without exact embed attribute');
+  }
+
+  const anchorMatches = [...drawingXml.matchAll(/<xdr:(?:twoCellAnchor|oneCellAnchor)[^>]*>[\s\S]*?<\/xdr:(?:twoCellAnchor|oneCellAnchor)>/gi)];
+  const matchingAnchors = [];
+  for (const m of anchorMatches) {
+    const anchorXml = m[0];
+    if (anchorXml.includes('rId3')) {
+      matchingAnchors.push(anchorXml);
+    }
+  }
+
+  if (matchingAnchors.length !== 1) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Expected exactly 1 drawing anchor embedding rId3');
+  }
+
+  // 3. Remove exact target anchor and relationship
+  let updatedDrawingXml = drawingXml;
+  for (const aXml of matchingAnchors) {
+    updatedDrawingXml = updatedDrawingXml.replace(aXml, '');
+  }
+
+  let updatedDrawingRels = drawingRels.replace(rel.tag, '');
+
+  return {
+    updatedDrawingXml,
+    updatedDrawingRels,
+    mediaToRemove: mediaPath
+  };
+}
+
 export async function preparePartATemplate(templateBytes, options = {}) {
   const objectiveCount = options.objectiveCount !== undefined ? options.objectiveCount : 4;
   const profile = options.profile || new MboXlsxTemplateProfile();
@@ -230,95 +351,48 @@ export async function preparePartATemplate(templateBytes, options = {}) {
     wbStruct._zip.file('xl/workbook.xml', wbXml);
   }
 
-  // G. Reference Image Removal with Deterministic Pre-Removal Proof (rId3 / image3.png)
+  // G. Reference Image Removal (rId3 / image3.png) via pure production helper
   const drawingXmlPath = 'xl/drawings/drawing1.xml';
   const drawingRelsPath = 'xl/drawings/_rels/drawing1.xml.rels';
   const mediaPath = 'xl/media/image3.png';
 
-  if (!wbStruct._zip.files[drawingXmlPath] || !wbStruct._zip.files[drawingRelsPath] || !wbStruct._zip.files[mediaPath]) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Reference image files missing in package');
-  }
+  const drawingXmlFile = wbStruct._zip.files[drawingXmlPath];
+  const drawingRelsFile = wbStruct._zip.files[drawingRelsPath];
 
-  let drawingXml = await wbStruct._zip.files[drawingXmlPath].async('string');
-  let drawingRels = await wbStruct._zip.files[drawingRelsPath].async('string');
+  if (drawingXmlFile && drawingRelsFile) {
+    const drawingXml = await drawingXmlFile.async('string');
+    const drawingRels = await drawingRelsFile.async('string');
 
-  // 1. Validate EXACTLY ONE relationship matching rId3 -> image3.png with canonical image Type and no external TargetMode
-  const relMatches = [...drawingRels.matchAll(/<Relationship\s+[^>]*\/>/gi)];
-  const matchingRels = [];
-  for (const m of relMatches) {
-    const tag = m[0];
-    const idMatch = tag.match(/\bId="([^"]+)"/);
-    const typeMatch = tag.match(/\bType="([^"]+)"/);
-    const targetMatch = tag.match(/\bTarget="([^"]+)"/);
-    const modeMatch = tag.match(/\bTargetMode="([^"]+)"/);
+    const zipFiles = {
+      [drawingXmlPath]: drawingXml,
+      [drawingRelsPath]: drawingRels,
+      [mediaPath]: wbStruct._zip.files[mediaPath] ? true : null
+    };
 
-    if (idMatch && idMatch[1] === 'rId3') {
-      matchingRels.push({ tag, id: idMatch[1], type: typeMatch?.[1], target: targetMatch?.[1], mode: modeMatch?.[1] });
-    }
-  }
+    const res = validateAndRemoveReferenceImage(zipFiles);
 
-  if (matchingRels.length !== 1) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Expected exactly 1 rId3 relationship');
-  }
+    wbStruct._zip.file(drawingXmlPath, res.updatedDrawingXml);
+    wbStruct._zip.file(drawingRelsPath, res.updatedDrawingRels);
 
-  const relTarget = matchingRels[0];
-  const expectedType = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image';
-  if (relTarget.type !== expectedType) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid relationship Type for rId3');
-  }
-
-  if (relTarget.target !== '../media/image3.png' && relTarget.target !== 'media/image3.png') {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid relationship Target for rId3');
-  }
-
-  if (relTarget.mode && relTarget.mode !== 'Internal') {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: External TargetMode forbidden for rId3');
-  }
-
-  // 2. Validate EXACTLY ONE drawing anchor embedding rId3
-  const anchorMatches = [...drawingXml.matchAll(/<xdr:(?:twoCellAnchor|oneCellAnchor)[^>]*>[\s\S]*?<\/xdr:(?:twoCellAnchor|oneCellAnchor)>/gi)];
-  const matchingAnchors = [];
-  for (const m of anchorMatches) {
-    const anchorXml = m[0];
-    if (anchorXml.includes('rId3')) {
-      if (/r:embed="rId3"/.test(anchorXml) || /embed="rId3"/.test(anchorXml)) {
-        matchingAnchors.push(anchorXml);
-      } else {
-        throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Incidental rId3 text found in drawing anchor');
+    // Verify image3.png is not referenced anywhere else in package .rels files
+    let image3Referenced = false;
+    for (const fileName in wbStruct._zip.files) {
+      if (fileName.endsWith('.rels') && fileName !== drawingRelsPath) {
+        const relsContent = await wbStruct._zip.files[fileName].async('string');
+        if (relsContent.includes('image3.png')) {
+          image3Referenced = true;
+          break;
+        }
       }
     }
-  }
 
-  if (matchingAnchors.length !== 1) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Expected exactly 1 drawing anchor embedding rId3');
-  }
-
-  // 3. Remove EXACTLY the single rId3 anchor and single rId3 relationship
-  for (const aXml of matchingAnchors) {
-    drawingXml = drawingXml.replace(aXml, '');
-  }
-
-  drawingRels = drawingRels.replace(relTarget.tag, '');
-
-  wbStruct._zip.file(drawingXmlPath, drawingXml);
-  wbStruct._zip.file(drawingRelsPath, drawingRels);
-
-  // 4. Verify image3.png is not referenced anywhere else in package .rels files
-  let image3Referenced = false;
-  for (const fileName in wbStruct._zip.files) {
-    if (fileName.endsWith('.rels')) {
-      const relsContent = await wbStruct._zip.files[fileName].async('string');
-      if (relsContent.includes('image3.png')) {
-        image3Referenced = true;
-        break;
-      }
+    if (!image3Referenced && wbStruct._zip.files[res.mediaToRemove]) {
+      wbStruct._zip.remove(res.mediaToRemove);
+    } else if (image3Referenced) {
+      throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: image3.png is still referenced elsewhere in package');
     }
-  }
-
-  if (!image3Referenced && wbStruct._zip.files[mediaPath]) {
-    wbStruct._zip.remove(mediaPath);
-  } else if (image3Referenced) {
-    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: image3.png is still referenced elsewhere in package');
+  } else {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Part A drawing files missing');
   }
 
   // Output raw OOXML zip buffer directly from zip to preserve exact OOXML dimension tag

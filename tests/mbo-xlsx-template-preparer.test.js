@@ -7,7 +7,8 @@ import XlsxPopulate from 'xlsx-populate';
 
 import {
   preparePartATemplate,
-  computeSha256
+  computeSha256,
+  validateAndRemoveReferenceImage
 } from '../src/services/mbo-xlsx-template-preparer.js';
 import {
   PART_A_TEMPLATE_SHA256,
@@ -100,65 +101,107 @@ test('PREPARER_SYNTHETIC_FAIL_CLOSED_VALIDATION: validates SHA, counts, profile 
   );
 });
 
-test('PREPARER_ADVERSARIAL_REFERENCE_IMAGE_FAIL_CLOSED: rejects malformed drawing rels, anchors, media & orphan references', async (t) => {
-  const templateBytes = loadLocalTemplate();
-  if (!templateBytes) {
-    t.skip('Local Part A owner template unavailable or SHA mismatch');
-    return;
-  }
+test('PREPARER_ADVERSARIAL_REFERENCE_IMAGE_FAIL_CLOSED: reachable production helper rejects all reference anomalies directly', () => {
+  const drawingXmlPath = 'xl/drawings/drawing1.xml';
+  const drawingRelsPath = 'xl/drawings/_rels/drawing1.xml.rels';
+  const mediaPath = 'xl/media/image3.png';
 
-  // 1. Missing rId3 relationship fails closed
-  const wbNoRel = await XlsxPopulate.fromDataAsync(templateBytes);
-  let relsNoRel = await wbNoRel._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
-  relsNoRel = relsNoRel.replace(/<Relationship[^>]*Id="rId3"[^>]*\/>/, '');
-  wbNoRel._zip.file('xl/drawings/_rels/drawing1.xml.rels', relsNoRel);
-  const bytesNoRel = await wbNoRel._zip.generateAsync({ type: 'uint8array' });
+  const validRels = `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.jpeg"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image2.jpeg"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image4.png"/></Relationships>`;
+  const validXml = `<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:twoCellAnchor><xdr:from><xdr:col>0</xdr:col></xdr:from><a:blip r:embed="rId3"/></xdr:twoCellAnchor></xdr:wsDr>`;
 
-  await assert.rejects(
-    async () => {
-      await preparePartATemplate(bytesNoRel, { objectiveCount: 4 });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  const createZip = (rels, xml, hasMedia = true) => ({
+    [drawingXmlPath]: xml,
+    [drawingRelsPath]: rels,
+    [mediaPath]: hasMedia ? true : null
+  });
+
+  // 1. Valid base passes
+  const validRes = validateAndRemoveReferenceImage(createZip(validRels, validXml, true));
+  assert.equal(validRes.mediaToRemove, mediaPath);
+  assert.equal(validRes.updatedDrawingRels.includes('rId3'), false);
+  assert.equal(validRes.updatedDrawingXml.includes('rId3'), false);
+
+  // 2. Missing rId3 relationship -> REJECT
+  const noRel = validRels.replace(/<Relationship[^>]*Id="rId3"[^>]*\/>/, '');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(noRel, validXml)),
+    /Missing rId3 relationship/
   );
 
-  // 2. Duplicate rId3 relationship fails closed
-  const wbDupRel = await XlsxPopulate.fromDataAsync(templateBytes);
-  let relsDupRel = await wbDupRel._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
-  relsDupRel = relsDupRel.replace('rId3', 'rId3" extra="dup').replace('</Relationships>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/></Relationships>');
-  wbDupRel._zip.file('xl/drawings/_rels/drawing1.xml.rels', relsDupRel);
-  const bytesDupRel = await wbDupRel._zip.generateAsync({ type: 'uint8array' });
-
-  await assert.rejects(
-    async () => {
-      await preparePartATemplate(bytesDupRel, { objectiveCount: 4 });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  // 3. Duplicate rId3 relationship -> REJECT
+  const dupRel = validRels.replace('</Relationships>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/></Relationships>');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(dupRel, validXml)),
+    /Duplicate rId3 relationship/
   );
 
-  // 3. External TargetMode fails closed
-  const wbExtRel = await XlsxPopulate.fromDataAsync(templateBytes);
-  let relsExtRel = await wbExtRel._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
-  relsExtRel = relsExtRel.replace('Id="rId3"', 'Id="rId3" TargetMode="External"');
-  wbExtRel._zip.file('xl/drawings/_rels/drawing1.xml.rels', relsExtRel);
-  const bytesExtRel = await wbExtRel._zip.generateAsync({ type: 'uint8array' });
-
-  await assert.rejects(
-    async () => {
-      await preparePartATemplate(bytesExtRel, { objectiveCount: 4 });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  // 4. Wrong relationship Type -> REJECT
+  const wrongTypeRel = validRels.replace('Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"', 'Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(wrongTypeRel, validXml)),
+    /Invalid relationship Type for rId3/
   );
 
-  // 4. Missing xl/media/image3.png fails closed
-  const wbNoMedia = await XlsxPopulate.fromDataAsync(templateBytes);
-  wbNoMedia._zip.remove('xl/media/image3.png');
-  const bytesNoMedia = await wbNoMedia._zip.generateAsync({ type: 'uint8array' });
+  // 5. Wrong Target (media/image3.png without ../) -> REJECT
+  const wrongTargetRel1 = validRels.replace('Target="../media/image3.png"', 'Target="media/image3.png"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(wrongTargetRel1, validXml)),
+    /Invalid relationship Target for rId3/
+  );
 
-  await assert.rejects(
-    async () => {
-      await preparePartATemplate(bytesNoMedia, { objectiveCount: 4 });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_PREPARER_UNRESOLVED')
+  // 6. Wrong Target (other image) -> REJECT
+  const wrongTargetRel2 = validRels.replace('Target="../media/image3.png"', 'Target="../media/other.png"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(wrongTargetRel2, validXml)),
+    /Invalid relationship Target for rId3/
+  );
+
+  // 7. TargetMode="Internal" -> REJECT
+  const intModeRel = validRels.replace('Id="rId3"', 'Id="rId3" TargetMode="Internal"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(intModeRel, validXml)),
+    /TargetMode attribute must be absent for rId3/
+  );
+
+  // 8. TargetMode="External" -> REJECT
+  const extModeRel = validRels.replace('Id="rId3"', 'Id="rId3" TargetMode="External"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(extModeRel, validXml)),
+    /TargetMode attribute must be absent for rId3/
+  );
+
+  // 9. Missing media evidence -> REJECT
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(validRels, validXml, false)),
+    /Reference image files missing in package/
+  );
+
+  // 10. Zero exact embeds -> REJECT
+  const zeroEmbedXml = validXml.replace('r:embed="rId3"', 'r:embed="rId99"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(validRels, zeroEmbedXml)),
+    /Zero exact r:embed="rId3" occurrences found/
+  );
+
+  // 11. Duplicate embeds in one anchor -> REJECT
+  const dupInOneXml = validXml.replace('r:embed="rId3"', 'r:embed="rId3" r:embed="rId3"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(validRels, dupInOneXml)),
+    /Duplicate r:embed="rId3" occurrences found/
+  );
+
+  // 12. Duplicate embeds across anchors -> REJECT
+  const dupAcrossXml = validXml + '<xdr:twoCellAnchor><a:blip r:embed="rId3"/></xdr:twoCellAnchor>';
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(validRels, dupAcrossXml)),
+    /Duplicate r:embed="rId3" occurrences found/
+  );
+
+  // 13. Incidental rId3 text without exact embed -> REJECT
+  const incidentalXml = validXml.replace('r:embed="rId3"', 'name="rId3"');
+  assert.throws(
+    () => validateAndRemoveReferenceImage(createZip(validRels, incidentalXml)),
+    /Zero exact r:embed="rId3" occurrences found/
   );
 });
 
