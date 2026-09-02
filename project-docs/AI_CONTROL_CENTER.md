@@ -2,7 +2,7 @@
 
 Updated: 2026-09-02 ICT. Fresh-fetch canonical branch before acting.
 
-Fast review: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff.
+Fast review: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -15,33 +15,47 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — R7-R3 privacy proof test-only active |
+| D2 | IN PROGRESS — Production XLSX Renderer is next proposed gate |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
 | D6 | PENDING |
 | D7 | SOURCE FUNCTIONALITY CLOSED |
 
-Closed D2: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority.
+Closed D2 gates:
+- Preservation
+- Reference Image
+- Part A Structural
+- Part B Structural
+- Formula Authority
+- Part B Expanded Privacy
+
+Latest privacy closure:
+```text
+R7-R2_SOURCE = PASS / FROZEN
+R7-R3_AUTH_COMMIT = 97f2517d368f150569b953aca735b704e244668e
+R7-R3_IMPLEMENTATION = 69891d82996f83a0442ee6dc268dd20b7ef8ee99
+R7-R3_SCOPE = PASS / ONE COMMIT / ONE TEST FILE
+D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+```
+
+Production Renderer architecture is now mandatory:
+```text
+NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = YES
+CENTRALIZED_TEMPLATE_PROFILE_MAPPING = YES
+```
+Authority: `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`.
 
 ```text
-R7-R2_IMPLEMENTATION = 6975b1f076b9b3f4baa3b6cb4ca844767f513f0a
-R7-R2_SOURCE = PASS / FROZEN
-R7-R2_PROOF = CORRECTIVE REQUIRED / ISOLATED ROW30 NEGATIVE PROOF ONLY
-D2-WP003-R7-R2-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-
-ACTIVE_WORK_PACKAGE = D2-WP003-R7-R3
-R7-R3_AUTHORIZATION = D2-WP003-R7-R3-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 93f373c6321f94cc45700e15506769583eb48b21
-EXPECTED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R3-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R3 / ONE-SHOT
+ANTIGRAVITY = STOP
 CLAUDE = STOP
+PROPOSED_NEXT = PRODUCTION XLSX RENDERER / NOT AUTHORIZED
 D3 = HOLD
 ```
-
-R7-R3 may add only isolated row30/clone `normalizedType`, `nonblank`, and source-applicable static `valHash` blocker tests. Source `scripts/export/mbo-xlsx-ooxml-feasibility.js` is frozen and MUST NOT change. Production Renderer remains out of scope. Full contract: `AI_ACTIVE_TASK.md`.
