@@ -36,38 +36,35 @@ Direct durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-## Latest closed gate — R7-R3
-```text
-R7-R3_IMPLEMENTATION = 69891d82996f83a0442ee6dc268dd20b7ef8ee99
-D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-```
-
 ## Production Renderer architecture — Owner-confirmed
 ```text
 NO_SCATTERED_CELL_ADDRESS_IN_PRODUCTION_RENDERER = MANDATORY
 CENTRALIZED_TEMPLATE_PROFILE_MAPPING = MANDATORY
+UNKNOWN_TEMPLATE_OR_MAPPING = FAIL_CLOSED
 ```
 
-Secured projection authority remains `src/services/mbo-export-service.js`; it must not be modified merely to make renderer mapping easier.
+Secured projection authority remains `src/services/mbo-export-service.js`; R1 must not modify it.
 
-## Proposed next — D2-WP004-R1
+## Active gate — D2-WP004-R1
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R1
+WORK_PACKAGE = D2-WP004-R1
 NAME = MBO2026 PRODUCTION XLSX TEMPLATE PROFILE / MAPPING FOUNDATION
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST / PURE MAPPING / NO WORKBOOK MUTATION
+STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+AUTHORIZATION = D2-WP004-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 77908178f9d91d8fe7cce4db553f66324770a50b
+MODE = SOURCE+TEST / PURE MAPPING / ONE-SHOT / LOW-CREDIT
 EXPECTED_FILES =
   src/profiles/mbo-xlsx-template-profile.js
   tests/mbo-xlsx-template-profile.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+WORKBOOK_MUTATION = FORBIDDEN
+PRODUCTION_RENDERER = NOT YET
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
 ```
 
-R1 establishes one centralized semantic mapping authority for the accepted MBO2026 template family, exact Part A 4..10 and Part B 6..8 cardinality support, exact template SHA identity, and fail-closed unknown template/profile/count/semantic-role behavior. It does NOT render or mutate XLSX.
+R1 establishes one centralized semantic mapping authority for the accepted MBO2026 template family, exact Part A 4..10 and Part B 6/7/8 cardinality support, exact template SHA identity, and fail-closed unknown template/profile/count/semantic-role behavior. It does NOT render or mutate XLSX.
 
-Remaining D2 path: Template Profile foundation -> Production XLSX Renderer/Sanitizer -> Combined Excel parity -> PDF parity -> export authorization/security/privacy regression -> final independent D2 closure -> then D3 may leave HOLD.
+After implementation push, Antigravity must STOP. ChatGPT independently reviews only after Owner says `review`.
