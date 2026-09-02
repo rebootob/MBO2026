@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R36 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -33,6 +33,8 @@ D2-WP002 = PASS / CLOSED
 D2-WP003-R3-R22 = PASS / CLOSED
 D2-WP003-R3-R30 = PASS / CLOSED
 D2_PRESERVATION_GATE = PASS / CLOSED
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
+D2-WP003-R3-R36 = PASS / CLOSED
 PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
 TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
 TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
@@ -41,45 +43,41 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Reference-image status — R3-R35 reviewed
+## 4. Reference-image closure — R3-R36
 
 ```text
-R3-R35_AUTHORIZATION_COMMIT = 3eb083b9d5920f1002ce3bf069d60d87325f0136
-R3-R35_IMPLEMENTATION_COMMIT = 2ea39f1d10dca9ba4b830e4207a4abf7cf797644
-R3-R35_SCOPE_REVIEW = PASS
+R3-R36_AUTHORIZATION_COMMIT = f72e935b639da850aacc675c1ef2e30ce5f892c7
+R3-R36_IMPLEMENTATION_COMMIT = 45b2b15986aa814e5f863952f0d150e14360171e
+R3-R36_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLETE
-D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+R3-R36_PROOF_CODE_REVIEW = PASS
+R3-R36_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 ```
 
-R3-R35 successfully restored the R3-R33 adversarial matrix, retained R3-R34 proof and implemented XML 1.0 NameStartChar/NameChar plus Relationship attribute NCName/QName validation. Remaining gap is only TEST-ONLY prefixed `embed` fail-closed behavior: malformed candidates are ignored instead of throwing a blocker.
+The accepted reference-image production source remains frozen. The cumulative TEST-ONLY proof now includes complete target-normalized anchor/relationship/media inventories, exact target tuple/cardinality, media SHA-256 equality, target absence, branding survival, orphan safety, strict XML Name/NCName/QName handling, and fail-closed malformed prefixed `embed` handling. Durable closure is recorded in `CONFIRMED_BASELINE/README.md`.
 
-No production source change is required.
-
-## 5. Current gate — R3-R36 AUTHORIZED
+## 5. Current next gate
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R36
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
+ACTIVE_WORK_PACKAGE = NONE
+NEXT_D2_GATE = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX
+NEXT_D2_GATE_STATUS = NOT STARTED / NOT AUTHORIZED
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R36 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 ```
 
-R3-R36 must only convert malformed prefixed-`embed` QName handling to deterministic fail-closed rejection and assert blocker throws for invalid candidate forms while retaining valid `r:embed` extraction and every accepted R3-R35 proof/helper behavior.
+Do not auto-start the next gate.
 
 ## 6. Remaining D2 path
 
-After reference-image closure:
-1. Part A objective insertion matrix;
-2. Part B competency insertion matrix;
+1. Part A objective insertion structural matrix;
+2. Part B competency insertion structural matrix;
 3. formula/no-formula authority;
 4. production sanitizer/XLSX renderer;
 5. combined Excel parity;
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
-
-Do not auto-start any next step.
