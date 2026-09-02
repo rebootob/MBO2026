@@ -13,7 +13,7 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — Template Profile semantic evidence corrective required |
+| D2 | IN PROGRESS — R1-R2-R1 semantic evidence corrective ACTIVE |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
@@ -33,17 +33,19 @@ R1_R2_HOSHIN_EVIDENCE = PASS / FREEZE
 R1_R2_PART_B_HEADER_EVIDENCE = PASS / FREEZE
 R1_R2_OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
 R1_R2_TOKEN = CONSUMED / DO NOT REUSE
-PROPOSED_NEXT = D2-WP004-R1-R2-R1 EVIDENCE-ONLY / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R1
+ACTIVE_AUTHORIZATION = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 3c9f0dc3f0528ba1cddf2122090eaf0f094f7ada
+MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / SAME ONE MARKDOWN FILE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-R1-EVIDENCE-20260902-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R1 EVIDENCE
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2-R1 is limited to correcting the same semantic evidence markdown from exact SHA-approved owner templates READ-ONLY. Do not modify profile source until corrected evidence independently proves exclusive workbook ownership and compatible secured projection paths.
+R1-R2-R1 corrects only `project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md` from exact SHA-approved owner templates READ-ONLY. No profile/source corrective is authorized until corrected evidence independently proves exclusive workbook ownership and compatible secured projection paths.
