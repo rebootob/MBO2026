@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R36 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -52,23 +52,23 @@ R3-R35_PROOF_REVIEW = FAIL / PREFIXED EMBED MALFORMED-QNAME FAIL-CLOSED INCOMPLE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R35 successfully restored the R3-R33 adversarial matrix, retained R3-R34 proof and implemented XML 1.0 NameStartChar/NameChar plus Relationship attribute NCName/QName validation. Remaining gap is only TEST-ONLY prefixed `embed` fail-closed behavior: malformed `1bad:embed` is ignored and produces `blipRId = null` rather than throwing a blocker as the authorization required.
+R3-R35 successfully restored the R3-R33 adversarial matrix, retained R3-R34 proof and implemented XML 1.0 NameStartChar/NameChar plus Relationship attribute NCName/QName validation. Remaining gap is only TEST-ONLY prefixed `embed` fail-closed behavior: malformed candidates are ignored instead of throwing a blocker.
 
 No production source change is required.
 
-## 5. Current next gate
+## 5. Current gate — R3-R36 AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R36
-PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP003-R3-R36
+AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R36-TEST-20260902-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
+ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R36 / ONE-SHOT
 CLAUDE = STOP
 ```
 
-R3-R36 should only convert malformed prefixed-`embed` QName handling to deterministic fail-closed rejection and assert the blocker throw, while preserving every accepted R3-R35 proof and helper behavior.
+R3-R36 must only convert malformed prefixed-`embed` QName handling to deterministic fail-closed rejection and assert blocker throws for invalid candidate forms while retaining valid `r:embed` extraction and every accepted R3-R35 proof/helper behavior.
 
 ## 6. Remaining D2 path
 
@@ -81,3 +81,5 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
+
+Do not auto-start any next step.
