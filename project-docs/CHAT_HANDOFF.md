@@ -18,43 +18,44 @@ D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 D3 = HOLD
 ```
 
-Latest independent semantic evidence closure:
-```text
-R1_R2_R2_AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-R1_R2_R2_AUTHORIZATION_COMMIT = ef9f9ca1fbfef224372150226a5db8ba7a5ba12c
-R1_R2_R2_EVIDENCE = bc141f355d7714302801d5adca3d5652b83c4de1
-SCOPE = PASS / ONE COMMIT / ONE MARKDOWN FILE
-OWNER_TEMPLATE_SHA = PASS / EXACT MATCH A+B
-PROVEN_SAFE_TO_MAP = 18
-UNRESOLVED = 22
-NO_SECURED_PROJECTION_SOURCE = 5
-DUPLICATE_SAFE_TARGETS = 0
-SAFE_TO_MAP_WITHOUT_SECURED_PATH = 0
-CHIEF_FROZEN_AUTHORITY = R:X
-TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-```
-
-Durable authority:
+Durable semantic authority:
 `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 
-Template Profile implementation `570a388a3f05be564c38e55431b739d3b28bf406` remains accepted/frozen for pure architecture, exact SHA/count domains, corrected Part B topology and basic integrity guards, but its semantic mappings now require the authorized R1-R3 alignment to the closed Baseline.
+```text
+SAFE_TO_MAP = 18 EXACT
+UNRESOLVED = 22 EXACT / FAIL CLOSED
+NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
+CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
+```
+
+Latest Template Profile review:
+```text
+R1_R3_AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+R1_R3_AUTHORIZATION_COMMIT = 228a38b909fd7185d9ba94cf4d53288736b4172c
+R1_R3_IMPLEMENTATION = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
+SCOPE = PASS / ONE COMMIT / EXACT TWO AUTHORIZED FILES
+OVERALL = CORRECTIVE REQUIRED
+RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+```
+
+Proven remaining defects:
+- unauthorized alias `OBJECTIVE_i_COMMENT` resolves as SELF_COMMENT and returns null projection path;
+- unauthorized alias `COMPETENCY_b_RATING` resolves as SELF_RATING;
+- integrity validator does not validate full safe mapping/projection integrity, especially null objective paths and Part B mapping/projection/duplicates;
+- required negative tests for malformed/null projection and alias rejection are incomplete.
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R3
-AUTHORIZATION = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 5e15e5491a5b3ff53d7f5dc18531cc6d418a0c0d
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R1-R3-SOURCE-TEST-20260902-01
+PROPOSED_NEXT = D2-WP004-R1-R3-R1 / SOURCE+TEST / NOT AUTHORIZED
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3 SOURCE+TEST
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
-
-R1-R3 must expose only the 18 accepted `SAFE_TO_MAP` semantics, fail closed for all 22 unresolved roles, prohibit all 5 no-secured-source roles, preserve pure/no-workbook-I/O architecture and all structural/privacy/formula Baselines, and stop after exactly one implementation/blocker commit. Production Renderer remains out of scope.
