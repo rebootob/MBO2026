@@ -13,42 +13,44 @@ NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 | ID | Status |
 |---|---|
 | D1 | PASS / CLOSED |
-| D2 | IN PROGRESS — final semantic evidence corrective active |
+| D2 | IN PROGRESS — semantic mapping evidence closed; Template Profile alignment next proposed |
 | D3 | HOLD until D2 closes |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
 | D6 | PENDING |
 | D7 | SOURCE FUNCTIONALITY CLOSED |
 
-Closed D2 gates: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
+Closed D2 gates: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping Evidence.
 
 ```text
 R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
 R1_R1_PART_B_TOPOLOGY = PASS / FREEZE
 R1_R1_BASIC_INTEGRITY = PASS / FREEZE
-R1_R1_PROFILE_SEMANTIC_AUTHORITY = NOT CLOSED
+R1_R1_PROFILE_SEMANTIC_ALIGNMENT = NOT CLOSED
 
-R1_R2_R1_EVIDENCE = 26fa18feead191c7587df82e393c73366969000d
-R1_R2_R1_SCOPE_SHA = PASS
-R1_R2_R1_HOSHIN = PASS / FREEZE
-R1_R2_R1_PART_B_HEADER = PASS / FREEZE
-R1_R2_R1_PART_A_HEADER = PASS / FREEZE
-R1_R2_R1_OVERALL = CORRECTIVE REQUIRED
-R1_R2_R1_TOKEN = CONSUMED / DO NOT REUSE
+R1_R2_R2_EVIDENCE = bc141f355d7714302801d5adca3d5652b83c4de1
+R1_R2_R2_SEMANTIC_EVIDENCE = PASS / CLOSED
+R1_R2_R2_TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
+SEMANTIC_BASELINE = CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md
+PROVEN_SAFE_TO_MAP = 18
+UNRESOLVED = 22
+NO_SECURED_PROJECTION_SOURCE = 5
+DUPLICATE_SAFE_TARGETS = 0
+SAFE_TO_MAP_WITHOUT_SECURED_PATH = 0
+CHIEF_FROZEN_AUTHORITY = R:X
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R2
-ACTIVE_AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
-MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT / SAME ONE MARKDOWN FILE
+PROPOSED_NEXT = D2-WP004-R1-R3 SOURCE+TEST / TEMPLATE PROFILE SEMANTIC ALIGNMENT / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-R1-R2-R2 may correct only the existing semantic evidence markdown. Preserve accepted SHA/Hoshin/header evidence; chief authority must be `R:X`; `SAFE_TO_MAP` requires a non-null secured path; evaluator/composite-field translations require direct accepted authority or remain unresolved; evidence cannot self-promote before independent review.
+No production source change is authorized. R1-R3 may start only after exact Owner approval and must align the existing pure Template Profile to the closed semantic Baseline without widening authority or implementing the renderer.
