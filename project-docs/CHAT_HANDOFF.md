@@ -28,18 +28,15 @@ Standing Control Plane authority:
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE
 MAX_ROUNDS = 20
-ROUNDS_USED = 5
-ROUNDS_REMAINING = 15
+ROUNDS_USED = 6
+ROUNDS_REMAINING = 14
 STOP = D2 PASS/CLOSED OR ROUND 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ```
 
-Standing authority covers ChatGPT independent review, bounded corrective drafting and Control Plane Git synchronization only. It does not authorize Antigravity implementation, Claude execution, evidence publication, Live Kintone/deploy, D3 or scope expansion.
-
 ## 2. Startup order
 
-Read in this exact order:
 1. fresh-fetch current HEAD of `ai/antigravity-wp002c`;
 2. `project-docs/CHAT_HANDOFF.md`;
 3. `project-docs/AI_CONTROL_CENTER.md`;
@@ -71,7 +68,7 @@ Do not reopen D1 without proven regression.
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | R3-R27 reviewed CORRECTIVE; R3-R28 proposed |
+| D2 | 🟠 IN PROGRESS | R3-R28 reviewed CORRECTIVE; R3-R29 proposed |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Do not execute until D2 PASS/CLOSED |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh current route + identity required |
@@ -107,45 +104,48 @@ PRESERVATION_POLICY = NARROW DETERMINISTIC ALLOWED-DRIFT
 
 Only the exact deterministic Part B `Sheet1` `<sheetPr/>` round-trip drift is allowed; it must be normalized inside preservation and all other non-dimension drift remains fail-closed.
 
-## 7. Latest independent review — R3-R27
+## 7. Latest independent review — R3-R28
 
 ```text
-AUTHORIZATION_COMMIT = 671948b3d4a935118172a3c849d9265eb606ac73
-IMPLEMENTATION_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
-R3-R27_SCOPE_REVIEW = PASS
-R3-R27_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R27_PROOF_REVIEW = FAIL / REGRESSION + WRONG-BRANCH + NO INDEPENDENT RUNTIME
-R3-R27_STATUS = NOT PASS / NOT CLOSED
+AUTHORIZATION_COMMIT = 9598602238d2f46614b6a135f0422b8e744b862a
+IMPLEMENTATION_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
+R3-R28_SCOPE_REVIEW = PASS
+R3-R28_SOURCE_REVIEW = FAIL / SINGLETON-SCHEMA CONTRACT GAP
+R3-R28_PROOF_REVIEW = FAIL / REGRESSION + WRONG-BRANCH + INCOMPLETE
+R3-R28_STATUS = NOT PASS / NOT CLOSED
 PRIVACY_PURGE_REQUIRED = NO
 ```
 
-Accepted R3-R27 improvements:
-- positive Part B now uses direct raw `outBufB` with no test-side pre-clean;
-- Option B handling is inside preservation;
-- exact `<sheetPr/>`/first-child checks and additional alias negatives were added;
-- scope remained exactly the two authorized files.
+Accepted R3-R28 improvements:
+- Option B write-back persistence fixed for every successful path;
+- coverage/gap XML inventory no longer depends on ASCII-only QName classes;
+- always-runnable template-independent unit tests added;
+- exact-template tests skip when ignored owner templates are absent;
+- direct raw A/B path and frozen no-op behavior retained.
 
 Remaining blockers:
-1. Option B local normalization is not persisted when the observed dimension is already correct because ZIP write-back occurs only in the missing-dimension branch;
-2. XML scanners still use ASCII QName classes and have no complete direct-child gap consumption proof, so Unicode QName markup can be skipped;
-3. several R3-R25/R3-R26 regression negatives disappeared again;
-4. source-structure negative labels still hit the SHA gate first when they mutate `sourceBufOverride`;
-5. no always-runnable privacy-safe synthetic/unit proof exists;
-6. no GitHub CI/status/workflow signal exists.
+1. singleton occurrence set misclassifies `cols` and omits supported singleton children such as `mergeCells`, `hyperlinks`, `oleObjects`, `controls`, `tableParts`;
+2. missing-boundary source-structure proof still fails at SHA gate first;
+3. exact per-sheet print-area binding and Part B `Sheet1.colsHash` negative were removed;
+4. much of the still-valid prior preservation regression matrix was deleted;
+5. actual non-ASCII Unicode QName proof is absent;
+6. Option B duplicate/extra and effective moved/other-sheet/Part-A fail-closed proof is incomplete;
+7. accepted header-fingerprint and typed-privacy negative regression guards were reduced;
+8. no GitHub CI/status/workflow signal exists.
 
-Claude was not invoked for R3-R27 because the defects are independently provable from repository source and using Claude would add cost without changing the gate.
+Claude was not invoked because the defects are independently provable from repository source and using Claude would add cost without changing the gate.
 
 ## 8. Exact current gate
 
 ```text
 D2 = IN PROGRESS
 D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R27 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 5 OF 20
+D2-WP003-R3-R28 = REVIEWED / NOT PASS / NOT CLOSED
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 6 OF 20
 ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R28
-PROPOSED_WORK_PACKAGE_NAME = OPTION B WRITEBACK + COMPLETE XML TOKEN INVENTORY + EFFECTIVE PROOF CORRECTIVE
-CORRECTIVE_BASELINE_COMMIT = f7a7c82e7d39dc799be9b3687b2b4137c9797c7a
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R29
+PROPOSED_WORK_PACKAGE_NAME = SINGLETON SCHEMA FIX + FULL REGRESSION RESTORE + EFFECTIVE STRUCTURAL PROOF
+CORRECTIVE_BASELINE_COMMIT = 7fcf68e687ed2e76df418a4c7b0dd7b5bf8663de
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
@@ -155,16 +155,17 @@ CLAUDE = STOP / NOT NEEDED AT THIS GATE
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-## 9. Proposed next WP — R3-R28 / NOT AUTHORIZED
+## 9. Proposed next WP — R3-R29 / NOT AUTHORIZED
 
-R3-R28 is limited to the same existing feasibility source and test files only. It must:
-- persist Option B normalization to the returned working ZIP whether dimension is missing or already correct;
-- implement coverage-complete direct-child XML token/gap validation so unknown/prefixed/Unicode Relationship and worksheet-child markup cannot be silently skipped;
-- factor privacy-safe pure validators without weakening production source-SHA enforcement;
-- make exact-template tests report/skip unavailable when local ignored templates are absent while template-independent unit tests still run;
-- restore all still-valid R3-R25/R3-R26 negative proofs removed in R3-R27;
-- separate wrong-SHA production-gate proof from synthetic source-structure proof;
-- keep raw output, source SHA, privacy, evidence/Kintone/deploy/D3 boundaries frozen.
+R3-R29 is limited to the same existing feasibility source and test files only. It must:
+- correct supported worksheet maxOccurs semantics (`cols` repeatable; full supported singleton set independently guarded);
+- preserve R3-R28 write-back/XML coverage improvements;
+- extract effective pure worksheet structural validation so dimension/boundary cases are tested without bypassing SHA;
+- restore every still-valid preservation negative deleted in R3-R28 using prior Git versions as recovery reference;
+- restore exact per-sheet print-area and Part B `Sheet1.colsHash` proof;
+- restore accepted header-fingerprint and typed-privacy negative regression guards;
+- add actual non-ASCII Unicode QName negatives;
+- complete Option B duplicate/extra/moved/other-sheet/Part-A fail-closed proof.
 
 No Antigravity or Claude execution is authorized yet.
 
@@ -192,8 +193,9 @@ D2-WP003-R3-R24-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R25-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP003-R3-R26-SOURCE-20260902-01 = CONSUMED / BLOCKED / DO NOT REUSE
 D2-WP003-R3-R27-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP003-R3-R28-SOURCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED / ARCHITECTURE POLICY
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 5 OF 20
+CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = ACTIVE / ROUND 6 OF 20
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -215,7 +217,7 @@ D3_EXECUTION = HOLD
 
 ```text
 NEXT_EXECUTOR = OWNER
-NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R28 AS PROPOSED
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP003-R3-R29 AS PROPOSED
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
