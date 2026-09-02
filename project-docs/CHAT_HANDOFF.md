@@ -9,15 +9,13 @@ Repository truth and accepted newer Live evidence always win. Fresh-fetch curren
 
 ## 1. Fast continuation path
 
-For D2 continuation/review, do NOT start with a full repository scan.
-
-Read:
+For normal D2 continuation/review:
 1. `project-docs/D2_REVIEW_FAST_START.md`
 2. `project-docs/AI_ACTIVE_TASK.md`
 3. only the directly relevant `CONFIRMED_BASELINE/` file
 4. exact authorization→implementation diff and changed files as needed
 
-Use `AI_CONTROL_CENTER.md`, `AI_DOCUMENT_INDEX.md`, `00_MASTER_JOBLIST.md`, and `EXCEL_EXPORT.md` only when whole-project reconciliation is needed.
+Do not start with a full repository scan unless whole-project reconciliation is required.
 
 ## 2. Operating model
 
@@ -30,17 +28,10 @@ NO_FALSE_PASS = YES
 EXECUTOR_CANNOT_SELF_CERTIFY = YES
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-COMPLETE_D2_FULLY_BEFORE_D3 = YES
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
 ```
 
-Previous standing review window:
-
-```text
-CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / 20 OF 20 / DO NOT REUSE
-```
-
-Do not silently create another standing cycle. Executor work remains one-shot and Owner-authorized.
+Previous standing review window is exhausted and must not be reused silently. Executor work remains one-shot and Owner-authorized.
 
 ## 3. Current project gate
 
@@ -51,6 +42,7 @@ D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
+D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 D4 = IN PROGRESS / NOT ACTIVE
 D5 = IN PROGRESS / NOT ACTIVE
@@ -58,43 +50,48 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
+Closed D2 Baselines:
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
+
 Do not reopen closed/frozen gates without proven regression.
 
-## 4. Frozen D2 structural authority
-
-Part A durable authority:
-`project-docs/CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
-
-Part B durable authority:
-`project-docs/CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
-
-Key accepted implementations:
+## 4. Current open privacy boundary
 
 ```text
-PART_A_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054
-PART_A_FINAL_TEST_CLOSURE = 98da94a07259effd95dcf539de3454b1f94745a8
-PART_B_SOURCE_MATRIX = 068e719a7b6c0fee66613619a7aa7ed359960cb5
-PART_B_FINAL_CLOSURE = 223f293057219efe0e6410029523bd904c92c6ae
+PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
 ```
 
-Detailed frozen invariants and review shortcuts are consolidated in `D2_REVIEW_FAST_START.md`.
+Current 6-block Part B privacy map is not valid as-is for expanded layouts:
+- N=7 inserts rows 31:34; original summary/signature moves to 35:38;
+- N=8 inserts rows 31:38; original summary/signature moves to 39:42.
 
-## 5. Open privacy boundary
+Using the fixed source-6 summary map on N=7/8 would target the wrong cells.
+
+## 5. Proposed next work package
 
 ```text
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED BEFORE PRODUCTION RENDERER / SECURITY CLOSURE
+D2-WP003-R7 = PART B EXPANDED PRIVACY ADDRESS REMAP 6/7/8
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST / TWO EXISTING FILES ONLY
+FILES = scripts/export/mbo-xlsx-ooxml-feasibility.js
+        tests/mbo-xlsx-ooxml-feasibility.test.js
 ```
 
-The accepted privacy mapping is authority for the original 6-block Part B layout only. Expanded 7/8 competency variants require explicit remapping of shifted addresses before production/security closure.
+R7 must preserve the source-6 privacy map, derive inserted block roles from source rows 27:30, relocate summary/signature roles exactly, protect cloned static text, sanitize only exact count-aware dynamic addresses, and fail closed on unsupported count/structural-role mismatch.
+
+Full contract: `AI_ACTIVE_TASK.md`.
 
 ## 6. Remaining D2 path
 
-1. formula/no-formula authority;
-2. production sanitizer/XLSX renderer + expanded Part B privacy/address remap;
+1. R7 expanded Part B privacy remap 6/7/8;
+2. production XLSX renderer/sanitizer;
 3. combined Excel parity;
 4. PDF parity;
 5. export authorization/security/privacy regression;
-6. final independent D2 closure.
+6. final independent D2 closure;
+7. only then may D3 leave HOLD.
 
 ## 7. Current executor state
 
@@ -110,4 +107,4 @@ CLAUDE = STOP
 D3 = HOLD
 ```
 
-Exact next planning target: Formula Authority, then Production XLSX Renderer + Privacy Remap. Do not auto-start executor work.
+Exact next action: Owner decides whether to authorize `D2-WP003-R7 SOURCE+TEST` under the proposed two-file contract.
