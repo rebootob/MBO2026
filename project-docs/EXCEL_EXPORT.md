@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / R3-R34 REFERENCE-IMAGE TEST-ONLY AUTHORIZED**  
+> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE PROOF CORRECTIVE**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -41,34 +41,34 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 4. Reference-image status — R3-R33 reviewed
+## 4. Reference-image status — R3-R34 reviewed
 
 ```text
-R3-R33_AUTHORIZATION_COMMIT = a638ee5e28b66d87768eb44d3cad32801878b9ef
-R3-R33_IMPLEMENTATION_COMMIT = adc974704898686efffd7ac121b4b58820581461
-R3-R33_SCOPE_REVIEW = PASS
+R3-R34_AUTHORIZATION_COMMIT = 29837a5b84ad7b3397ec256a0bcf193f80d67b7e
+R3-R34_IMPLEMENTATION_COMMIT = f2bace7e97080dd89e44ceb045ba7e5b7e4aaeec
+R3-R34_SCOPE_REVIEW = PASS
 REFERENCE_IMAGE_SOURCE_REVIEW = PASS / FROZEN
-R3-R33_PROOF_REVIEW = FAIL / NCNAME + ATTRIBUTE COVERAGE FAIL-CLOSED INCOMPLETE
+R3-R34_PROOF_REVIEW = FAIL / XML NCNAME-QNAME + REGRESSION RETENTION INCOMPLETE
 D2_REFERENCE_IMAGE_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 ```
 
-R3-R33 correctly tightened case-sensitive local-name handling, direct Relationship start-tag attribute extraction, duplicate required-attribute rejection and TargetMode tuple identity. Remaining gap is TEST-ONLY only: NCName validation and complete start-tag attribute-region token coverage.
+R3-R34 correctly added minimum invalid-prefix negatives and complete malformed/unquoted/stray Relationship attribute-region consumption. Remaining gap is TEST-ONLY only: XML Name/NCName/QName correctness and regression retention. Several accepted R3-R33 adversarial assertions were removed rather than retained.
 
 No production source change is required.
 
-## 5. Current gate — R3-R34 AUTHORIZED
+## 5. Current next gate
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R3-R34
-AUTHORIZED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R3-R34-TEST-20260902-01
+PROPOSED_WORK_PACKAGE = D2-WP003-R3-R35
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R3-R34 / ONE-SHOT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 ```
 
-R3-R34 must only make prefix validation genuinely NCName-aware, require complete quoted-attribute token coverage on the direct Relationship start tag, and preserve all accepted R3-R33 target-normalized equality logic.
+R3-R35 should restore all accepted R3-R33 adversarial assertions, retain every R3-R34 new adversarial assertion, make NCName validation represent XML NameStartChar/NameChar correctly, validate attribute names as XML NCName/QName tokens, and preserve all accepted target-normalized equality logic.
 
 ## 6. Remaining D2 path
 
@@ -81,5 +81,3 @@ After reference-image closure:
 6. PDF parity;
 7. export authorization/security/privacy regression;
 8. final independent D2 closure.
-
-Do not auto-start any next step.
