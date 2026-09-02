@@ -3,14 +3,14 @@
 > Current operational truth only. Permanent rules live in `CONFIRMED_BASELINE/`.  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`  
-> Updated: 2026-09-02 ICT — D2 IN PROGRESS / R4 SOURCE+TEST AUTHORIZED
+> Updated: 2026-09-02 ICT — D2 IN PROGRESS / PART A R4 CORRECTIVE REQUIRED
 
 Fresh-fetch current branch HEAD before any status, review or execution decision.
 
 ```text
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = ACTIVE / MAX 20 ROUNDS
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 15 OF 20
-CONTROL_PLANE_ROUNDS_REMAINING = 5
+CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 16 OF 20
+CONTROL_PLANE_ROUNDS_REMAINING = 4
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 ```
@@ -20,7 +20,7 @@ CLAUDE_AUTO_REVIEW = NO
 | ID | Status | Current checkpoint |
 |---|---|---|
 | D1 | ✅ PASS / CLOSED | Frozen unless proven regression |
-| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4 SOURCE+TEST authorized |
+| D2 | 🟠 IN PROGRESS | Preservation PASS/CLOSED; Reference-Image PASS/CLOSED; Part A R4 proof corrective required |
 | D3 | ⏸ HOLD / WRITE NOT AUTHORIZED | Complete D2 first |
 | D4 | 🟠 IN PROGRESS / NOT ACTIVE | Lifecycle operations mandatory |
 | D5 | 🟠 IN PROGRESS / NOT ACTIVE | Fresh target-year route/identity required |
@@ -45,30 +45,41 @@ DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
 D2-PRESERVATION-PARTB-SHEETPR-DECISION-01 = OPTION B APPROVED
 ```
 
-## 3. Current gate
+## 3. R4 independent review
 
 ```text
-ACTIVE_WORK_PACKAGE = D2-WP003-R4
-ACTIVE_WORK_PACKAGE_NAME = PART A OBJECTIVE INSERTION STRUCTURAL MATRIX CLOSURE
-AUTHORIZED_SCOPE = FEASIBILITY SOURCE + TEST / EXACT TWO FILES ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R4-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = b8deddc84794181723085983f6ec599f6f3bcf9b
+AUTHORIZATION_COMMIT = 8df05db6535a8ce871e987853e5a356ad67f4232
+IMPLEMENTATION_COMMIT = bf9ef7e82c78efc2e725614046745a3ccf394054
+R4_SCOPE_REVIEW = PASS
+R4_SOURCE_REVIEW = PASS / FROZEN
+R4_PROOF_REVIEW = FAIL / STRUCTURAL INVARIANT MATRIX INCOMPLETE
+R4_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO CI STATUS OR WORKFLOW
+D2_PART_A_STRUCTURAL_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+```
+
+Implementation is exactly one commit after authorization and changes only the two authorized files. The source helper now exposes real-path Part A objective counts 4–10. Existing R4 proof correctly covers exact SHA, full merge-set transformation, exact dimension/print area, normalized row/cell/style/row-height relocation, sentinel relocation, relationship/media preservation and empty formula inventory.
+
+Remaining proof gaps are bounded to the existing test file: exact `rowRefs` sequence/uniqueness, sheet-state equality, and exact gridline/fit-to-page/page-margin/per-sheet setup invariants. `getWorkbookFingerprint()` already exposes these fields, so no source change is required.
+
+## 4. Current gate
+
+```text
+ACTIVE_WORK_PACKAGE = NONE
+PROPOSED_WORK_PACKAGE = D2-WP003-R4-R1
+PROPOSED_WORK_PACKAGE_NAME = PART A STRUCTURAL INVARIANT PROOF CLOSURE
+PROPOSED_SCOPE = TEST-ONLY / tests/mbo-xlsx-ooxml-feasibility.test.js ONLY
+PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-REFERENCE_IMAGE_SOURCE_BASELINE = FROZEN / DO NOT MODIFY
-ANTIGRAVITY = AUTHORIZED ONLY FOR R4 / ONE-SHOT
+R4_SOURCE_BASELINE = bf9ef7e82c78efc2e725614046745a3ccf394054 / FROZEN FOR CORRECTIVE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP / NOT NEEDED
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-Allowed files only:
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js`
-- `tests/mbo-xlsx-ooxml-feasibility.test.js`
+## 5. Low-credit rule
 
-R4 must exercise the real source path for 4,5,6,7,8,9,10 objectives and prove exact row/cell/style/row-height relocation, sentinel relocation, complete merge-set transformation, exact dimension/print area, non-target workbook invariants, relationship/media preservation, and empty formula inventory. No production renderer, Part B, preservation/reference-image redesign, Kintone, deploy, or D3 work is authorized.
-
-## 4. Low-credit rule
-
-Antigravity gets exactly one bounded implementation or blocker commit, then STOP. If the matrix reveals an algorithm defect beyond bounded count generalization, do not widen scope; return a blocker for ChatGPT review.
+If R4-R1 is authorized, modify only the existing feasibility test file. Do not alter the accepted R4 source implementation unless a new independently proven source defect appears. No Claude review is needed for the current proof gap.
