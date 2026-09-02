@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / FINAL TEMPLATE SEMANTIC EVIDENCE CORRECTIVE REQUIRED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / PRIVACY CLOSED / FINAL TEMPLATE SEMANTIC EVIDENCE CORRECTIVE AUTHORIZED**. Updated 2026-09-02 ICT.
 
 Frozen authority:
 ```text
@@ -29,7 +29,6 @@ PART_B_SHA = PASS
 HOSHIN = PASS / FREEZE
 PART_B_HEADER = PASS / FREEZE
 PART_A_HEADER = PASS / FREEZE
-STATUS_COUNTS = INTERNALLY RECONCILED
 OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
 TOKEN = CONSUMED / DO NOT REUSE
 RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
@@ -39,29 +38,34 @@ Accepted/frozen additionally:
 - Department -> `Z7:AF7` -> `partA.header.department`.
 - Section -> `AG7:AL7` -> `partA.header.section`.
 - Name-Surname primary -> `AT7:BC7` -> `partA.header.employeeName`; `employeeNameTH` alternate remains unresolved.
-- profileCode/profileFamily/partAWeightPercent with no workbook target remain `UNRESOLVED` rather than incorrectly claiming no secured source.
+- profileCode/profileFamily/partAWeightPercent with no workbook target remain `UNRESOLVED`.
 - final score/grade without static template proof remain unresolved.
 
-Still corrective:
-- Part B chief rows in evidence still show `R:W`; frozen privacy authority is `R:X`.
-- `SUMMARY_WEIGHT_SUM` is still `SAFE_TO_MAP` with secured path `N/A`; forbidden by final mapping invariant.
-- 1st/2nd Appraiser -> Manager/GM mappings remain `PROVEN` without an accepted repository/workflow role-identity citation.
-- combined B:I objective/target region still marks title-only mapping `PROVEN` without a proven composition/source-selection rule.
-- evidence header prematurely labels itself a proven Baseline before independent acceptance.
-
-## Proposed next — NOT AUTHORIZED
+## Active D2-WP004-R1-R2-R2 — FINAL EVIDENCE-ONLY CORRECTIVE
 ```text
-D2-WP004-R1-R2-R2 = FINAL EVIDENCE-ONLY CORRECTIVE
-WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
+AUTHORIZATION = D2-WP004-R1-R2-R2-EVIDENCE-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = 549553aaf69f737df4cdae7213f96e9dcad930aa
+WRITABLE_FILE_ONLY = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
 SOURCE_CHANGE = FORBIDDEN
 TEST_CHANGE = FORBIDDEN
 PROFILE_CHANGE = FORBIDDEN
+TEMPLATE_BINARY_CHANGE = FORBIDDEN
 PRODUCTION_RENDERER = NOT AUTHORIZED
 ```
 
+Final corrections only:
+- preserve full Part B chief dynamic authority `R:X`; distinguish narrower visual merge if any rather than replacing authority;
+- no `SAFE_TO_MAP` where secured projection path is null/unknown, including `SUMMARY_WEIGHT_SUM`;
+- Appraiser1/2 -> Manager/GM requires exact accepted role-identity evidence or must remain `UNRESOLVED`;
+- B:I is a combined objective/target region, so standalone title mapping requires an exact composition rule or remains `UNRESOLVED`;
+- evidence header must be neutral until independent Control Plane PASS;
+- recalculate all semantic decision counts mechanically and require zero duplicate exclusive `SAFE_TO_MAP` targets.
+
+If direct authority is not readily available in accepted sources, downgrade the claim rather than conduct broad scans.
+
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2-R2
+ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2-R2 EVIDENCE
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
