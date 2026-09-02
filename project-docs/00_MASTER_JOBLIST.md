@@ -1,6 +1,6 @@
 # 00 MASTER JOBLIST — MBO2026
 
-Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline -> exact diff.
+Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/evidence -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -15,22 +15,30 @@ D7 = SOURCE FUNCTIONALITY CLOSED
 
 D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy.
 
-Template Profile foundation:
+Template Profile status:
 ```text
-D2-WP004-R1 = CORRECTIVE REQUIRED / TOKEN CONSUMED
-R1_IMPLEMENTATION = ca6bc323117d4e2c5550774e9027d801551a792d
-D2-WP004-R1-R1 = ACTIVE / SOURCE+TEST / ONE-SHOT
-AUTHORIZATION = D2-WP004-R1-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = 57b77fde38c0ef95f0ac40eb396ec386643adf03
+R1 = CORRECTIVE / CONSUMED
+R1_R1_IMPLEMENTATION = 570a388a3f05be564c38e55431b739d3b28bf406
+R1_R1_SCOPE = PASS
+R1_R1_PART_B_TOPOLOGY = PASS / FREEZE
+R1_R1_BASIC_INTEGRITY = PASS / FREEZE
+R1_R1_SEMANTIC_AUTHORITY = CORRECTIVE REQUIRED
+R1_R1_TOKEN = CONSUMED / DO NOT REUSE
 ```
 
-R1-R1 corrects only:
-1. Part B frozen row-role topology.
-2. Semantic/projection-path alignment with current read-only `MboExportService`.
-3. Runtime fail-closed mapping integrity.
+Next proposed smallest gate:
+```text
+D2-WP004-R1-R2 = TEMPLATE SEMANTIC MAPPING EVIDENCE
+MODE = EVIDENCE-ONLY / NOT AUTHORIZED
+SOURCE_TEST_CHANGE = NONE
+EXPECTED_EVIDENCE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+```
+
+R1-R2 must establish only proven semantic→workbook mappings from exact owner-template static labels/merged ranges and the current secured projection. Any unresolved or non-projected role must be explicitly marked unresolved/non-writable.
 
 ```text
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R1
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
