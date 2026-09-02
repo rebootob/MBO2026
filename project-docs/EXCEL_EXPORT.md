@@ -1,17 +1,13 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / PRESERVATION CLOSED / REFERENCE-IMAGE CLOSED / PART A CLOSED / PART B STRUCTURAL CLOSED**  
+> Status: **IN PROGRESS / PRESERVATION + REFERENCE IMAGE + PART A + PART B STRUCTURAL + FORMULA AUTHORITY CLOSED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
 
 ## 0. Fast review entry
 
-Before reviewing D2 export work, read:
-
-`project-docs/D2_REVIEW_FAST_START.md`
-
-Then `AI_ACTIVE_TASK.md`, the directly relevant Baseline, and exact authorization→implementation diff. Do not repeat full closed-gate scans unless current changes touch those dependencies or regression evidence exists.
+Read `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> relevant Baseline -> exact diff. Do not repeat full closed-gate scans unless current changes touch those dependencies or regression evidence exists.
 
 ## 1. Objective
 
@@ -32,63 +28,58 @@ D2_PRESERVATION_GATE = PASS / CLOSED
 D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
-```
-
-Do not use Excel as a second scoring engine.
-
-Target Formula Authority contract:
-
-```text
+D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 EXPORT_RENDERER_SCORE_RECALCULATION = FORBIDDEN
-AUTHORIZED_APPROVER_EXPORT = SCALAR VALUES FROM SECURED PROJECTION ONLY
-EMPLOYEE_SELF_CONFIDENTIAL_SCORE_FIELDS = OMIT / BLANK; NEVER RECALCULATE
 PRODUCTION_XLSX_FORMULA_INVENTORY = EXACTLY ZERO
 ```
 
-## 3. Part A + Part B durable structural closure
+Formula authority:
+`CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`.
 
-Part A authority:
+## 3. Structural Baselines
+
+Part A:
 `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 
-Part B authority:
+Part B:
 `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 
-Key Part B commits:
-
-```text
-R5_IMPLEMENTATION_COMMIT = 068e719a7b6c0fee66613619a7aa7ed359960cb5
-R5-R1_IMPLEMENTATION_COMMIT = 223f293057219efe0e6410029523bd904c92c6ae
-R5-R1_STATUS = PASS / CLOSED
-```
-
 Frozen Part B matrix:
-- 6 competencies => `A1:X35`, 79 merges, print area X35;
-- 7 competencies => `A1:X39`, 85 merges, print area X39;
-- 8 competencies => `A1:X43`, 91 merges, print area X43;
-- exact rowRefs/uniqueness, block clone/downstream/sentinel relocation and full merge-set equality;
-- exact raw-source fail-closed dimension/merge/defined-name guards before mutation;
-- exactly one main Print_Area/localSheetId0, empty `Sheet1` print area and non-print defined-name stability;
-- Part B A4 (`paperSize=9`) / portrait / scale 75 / horizontally centered / protected;
-- exact `Sheet1` stability, relationship/media equality and workbook-wide zero formulas.
+- N=6 => `A1:X35`, 79 merges, summary privacy rows 31:34 in source layout;
+- N=7 => `A1:X39`, 85 merges, inserted block rows 31:34, original summary shifts to 35:38;
+- N=8 => `A1:X43`, 91 merges, inserted blocks rows 31:38, original summary shifts to 39:42.
 
-## 4. Privacy boundary
-
-Current accepted privacy mapping remains authority for the source 6-block layout only.
+## 4. Current open gate — expanded Part B privacy remap
 
 ```text
-PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED BEFORE PRODUCTION RENDERER / SECURITY CLOSURE
+PROPOSED_WORK_PACKAGE = D2-WP003-R7
+STATE = PROPOSED / NOT AUTHORIZED
+PART_B_EXPANDED_PRIVACY_ADDRESS_REMAP = REQUIRED
 ```
 
-Expanded 7/8 competency rows and shifted summary/signature rows require explicit address-role remapping in the production renderer/security gate. Structural closure does not perform that remap.
+Current `PART_B_SENSITIVE_RANGES` / source privacy classification is valid only for the original 6-block layout. R7 must make privacy/sanitization count-aware for 6/7/8 while preserving the accepted structural matrix.
+
+Required R7 behavior:
+- exact N=6 behavior preserved;
+- cloned blocks derive privacy roles from source rows 27:30;
+- cloned static competency text remains protected;
+- dynamic competency rating cells in inserted blocks are sanitized;
+- summary/signature roles relocate exactly to 35:38 or 39:42 for expanded layouts;
+- no stale summary classification remains at rows 31:34 in N=7/8;
+- sanitizer clears only exact count-aware dynamic addresses;
+- typed privacy metadata/evidence is exact and fail-closed;
+- unsupported count or structural-role mismatch fails closed.
+
+Full contract: `AI_ACTIVE_TASK.md`.
 
 ## 5. Remaining D2 path
 
-1. formula/no-formula authority;
-2. production sanitizer/XLSX renderer + expanded Part B privacy remap;
+1. R7 expanded Part B privacy remap 6/7/8;
+2. production XLSX renderer/sanitizer consuming secured projection + frozen formula/structural/privacy contracts;
 3. combined Excel parity;
 4. PDF parity;
 5. export authorization/security/privacy regression;
 6. final independent D2 closure.
 
-No source/test/renderer/Kintone/deploy work is currently authorized. Previous 20-round standing review/corrective authority is exhausted and must not be silently reused. Antigravity remains one-shot only after exact Owner authorization.
+No source/test/renderer/Kintone/deploy work is currently authorized. Antigravity remains one-shot only after exact Owner authorization. D3 remains HOLD.
