@@ -1,20 +1,17 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-> Purpose: open the right document immediately without repository archaeology.  
-> Updated: 2026-09-02 ICT
+> Purpose: open the right document immediately without repository archaeology. Updated 2026-09-02 ICT.
 
-## 1. Fast startup — D2 continuation/review
+## Fast startup — D2 continuation/review
 
-Fresh-fetch current HEAD of `ai/antigravity-wp002c` first.
-
-Read only:
+Fresh-fetch current HEAD of `ai/antigravity-wp002c`, then read:
 1. `project-docs/D2_REVIEW_FAST_START.md`
 2. `project-docs/AI_ACTIVE_TASK.md`
 3. directly relevant `project-docs/CONFIRMED_BASELINE/` file
 4. exact authorization→implementation diff
-5. exact changed source/test files as needed
+5. changed source/test files only as needed
 
-## 2. Current checkpoint
+## Current checkpoint
 
 ```text
 D1 = PASS / CLOSED
@@ -24,40 +21,36 @@ D2_REFERENCE_IMAGE_GATE = PASS / CLOSED
 D2_PART_A_STRUCTURAL_GATE = PASS / CLOSED
 D2_PART_B_STRUCTURAL_GATE = PASS / CLOSED
 D2_FORMULA_AUTHORITY_GATE = PASS / CLOSED
-ACTIVE_WORK_PACKAGE = D2-WP003-R7
-R7_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-R7_AUTHORIZATION = D2-WP003-R7-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = a76bc4fe6619ba9c1f369b5ed18a70e7837ba816
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-SOURCE-TEST-20260902-01
+D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
+R7_IMPLEMENTATION_COMMIT = 993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6
+R7_STATE = CORRECTIVE REQUIRED / TOKEN CONSUMED
+PROPOSED_WORK_PACKAGE = D2-WP003-R7-R1
+R7-R1_STATE = PROPOSED / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R7 / ONE-SHOT
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 D3 = HOLD
 ```
 
-## 3. Relevant durable D2 Baselines
+## Relevant durable D2 Baselines
 
 Read only when directly relevant:
 - `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-## 4. Active R7 file scope
+R7 did not close a durable gate, so no R7 Baseline is promoted yet.
 
-Writable only:
+## R7-R1 scope shortcut
+
+Writable only if Owner authorizes R7-R1:
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js`
 - `tests/mbo-xlsx-ooxml-feasibility.test.js`
 
-Full contract is in `AI_ACTIVE_TASK.md`. Production renderer, `MboExportService`, dependency changes, generated artifacts, Kintone/deploy/D3 are not authorized.
+Correct only row30/clone padding role semantics, source-backed structural-role fail-closed proof, and expanded package/sharedStrings token-purge proof. Production renderer remains a later gate.
 
-## 5. Remaining D2 after R7
-
-1. production XLSX renderer/sanitizer;
-2. combined Excel parity;
-3. PDF parity;
-4. export authorization/security/privacy regression;
-5. final independent D2 closure.
-
-The previous 20-round standing Control Plane authorization remains exhausted / DO NOT REUSE. R7 execution is one-shot only.
+Previous 20-round standing Control Plane authorization remains exhausted / DO NOT REUSE.
