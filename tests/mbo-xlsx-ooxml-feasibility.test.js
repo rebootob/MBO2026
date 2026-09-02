@@ -44,13 +44,19 @@ export function parseDrawingAnchorsXml(xml, partName = 'xl/drawings/drawing1.xml
     throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
   }
 
-  const wsDrMatch = xml.match(/<(?:\w+:)?wsDr[^>]*>([\s\S]*?)<\/(?:\w+:)?wsDr>/i);
+  const wsDrMatch = xml.match(/<([^\s/>:]+:)?wsDr(?:\s[^>]*?)?>([\s\S]*?)<\/([^\s/>:]+:)?wsDr>/);
   if (!wsDrMatch) {
     throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
   }
 
-  const inner = wsDrMatch[1];
-  const anchorRegex = /<((?:\w+:)?(?:twoCellAnchor|oneCellAnchor|absoluteAnchor))(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/gi;
+  const startPrefix = wsDrMatch[1] || '';
+  const endPrefix = wsDrMatch[3] || '';
+  if (startPrefix !== endPrefix) {
+    throw new Error('BLOCKER_DRAWING_ANCHOR_PARSING_FAILED');
+  }
+
+  const inner = wsDrMatch[2];
+  const anchorRegex = /<([^\s/>:]+:)?(twoCellAnchor|oneCellAnchor|absoluteAnchor)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1\2>)/g;
   const tagMatches = [...inner.matchAll(anchorRegex)];
 
   let lastEnd = 0;
@@ -68,12 +74,11 @@ export function parseDrawingAnchorsXml(xml, partName = 'xl/drawings/drawing1.xml
   const anchors = [];
 
   for (const m of tagMatches) {
-    const fullTagName = m[1];
+    const typeName = m[2];
     const anchorXml = m[0];
-    const typeName = fullTagName.includes(':') ? fullTagName.split(':')[1] : fullTagName;
 
-    const embedMatch = anchorXml.match(/\b(?:\w+:)?embed=(?:"([^"]+)"|'([^']+)')/);
-    const blipRId = embedMatch ? (embedMatch[1] || embedMatch[2]) : null;
+    const embedMatch = anchorXml.match(/\b([^\s/>=:]+:)?embed=(?:"([^"]+)"|'([^']+)')/);
+    const blipRId = embedMatch ? (embedMatch[2] || embedMatch[3]) : null;
 
     anchors.push({
       part: partName,
@@ -92,13 +97,19 @@ export function parseDrawingRelsXml(xml, partName = 'xl/drawings/_rels/drawing1.
     throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
   }
 
-  const relsMatch = xml.match(/<(?:\w+:)?Relationships[^>]*>([\s\S]*?)<\/(?:\w+:)?Relationships>/i);
+  const relsMatch = xml.match(/<([^\s/>:]+:)?Relationships(?:\s[^>]*?)?>([\s\S]*?)<\/([^\s/>:]+:)?Relationships>/);
   if (!relsMatch) {
     throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
   }
 
-  const inner = relsMatch[1];
-  const tagMatches = [...inner.matchAll(/<((?:\w+:)?Relationship)(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1>)/gi)];
+  const startPrefix = relsMatch[1] || '';
+  const endPrefix = relsMatch[3] || '';
+  if (startPrefix !== endPrefix) {
+    throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+  }
+
+  const inner = relsMatch[2];
+  const tagMatches = [...inner.matchAll(/<([^\s/>:]+:)?Relationship(?:\s[^>]*?)?(?:\/>|>[\s\S]*?<\/\1Relationship>)/g)];
 
   let lastEnd = 0;
   for (const m of tagMatches) {
@@ -115,21 +126,39 @@ export function parseDrawingRelsXml(xml, partName = 'xl/drawings/_rels/drawing1.
   const rels = [];
 
   for (const m of tagMatches) {
-    const tag = m[0];
+    const fullElement = m[0];
 
-    const idMatch = tag.match(/\bId=(?:"([^"]+)"|'([^']+)')/);
-    const typeMatch = tag.match(/\bType=(?:"([^"]+)"|'([^']+)')/);
-    const targetMatch = tag.match(/\bTarget=(?:"([^"]+)"|'([^']+)')/);
-    const modeMatch = tag.match(/\bTargetMode=(?:"([^"]+)"|'([^']+)')/);
+    const startTagMatch = fullElement.match(/^<[^\s/>]+(\s[\s\S]*?)?\s*\/?>/);
+    if (!startTagMatch) {
+      throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+    }
+    const startTagContent = startTagMatch[0];
 
-    if (!idMatch || !typeMatch || !targetMatch) {
+    const attrRegex = /(?:^|\s+)([^\s/>=]+)=(?:"([^"]*)"|'([^']*)')/g;
+    const attrMatches = [...startTagContent.matchAll(attrRegex)];
+
+    const attrCounts = {};
+    const attrValues = {};
+
+    for (const am of attrMatches) {
+      const attrName = am[1];
+      const attrVal = am[2] !== undefined ? am[2] : am[3];
+
+      if (attrCounts[attrName]) {
+        throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
+      }
+      attrCounts[attrName] = 1;
+      attrValues[attrName] = attrVal;
+    }
+
+    if (!attrValues.hasOwnProperty('Id') || !attrValues.hasOwnProperty('Type') || !attrValues.hasOwnProperty('Target')) {
       throw new Error('BLOCKER_DRAWING_RELS_PARSING_FAILED');
     }
 
-    const Id = idMatch[1] || idMatch[2];
-    const Type = typeMatch[1] || typeMatch[2];
-    const Target = targetMatch[1] || targetMatch[2];
-    const TargetMode = modeMatch ? (modeMatch[1] || modeMatch[2]) : null;
+    const Id = attrValues['Id'];
+    const Type = attrValues['Type'];
+    const Target = attrValues['Target'];
+    const TargetMode = attrValues.hasOwnProperty('TargetMode') ? attrValues['TargetMode'] : null;
 
     rels.push({
       part: partName,
@@ -145,61 +174,90 @@ export function parseDrawingRelsXml(xml, partName = 'xl/drawings/_rels/drawing1.
 }
 
 test('UNIT_REFERENCE_IMAGE_INVENTORY_PARSERS: synthetic & adversarial drawing anchor and relationship parser validation', () => {
-  // 1. absoluteAnchor parsing
-  const absAnchorXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-  <xdr:absoluteAnchor><a:blip r:embed="rId10"/></xdr:absoluteAnchor>
+  // 1. Wrong-case anchor local name rejects
+  const wrongCaseAnchorXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  <xdr:twocellanchor><a:blip r:embed="rId1"/></xdr:twocellanchor>
 </wsDr>`;
-  const absAnchors = parseDrawingAnchorsXml(absAnchorXml, 'xl/drawings/drawing1.xml');
-  assert.equal(absAnchors.length, 1, 'absoluteAnchor must be parsed');
-  assert.equal(absAnchors[0].typeName, 'absoluteAnchor');
-  assert.equal(absAnchors[0].blipRId, 'rId10');
+  assert.throws(() => parseDrawingAnchorsXml(wrongCaseAnchorXml), /BLOCKER_DRAWING_ANCHOR_PARSING_FAILED/, 'Wrong-case anchor local name twocellanchor must fail closed');
 
-  // 2. Alternate/non-xdr namespace prefix
-  const altPrefixXml = `<ns:wsDr xmlns:ns="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-  <ns:twoCellAnchor><a:blip embed='rId11'/></ns:twoCellAnchor>
-</ns:wsDr>`;
-  const altAnchors = parseDrawingAnchorsXml(altPrefixXml, 'xl/drawings/drawing1.xml');
-  assert.equal(altAnchors.length, 1, 'Alternate prefix twoCellAnchor must be parsed');
-  assert.equal(altAnchors[0].typeName, 'twoCellAnchor');
-  assert.equal(altAnchors[0].blipRId, 'rId11');
-
-  // 3. Prefixed Relationship element & single-quoted attributes
-  const singleQuoteRelsXml = `<r:Relationships xmlns:r="http://schemas.openxmlformats.org/package/2006/relationships">
-  <r:Relationship Id='rId1' Type='http://example.com/type1' Target='target1'/>
-</r:Relationships>`;
-  const singleRels = parseDrawingRelsXml(singleQuoteRelsXml, 'xl/drawings/_rels/drawing1.xml.rels');
-  assert.equal(singleRels.length, 1, 'Prefixed single-quoted Relationship must be parsed');
-  assert.equal(singleRels[0].Id, 'rId1');
-  assert.equal(singleRels[0].Type, 'http://example.com/type1');
-  assert.equal(singleRels[0].Target, 'target1');
-  assert.equal(singleRels[0].TargetMode, null, 'Absent TargetMode must be null (not converted to Internal)');
-
-  // 4. Missing required Relationship attribute (Id, Type, or Target) -> fail closed
-  const missingAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://example.com/type1"/>
+  // 2. Wrong-case Relationship local name rejects
+  const wrongCaseRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <relationship Id="rId1" Type="http://example.com/type1" Target="target1"/>
 </Relationships>`;
-  assert.throws(() => parseDrawingRelsXml(missingAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Missing Target attribute must throw BLOCKER_DRAWING_RELS_PARSING_FAILED');
+  assert.throws(() => parseDrawingRelsXml(wrongCaseRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Wrong-case Relationship local name relationship must fail closed');
 
-  // 5. TargetMode presence and value retention
-  const targetModeRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://example.com/type1" Target="target1" TargetMode="External"/>
+  // 3. Valid hyphenated prefix works
+  const hyphenPrefixXml = `<ns-1:wsDr xmlns:ns-1="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  <ns-1:twoCellAnchor><a:blip r:embed="rId1"/></ns-1:twoCellAnchor>
+</ns-1:wsDr>`;
+  const hyphenAnchors = parseDrawingAnchorsXml(hyphenPrefixXml);
+  assert.equal(hyphenAnchors.length, 1, 'Hyphenated prefix ns-1:twoCellAnchor must be parsed');
+  assert.equal(hyphenAnchors[0].typeName, 'twoCellAnchor');
+
+  // 4. Valid dotted prefix works
+  const dottedPrefixRelsXml = `<pkg.rel:Relationships xmlns:pkg.rel="http://schemas.openxmlformats.org/package/2006/relationships">
+  <pkg.rel:Relationship Id="rId1" Type="http://example.com/type1" Target="target1"/>
+</pkg.rel:Relationships>`;
+  const dottedRels = parseDrawingRelsXml(dottedPrefixRelsXml);
+  assert.equal(dottedRels.length, 1, 'Dotted prefix pkg.rel:Relationship must be parsed');
+  assert.equal(dottedRels[0].Id, 'rId1');
+
+  // 5. Valid non-ASCII prefix works
+  const unicodePrefixXml = `<ñ:wsDr xmlns:ñ="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
+  <ñ:absoluteAnchor><a:blip r:embed="rId2"/></ñ:absoluteAnchor>
+</ñ:wsDr>`;
+  const unicodeAnchors = parseDrawingAnchorsXml(unicodePrefixXml);
+  assert.equal(unicodeAnchors.length, 1, 'Non-ASCII prefix ñ:absoluteAnchor must be parsed');
+  assert.equal(unicodeAnchors[0].typeName, 'absoluteAnchor');
+
+  // 6. Nested child Id/Type/Target cannot satisfy missing parent attributes
+  const nestedAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship><child Id="rId1" Type="http://example.com/type1" Target="target1"/></Relationship>
 </Relationships>`;
-  const extRels = parseDrawingRelsXml(targetModeRelsXml);
-  assert.equal(extRels[0].TargetMode, 'External', 'Explicit TargetMode="External" must be retained');
+  assert.throws(() => parseDrawingRelsXml(nestedAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Nested child attributes cannot satisfy missing parent attributes');
 
-  // 6. Unknown / unconsumed direct anchor markup -> fail closed
-  const junkAnchorXml = `<wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing">
-  <xdr:twoCellAnchor><a:blip r:embed="rId1"/></xdr:twoCellAnchor>
-  <unknownTag/>
-</wsDr>`;
-  assert.throws(() => parseDrawingAnchorsXml(junkAnchorXml), /BLOCKER_DRAWING_ANCHOR_PARSING_FAILED/, 'Unknown direct anchor element must fail closed');
-
-  // 7. Unknown / unconsumed direct relationship markup -> fail closed
-  const junkRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://example.com/type1" Target="target1"/>
-  unconsumedJunkText
+  // 7. Duplicate Id on start tag rejects
+  const dupIdAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Id="rId2" Type="http://example.com/type1" Target="target1"/>
 </Relationships>`;
-  assert.throws(() => parseDrawingRelsXml(junkRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Unconsumed text under <Relationships> must fail closed');
+  assert.throws(() => parseDrawingRelsXml(dupIdAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Duplicate Id attribute on start tag must fail closed');
+
+  // 8. Duplicate Type on start tag rejects
+  const dupTypeAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="type1" Type="type2" Target="target1"/>
+</Relationships>`;
+  assert.throws(() => parseDrawingRelsXml(dupTypeAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Duplicate Type attribute on start tag must fail closed');
+
+  // 9. Duplicate Target on start tag rejects
+  const dupTargetAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="type1" Target="t1" Target="t2"/>
+</Relationships>`;
+  assert.throws(() => parseDrawingRelsXml(dupTargetAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Duplicate Target attribute on start tag must fail closed');
+
+  // 10. Duplicate TargetMode on start tag rejects
+  const dupModeAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="type1" Target="t1" TargetMode="Internal" TargetMode="External"/>
+</Relationships>`;
+  assert.throws(() => parseDrawingRelsXml(dupModeAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Duplicate TargetMode attribute on start tag must fail closed');
+
+  // 11. Namespace-qualified required-attribute substitute rejects
+  const nsAttrRelsXml = `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship x:Id="rId1" Type="type1" Target="target1"/>
+</Relationships>`;
+  assert.throws(() => parseDrawingRelsXml(nsAttrRelsXml), /BLOCKER_DRAWING_RELS_PARSING_FAILED/, 'Namespace-qualified required-attribute substitute x:Id must fail closed');
+
+  // 12. TargetMode absent vs explicit Internal vs explicit External produce distinct tuples and observable deep inequality
+  const relAbsent = parseDrawingRelsXml(`<Relationships><Relationship Id="r1" Type="t1" Target="a"/></Relationships>`)[0];
+  const relInternal = parseDrawingRelsXml(`<Relationships><Relationship Id="r1" Type="t1" Target="a" TargetMode="Internal"/></Relationships>`)[0];
+  const relExternal = parseDrawingRelsXml(`<Relationships><Relationship Id="r1" Type="t1" Target="a" TargetMode="External"/></Relationships>`)[0];
+
+  assert.equal(relAbsent.TargetMode, null, 'Absent TargetMode must be null');
+  assert.equal(relInternal.TargetMode, 'Internal', 'Explicit TargetMode="Internal" must equal "Internal"');
+  assert.equal(relExternal.TargetMode, 'External', 'Explicit TargetMode="External" must equal "External"');
+
+  assert.notDeepEqual(relAbsent, relInternal, 'TargetMode absent vs explicit Internal must produce deep inequality');
+  assert.notDeepEqual(relInternal, relExternal, 'TargetMode Internal vs External must produce deep inequality');
+  assert.notDeepEqual(relAbsent, relExternal, 'TargetMode absent vs explicit External must produce deep inequality');
 });
 
 test('UNIT_TARGET_LEXICAL_VALIDATION: strict raw Target lexical identity enforcement', () => {
