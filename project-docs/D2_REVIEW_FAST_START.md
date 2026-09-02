@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact authorized two-file diff only.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md` -> exact authorized diff only.
 
 ## Project truth
 ```text
@@ -22,26 +22,6 @@ D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 D3 = HOLD
 ```
 
-## Latest independent review — D2-WP004-R1-R3
-```text
-AUTHORIZATION_COMMIT = 228a38b909fd7185d9ba94cf4d53288736b4172c
-IMPLEMENTATION_COMMIT = 7b9e0279b03043ec9a5cceb7e3814a688f7ea3b8
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES = EXACTLY TWO AUTHORIZED PROFILE/TEST FILES
-SCOPE_REVIEW = PASS
-PURE_NO_WORKBOOK_IO = PASS
-SHA_COUNT_TOPOLOGY_PRESERVATION = PASS
-SEMANTIC_ALIGNMENT = CORRECTIVE REQUIRED
-INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
-```
-
-Proven defects are narrow and frozen for the corrective:
-1. reject non-canonical `OBJECTIVE_i_COMMENT` alias;
-2. reject non-canonical `COMPETENCY_b_RATING` alias;
-3. complete integrity validation of the actual production safe mapping/projection set, including null-path, malformed, Part B mapping/projection/duplicate faults;
-4. add the missing direct negative mutation tests.
-
 Durable semantic authority remains unchanged:
 ```text
 SAFE_TO_MAP = 18 EXACT
@@ -50,16 +30,35 @@ NO_SECURED_PROJECTION_SOURCE = 5 EXACT / FAIL CLOSED
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-## Active corrective — D2-WP004-R1-R3-R1
+## Latest independent review — D2-WP004-R1-R3-R1
 ```text
-WORK_PACKAGE = D2-WP004-R1-R3-R1
-NAME = TEMPLATE PROFILE STRICT ALLOWLIST + INTEGRITY CORRECTIVE
-STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
-AUTHORIZATION = D2-WP004-R1-R3-R1-SOURCE-TEST-20260902-01
-OWNER_APPROVAL_BASELINE_HEAD = d6b9bd23f9e86ecf3fdf77e0008c226badc57bff
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE_FILES_ONLY = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R3-R1 SOURCE+TEST
+AUTHORIZATION_COMMIT = 867111d785b7e85689725379249e7b278108d8cc
+IMPLEMENTATION_COMMIT = 6386e506b85ded87a57967705066e38d56212f73
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES = EXACTLY TWO AUTHORIZED PROFILE/TEST FILES
+SCOPE_REVIEW = PASS
+ALIAS_CORRECTION = PASS
+NULL_PATH_BASIC_GUARD = PASS
+PURE_NO_WORKBOOK_IO = PASS
+SEMANTIC_BASELINE = PRESERVED
+INTEGRITY_COMPLETION = CORRECTIVE REQUIRED
+INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
+```
+
+### Remaining proven defect
+`validateMappingIntegrity()` still does not prove the exact canonical Part B competency identity. It validates count, address shape and non-empty projection path, but not exact expected `index`, exact expected rating `row`, exact `SELF_RATING = K{row}`, or exact secured path `partB.competencyItems[i-1].selfRating`.
+
+Therefore mutations such as a wrong competency index, a different but syntactically valid rating cell, or a different non-empty projection path are not guaranteed to fail closed. The authorization explicitly required wrong/missing Part B competency count/index/self-rating address to fail and direct negative tests for missing/wrong mapping/index/address.
+
+## Proposed next — NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R3-R2
+NAME = TEMPLATE PROFILE CANONICAL INTEGRITY COMPLETION
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT IF AUTHORIZED / LOW-CREDIT
+EXPECTED_FILES = src/profiles/mbo-xlsx-template-profile.js + tests/mbo-xlsx-template-profile.test.js
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
@@ -67,4 +66,4 @@ PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-Low-credit rule: read only Fast Start, Active Task, semantic closure Baseline, and the two writable files. No broad repository scan, no workbook inspection, no new semantic research.
+R1-R3-R2 must not re-research semantics or inspect workbooks. It should only complete exact canonical integrity validation and focused negative mutation tests in the same two files.
