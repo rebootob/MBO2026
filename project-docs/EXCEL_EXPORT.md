@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF ORIGINAL / LEGACY FORMAT
 
-> Status: **IN PROGRESS / R7 PRIVACY REMAP CORRECTIVE**  
+> Status: **IN PROGRESS / R7-R1 PRIVACY CORRECTIVE AUTHORIZED**  
 > Updated: 2026-09-02 ICT  
 > Repository: `rebootob/MBO2026`  
 > Canonical branch: `ai/antigravity-wp002c`
@@ -33,15 +33,16 @@ Durable Baselines:
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
 
-## Part B privacy remap status
+## Part B expanded privacy status
 
 ```text
 R7_IMPLEMENTATION_COMMIT = 993f3bfcc04bd02b0026a677fa5cb10a12c5d5b6
 R7_STATUS = CORRECTIVE REQUIRED
-D2_PART_B_EXPANDED_PRIVACY_GATE = CORRECTIVE REQUIRED / NOT CLOSED
 D2-WP003-R7-SOURCE-TEST-20260902-01 = CONSUMED / DO NOT REUSE
-PROPOSED_WORK_PACKAGE = D2-WP003-R7-R1
-R7-R1_STATE = PROPOSED / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = D2-WP003-R7-R1
+R7-R1_STATE = AUTHORIZED / WAIT ANTIGRAVITY IMPLEMENTATION
+R7-R1_AUTHORIZATION = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+OWNER_APPROVAL_BASELINE_HEAD = ff4b830cef3301e15f4571b3abe0c7d1ef7fdfe3
 ```
 
 Frozen structural layout:
@@ -51,20 +52,22 @@ Frozen structural layout:
 - clone authority = source rows 27:30.
 
 Correct privacy semantics:
-- source dynamic competency rating rows are 7:29; source row 30 is not a rating row;
-- each inserted block maps source rows 27:29 as dynamic rating rows and source row 30 as non-dynamic padding/static;
+- source dynamic competency rating rows are 7:29; source row30 is non-dynamic;
+- each inserted block maps rows 27:29 as dynamic K:X rating rows and source row30 as non-dynamic padding/static;
 - dynamic inventory cardinality = 432 / 474 / 516 for N=6/7/8.
 
 R7-R1 must close only:
 1. row30/clone padding role regression;
-2. source-backed fail-closed structural-role validation for N7/N8;
-3. expanded worksheet/sharedStrings/package synthetic token-purge proof.
+2. source-backed fail-closed structural-role validation for N7/N8, including relocated summary roles;
+3. negative structural-role mismatch proof;
+4. N6/N7/N8 privacy-safe synthetic token purge across worksheet/sharedStrings/package evidence;
+5. caller/source buffer immutability and zero-formula proof.
 
 Production renderer, `MboExportService`, dependency changes, generated binaries, Kintone/deploy/Live UAT/D3 remain out of scope.
 
 ## Remaining D2
 
-1. close R7-R1 privacy remap;
+1. close R7-R1 expanded privacy remap;
 2. Production XLSX renderer/sanitizer;
 3. Combined Excel parity;
 4. PDF parity;
@@ -72,10 +75,10 @@ Production renderer, `MboExportService`, dependency changes, generated binaries,
 6. Final independent D2 closure.
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP003-R7-R1-SOURCE-TEST-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
+ANTIGRAVITY = AUTHORIZED ONLY FOR R7-R1 / ONE-SHOT
 CLAUDE = STOP
 D3 = HOLD
 ```
