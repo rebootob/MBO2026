@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — D2-WP004-R1-R2 XLSX TEMPLATE SEMANTIC EVIDENCE AUTHORIZED
+# AI ACTIVE TASK — R1-R2 REVIEW CORRECTIVE / R1-R2-R1 EVIDENCE CORRECTIVE PROPOSED
 
-Mode: **LOW-CREDIT / BOUNDED / ONE-SHOT / EVIDENCE-ONLY / EXACT ONE MARKDOWN FILE / OWNER-TEMPLATE READ-ONLY / NO SOURCE / NO TEST / NO KINTONE / NO DEPLOY / D3 HOLD**  
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / EVIDENCE CORRECTIVE REQUIRED / NO SOURCE / NO TEST / NO KINTONE / NO DEPLOY / D3 HOLD**  
 Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-02 ICT
 
-Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> directly relevant Baseline/evidence -> exact owner-template inspection.
+Fresh-fetch current HEAD first. Fast path: `D2_REVIEW_FAST_START.md` -> this file -> directly relevant Baseline/evidence -> exact diff.
 
 ## 1. Current truth
 ```text
@@ -20,149 +20,99 @@ D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
 CONTROL_PLANE_REVIEW_CORRECTIVE_STANDING_AUTH = EXHAUSTED / DO NOT REUSE
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
-ACTIVE_WORK_PACKAGE = D2-WP004-R1-R2
-ACTIVE_WORK_PACKAGE_NAME = XLSX TEMPLATE SEMANTIC MAPPING EVIDENCE
-TASK_STATE = AUTHORIZED / WAIT ANTIGRAVITY EVIDENCE
-OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-EVIDENCE-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE / ONE-SHOT / LOW-CREDIT
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-This Owner authorization is execution-only for exactly one evidence commit. Independent review starts only when Owner says `review`.
-
-## 2. Authorization identity
+## 2. D2-WP004-R1-R2 independent review
 ```text
-WORK_PACKAGE = D2-WP004-R1-R2
-AUTHORIZATION_TOKEN = D2-WP004-R1-R2-EVIDENCE-20260902-01
-MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT
-OWNER_APPROVAL_BASELINE_HEAD = adf9decabaea7ffd2d2e623bce778affe68d7f3f
-EXPECTED_COMMITS = EXACTLY ONE EVIDENCE OR BLOCKER COMMIT AFTER THIS AUTHORIZATION COMMIT
+R1_R2_AUTHORIZATION = D2-WP004-R1-R2-EVIDENCE-20260902-01
+R1_R2_AUTHORIZATION_COMMIT = 90d6ae21353c153d5d2679837ef8e337d0bf8118
+R1_R2_EVIDENCE_COMMIT = 6e7cb1f5633dfc2a85dc181ae37f425dab3ea067
+AUTH_TO_EVIDENCE = EXACTLY ONE COMMIT
+CHANGED_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md ONLY
+R1_R2_SCOPE_REVIEW = PASS
+R1_R2_PART_A_SHA = PASS / EXACT MATCH
+R1_R2_PART_B_SHA = PASS / EXACT MATCH
+R1_R2_PRIVACY_SAFE_SCOPE = PASS
+R1_R2_HOSHIN_EVIDENCE = PASS / FREEZE
+R1_R2_PART_B_HEADER_EVIDENCE = PASS / FREEZE
+R1_R2_OVERALL_SEMANTIC_EVIDENCE = CORRECTIVE REQUIRED
+R1_R2_INDEPENDENT_RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
+R1_R2_STATUS = CORRECTIVE REQUIRED
+R1_R2_TOKEN = CONSUMED / CORRECTIVE / DO NOT REUSE
 ```
 
-Authorized writable file ONLY:
-`project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md`
+The submitted evidence must NOT be promoted as a durable `PROVEN EVIDENCE BASELINE` yet.
 
-No second file. No source/test/profile/template-binary modification.
+## 3. Accepted/frozen R1-R2 evidence
+Do not re-open these without concrete contradictory owner-template evidence:
 
-## 3. Why this evidence gate exists
-R1-R1 implementation `570a388a3f05be564c38e55431b739d3b28bf406` is accepted/frozen for:
-- pure profile architecture;
-- exact template SHA/count domains;
-- corrected Part B dynamic/protected topology;
-- basic fail-closed mapping integrity guards.
-
-R1-R1 remains corrective only because exact secured semantic -> workbook address ownership is not fully proven. Specifically:
-- Department vs Section Hoshin workbook ownership is unresolved;
-- some claimed writable profile roles have no exact secured projection path;
-- Part B standalone comment/signature roles are not exposed by current `MboExportService`;
-- legacy evaluator aliases may not deterministically correspond to manager/GM/average projection fields;
-- the profile validator cannot safely demand semantic-path completeness until authoritative semantic evidence exists.
-
-Do NOT modify profile source during this gate.
-
-## 4. Read-only authorities
-Read only as needed:
-- exact SHA-approved Part A and Part B owner XLSX templates;
-- `src/services/mbo-export-service.js`;
-- `src/profiles/mbo-xlsx-template-profile.js` only to identify disputed/current claims, never as semantic truth;
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js` only for already-proven structural/privacy regions;
-- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`;
-- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`;
-- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`;
-- `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`;
-- `phase-3/evidence/COMPETENCY_SOURCE_EVIDENCE.md` only where relevant.
-
-Required owner-template identities:
+### A. Owner-template identity
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
 ```
+Both exact-match owner templates were inspected READ-ONLY.
 
-Before semantic inspection, calculate SHA-256 of each local template and require exact match. If either template is unavailable or SHA mismatches, do not substitute another workbook and do not infer semantics. Produce the one authorized blocker evidence markdown recording `BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE` or `BLOCKER_TEMPLATE_SHA_MISMATCH`, commit it, push, report, STOP.
+### B. Part A Hoshin semantic ownership
+```text
+G16:AF19 = partA.hoshin.departmentHoshinTitle = PROVEN
+AM16:BI19 = partA.hoshin.sectionHoshinTitle = PROVEN
+G8:S8 = appraisal-period/static content; NOT Hoshin
+```
+This directly resolves the prior Department/Section Hoshin ambiguity.
 
-## 5. Evidence rules
-The evidence markdown must contain privacy-safe template metadata only.
+### C. Part B header semantic ownership
+Static labels/merge ownership support:
+- fiscal year `G2:H3` -> nested `partA.header.fiscalYear`;
+- department `J3:L3` -> nested `partA.header.department`;
+- section `M3:O3` -> nested `partA.header.section`;
+- position `P3:Q3` -> nested `partA.header.position`;
+- employee code `R3` -> nested `partA.header.employeeCode`;
+- employee name `S3:W3` -> nested `partA.header.employeeName`.
 
-Allowed evidence:
-- worksheet names;
-- static template label text;
-- cell/range/merged-range addresses;
-- row/column coordinates;
-- styles/merge relationships only when they help establish label-to-input ownership;
-- exact secured projection path names from read-only `MboExportService`;
-- frozen structural/privacy role references;
-- status and rationale.
+Existing frozen Part B structural/privacy topology remains unchanged and authoritative.
 
-Forbidden evidence:
-- real employee names/codes/comments/scores or other personal record values;
-- Kintone live reads/writes;
-- synthetic claims presented as owner-template facts;
-- screenshots/binaries committed to Git;
-- assumptions based only on proximity/order when static label/merge/other accepted authority does not prove meaning.
+## 4. Proven defects in submitted semantic evidence
 
-For every candidate mapping use exactly one status:
-- `PROVEN` = workbook semantic evidence and secured projection meaning are compatible and sufficient;
-- `UNRESOLVED` = workbook meaning/address ownership remains ambiguous or insufficiently proven;
-- `NO_SECURED_PROJECTION_SOURCE` = workbook region meaning may be identifiable, but current `MboExportService` does not expose a corresponding secured data source.
+### DEFECT A — Part A header evidence violates exclusive ownership
+The submitted matrix declares both:
+- `HEADER_DEPARTMENT -> AG7` as `PROVEN`;
+- `HEADER_SECTION -> AG7` as `PROVEN`.
 
-Address existence alone is not semantic authority.
+Two independent writable semantics cannot both own the same exclusive target unless an explicit accepted composition/source-selection contract proves shared ownership. None exists.
 
-## 6. Required evidence structure
-Create exactly:
-`project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md`
+The evidence also records row-6 labels that do not consistently reconcile to the claimed value regions. Re-inspect ALL relevant Part A header value regions and their exact row-6 labels/merges, including at minimum:
+`N6:Q7`, `Z7:AF7`, `AG7:AL7`, `AM7:AP7`, `AQ7:AS7`, `AT7:BC7`, `BD7:BI7`.
 
-The document must include these sections.
+Do not infer target ownership merely from horizontal proximity.
 
-### A. Evidence identity and method
-Record:
-- repository/branch;
-- R1-R2 authorization token;
-- exact Part A/Part B local template paths used;
-- independently calculated SHA-256 values;
-- exact worksheet names inspected;
-- inspection method/tools used in READ-ONLY mode;
-- explicit statement that no personal values were copied into evidence and workbook binaries were not modified.
+### DEFECT B — employeeName and employeeNameTH duplicate one writable target without source-selection authority
+The submitted evidence marks both `partA.header.employeeName` and `partA.header.employeeNameTH` as independently `PROVEN` for `AT7:BC7`.
 
-### B. Part A header semantic matrix
-For each relevant header candidate, record columns:
-`Semantic candidate | Workbook label text | Label cell/range | Candidate writable cell/range | Merge relationship | Secured projection path | Status | Rationale`
+The workbook visibly has one Name-Surname region. Until an accepted production fallback/source-selection rule determines which secured source populates that one target, do not claim two independent write owners. Record one proven workbook semantic and keep alternate source selection unresolved, or prove an existing explicit fallback authority from repository truth.
 
-At minimum investigate:
-- fiscal year;
-- employee code;
-- employee name / employeeNameTH where applicable;
-- department;
-- section;
-- position;
-- profile code/family/Part A weight only if the owner template visibly has a distinct proven writable region;
-- chief/manager name if a workbook region exists, explicitly checking whether current secured projection provides a source.
+### DEFECT C — status taxonomy is misused
+`NO_SECURED_PROJECTION_SOURCE` means the workbook region may be identifiable but current `MboExportService` exposes no corresponding secured path.
 
-Do not force every `MboExportService` field into the workbook. A projection field with no proven workbook target remains unresolved/non-writable.
+The submitted evidence incorrectly uses that status for:
+- `partA.header.profileCode`;
+- `partA.header.profileFamily`;
+- `partA.header.partAWeightPercent`.
 
-### C. Part A Hoshin semantic matrix — mandatory focus
-Inspect at minimum sensitive/current candidate regions:
-- `G8:S8`;
-- `G16:AF19`;
-- `AM16:BI19`;
-- directly associated static label/merged cells around those regions.
+All three secured projection paths DO exist. If the template has no distinct proven writable target, status is `UNRESOLVED` with rationale `NO_PROVEN_WORKBOOK_TARGET`, not `NO_SECURED_PROJECTION_SOURCE`.
 
-Determine, only where evidence proves it, which workbook region corresponds to:
-- `partA.hoshin.departmentHoshinTitle`;
-- `partA.hoshin.sectionHoshinTitle`.
-
-Explicitly state whether legacy labels/roles such as `CORPORATE_HOSHIN_TEXT` / `DEPARTMENT_HOSHIN_TEXT` are supported, contradicted, or unresolved by the owner template.
-
-If Department and Section Hoshin cannot be uniquely separated from static labels/merge ownership, mark `UNRESOLVED`. Never assign both to one address merely to complete the table.
-
-### D. Part A objective/evaluation semantic matrix
-Use the four-objective owner-template baseline. For each candidate input/evaluation region, record static labels and exact candidate ranges and compare to current secured objective fields:
+### DEFECT D — Part A objective/evaluation evidence is incomplete and overclaims semantic translations
+R1-R2 contract required explicit reconciliation for all relevant secured objective fields:
 - `title`;
 - `description`;
 - `kpi`;
@@ -173,146 +123,143 @@ Use the four-objective owner-template baseline. For each candidate input/evaluat
 - `actualResult`;
 - `selfAchievement`;
 - `selfComment`;
-- `managerAchievement` / `managerScore` / `managerComment` only if owner-template semantics prove them;
-- `gmAchievement` / `gmScore` / `gmComment` only if proven;
-- `averageScore` only if proven.
+- `managerAchievement`, `managerScore`, `managerComment`;
+- `gmAchievement`, `gmScore`, `gmComment`;
+- `averageScore`.
 
-Do not map legacy `CHIEF_RATING`, `FINAL_RATING`, `CHIEF_COMMENT`, or other aliases to manager/GM/average fields unless owner-template labels/merged structure prove that exact translation.
+The submitted matrix omits several of these and infers mappings such as workbook `Action Plan` -> secured `kpi` without sufficient evidence that the business semantics are identical.
 
-If a merged writable region can contain several business subfields and the template does not distinguish them, mark the finer-grained semantics `UNRESOLVED` rather than inventing subcell ownership.
+If a merged workbook region can contain combined business content and does not separately distinguish title/description/KPI/target/measurement, finer-grained secured fields must remain `UNRESOLVED` rather than being assigned by guess.
 
-### E. Part A summary/result semantic matrix
-Inspect score/result regions, including current sensitive/known summary areas such as `BC29:BI35` where applicable.
+The submitted `OBJECTIVE_i_MANAGER_COMMENT` also assigns each objective's managerComment to shared row29 regions. Per-objective fields cannot all independently own one shared target unless exact template semantics prove a deliberate aggregate/composition rule. Otherwise per-objective managerComment remains unresolved and the shared template region must be described by its actual visual semantic.
 
-Compare only to secured projection fields actually exposed:
-- `partA.summary.rawPartAScore`;
-- `partA.summary.weightedPartAScore`;
-- combined export `partB.rawPartBScore` / `partB.weightedPartBScore` when applicable;
-- `finalResult.finalWeightedScore`;
-- `finalResult.grade`.
+Likewise do not equate `1st/2nd Appraiser`, `Chief`, Manager, GM or Final evaluator aliases unless accepted repository/workflow evidence proves the ordinal/role translation.
 
-Remember Employee-Self may not receive these fields. The evidence documents semantic compatibility only; it does not authorize rendering omitted fields.
+### DEFECT E — Part A summary/result evidence overclaims PROVEN where static workbook semantic proof is absent
+A `PROVEN` production mapping requires BOTH:
+1. workbook static label/merge ownership proving the target meaning; and
+2. compatible secured projection path.
 
-### F. Part B header semantic matrix
-Inspect exact static labels/merges around:
-- `G2:H3`;
-- `J3:L3`;
-- `M3:O3`;
-- `P3:Q3`;
-- `R3`;
-- `S3:W3`;
-plus associated row-2 labels.
+Rows with `Workbook Label Text = N/A` cannot be `PROVEN` solely because a known cell and projection path exist. Re-inspect exact labels/merged regions around `BC29:BI35` and mark ambiguous cells `UNRESOLVED`.
 
-Compare to current secured data sources available through combined export/Part A header where appropriate. Do not claim a direct Part B projection path if the renderer would need to consume the nested `partA.header.*` path; record the exact path that actually exists.
+### DEFECT F — Part B competency evidence does not fully reconcile self vs chief secured semantics
+Frozen privacy authority remains:
+```text
+K:Q = SELF-EVALUATION DYNAMIC RATING AREA
+R:X = CHIEF-EVALUATION DYNAMIC RATING AREA
+```
 
-### G. Part B competency rating semantic matrix
-Preserve already-frozen privacy authority:
-- K:Q = self-evaluation dynamic rating area;
-- R:X = chief-evaluation dynamic rating area;
-- original rows7:29 dynamic;
-- row30 protected;
-- N7 inserted31:33 dynamic + row34 protected;
-- N8 inserted31:33 and35:37 dynamic + rows34/38 protected.
+The submitted per-item table records chief target ranges ending at W, not X, while simultaneously stating R:X is authoritative. Correct the exact merge/range evidence.
 
-Investigate whether exact original per-competency item/block row ownership can be proven from static labels/merged ranges and `COMPETENCY_SOURCE_EVIDENCE.md`. If not, explicitly mark per-item row mapping `UNRESOLVED`; do not restore the false uniform four-row original model.
+More importantly, the table supplies only `partB.competencyItems[i].selfRating` as secured projection path while claiming both self and chief rating targets `PROVEN`.
 
-For secured data, use only `partB.competencyItems` fields actually allowed by `MboExportService` for the relevant caller; do not reconstruct filtered manager/chief fields for Employee-Self.
+`MboExportService` explicitly whitelists self fields for Employee-Self but simply passes full approver items through without defining a guaranteed chief-rating key schema. A chief/evaluator semantic may be `PROVEN` only if an exact stable `competencyItems` field key/path is supported by current repository authority. Otherwise workbook chief region can be visually `PROVEN` while secured writable mapping remains `UNRESOLVED` / not safe to map.
 
-### H. Part B summary/comment/signature matrix
-Inspect exact static labels/merged ranges for N=6 baseline summary regions:
-- `B31:D34`;
-- `E31:H34`;
-- `I31:P34`;
-- `Q31:S34`;
-- `T31:X34`.
+Do not reconstruct filtered chief values for Employee-Self.
 
-Then record count-aware relocated destinations from frozen structural/privacy authority:
-- N6 summary 31:34;
-- N7 summary 35:38;
-- N8 summary 39:42.
+### DEFECT G — status summary counts are internally inconsistent
+The evidence states `UNRESOLVED = 1`, while the document itself contains additional unresolved rows such as `HEADER_CHIEF_NAME` and `G8:S8` plus other incomplete semantics.
 
-For standalone overall-rating/comment/feedback/signature regions that have no current `MboExportService` secured projection path, status must be `NO_SECURED_PROJECTION_SOURCE`, even if workbook label meaning is visually clear.
+Recalculate counts mechanically from the final matrices/decision table. Every row must use the exact status definitions.
 
-### I. Final production-mapping decision table
-Summarize every claimed production semantic into:
-`Semantic role | Workbook target | Secured projection path | Evidence source | Decision`
+## 5. Proposed corrective — D2-WP004-R1-R2-R1 / NOT AUTHORIZED
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R1-R2-R1
+NAME = XLSX TEMPLATE SEMANTIC EVIDENCE CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = EVIDENCE-ONLY / BOUNDED / ONE-SHOT IF AUTHORIZED
+EXPECTED_WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md
+SOURCE_CHANGE = FORBIDDEN
+TEST_CHANGE = FORBIDDEN
+PROFILE_CHANGE = FORBIDDEN
+TEMPLATE_BINARY_CHANGE = FORBIDDEN
+```
 
-Decision must be one of:
-- `SAFE_TO_MAP` only when underlying status is `PROVEN`;
-- `KEEP_UNRESOLVED`;
-- `DO_NOT_MAP_NO_PROJECTION_SOURCE`.
+No authorization token exists yet.
 
-Include an explicit list of current R1-R1 profile claims that must be removed/changed/fail-closed in the next source corrective based on this evidence. This is a recommendation only; do not edit source in R1-R2.
+Recommended Owner phrase:
+`อนุมัติ D2-WP004-R1-R2-R1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
 
-## 7. Read-only inspection mechanics
-You may use existing local dependencies or ephemeral `/tmp` scripts/commands to inspect XLSX READ-ONLY. Do not create or commit helper scripts inside the repository.
+## 6. Exact R1-R2-R1 evidence corrective contract
+If later authorized, re-inspect the exact same SHA-approved owner templates READ-ONLY. Correct only the existing evidence markdown.
 
-Do not save modified workbook copies. Do not mutate cells, styles, merges, defined names, formulas, media or package XML.
+### A. Preserve accepted evidence
+Retain exact SHA identity, Hoshin mapping, and Part B header mapping unless direct re-inspection proves a contradiction.
 
-If a library requires loading workbook objects, loading is permitted; saving/writing is forbidden.
+### B. Rebuild Part A header matrix from exact label/merge ownership
+Inventory every relevant row-6 label and every sensitive value merge/range. No duplicate exclusive semantic write target is permitted in the final `SAFE_TO_MAP` table.
 
-## 8. Explicitly forbidden
-Do NOT modify:
-- `src/profiles/mbo-xlsx-template-profile.js`;
-- `tests/mbo-xlsx-template-profile.test.js`;
-- `src/services/mbo-export-service.js`;
-- feasibility source/tests;
-- any Baseline/control document during executor work;
-- package files/dependencies;
-- `dist/`;
-- owner-template XLSX binaries;
-- any file other than the one authorized evidence markdown.
+For `employeeName` vs `employeeNameTH`, distinguish workbook semantic ownership from source-selection/fallback behavior. Do not mark both as independent writes to one address.
 
-Do NOT:
-- touch Kintone/ACL/process/customization;
-- deploy;
-- run Live UAT;
-- invoke Claude;
-- create Production Renderer;
-- start Combined Excel/PDF/security regression/D3.
+For projection fields that exist but lack a proven workbook target, use `UNRESOLVED / NO_PROVEN_WORKBOOK_TARGET`.
 
-## 9. Verification and commit contract
+### C. Complete Part A objective/evaluation inventory
+Create a row for every secured objective field listed in DEFECT D, even when status is `UNRESOLVED`.
+
+For each `PROVEN` field record:
+- exact static header label text;
+- exact label cell/range;
+- exact target merged range/cell;
+- exact secured projection path;
+- why the workbook label meaning and projection meaning are compatible.
+
+Do not use proximity or legacy alias naming as proof.
+
+### D. Reconcile evaluator identity explicitly
+Where template labels use Appraisee / Appraiser 1 / Appraiser 2 / Chief / Final terminology, cite accepted repository evidence if mapping them to self/manager/GM/average secured fields. Without such authority, mark the evaluator translation `UNRESOLVED`.
+
+### E. Rebuild summary/result evidence
+Inspect exact static labels and merge ownership around summary areas. `N/A` label evidence cannot support `PROVEN` unless another accepted template authority proves the semantic ownership and is cited explicitly.
+
+### F. Correct Part B competency semantic evidence
+Preserve K:Q self and R:X chief structural/privacy authority.
+
+Record separately:
+1. workbook self-rating visual target/merge;
+2. workbook chief-rating visual target/merge;
+3. secured self field/path;
+4. secured chief field/path only if exact stable key is proven.
+
+If chief key is not guaranteed by current `MboExportService`/repository contract, chief writable production decision must remain unresolved/non-writable despite visually proven workbook semantics.
+
+### G. Validate status taxonomy and counts
+Use exactly:
+- `PROVEN` = workbook ownership + compatible secured projection both proven;
+- `UNRESOLVED` = either workbook target/meaning/source selection/semantic translation remains ambiguous or insufficient;
+- `NO_SECURED_PROJECTION_SOURCE` = workbook semantic target is identifiable but current secured projection truly lacks the needed source field/path.
+
+Recalculate all counts from final rows. Final production table must have no duplicate exclusive `SAFE_TO_MAP` targets.
+
+### H. Privacy/read-only restrictions
+No personal employee values. No workbook mutation/save. No source/test/profile/renderer changes. No Kintone. No Claude. No deployment.
+
+## 7. Verification and commit contract if authorized
 Before commit:
 ```bash
 git diff --name-only
 git status --porcelain
 ```
 
-The only repository path allowed to be new/changed is:
+Exactly one changed repository path:
 `project-docs/phase-3/evidence/XLSX_TEMPLATE_SEMANTIC_MAPPING_EVIDENCE.md`
 
-Then:
-- create exactly ONE evidence commit OR exactly ONE blocker evidence commit;
-- commit contains exactly the one authorized markdown file;
-- push to `ai/antigravity-wp002c`;
-- STOP immediately;
-- do not self-declare Template Profile PASS/CLOSED;
-- do not edit source after collecting evidence;
-- do not start the next gate.
+Then exactly one evidence/blocker commit, push canonical branch, report, STOP. Do not self-PASS/CLOSE and do not edit profile source.
 
-Report only:
-- evidence/blocker commit SHA;
-- exact changed file;
-- Part A SHA result;
-- Part B SHA result;
-- counts of `PROVEN`, `UNRESOLVED`, `NO_SECURED_PROJECTION_SOURCE` decisions;
-- `git status --porcelain`;
-- blocker if any.
-
-## 10. Authorization ledger / exact next action
+## 8. Authorization ledger / exact next action
 ```text
 D2-WP004-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
 D2-WP004-R1-R1-SOURCE-TEST-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
-D2-WP004-R1-R2-EVIDENCE-20260902-01 = ACTIVE / ONE-SHOT / EVIDENCE-ONLY / EXACT ONE MARKDOWN FILE
+D2-WP004-R1-R2-EVIDENCE-20260902-01 = CONSUMED / CORRECTIVE / DO NOT REUSE
+D2-WP004-R1-R2-R1 = PROPOSED / NOT AUTHORIZED
 CONTROL-PLANE-D2-REVIEW-CORRECTIVE-20-ROUND-20260901 = EXHAUSTED / DO NOT REUSE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = D2-WP004-R1-R2-EVIDENCE-20260902-01
+ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
-NEXT_EXECUTOR = ANTIGRAVITY
-NEXT_ACTION = EXECUTE ONLY D2-WP004-R1-R2-EVIDENCE-20260902-01; INSPECT SHA-APPROVED OWNER TEMPLATES READ-ONLY; WRITE EXACTLY ONE EVIDENCE/BLOCKER MARKDOWN; ONE COMMIT; PUSH; REPORT; STOP
-ANTIGRAVITY = AUTHORIZED ONLY FOR R1-R2 EVIDENCE
+NEXT_EXECUTOR = OWNER
+NEXT_ACTION = DECIDE WHETHER TO AUTHORIZE D2-WP004-R1-R2-R1 EVIDENCE-ONLY
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
