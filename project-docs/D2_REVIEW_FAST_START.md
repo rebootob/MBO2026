@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md` -> only exact relevant Part B baseline/source/test for the current gate.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only exact relevant Part B source/test/Profile/baseline for current gate.
 
 ## Project truth
 ```text
@@ -14,71 +14,64 @@ D1 = PASS / CLOSED
 D2 = IN PROGRESS
 PRESERVATION = PASS / CLOSED
 REFERENCE_IMAGE = PASS / CLOSED
-PART_A_STRUCTURAL = PASS / CLOSED
+PART_A_STRUCTURAL = PASS / CLOSED / FROZEN
 PART_B_STRUCTURAL = PASS / CLOSED / FROZEN
 FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
-PRE1 = PASS / CLOSED
-PRE1_R1 = PASS / CLOSED
-PRE2 = READ-ONLY DESIGN COMPLETE
-PRE2_R1 = PASS / CLOSED AFTER CORRECTIVE
-PRE2_R1_R1 = PASS / CLOSED
-PRE2_R2 = PASS / CLOSED
-PRE2_R3 = PASS / CLOSED AFTER CORRECTIVE CHAIN THROUGH R4
+PRE1/PRE2 BASELINES = CLOSED AS DOCUMENTED
 R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
 R2_B2 = NOT CLOSED
-R2_B2_R1 = REVIEWED / PARTIAL CORRECTIVE PASS / PROOF+GUARD GAPS
+R2_B2_R1 = REVIEWED / PARTIAL CORRECTIVE PASS
+R2_B2_R2 = REVIEWED / PRODUCTION SOURCE PASS / TEST PROOF GAP
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-R2_B2_R2 = PROPOSED / NOT AUTHORIZED
+R2_B2_R3 = PROPOSED / NOT AUTHORIZED / TEST-ONLY
 R2_C = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## R2-B1 durable closure
+## Durable R2-B1 closure
 ```text
 R10_IMPLEMENTATION = 673137c2f28587e058844e93af66dad9fc722d24
 R10_RUNTIME = PASS 4 / FAIL 0 / SKIP 0
-OWNER_TEMPLATE_N4_TO_N10 = PASS
 R2_B1 = PASS / CLOSED / FROZEN
 ```
 
-## R2-B2 implementation + R1 review
+## R2-B2 chain
 ```text
 R2_B2_IMPLEMENTATION = 0b4bac862aa2906d1ac11071431dbb268c7b7b5e
-R2_B2_R1_AUTHORIZATION = 06264a5c0d581b160019db877be49fbfc6b791c6
 R2_B2_R1_IMPLEMENTATION = 67c60065e169f9339219dd334c51e9b70c355319
-R2_B2_R1_SCOPE = PASS / EXACTLY TWO AUTHORIZED FILES
+R2_B2_R2_AUTHORIZATION = 5aba1f4bcdb978b1dbb42f6cef06c6e7084699ea
+R2_B2_R2_IMPLEMENTATION = 33f1beb3ae292f1ad24857ea04511b3fa445cd2e
+R2_B2_R2_SCOPE = PASS / EXACTLY TWO AUTHORIZED FILES
 GITHUB_STATUS = NONE
 GITHUB_WORKFLOW = NONE
 ```
 
-Accepted R1 correction:
-- original stretched merge defect corrected;
-- exact six SOURCE block merges guarded;
-- crossing SOURCE merge fails closed;
-- final merge inventory is SOURCE-derived and deep-equalled;
-- auxiliary Sheet1 raw XML parity added;
-- non-Print_Area defined-name parity added.
+Accepted R2 source corrections:
+- exact SOURCE-derived intermediate merge inventory is verified in production before overlay;
+- final SOURCE-derived merge authority remains exact;
+- production SOURCE-backed rows1:30 / inserted SOURCE27:30 / relocated SOURCE31:35 style/type guard exists;
+- protected Rating Scale/padding topology and sanitization overlap guard exist;
+- semantic no-write test now derives actual targets from `profile.getPartBMappings(n)` including K9/K13/K17/K21/K25/K29/K33/K37;
+- auxiliary Sheet1 and non-Print_Area parity remain.
 
-Remaining R1 blockers:
-1. intermediate merge authority is computed but never directly deep-equalled to an actual intermediate production state; production intermediate guard remains count/presence based;
-2. production post-structural security guard does not yet prove SOURCE-derived row relocation/style/static identity before overlay/sanitization;
-3. semantic no-write test checks wrong competency self-rating cells (`R...`) instead of frozen Profile targets `K9/K13/K17/K21/K25/K29/K33/K37`;
-4. protected Rating Scale/padding value proof is still non-null/existence rather than exact SOURCE-derived value/type/hash parity.
+Remaining proof gap:
+- protected Rating Scale/padding proof is still not exact OWNER-SOURCE-derived value/type/payload parity; it currently relies on row existence and a hard-coded `Rating Scale` top-left value.
+- explicit test-side intermediate reconstruction deep equality should be added while preserving production source frozen.
 
 ## Exact next control decision — NOT AUTHORIZED
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-B2-R2
-NAME = PART B INTERMEDIATE AUTHORITY + SOURCE-BACKED STRUCTURAL/SEMANTIC PROOF CLOSURE
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-B2-R3
+NAME = PART B PROTECTED STATIC + INTERMEDIATE TEST PROOF CLOSURE
+MODE = TEST-ONLY CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
 WRITABLE IF AUTHORIZED =
-  src/services/mbo-xlsx-template-preparer.js
   tests/mbo-xlsx-template-preparer-part-b.test.js
+SOURCE = FROZEN UNLESS STRICT TEST PROVES REAL DEFECT
 PROFILE = FROZEN
 PART_A = FROZEN
 R2-C = NOT AUTHORIZED
@@ -87,4 +80,4 @@ D3 = HOLD
 
 Recommended owner approval phrase:
 
-`อนุมัติ D2-WP004-R2-B2-R2 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-B2-R3 TEST-ONLY CORRECTIVE ตามขอบเขตที่เสนอ`
