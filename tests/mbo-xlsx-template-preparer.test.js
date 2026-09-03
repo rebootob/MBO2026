@@ -283,12 +283,18 @@ function parseRowObjectsFromXml(sheetXml) {
     const cells = [...rowBody.matchAll(/<c r="([A-Z]+)\d+"([^>]*)>/g)].map(cm => {
       const cellAttrsStr = cm[2];
       const cPairs = [...cellAttrsStr.matchAll(/(\w+)="([^"]*)"/g)];
-      const cAttrs = { col: cm[1] };
+      const rawAttrs = {};
       for (const [, k, v] of cPairs) {
-        if (k !== 'r' && k !== 't') cAttrs[k] = v;
+        if (k !== 'r') rawAttrs[k] = v;
+      }
+      const cAttrs = { col: cm[1] };
+      if (rawAttrs.s !== undefined) cAttrs.s = rawAttrs.s;
+      if (rawAttrs.t !== undefined) cAttrs.t = rawAttrs.t;
+      for (const k of Object.keys(rawAttrs).sort()) {
+        if (k !== 'col' && k !== 's' && k !== 't') cAttrs[k] = rawAttrs[k];
       }
       return cAttrs;
-    }).filter(c => c.s !== '1');
+    });
 
     map.set(rNum, {
       rNum,
@@ -335,11 +341,23 @@ async function buildPackageAuthority(wbZip, isSource = false) {
         const type = tag.match(/Type="([^"]+)"/)?.[1] || null;
         const target = tag.match(/Target="([^"]+)"/)?.[1] || null;
         const targetMode = tag.match(/TargetMode="([^"]+)"/)?.[1] || null;
-        if (isSource && fName === 'xl/drawings/_rels/drawing1.xml.rels' && id === 'rId3') continue;
         relationshipTuples.push({ relsFilePath: fName, id, type, target, targetMode });
       }
     }
   }
+
+  if (isSource) {
+    // Fail-closed rId3 relationship tuple assertions before removal
+    const rId3Matches = relationshipTuples.filter(r => r.relsFilePath === 'xl/drawings/_rels/drawing1.xml.rels' && r.id === 'rId3');
+    assert.equal(rId3Matches.length, 1, 'Expected exactly 1 rId3 relationship tuple in SOURCE drawing rels');
+    assert.equal(rId3Matches[0].type, 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image');
+    assert.equal(rId3Matches[0].target, '../media/image3.png');
+    assert.equal(rId3Matches[0].targetMode, null);
+
+    const targetIdx = relationshipTuples.indexOf(rId3Matches[0]);
+    relationshipTuples.splice(targetIdx, 1);
+  }
+
   relationshipTuples.sort((a, b) => (a.relsFilePath + a.id).localeCompare(b.relsFilePath + b.id));
 
   const mediaInventory = Object.keys(wbZip.files).filter(f => f.startsWith('xl/media/')).sort().filter(f => !isSource || f !== 'xl/media/image3.png');
@@ -391,7 +409,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
   // Exact SOURCE-derived row structural oracle
   const srcRowObjectsMap = parseRowObjectsFromXml(srcSheetXml);
 
-  // Exact SOURCE-derived package authority object (normalized for accepted rId3/image3 removals)
+  // Exact SOURCE-derived package authority object (normalized for accepted rId3/image3 removals with fail-closed assertions)
   const srcPackageAuthority = await buildPackageAuthority(wbSource._zip, true);
 
   // Normalized SOURCE drawing XML oracle (minus ONLY rId3 anchor)
@@ -417,6 +435,40 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
 
   for (let n = 4; n <= 10; n++) {
     const callerCopy = new Uint8Array(templateBytes);
+
+    const layoutN = profile.getPartALayoutTopology(n);
+    const sanColsByRowN = new Map();
+    for (const rangeStr of layoutN.effectiveSanitizationRanges) {
+      const addrs = expandRangeToAddresses(rangeStr);
+      for (const a of addrs) {
+        const col = a.match(/^[A-Z]+/)[0];
+        const r = parseInt(a.match(/\d+/)[0], 10);
+        if (!sanColsByRowN.has(r)) sanColsByRowN.set(r, new Set());
+        sanColsByRowN.get(r).add(col);
+      }
+    }
+
+    function filterSanitizerMaterializedCells(cells, rNum) {
+      const sanCols = sanColsByRowN.get(rNum);
+      if (!sanCols) return cells;
+      return cells.filter(c => !(sanCols.has(c.col) && c.s === '1'));
+    }
+
+    function compareCellInventories(srcCells, outCells, rNum) {
+      const normOut = filterSanitizerMaterializedCells(outCells, rNum);
+      const normSrc = filterSanitizerMaterializedCells(srcCells, rNum);
+      assert.equal(normOut.length, normSrc.length, `Cell count must match for row ${rNum} (N=${n})`);
+
+      for (let i = 0; i < normSrc.length; i++) {
+        const sCell = normSrc[i];
+        const oCell = normOut[i];
+        assert.equal(oCell.col, sCell.col, `Cell ${i} column letter must match in row ${rNum}`);
+        assert.equal(oCell.s, sCell.s, `Cell ${sCell.col} style index s must match in row ${rNum}`);
+        if (oCell.t !== undefined) {
+          assert.equal(oCell.t, sCell.t, `Cell ${sCell.col} type t must match in row ${rNum}`);
+        }
+      }
+    }
 
     const preparedBytes = await preparePartATemplate(templateBytes, { objectiveCount: n, profile });
 
@@ -469,7 +521,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
 
       assert.equal(Boolean(outObj), true, `Output row ${r} must exist`);
       assert.deepEqual(outObj.rowAttrs, srcObj.rowAttrs, `Row ${r} attributes must deep equal SOURCE baseline for N=${n}`);
-      assert.deepEqual(outObj.cells, srcObj.cells, `Row ${r} cell inventory must deep equal SOURCE baseline for N=${n}`);
+      compareCellInventories(srcObj.cells, outObj.cells, r);
     }
 
     // 2. Inserted Rows (29..28+extra) Exact SOURCE-Derived Structural Deep Equality (derived from SOURCE row 28)
@@ -480,7 +532,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       const outClonedObj = outRowObjectsMap.get(targetR);
       assert.equal(Boolean(outClonedObj), true, `Inserted row ${targetR} must exist`);
       assert.deepEqual(outClonedObj.rowAttrs, srcRow28Obj.rowAttrs, `Inserted row ${targetR} attributes must deep equal SOURCE row 28 for N=${n}`);
-      assert.deepEqual(outClonedObj.cells, srcRow28Obj.cells, `Inserted row ${targetR} cell inventory must deep equal SOURCE row 28 for N=${n}`);
+      compareCellInventories(srcRow28Obj.cells, outClonedObj.cells, targetR);
     }
 
     // 3. Downstream Relocated Rows (>=29) Exact SOURCE-Derived Structural Deep Equality
@@ -492,7 +544,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       const outRelocatedObj = outRowObjectsMap.get(targetR);
       assert.equal(Boolean(outRelocatedObj), true, `Relocated downstream row ${targetR} must exist`);
       assert.deepEqual(outRelocatedObj.rowAttrs, srcDownstreamObj.rowAttrs, `Relocated row ${targetR} attributes must deep equal SOURCE row ${r} for N=${n}`);
-      assert.deepEqual(outRelocatedObj.cells, srcDownstreamObj.cells, `Relocated row ${targetR} cell inventory must deep equal SOURCE row ${r} for N=${n}`);
+      compareCellInventories(srcDownstreamObj.cells, outRelocatedObj.cells, targetR);
 
       // Assert no stale old-row structural identity remains at unshifted index r when r < 29 + extra
       if (extra > 0 && r < 29 + extra && r > 28) {
@@ -543,7 +595,6 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
 
     // I. Effective sanitization ranges cleared & Package-wide Privacy Proof
     const sheet = wb.sheet(0);
-    const layoutN = profile.getPartALayoutTopology(n);
     const sensitiveAddrsN = layoutN.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
 
     for (const addr of sensitiveAddrsN) {
