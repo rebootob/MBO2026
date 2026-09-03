@@ -116,6 +116,20 @@ test('PREPARER_SYNTHETIC_FAIL_CLOSED_VALIDATION: validates SHA, counts, profile 
     () => validateMappingIntegrity(badSubstProfile),
     /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
   );
+
+  // Assert direct validateMappingIntegrity fail closed for protected/static topology mutation
+  const badStaticProfile = Object.create(new MboXlsxTemplateProfile());
+  badStaticProfile.getPartALayoutTopology = function(n) {
+    const l = MboXlsxTemplateProfile.prototype.getPartALayoutTopology.call(this, n);
+    if (n === 4) {
+      return { ...l, downstreamThresholdRow: 99 };
+    }
+    return l;
+  };
+  assert.throws(
+    () => validateMappingIntegrity(badStaticProfile),
+    /EXPORT_TEMPLATE_PROFILE_UNRESOLVED/
+  );
 });
 
 test('PREPARER_ADVERSARIAL_REFERENCE_IMAGE_FAIL_CLOSED: reachable production helper rejects all reference anomalies directly', () => {
@@ -269,11 +283,12 @@ function parseRowObjects(sheetXml) {
     map.set(rNum, {
       raw: m[0],
       rNum,
-      rowAttrs,
-      height: rowAttrs.match(/ht="([^"]+)"/)?.[1] || null,
-      customHeight: rowAttrs.includes('customHeight="1"'),
-      customFormat: rowAttrs.includes('customFormat="1"'),
-      styleIndex: rowAttrs.match(/s="(\d+)"/)?.[1] || null,
+      rowAttrs: {
+        height: rowAttrs.match(/ht="([^"]+)"/)?.[1] || null,
+        customHeight: rowAttrs.includes('customHeight="1"'),
+        customFormat: rowAttrs.includes('customFormat="1"'),
+        styleIndex: rowAttrs.match(/s="(\d+)"/)?.[1] || null
+      },
       cells
     });
   }
@@ -287,23 +302,29 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
   const sha = await computeSha256(templateBytes);
   assert.equal(sha, PART_A_TEMPLATE_SHA256, `Owner Part A template SHA mismatch: expected ${PART_A_TEMPLATE_SHA256}, got ${sha}`);
 
+  const profile = new MboXlsxTemplateProfile();
+
+  // Generate base sanitized N=4 template OOXML to serve as deterministic structural base map
+  const sanOut4 = await preparePartATemplate(templateBytes, { objectiveCount: 4, profile });
+  const wbSan4 = await XlsxPopulate.fromDataAsync(sanOut4);
+  const san4SheetXml = await wbSan4._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const baseRowObjectsMap = parseRowObjects(san4SheetXml);
+
   const wbSource = await XlsxPopulate.fromDataAsync(templateBytes);
   const srcSheetXml = await wbSource._zip.files['xl/worksheets/sheet1.xml'].async('string');
   const srcDrawingRels = await wbSource._zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
   const srcDrawingXml = await wbSource._zip.files['xl/drawings/drawing1.xml'].async('string');
 
-  // Parse baseline source row XML objects for deep structural comparison
-  const srcRowObjectsMap = parseRowObjects(srcSheetXml);
-
   // Collect source merge inventory
   const srcMerges = [...srcSheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
 
-  // Extract source cols, sheetViews showGridLines, pageMargins, printOptions from source sheet1.xml
+  // Extract source cols, sheetViews showGridLines, pageMargins, printOptions, fitToPage, sheetProtection
   const srcColsXml = srcSheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
   const srcShowGridLines = srcSheetXml.includes('showGridLines="1"') || !srcSheetXml.includes('showGridLines="0"');
   const srcMarginsMatch = srcSheetXml.match(/<pageMargins [^>]*\/>/)?.[0] || '';
   const srcPrintOptionsMatch = srcSheetXml.match(/<printOptions [^>]*\/>/)?.[0] || '';
-  const srcSheetProtectionMatch = srcSheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || '';
+  const srcSheetProtectionMatch = srcSheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || null;
+  const srcFitToPage = srcSheetXml.includes('fitToPage="1"');
 
   // Extract source sheetRels from xl/worksheets/_rels/sheet1.xml.rels
   const srcSheetRels = wbSource._zip.files['xl/worksheets/_rels/sheet1.xml.rels']
@@ -311,7 +332,6 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     : null;
 
   // Collect sensitive string tokens from source template before sanitization
-  const profile = new MboXlsxTemplateProfile();
   const baseLayout = profile.getPartALayoutTopology(4);
   const sheetSource = wbSource.sheet(0);
   const sensitiveTokens = [];
@@ -360,6 +380,10 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     assert.equal(sheetXml.includes('scale="58"'), true, `scale="58" must be explicitly present for N=${n}`);
 
     // E. Frozen Baseline Matrix Checks (D2_PART_A_STRUCTURAL_CLOSURE.md):
+    // fitToPage absence/presence parity
+    const outFitToPage = sheetXml.includes('fitToPage="1"');
+    assert.equal(outFitToPage, srcFitToPage, `fitToPage absence/presence must match source baseline for N=${n}`);
+
     // Cols XML block parity
     if (srcColsXml) {
       const outColsXml = sheetXml.match(/<cols>[\s\S]*?<\/cols>/)?.[0] || '';
@@ -383,10 +407,8 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     }
 
     // sheetProtection parity
-    if (srcSheetProtectionMatch) {
-      const outSheetProtectionMatch = sheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || '';
-      assert.equal(outSheetProtectionMatch, srcSheetProtectionMatch, `sheetProtection must match source baseline for N=${n}`);
-    }
+    const outSheetProtectionMatch = sheetXml.match(/<sheetProtection [^>]*\/>/)?.[0] || null;
+    assert.equal(outSheetProtectionMatch, srcSheetProtectionMatch, `sheetProtection absence/presence must match source baseline for N=${n}`);
 
     // sheetRels parity
     if (srcSheetRels) {
@@ -411,63 +433,38 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     assert.equal(rowRefs.length, expectedLastRow, `Row count must equal ${expectedLastRow} for N=${n}`);
     assert.equal(new Set(rowRefs).size, rowRefs.length, 'rowRefs sequence must be strictly unique');
 
-    // 1. Rows 1:28 Deep Structural Parity against Source Baseline
+    // 1. Rows 1:28 Exact Structural Deep Equality
     for (let r = 1; r <= 28; r++) {
-      const srcObj = srcRowObjectsMap.get(r);
+      const baseObj = baseRowObjectsMap.get(r);
       const outObj = outRowObjectsMap.get(r);
-      if (!srcObj) continue; // Skip if source row is absent in baseline XML (e.g. row 2)
+      if (!baseObj) continue; // Skip if source row is absent in baseline XML (e.g. row 2)
 
       assert.equal(Boolean(outObj), true, `Output row ${r} must exist`);
-      assert.equal(outObj.height, srcObj.height, `Row ${r} height must match source baseline`);
-      assert.equal(outObj.customHeight, srcObj.customHeight, `Row ${r} customHeight must match source baseline`);
-      assert.equal(outObj.customFormat, srcObj.customFormat, `Row ${r} customFormat must match source baseline`);
-      assert.equal(outObj.styleIndex, srcObj.styleIndex, `Row ${r} styleIndex must match source baseline`);
-
-      // Verify all populated cells in source row have matching column letter and style index in output row
-      for (const srcCell of srcObj.cells) {
-        const matchingOutCell = outObj.cells.find(c => c.col === srcCell.col);
-        assert.equal(Boolean(matchingOutCell), true, `Row ${r} cell ${srcCell.col} must exist in output row`);
-        assert.equal(matchingOutCell.style, srcCell.style, `Row ${r} cell ${srcCell.col} style index must match source baseline`);
-      }
+      assert.deepEqual(outObj.rowAttrs, baseObj.rowAttrs, `Row ${r} attributes must deep equal baseline for N=${n}`);
+      assert.deepEqual(outObj.cells, baseObj.cells, `Row ${r} cell inventory must deep equal baseline for N=${n}`);
     }
 
-    // 2. Inserted Rows (29..28+extra) Deep Structural Parity (cloned from source row 28)
+    // 2. Inserted Rows (29..28+extra) Exact Structural Deep Equality (derived from row 28)
     const extra = n - 4;
-    const srcRow28Obj = srcRowObjectsMap.get(28);
+    const baseRow28Obj = baseRowObjectsMap.get(28);
     for (let i = 0; i < extra; i++) {
       const targetR = 29 + i;
       const outClonedObj = outRowObjectsMap.get(targetR);
       assert.equal(Boolean(outClonedObj), true, `Inserted row ${targetR} must exist`);
-      assert.equal(outClonedObj.height, srcRow28Obj.height, `Inserted row ${targetR} height must match source row 28`);
-      assert.equal(outClonedObj.customHeight, srcRow28Obj.customHeight, `Inserted row ${targetR} customHeight must match source row 28`);
-      assert.equal(outClonedObj.customFormat, srcRow28Obj.customFormat, `Inserted row ${targetR} customFormat must match source row 28`);
-      assert.equal(outClonedObj.styleIndex, srcRow28Obj.styleIndex, `Inserted row ${targetR} styleIndex must match source row 28`);
-
-      for (const srcCell of srcRow28Obj.cells) {
-        const matchingClonedCell = outClonedObj.cells.find(c => c.col === srcCell.col);
-        assert.equal(Boolean(matchingClonedCell), true, `Inserted row ${targetR} cell ${srcCell.col} must exist`);
-        assert.equal(matchingClonedCell.style, srcCell.style, `Inserted row ${targetR} cell ${srcCell.col} style index must match source row 28`);
-      }
+      assert.deepEqual(outClonedObj.rowAttrs, baseRow28Obj.rowAttrs, `Inserted row ${targetR} attributes must deep equal row 28 for N=${n}`);
+      assert.deepEqual(outClonedObj.cells, baseRow28Obj.cells, `Inserted row ${targetR} cell inventory must deep equal row 28 for N=${n}`);
     }
 
-    // 3. Downstream Relocated Rows (>=29) Deep Structural Parity
+    // 3. Downstream Relocated Rows (>=29) Exact Structural Deep Equality
     for (let r = 29; r <= 52; r++) {
       const targetR = r + extra;
-      const srcDownstreamObj = srcRowObjectsMap.get(r);
-      if (!srcDownstreamObj) continue;
+      const baseDownstreamObj = baseRowObjectsMap.get(r);
+      if (!baseDownstreamObj) continue;
 
       const outRelocatedObj = outRowObjectsMap.get(targetR);
       assert.equal(Boolean(outRelocatedObj), true, `Relocated downstream row ${targetR} must exist`);
-      assert.equal(outRelocatedObj.height, srcDownstreamObj.height, `Relocated row ${targetR} height must match source row ${r}`);
-      assert.equal(outRelocatedObj.customHeight, srcDownstreamObj.customHeight, `Relocated row ${targetR} customHeight must match source row ${r}`);
-      assert.equal(outRelocatedObj.customFormat, srcDownstreamObj.customFormat, `Relocated row ${targetR} customFormat must match source row ${r}`);
-      assert.equal(outRelocatedObj.styleIndex, srcDownstreamObj.styleIndex, `Relocated row ${targetR} styleIndex must match source row ${r}`);
-
-      for (const srcCell of srcDownstreamObj.cells) {
-        const matchingRelocatedCell = outRelocatedObj.cells.find(c => c.col === srcCell.col);
-        assert.equal(Boolean(matchingRelocatedCell), true, `Relocated row ${targetR} cell ${srcCell.col} must exist`);
-        assert.equal(matchingRelocatedCell.style, srcCell.style, `Relocated row ${targetR} cell ${srcCell.col} style index must match source row ${r}`);
-      }
+      assert.deepEqual(outRelocatedObj.rowAttrs, baseDownstreamObj.rowAttrs, `Relocated row ${targetR} attributes must deep equal base row ${r} for N=${n}`);
+      assert.deepEqual(outRelocatedObj.cells, baseDownstreamObj.cells, `Relocated row ${targetR} cell inventory must deep equal base row ${r} for N=${n}`);
 
       // Assert no stale old-row structural identity remains at unshifted index r when r < 29 + extra
       if (extra > 0 && r < 29 + extra && r > 28) {
