@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only exact relevant Part B source/test/Profile/baseline for current gate.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only exact R4 runtime evidence if supplied. Do not broad-scan or reopen accepted R2 source/test corrections without proven regression.
 
 ## Project truth
 ```text
@@ -23,14 +23,13 @@ XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
 PRE1/PRE2 BASELINES = CLOSED AS DOCUMENTED
 R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
-R2_B2 = NOT CLOSED
-R2_B2_R1 = REVIEWED / PARTIAL CORRECTIVE PASS
-R2_B2_R2 = REVIEWED / PRODUCTION SOURCE PASS / FROZEN
-R2_B2_R3 = REVIEWED / TEST-ONLY PARTIAL PASS / PADDING PAYLOAD PROOF GAP
+R2_B2 = CLOSURE CANDIDATE / NOT CLOSED / R4 RUNTIME EVIDENCE PENDING
+R2_B2_R2 = PRODUCTION SOURCE PASS / FROZEN
+R2_B2_R3 = REVIEWED / PARTIAL TEST PASS
+R2_B2_R4 = REVIEWED / STATIC PASS / RUNTIME EVIDENCE PENDING
 ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = STOP / WAIT RUNTIME EVIDENCE REVIEW
 CLAUDE = STOP
-R2_B2_R4 = PROPOSED / NOT AUTHORIZED / TEST-ONLY
 R2_C = NOT AUTHORIZED
 D3 = HOLD
 ```
@@ -42,44 +41,39 @@ R10_RUNTIME = PASS 4 / FAIL 0 / SKIP 0
 R2_B1 = PASS / CLOSED / FROZEN
 ```
 
-## R2-B2 chain
+## R2-B2 implementation chain
 ```text
 R2_B2_IMPLEMENTATION = 0b4bac862aa2906d1ac11071431dbb268c7b7b5e
 R2_B2_R1_IMPLEMENTATION = 67c60065e169f9339219dd334c51e9b70c355319
 R2_B2_R2_IMPLEMENTATION = 33f1beb3ae292f1ad24857ea04511b3fa445cd2e
-R2_B2_R3_AUTHORIZATION = 225d40879d7a98cc6244bce345a349905efd5a44
 R2_B2_R3_IMPLEMENTATION = ffd2c90011706011b51612b56c63a4786d43c653
-R2_B2_R3_SCOPE = PASS / EXACTLY ONE AUTHORIZED TEST FILE
+R2_B2_R4_AUTHORIZATION = c812f4ba51144b9cadb072d65cebdf4f1fb7278d
+R2_B2_R4_IMPLEMENTATION = 401caf0d2c4132a4f224140f156d7255a1319a88
+R2_B2_R4_SCOPE = PASS / EXACTLY ONE AUTHORIZED TEST FILE
+R2_B2_R4_STATIC_REVIEW = PASS
 GITHUB_STATUS = NONE
 GITHUB_WORKFLOW = NONE
 ```
 
-Accepted through R3:
-- production exact SOURCE-derived intermediate merge guard remains frozen;
-- explicit test-side intermediate reconstruction now deep-equals OWNER-SOURCE expected inventory;
+Accepted through R4:
+- production exact OWNER-SOURCE-derived intermediate merge guard is frozen;
+- explicit test-side intermediate reconstruction deep-equals OWNER-SOURCE expected inventory;
 - final SOURCE-derived merge proof remains exact;
 - production SOURCE-backed row/style/type guard remains frozen;
 - Profile-derived semantic no-write proof remains exact;
-- Rating Scale B:J values now use OWNER SOURCE row29 as expected authority;
-- auxiliary Sheet1 / non-Print_Area / privacy / package-formula proofs remain.
+- Rating Scale B:J values use OWNER SOURCE row29;
+- protected padding row30 authority is now SOURCE-derived and checks row attrs, exact cell inventory/attrs, raw OOXML payload and decoded values against rows30/34/38;
+- auxiliary Sheet1 / non-Print_Area / privacy / package-formula / caller-immutability proofs remain.
 
-Remaining proof gap:
-- protected padding rows 30/34/38 still lack exact OWNER-SOURCE decoded value / OOXML payload parity. Existing row structural proof covers attrs but not value payload.
+No material static blocker remains for R2-B2.
 
-## Exact next control decision — NOT AUTHORIZED
-```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-B2-R4
-NAME = PART B PROTECTED PADDING OWNER-SOURCE PAYLOAD PROOF CLOSURE
-MODE = TEST-ONLY CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
-WRITABLE IF AUTHORIZED =
-  tests/mbo-xlsx-template-preparer-part-b.test.js
-SOURCE = FROZEN UNLESS STRICT TEST PROVES REAL DEFECT
-PROFILE = FROZEN
-PART_A = FROZEN
-R2-C = NOT AUTHORIZED
-D3 = HOLD
-```
+## Exact current control gate — runtime evidence only
+Required command:
 
-Recommended owner approval phrase:
+`node --test tests/mbo-xlsx-template-preparer-part-b.test.js`
 
-`อนุมัติ D2-WP004-R2-B2-R4 TEST-ONLY CORRECTIVE ตามขอบเขตที่เสนอ`
+Need executor evidence with `FAIL=0`, `SKIP=0`, real OWNER Part B template executed/not skipped and N6/N7/N8 proof matrix PASS.
+
+No R5 is proposed. Do not modify source/test merely to produce evidence.
+
+If exact R4 runtime evidence passes, Control Plane may close `R2-B2 = PASS / CLOSED` and then separately plan the next smallest D2 gate. `R2-C` and `D3` remain unauthorized until that closure decision.
