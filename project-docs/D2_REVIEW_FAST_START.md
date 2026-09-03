@@ -27,10 +27,12 @@ R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
 R2_B2_PRODUCTION_SOURCE = PASS / FROZEN
 R2_B2_TEST_PROOF = PASS / FROZEN
 R2_B2_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
+R2_C = REVIEWED / SOURCE+TEST DEFECTS / NOT CLOSED
+R2_C_IMPLEMENTATION = d9af2feb5fb2af1834675123fcd83f27a62fceb2
+R2_C_R1 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-R2_C = EXACT PROPOSAL READY / NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
@@ -66,18 +68,51 @@ Accepted/frozen through R2-B2:
 - auxiliary Sheet1 and non-Print_Area parity;
 - privacy, package/formula preservation, caller immutability and browser-safe/no-sentinel boundaries.
 
-No R2-B2-R5 is required.
+## R2-C independent review result
 
-## Exact next proposal — D2-WP004-R2-C / NOT AUTHORIZED
+Authorization:
+`f83cda813c8e7793502da411ec1bac1bca19f084`
+
+Implementation:
+`d9af2feb5fb2af1834675123fcd83f27a62fceb2`
+
+Scope gate:
+- exactly one implementation commit;
+- only `src/services/mbo-xlsx-semantic-renderer.js` and `tests/mbo-xlsx-semantic-renderer.test.js` changed;
+- no frozen file changes.
+
+Accepted direction:
+- secured projection only;
+- Profile-derived semantic targets;
+- raw OOXML sheet1 target-only mutation;
+- optional omitted secured values stay blank;
+- b7/b8 canonical presentation required;
+- zero formula/no raw Kintone/no scoring boundary.
+
+Material blockers:
+- Print_Area guard is prefix-only rather than exact count-aware authority;
+- exact main-sheet binding and target-cell exactly-once guards are incomplete;
+- Part A reintroduced/orphan reference image/media is not fully rejected;
+- Part B prepared guard lacks actual==declared merge proof plus Rating Scale/padding exact presence;
+- whitespace-only secured strings are incorrectly normalized to blank and leading/trailing whitespace OOXML semantics are incomplete;
+- target attribute rewrite is not strong enough to prove every non-type structural attribute survives;
+- final prepared-before topology/caller-content validation is incomplete;
+- tests are spot-checks rather than the authorized full Part A/Part B role matrices;
+- authorized-diff test does not yet normalize exact target nodes and deep-equal complete sheet1.xml;
+- actual privacy proof does not yet cover both Part A and Part B Employee-Self/Approver boundaries.
+
+Repository CI/status/workflow evidence for the implementation commit is unavailable, but static blockers already prevent closure.
+
+## Exact next proposal — D2-WP004-R2-C-R1 / NOT AUTHORIZED
 
 ```text
-NAME = SECURED SEMANTIC VALUE RENDERER — PART A + PART B
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+NAME = SECURED SEMANTIC RENDERER EXACT PREPARED-GUARD + AUTHORIZED-DIFF CLOSURE
+MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
 
 PROPOSED WRITABLE ONLY:
-  src/services/mbo-xlsx-semantic-renderer.js   NEW
-  tests/mbo-xlsx-semantic-renderer.test.js    NEW
+  src/services/mbo-xlsx-semantic-renderer.js
+  tests/mbo-xlsx-semantic-renderer.test.js
 
 FROZEN:
   src/profiles/mbo-xlsx-template-profile.js
@@ -86,35 +121,20 @@ FROZEN:
   existing XLSX tests
 ```
 
-Production API proposed:
+R1 must correct only the reviewed gaps:
+- exact workbook/main-sheet/Print_Area/prepared-target guards;
+- Part A package-wide reference-image/media absence;
+- Part B actual+declared merge, Rating Scale, padding and auxiliary identity guards;
+- exact whitespace/XML string semantics and non-type target-attribute preservation;
+- exact final topology + caller-content preservation;
+- complete Part A N4..N10 and Part B N6/N7/N8 Profile-derived role proofs;
+- complete authorized-diff sheet1 normalization/deep equality;
+- real Employee-Self + Approver privacy proof for both Parts.
 
-```js
-renderSecuredSemanticValues(preparedBytes, { partKey, projection, profile })
-```
-
-Key boundaries:
-- accepts only prepared/sanitized bytes + exact `MboExportService.projectCombinedExport()` projection;
-- count derives from projection, not caller option;
-- Profile resolves every writable address + exact projection path;
-- no raw Kintone, aliases, scoring, formulas or reconstruction;
-- Employee-Self omitted confidential paths remain blank;
-- N7/N8 canonical presentation is required and comes only from secured `presentationTitle` / `presentationDescription`;
-- raw OOXML target-cell-only writes; no worksheet-wide reserialization;
-- non-target package/XML must remain byte/structurally identical to prepared input;
-- formula inventory remains zero.
-
-Required focused proof if authorized:
-- real owner Part A N4..N10;
-- real owner Part B N6/N7/N8;
-- Employee-Self vs Approver SAFE-only privacy boundary;
-- exact authorized-diff preservation;
-- focused FAIL=0 / SKIP=0;
-- frozen Profile/Preparer/Export regression FAIL=0.
-
-Full authoritative contract is in `AI_ACTIVE_TASK.md`.
+Full authoritative R1 proposal is in `AI_ACTIVE_TASK.md`.
 
 Recommended owner approval phrase:
 
-`อนุมัติ D2-WP004-R2-C SOURCE+TEST ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-C-R1 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
 
 Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
