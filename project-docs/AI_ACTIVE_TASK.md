@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-B2-R4 STATIC PASS / RUNTIME EVIDENCE PENDING
+# AI ACTIVE TASK — R2-B2 PASS / CLOSED / R2-C PROPOSED
 
 Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file, then only exact Part B source/test/Profile evidence required for the current runtime-evidence gate.
+Read `D2_REVIEW_FAST_START.md` first, then this file, then only exact evidence required for the next authorized gate. Do not reopen closed R2-B2 source/test work without a proven regression.
 
 ## 1. Current truth
 
@@ -17,11 +17,10 @@ D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
-D2_WP004_R2_B2 = CLOSURE CANDIDATE / NOT YET CLOSED / R4 RUNTIME EVIDENCE PENDING
-D2_WP004_R2_B2_R1 = REVIEWED / PARTIAL CORRECTIVE PASS
-D2_WP004_R2_B2_R2 = REVIEWED / PRODUCTION SOURCE PASS / FROZEN
-D2_WP004_R2_B2_R3 = REVIEWED / TEST-ONLY PARTIAL PASS
-D2_WP004_R2_B2_R4 = REVIEWED / STATIC PASS / RUNTIME EVIDENCE PENDING
+D2_WP004_R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
+D2_WP004_R2_B2_R2 = PRODUCTION SOURCE PASS / FROZEN
+D2_WP004_R2_B2_R3 = TEST PROOF PARTIAL PASS / SUPERSEDED BY R4 CLOSURE
+D2_WP004_R2_B2_R4 = PASS / CLOSED
 
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -31,95 +30,105 @@ ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT CONTROL-PLANE RUNTIME EVIDENCE REVIEW
+ANTIGRAVITY = STOP / WAIT OWNER
+CLAUDE = STOP
 R2_B1_PRODUCTION_SOURCE = PASS / FROZEN
-R2_B2_R2_PRODUCTION_SOURCE = PASS / FROZEN
-R2_B2_R4_TEST_PROOF = STATIC PASS / FROZEN UNLESS RUNTIME PROVES REGRESSION
-R2-C = NOT AUTHORIZED
+R2_B2_PRODUCTION_SOURCE = PASS / FROZEN
+R2_B2_TEST_PROOF = PASS / FROZEN
+R2_B2_RUNTIME_PROOF = PASS
+R2-C = PROPOSED / NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
-## 2. R4 identity / scope review
+## 2. R2-B2 closure identity
 
 ```text
-R2_B2_R4_AUTHORIZATION_BASIS = 917a4dd0218956011d398fe00d13aba38e28ba49
-R2_B2_R4_AUTHORIZATION_COMMIT = c812f4ba51144b9cadb072d65cebdf4f1fb7278d
-R2_B2_R4_AUTHORIZATION_TOKEN = D2-WP004-R2-B2-R4-TEST-ONLY-CORRECTIVE-20260903-01
-R2_B2_R4_IMPLEMENTATION_COMMIT = 401caf0d2c4132a4f224140f156d7255a1319a88
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES = EXACTLY ONE AUTHORIZED FILE
-  tests/mbo-xlsx-template-preparer-part-b.test.js
-SCOPE_REVIEW = PASS
-TOKEN_STATE = CONSUMED / DO NOT REUSE
-GITHUB_COMBINED_STATUS = NONE
-GITHUB_WORKFLOW_RUNS = NONE
+R2_B2_IMPLEMENTATION = 0b4bac862aa2906d1ac11071431dbb268c7b7b5e
+R2_B2_R1_IMPLEMENTATION = 67c60065e169f9339219dd334c51e9b70c355319
+R2_B2_R2_IMPLEMENTATION = 33f1beb3ae292f1ad24857ea04511b3fa445cd2e
+R2_B2_R3_IMPLEMENTATION = ffd2c90011706011b51612b56c63a4786d43c653
+R2_B2_R4_AUTHORIZATION = c812f4ba51144b9cadb072d65cebdf4f1fb7278d
+R2_B2_R4_IMPLEMENTATION = 401caf0d2c4132a4f224140f156d7255a1319a88
+R2_B2_R4_SCOPE = PASS / EXACTLY ONE AUTHORIZED TEST FILE
+R2_B2_R4_STATIC_REVIEW = PASS
+R2_B2_R4_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
+R2_B2_R4_OWNER_TEMPLATE_INTEGRATION = EXECUTED / NOT SKIPPED
+R2_B2_R4_N6_N7_N8_MATRIX = PASS
+R2_B2 = PASS / CLOSED
 ```
 
-## 3. Independent R4 static review — PASS
+R4 authorization token is consumed and must not be reused:
 
-Accepted R4 test proof:
-- `extractRowPayloadAuthority()` derives protected padding authority directly from exact OWNER SOURCE worksheet XML;
-- SOURCE row30 is captured before production execution as the sole expected oracle;
-- N6 row30, N7 rows30/34 and N8 rows30/34/38 are checked against SOURCE row30 under authorized row-number relocation only;
-- row attributes are deep-equalled excluding only row number identity;
-- exact cell inventory count and ordered column identity are checked;
-- cell structural attributes are deep-equalled;
-- raw OOXML cell payload is deep-equalled for every materialized cell;
-- decoded cell values are deep-equalled to OWNER SOURCE;
-- unexpected cell materialization/removal is therefore detectable;
-- no hard-coded padding value oracle is used;
-- accepted R3 explicit intermediate reconstruction proof remains;
-- accepted final merge deep equality, Rating Scale OWNER-SOURCE value parity, Profile-derived semantic no-write proof, row/style parity, auxiliary Sheet1, defined-name, privacy, package/formula and caller-immutability proofs remain present;
-- production source/Profile/Part A/export service remain untouched.
+`D2-WP004-R2-B2-R4-TEST-ONLY-CORRECTIVE-20260903-01`
 
-No material static blocker remains for R2-B2.
+## 3. Accepted/frozen R2-B2 authority
 
-## 4. Runtime evidence gate — REQUIRED BEFORE CLOSURE
+The following are accepted and frozen absent a proven regression:
+- production exact OWNER-SOURCE-derived intermediate merge guard before presentation overlay;
+- exact intermediate merge counts 79 / 85 / 91;
+- exact final merge inventories 79 / 86 / 93;
+- SOURCE-backed rows1:30 / inserted SOURCE27:30 / relocated SOURCE31:35 structural-style-type guard;
+- protected Rating Scale/padding topology and sanitizer-overlap guard;
+- Rating Scale OWNER-SOURCE row29 B:J value parity;
+- protected padding OWNER-SOURCE row30 row/cell attrs, exact cell inventory, raw OOXML payload and decoded-value parity for N6 row30, N7 rows30/34 and N8 rows30/34/38;
+- Profile-derived semantic no-write proof including K9/K13/K17/K21/K25/K29/K33/K37 and b7/b8 presentation/summary targets;
+- auxiliary Sheet1 parity;
+- non-Print_Area defined-name parity;
+- privacy/sanitization proof;
+- package/formula preservation;
+- caller immutability;
+- browser-safe / no-sentinel boundary.
 
-Exact command required by the authorized R4 contract:
+No R2-B2-R5 is required or proposed.
+
+## 4. Accepted runtime evidence
+
+Control Plane accepted owner-supplied execution evidence for the exact focused command:
 
 `node --test tests/mbo-xlsx-template-preparer-part-b.test.js`
 
-Closure requires evidence showing:
+Observed result:
 
 ```text
-FAIL = 0
-SKIP = 0
-real owner Part B template = EXECUTED / NOT SKIPPED
-N6/N7/N8 matrix = PASS
-SOURCE-derived intermediate merge test deep equality = PASS
-SOURCE-derived final merge deep equality = PASS
-production SOURCE-backed row/style/static guard = PASS
-protected Rating Scale exact OWNER-SOURCE parity = PASS
-protected padding exact OWNER-SOURCE value+payload+type+structure parity = PASS
-Profile-derived semantic-target no-write proof = PASS
-auxiliary Sheet1 full parity = PASS
-non-target defined-name parity = PASS
-privacy/sanitization = PASS
-package/formula preservation = PASS
+tests = 3
+pass = 3
+fail = 0
+skipped = 0
+PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION = PASS
+N=6/7/8 complete proof matrix = EXECUTED / PASS
 ```
 
-Repository-hosted CI does not provide this evidence for implementation commit `401caf0d...`. Control Plane therefore must not infer runtime PASS from the commit alone.
+Combined with the independent static review of the active assertions in implementation commit `401caf0d...`, the R2-B2 closure contract is satisfied.
 
-If the executor's exact focused runtime output shows the required PASS / FAIL=0 / SKIP=0 matrix with the real OWNER template executed, ChatGPT may close:
+## 5. Exact next control decision — R2-C planning only
+
+Design authority defines the next stage as:
 
 ```text
-D2_WP004_R2_B2 = PASS / CLOSED
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-C
+NAME = SECURED SEMANTIC VALUE RENDERER
+STATE = PROPOSED / NOT AUTHORIZED
 ```
 
-without another source/test corrective, absent a newly proven regression.
+R2-C must consume only:
+- sanitized/prepared XLSX bytes;
+- secured `MboExportService` projection;
+- centralized Template Profile authority.
 
-If runtime fails, do not weaken tests and do not modify source without separate Owner authorization.
+R2-C may write only proven SAFE roles whose exact secured paths are present. It must not accept raw Kintone records, reconstruct omitted confidential values, calculate scoring, invent semantic aliases, or scatter important workbook addresses.
 
-## 5. Current owner/control decision
+Before requesting Owner authorization, Control Plane must define the smallest exact R2-C source/test contract from current repository truth. Do not launch Antigravity merely to rediscover the repository.
 
-No new work package is proposed or authorized while runtime evidence is pending.
+## 6. Forbidden until separate owner authorization
 
 ```text
-R2-B2-R5 = NONE
-R2-C = NOT AUTHORIZED
+R2-C source/test change = NOT AUTHORIZED
+Combined Excel parity = NOT AUTHORIZED
+Kintone write = NONE
+Deploy = NONE
+Live UAT = NONE
 D3 = HOLD
 ```
 
-Next action: provide/review the exact Antigravity focused runtime result for R4. Do not rerun implementation or modify files merely to produce evidence.
+Next action: Control Plane plans exact R2-C bounded contract. Antigravity remains STOP until explicit Owner authorization.
