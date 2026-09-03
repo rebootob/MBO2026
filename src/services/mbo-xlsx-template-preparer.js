@@ -1,17 +1,14 @@
 /**
- * Production Part A XLSX Template Preparer & Sanitizer Foundation
+ * Production Part A & Part B XLSX Template Preparer & Sanitizer Foundation
  * 
  * Browser-safe asynchronous preparer:
- *   owner Part A template bytes + objectiveCount N (4..10)
- *   -> prepare structural row expansion, merge cloning, print area & dimensions
- *   -> sanitize effective sensitive ranges from MboXlsxTemplateProfile via RAW OOXML
- *   -> remove reference image rId3 / image3.png safely with deterministic pre-removal proof
- *   -> output NEW browser-usable Uint8Array bytes
+ *   - Part A: owner Part A template bytes + objectiveCount N (4..10)
+ *   - Part B: owner Part B template bytes + competencyCount N (6, 7, 8)
  * 
  * Rules:
  * 1. Pure browser-safe production module (no node:fs, node:path, node:crypto, Kintone API).
  * 2. Zero mutation of caller / source bytes.
- * 3. Validate MboXlsxTemplateProfile integrity & Part A owner SHA-256 (03d1e8c3...).
+ * 3. Validate MboXlsxTemplateProfile integrity & Part A / Part B owner SHA-256.
  * 4. Zero proof sentinels (NO proof-only markers).
  * 5. Zero semantic value writes (no employee data, no App794 records, no scores, no formulas).
  * 6. Raw OOXML value-payload sanitization (preserves exact <c> structural attributes & t="s").
@@ -19,6 +16,7 @@
 import XlsxPopulate from 'xlsx-populate';
 import {
   PART_A_TEMPLATE_SHA256,
+  PART_B_TEMPLATE_SHA256,
   MboXlsxTemplateProfile,
   validateMappingIntegrity,
   expandRangeToAddresses
@@ -433,6 +431,227 @@ export async function preparePartATemplate(templateBytes, options = {}) {
   }
 
   // Output raw OOXML zip buffer directly from zip to preserve exact OOXML dimension tag
+  const finalBytes = await wbStruct._zip.generateAsync({ type: 'uint8array' });
+  return finalBytes;
+}
+
+export async function preparePartBTemplate(templateBytes, options = {}) {
+  const competencyCount = options.competencyCount !== undefined ? options.competencyCount : 6;
+  const profile = options.profile || new MboXlsxTemplateProfile();
+
+  // 1. Validate Profile integrity before template-dependent mutation
+  validateMappingIntegrity(profile);
+
+  // 2. Validate competency count domain (6, 7, 8)
+  if (typeof competencyCount !== 'number' || !Number.isInteger(competencyCount) || ![6, 7, 8].includes(competencyCount)) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Competency count out of domain');
+  }
+
+  if (!templateBytes || (typeof templateBytes !== 'object' && !(templateBytes instanceof ArrayBuffer))) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Invalid template bytes');
+  }
+
+  // 3. Validate Part B template SHA256 before any mutation
+  const sha = await computeSha256(templateBytes);
+  if (sha !== PART_B_TEMPLATE_SHA256) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Part B template SHA mismatch');
+  }
+
+  // 4. Get Part B layout & sanitization topology from Profile
+  const layout = profile.getPartBLayoutTopology(competencyCount);
+  const extraBlocks = competencyCount - 6;
+  const extraRows = 4 * extraBlocks;
+
+  // 5. Load zip copy without mutating caller bytes
+  const copyBytes = new Uint8Array(templateBytes.byteLength || templateBytes.length);
+  const srcView = templateBytes instanceof Uint8Array ? templateBytes : new Uint8Array(templateBytes);
+  copyBytes.set(srcView);
+
+  const wbStruct = await XlsxPopulate.fromDataAsync(copyBytes);
+
+  // --------------------------------------------------------------------------
+  // Raw Source Pre-Mutation Guards
+  // --------------------------------------------------------------------------
+  const sheet1File = wbStruct._zip.files['xl/worksheets/sheet1.xml'];
+  const wbFile = wbStruct._zip.files['xl/workbook.xml'];
+  if (!sheet1File || !wbFile) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Required Part B OOXML files missing');
+  }
+
+  let sheetXml = await sheet1File.async('string');
+  let wbXml = await wbFile.async('string');
+
+  if (!sheetXml.includes('<dimension ref="A1:X35"/>')) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B dimension mismatch');
+  }
+
+  const rawMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+  const declaredCount = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1];
+  if (rawMerges.length !== 79 || declaredCount !== '79') {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B merge count mismatch');
+  }
+
+  for (let r = 27; r <= 31; r++) {
+    const rCount = [...sheetXml.matchAll(new RegExp(`<row r="${r}"`, 'g'))].length;
+    if (rCount !== 1) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B row ${r} count mismatch`);
+    }
+  }
+
+  const printAreaMatches = [...wbXml.matchAll(/<definedName name="_xlnm\.Print_Area"[^>]*>([\s\S]*?)<\/definedName>/g)];
+  if (printAreaMatches.length !== 1 || !printAreaMatches[0][0].includes('localSheetId="0"') || !printAreaMatches[0][1].includes("'(Part B) Competency'!$A$1:$X$35")) {
+    throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B Print_Area mismatch');
+  }
+
+  for (const fName in wbStruct._zip.files) {
+    if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
+      const xml = await wbStruct._zip.files[fName].async('string');
+      if (/<f[\s>]/.test(xml)) {
+        throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Unexpected formula in Part B source package');
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // PASS 1: Read-Only Sensitive Token Collection & SharedStrings Purge
+  // --------------------------------------------------------------------------
+  const baseLayout = profile.getPartBLayoutTopology(6);
+  const sensitiveTokens = [];
+  const sensitiveAddrs = baseLayout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+  const sheetReadOnly = wbStruct.sheet(0);
+  for (const addr of sensitiveAddrs) {
+    const val = sheetReadOnly.cell(addr).value();
+    if (val && typeof val === 'string' && val.trim().length >= 2) {
+      sensitiveTokens.push(val.trim());
+    }
+  }
+
+  const ssFile = wbStruct._zip.files['xl/sharedStrings.xml'];
+  if (ssFile && sensitiveTokens.length > 0) {
+    let ssXml = await ssFile.async('string');
+    let ssModified = false;
+    for (const token of sensitiveTokens) {
+      if (ssXml.includes(token)) {
+        ssXml = ssXml.replaceAll(token, '');
+        ssModified = true;
+      }
+    }
+    if (ssModified) {
+      wbStruct._zip.file('xl/sharedStrings.xml', ssXml);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // PASS 2: Frozen Raw OOXML Structural Transform
+  // --------------------------------------------------------------------------
+  if (extraRows > 0) {
+    sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (m, rStr, rest) => {
+      const r = parseInt(rStr, 10);
+      if (r >= 31) return `<row r="${r + extraRows}"${rest}>`;
+      return m;
+    });
+
+    sheetXml = sheetXml.replace(/<c r="([A-Z]+)(\d+)"/g, (m, col, rStr) => {
+      const r = parseInt(rStr, 10);
+      if (r >= 31) return `<c r="${col}${r + extraRows}"`;
+      return m;
+    });
+
+    const blockMatch = sheetXml.match(/<row r="27"[^>]*>[\s\S]*?<\/row>\s*<row r="28"[^>]*>[\s\S]*?<\/row>\s*<row r="29"[^>]*>[\s\S]*?<\/row>\s*<row r="30"[^>]*>[\s\S]*?<\/row>/);
+    if (!blockMatch) {
+      throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Source block rows 27:30 not found');
+    }
+    const row27_30Xml = blockMatch[0];
+
+    const clonedBlocksXml = [];
+    for (let b = 1; b <= extraBlocks; b++) {
+      const offset = 4 * b;
+      let clonedBlock = row27_30Xml;
+      for (let r = 30; r >= 27; r--) {
+        const targetR = r + offset;
+        clonedBlock = clonedBlock.replace(new RegExp(`<row r="${r}"`, 'g'), `<row r="${targetR}"`);
+        clonedBlock = clonedBlock.replace(new RegExp(`<c r="([A-Z]+)${r}"`, 'g'), (m, col) => `<c r="${col}${targetR}"`);
+      }
+      clonedBlocksXml.push(clonedBlock);
+    }
+    sheetXml = sheetXml.replace(row27_30Xml, row27_30Xml + '\n' + clonedBlocksXml.join('\n'));
+
+    const sourceBlockMerges = [
+      'B28:J28', 'K28:Q28', 'R28:W28',
+      'B29:J29', 'K29:Q29', 'R29:W29'
+    ];
+
+    sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
+      let r1 = parseInt(r1Str, 10);
+      let r2 = parseInt(r2Str, 10);
+      if (r1 >= 31) r1 += extraRows;
+      if (r2 >= 29) r2 += extraRows;
+      return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
+    });
+
+    const clonedMergesXml = [];
+    for (let b = 1; b <= extraBlocks; b++) {
+      const offset = 4 * b;
+      for (const mRef of sourceBlockMerges) {
+        const [start, end] = mRef.split(':');
+        const col1 = start.match(/^[A-Z]+/)[0];
+        const r1 = parseInt(start.match(/\d+/)[0], 10) + offset;
+        const col2 = end.match(/^[A-Z]+/)[0];
+        const r2 = parseInt(end.match(/\d+/)[0], 10) + offset;
+        clonedMergesXml.push(`<mergeCell ref="${col1}${r1}:${col2}${r2}"/>`);
+      }
+    }
+
+    if (clonedMergesXml.length > 0) {
+      sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXml.join('\n') + '\n</mergeCells>');
+    }
+
+    const newIntermediateMergeCount = 79 + clonedMergesXml.length;
+    sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newIntermediateMergeCount}">`);
+  }
+
+  // Intermediate merge count verification
+  const interMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+  if (interMerges.length !== layout.intermediateMergeCount) {
+    throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Intermediate merge count mismatch: expected ${layout.intermediateMergeCount}, got ${interMerges.length}`);
+  }
+
+  // --------------------------------------------------------------------------
+  // PASS 3: Presentation Title-Merge Overlay
+  // --------------------------------------------------------------------------
+  const overlayMergesXml = [];
+  if (competencyCount >= 7) {
+    overlayMergesXml.push('<mergeCell ref="B31:J31"/>');
+  }
+  if (competencyCount === 8) {
+    overlayMergesXml.push('<mergeCell ref="B35:J35"/>');
+  }
+
+  if (overlayMergesXml.length > 0) {
+    sheetXml = sheetXml.replace(/<\/mergeCells>/, overlayMergesXml.join('\n') + '\n</mergeCells>');
+    sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${layout.finalOverlayMergeCount}">`);
+  }
+
+  // --------------------------------------------------------------------------
+  // PASS 4: Raw OOXML Cell Value Sanitization
+  // --------------------------------------------------------------------------
+  const sanAddressSet = new Set(layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r)));
+  sheetXml = sanitizeRawSheetXml(sheetXml, sanAddressSet);
+
+  // --------------------------------------------------------------------------
+  // PASS 5: Dimension Tag Ref & Print_Area Update
+  // --------------------------------------------------------------------------
+  const dimensionTag = `<dimension ref="${layout.dimension}"/>`;
+  sheetXml = sheetXml.replace(/<dimension [^>]*\/>/, dimensionTag);
+  wbStruct._zip.file('xl/worksheets/sheet1.xml', sheetXml);
+
+  const printAreaStr = `'${layout.mainSheetName}'!$A$1:$X$${35 + extraRows}`;
+  wbXml = wbXml.replace(
+    /<definedName name="_xlnm\.Print_Area"[^>]*>[^<]+<\/definedName>/,
+    `<definedName name="_xlnm.Print_Area" localSheetId="0">${printAreaStr}</definedName>`
+  );
+  wbStruct._zip.file('xl/workbook.xml', wbXml);
+
   const finalBytes = await wbStruct._zip.generateAsync({ type: 'uint8array' });
   return finalBytes;
 }
