@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> only exact R4 runtime evidence if supplied. Do not broad-scan or reopen accepted R2 source/test corrections without proven regression.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact next-gate source/test/design only. Do not reopen R2-B1 or R2-B2 without a proven regression. Do not broad-scan or auto-start Antigravity.
 
 ## Project truth
 ```text
@@ -23,14 +23,15 @@ XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
 PRE1/PRE2 BASELINES = CLOSED AS DOCUMENTED
 R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
-R2_B2 = CLOSURE CANDIDATE / NOT CLOSED / R4 RUNTIME EVIDENCE PENDING
-R2_B2_R2 = PRODUCTION SOURCE PASS / FROZEN
-R2_B2_R3 = REVIEWED / PARTIAL TEST PASS
-R2_B2_R4 = REVIEWED / STATIC PASS / RUNTIME EVIDENCE PENDING
+R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
+R2_B2_PRODUCTION_SOURCE = PASS / FROZEN
+R2_B2_TEST_PROOF = PASS / FROZEN
+R2_B2_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
 ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT RUNTIME EVIDENCE REVIEW
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-R2_C = NOT AUTHORIZED
+R2_C = PROPOSED / NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
@@ -41,7 +42,7 @@ R10_RUNTIME = PASS 4 / FAIL 0 / SKIP 0
 R2_B1 = PASS / CLOSED / FROZEN
 ```
 
-## R2-B2 implementation chain
+## Durable R2-B2 closure
 ```text
 R2_B2_IMPLEMENTATION = 0b4bac862aa2906d1ac11071431dbb268c7b7b5e
 R2_B2_R1_IMPLEMENTATION = 67c60065e169f9339219dd334c51e9b70c355319
@@ -51,29 +52,35 @@ R2_B2_R4_AUTHORIZATION = c812f4ba51144b9cadb072d65cebdf4f1fb7278d
 R2_B2_R4_IMPLEMENTATION = 401caf0d2c4132a4f224140f156d7255a1319a88
 R2_B2_R4_SCOPE = PASS / EXACTLY ONE AUTHORIZED TEST FILE
 R2_B2_R4_STATIC_REVIEW = PASS
-GITHUB_STATUS = NONE
-GITHUB_WORKFLOW = NONE
+R2_B2_R4_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
+OWNER_TEMPLATE_INTEGRATION = EXECUTED / NOT SKIPPED
+N6_N7_N8_MATRIX = PASS
+R2_B2 = PASS / CLOSED / FROZEN
 ```
 
-Accepted through R4:
-- production exact OWNER-SOURCE-derived intermediate merge guard is frozen;
-- explicit test-side intermediate reconstruction deep-equals OWNER-SOURCE expected inventory;
-- final SOURCE-derived merge proof remains exact;
-- production SOURCE-backed row/style/type guard remains frozen;
-- Profile-derived semantic no-write proof remains exact;
-- Rating Scale B:J values use OWNER SOURCE row29;
-- protected padding row30 authority is now SOURCE-derived and checks row attrs, exact cell inventory/attrs, raw OOXML payload and decoded values against rows30/34/38;
-- auxiliary Sheet1 / non-Print_Area / privacy / package-formula / caller-immutability proofs remain.
+Accepted/frozen through R2-B2:
+- exact SOURCE-derived Part A and Part B structural preparation;
+- Part B intermediate/final merge authority;
+- SOURCE-backed row/style/type guards;
+- protected Rating Scale and padding exact OWNER-SOURCE parity;
+- raw-OOXML sanitizer behavior without structural mutation;
+- Profile-derived semantic no-write proof;
+- auxiliary Sheet1 and non-Print_Area parity;
+- privacy, package/formula preservation, caller immutability and browser-safe/no-sentinel boundaries.
 
-No material static blocker remains for R2-B2.
+No R2-B2-R5 is required.
 
-## Exact current control gate — runtime evidence only
-Required command:
+## Exact next control decision — R2-C planning / NOT AUTHORIZED
+Design authority:
 
-`node --test tests/mbo-xlsx-template-preparer-part-b.test.js`
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-C
+NAME = SECURED SEMANTIC VALUE RENDERER
+STATE = PROPOSED / NOT AUTHORIZED
+```
 
-Need executor evidence with `FAIL=0`, `SKIP=0`, real OWNER Part B template executed/not skipped and N6/N7/N8 proof matrix PASS.
+R2-C must consume sanitized prepared buffers + secured `MboExportService` projection + centralized Template Profile. It may write only proven SAFE roles with exact secured paths present. No raw Kintone input, no scoring calculation, no semantic alias invention, and no scattered workbook literals.
 
-No R5 is proposed. Do not modify source/test merely to produce evidence.
+Control Plane must define the smallest exact R2-C source/test contract before Owner authorization. Antigravity remains STOP until that explicit authorization.
 
-If exact R4 runtime evidence passes, Control Plane may close `R2-B2 = PASS / CLOSED` and then separately plan the next smallest D2 gate. `R2-C` and `D3` remain unauthorized until that closure decision.
+`Combined Excel parity` remains a later D2 gate. `D3 = HOLD` until D2 is fully PASS/CLOSED.
