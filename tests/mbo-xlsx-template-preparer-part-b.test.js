@@ -220,6 +220,56 @@ async function buildPackageAuthority(wbZip) {
   };
 }
 
+function deriveExpectedMergeInventory(srcMergesList, competencyCount, includeTitleOverlay = false) {
+  const extraBlocks = competencyCount - 6;
+  const extraRows = 4 * extraBlocks;
+
+  const result = [];
+  for (const mRef of srcMergesList) {
+    const [start, end] = mRef.split(':');
+    const col1 = start.match(/^[A-Z]+/)[0];
+    const r1 = parseInt(start.match(/\d+/)[0], 10);
+    const col2 = end.match(/^[A-Z]+/)[0];
+    const r2 = parseInt(end.match(/\d+/)[0], 10);
+
+    if (r1 < 31 && r2 < 31) {
+      result.push(`${col1}${r1}:${col2}${r2}`);
+    } else if (r1 >= 31 && r2 >= 31) {
+      result.push(`${col1}${r1 + extraRows}:${col2}${r2 + extraRows}`);
+    } else {
+      throw new Error(`Crossing merge ref: ${mRef}`);
+    }
+  }
+
+  const sourceBlockMerges = [
+    'B28:J28', 'K28:Q28', 'R28:W28',
+    'B29:J29', 'K29:Q29', 'R29:W29'
+  ];
+
+  for (let b = 1; b <= extraBlocks; b++) {
+    const offset = 4 * b;
+    for (const mRef of sourceBlockMerges) {
+      const [start, end] = mRef.split(':');
+      const col1 = start.match(/^[A-Z]+/)[0];
+      const r1 = parseInt(start.match(/\d+/)[0], 10) + offset;
+      const col2 = end.match(/^[A-Z]+/)[0];
+      const r2 = parseInt(end.match(/\d+/)[0], 10) + offset;
+      result.push(`${col1}${r1}:${col2}${r2}`);
+    }
+  }
+
+  if (includeTitleOverlay) {
+    if (competencyCount >= 7) result.push('B31:J31');
+    if (competencyCount === 8) result.push('B35:J35');
+  }
+
+  return result.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
+function extractNonPrintAreaDefinedNames(wbXml) {
+  return [...wbXml.matchAll(/<definedName (?!name="_xlnm\.Print_Area")[^>]*>[\s\S]*?<\/definedName>/g)].map(m => m[0]).sort();
+}
+
 test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix, deep row structural parity & frozen baseline matrix', async () => {
   const templateBytes = loadLocalTemplate();
 
@@ -231,13 +281,22 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
 
   // Parse exact OWNER SOURCE template directly into baseline objects
   const wbSource = await XlsxPopulate.fromDataAsync(templateBytes);
-  const srcSheetXml = await wbSource._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const srcSheet1Xml = await wbSource._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const srcSheet2Xml = await wbSource._zip.files['xl/worksheets/sheet2.xml'].async('string');
+  const srcWbXml = await wbSource._zip.files['xl/workbook.xml'].async('string');
 
   // Exact SOURCE-derived row structural oracle
-  const srcRowObjectsMap = parseRowObjectsFromXml(srcSheetXml);
+  const srcRowObjectsMap = parseRowObjectsFromXml(srcSheet1Xml);
 
   // Exact SOURCE-derived package authority object
   const srcPackageAuthority = await buildPackageAuthority(wbSource._zip);
+
+  // Parse complete raw SOURCE merge inventory
+  const srcMerges = [...srcSheet1Xml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+  assert.equal(srcMerges.length, 79, 'SOURCE merge count must be exactly 79');
+
+  // Extract non-Print_Area defined names
+  const srcNonPrintAreaDefinedNames = extractNonPrintAreaDefinedNames(srcWbXml);
 
   // Collect sensitive string tokens ONLY from exact SOURCE addresses covered by effective sanitization ranges
   const baseLayout = profile.getPartBLayoutTopology(6);
@@ -298,6 +357,14 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
     const outPackageAuthority = await buildPackageAuthority(wb._zip);
     assert.deepEqual(outPackageAuthority, srcPackageAuthority, `Complete package authority object must deep equal SOURCE authority for N=${n}`);
 
+    // Auxiliary Sheet1 Full Fingerprint Parity
+    const outSheet2Xml = await wb._zip.files['xl/worksheets/sheet2.xml'].async('string');
+    assert.equal(outSheet2Xml, srcSheet2Xml, `Auxiliary Sheet1 XML must match SOURCE fingerprint for N=${n}`);
+
+    // Non-Print_Area Defined Names Parity
+    const outNonPrintAreaDefinedNames = extractNonPrintAreaDefinedNames(wbXml);
+    assert.deepEqual(outNonPrintAreaDefinedNames, srcNonPrintAreaDefinedNames, `Non-Print_Area defined names must match SOURCE baseline for N=${n}`);
+
     // F. Complete SOURCE-Derived Row Structural Parity Inspection (NO CELL FILTERING OF ANY KIND)
     const outRowObjectsMap = parseRowObjectsFromXml(sheetXml);
     const rowRefs = Array.from(outRowObjectsMap.keys()).sort((a, b) => a - b);
@@ -336,25 +403,51 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       assert.deepEqual(outRelocatedObj.cells, srcDownstreamObj.cells, `Relocated row ${targetR} cell structural inventory must deep equal SOURCE row ${r} for N=${n}`);
     }
 
-    // G. Complete Expected Merge SET Deep Equality & Overlay Verification
+    // G. BLOCKER B: SOURCE-Derived Intermediate & Final Merge Inventory Deep Equality Proof
     const layoutN = profile.getPartBLayoutTopology(n);
-    const rawMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
-    const actualMergeSet = new Set(rawMerges);
 
+    // Derive SOURCE expected intermediate and final merge inventories
+    const expectedIntermediateMerges = deriveExpectedMergeInventory(srcMerges, n, false);
+    const expectedFinalMerges = deriveExpectedMergeInventory(srcMerges, n, true);
+
+    // Actual output merges from sheetXml
+    const actualMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+    const actualSortedFinalMerges = [...actualMerges].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    // DeepEqual actual final merge inventory to expected final merge inventory
+    assert.deepEqual(actualSortedFinalMerges, expectedFinalMerges, `Complete final merge inventory must deep equal SOURCE-derived expected inventory for N=${n}`);
+
+    // Declared count attribute equals actual inventory length
     const countAttr = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1];
-    assert.equal(countAttr, String(rawMerges.length), 'Declared merge count attr must equal actual merge array length');
-    assert.equal(rawMerges.length, layoutN.finalOverlayMergeCount, `Merge count must equal expected final count ${layoutN.finalOverlayMergeCount} for N=${n}`);
+    assert.equal(countAttr, String(actualMerges.length), 'Declared merge count attr must equal actual merge array length');
+    assert.equal(actualMerges.length, layoutN.finalOverlayMergeCount, `Merge count must equal expected final count ${layoutN.finalOverlayMergeCount} for N=${n}`);
 
-    // Verify title merge additions presence
-    if (n >= 7) assert.equal(actualMergeSet.has('B31:J31'), true, 'B31:J31 title merge must be present for N>=7');
-    if (n === 8) assert.equal(actualMergeSet.has('B35:J35'), true, 'B35:J35 title merge must be present for N=8');
+    // Zero duplicate merge refs
+    assert.equal(new Set(actualMerges).size, actualMerges.length, 'Output merge refs sequence must contain zero duplicates');
 
-    // H. Protected Rating Scale and padding rows preservation
+    // Prove original rows 1:30 SOURCE merge refs preserved
+    const actualMergeSet = new Set(actualMerges);
+    for (const mRef of srcMerges) {
+      const r1 = parseInt(mRef.split(':')[0].match(/\d+/)[0], 10);
+      if (r1 < 31) {
+        assert.equal(actualMergeSet.has(mRef), true, `Original SOURCE merge ${mRef} must be preserved in output for N=${n}`);
+      }
+    }
+
+    // H. Protected Rating Scale & Padding Parity (BLOCKER D & E)
     for (const rowNum of layoutN.protectedPaddingRows) {
       const rowObj = outRowObjectsMap.get(rowNum);
       assert.equal(Boolean(rowObj), true, `Protected padding row ${rowNum} must exist for N=${n}`);
     }
     for (const rangeStr of layoutN.ratingScaleStaticRanges) {
+      assert.equal(actualMergeSet.has(rangeStr), true, `Rating Scale merge ${rangeStr} must be present for N=${n}`);
+
+      // Prove Rating Scale merges are exact 1-row height and NOT stretched
+      const [start, end] = rangeStr.split(':');
+      const r1 = parseInt(start.match(/\d+/)[0], 10);
+      const r2 = parseInt(end.match(/\d+/)[0], 10);
+      assert.equal(r1, r2, `Rating Scale merge ${rangeStr} must be a 1-row merge, not stretched`);
+
       const addrs = expandRangeToAddresses(rangeStr);
       for (const addr of addrs) {
         const val = wb.sheet(0).cell(addr).value();
@@ -401,7 +494,13 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       }
     }
 
-    // J. No semantic value writes
+    // J. Actual Semantic-Target No-Write Proof (BLOCKER E)
+    // Header dynamic targets
+    for (const hAddr of ['G2', 'H2', 'J3', 'L3', 'M3', 'O3', 'P3', 'Q3', 'R3', 'S3', 'W3']) {
+      const val = sheet.cell(hAddr).value();
+      assert.equal(val == null || val === '', true, `Header target ${hAddr} must be unwritten for N=${n}`);
+    }
+    // Competency self-ratings
     for (let b = 1; b <= n; b++) {
       let selfRatingAddr;
       if (b <= 6) {
@@ -412,7 +511,16 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
         selfRatingAddr = 'R35';
       }
       const val = sheet.cell(selfRatingAddr).value();
-      assert.equal(val == null || val === '', true, `Competency ${b} Self Rating at ${selfRatingAddr} must be unwritten`);
+      assert.equal(val == null || val === '', true, `Competency ${b} Self Rating at ${selfRatingAddr} must be unwritten for N=${n}`);
+    }
+    // Part B Summary score table targets
+    const sumStart = 31 + extraRows;
+    const sumEnd = sumStart + 3;
+    for (const sRange of [`B${sumStart}:D${sumEnd}`, `E${sumStart}:H${sumEnd}`, `I${sumStart}:P${sumEnd}`, `Q${sumStart}:S${sumEnd}`, `T${sumStart}:X${sumEnd}`]) {
+      for (const addr of expandRangeToAddresses(sRange)) {
+        const val = sheet.cell(addr).value();
+        assert.equal(val == null || val === '', true, `Part B Summary cell ${addr} must be unwritten for N=${n}`);
+      }
     }
   }
 });

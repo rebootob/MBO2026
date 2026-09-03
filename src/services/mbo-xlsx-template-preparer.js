@@ -470,7 +470,7 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
   const wbStruct = await XlsxPopulate.fromDataAsync(copyBytes);
 
   // --------------------------------------------------------------------------
-  // Raw Source Pre-Mutation Guards
+  // BLOCKER C: Raw Source Pre-Mutation Guards
   // --------------------------------------------------------------------------
   const sheet1File = wbStruct._zip.files['xl/worksheets/sheet1.xml'];
   const wbFile = wbStruct._zip.files['xl/workbook.xml'];
@@ -485,9 +485,9 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B dimension mismatch');
   }
 
-  const rawMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+  const srcMergeMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
   const declaredCount = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1];
-  if (rawMerges.length !== 79 || declaredCount !== '79') {
+  if (srcMergeMatches.length !== 79 || declaredCount !== '79') {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B merge count mismatch');
   }
 
@@ -495,6 +495,27 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
     const rCount = [...sheetXml.matchAll(new RegExp(`<row r="${r}"`, 'g'))].length;
     if (rCount !== 1) {
       throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B row ${r} count mismatch`);
+    }
+  }
+
+  // Verify the exact six SOURCE block merges exist in raw sheet1.xml
+  const sourceBlockMerges = [
+    'B28:J28', 'K28:Q28', 'R28:W28',
+    'B29:J29', 'K29:Q29', 'R29:W29'
+  ];
+  const srcMergeRefsSet = new Set(srcMergeMatches.map(m => `${m[1]}${m[2]}:${m[3]}${m[4]}`));
+  for (const bRef of sourceBlockMerges) {
+    if (!srcMergeRefsSet.has(bRef)) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing exact SOURCE block merge ${bRef}`);
+    }
+  }
+
+  // Guard against any SOURCE merge crossing threshold row 31
+  for (const m of srcMergeMatches) {
+    const r1 = parseInt(m[2], 10);
+    const r2 = parseInt(m[4], 10);
+    if ((r1 < 31 && r2 >= 31) || (r1 >= 31 && r2 < 31)) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Unexpected SOURCE merge crossing threshold row 31: ${m[1]}${r1}:${m[3]}${r2}`);
     }
   }
 
@@ -542,7 +563,7 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
   }
 
   // --------------------------------------------------------------------------
-  // PASS 2: Frozen Raw OOXML Structural Transform
+  // PASS 2: Frozen Raw OOXML Structural Transform & Correct Merge Relocation
   // --------------------------------------------------------------------------
   if (extraRows > 0) {
     sheetXml = sheetXml.replace(/<row r="(\d+)"([^>]*)>/g, (m, rStr, rest) => {
@@ -575,67 +596,103 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
       clonedBlocksXml.push(clonedBlock);
     }
     sheetXml = sheetXml.replace(row27_30Xml, row27_30Xml + '\n' + clonedBlocksXml.join('\n'));
-
-    const sourceBlockMerges = [
-      'B28:J28', 'K28:Q28', 'R28:W28',
-      'B29:J29', 'K29:Q29', 'R29:W29'
-    ];
-
-    sheetXml = sheetXml.replace(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g, (match, c1, r1Str, c2, r2Str) => {
-      let r1 = parseInt(r1Str, 10);
-      let r2 = parseInt(r2Str, 10);
-      if (r1 >= 31) r1 += extraRows;
-      if (r2 >= 29) r2 += extraRows;
-      return `<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`;
-    });
-
-    const clonedMergesXml = [];
-    for (let b = 1; b <= extraBlocks; b++) {
-      const offset = 4 * b;
-      for (const mRef of sourceBlockMerges) {
-        const [start, end] = mRef.split(':');
-        const col1 = start.match(/^[A-Z]+/)[0];
-        const r1 = parseInt(start.match(/\d+/)[0], 10) + offset;
-        const col2 = end.match(/^[A-Z]+/)[0];
-        const r2 = parseInt(end.match(/\d+/)[0], 10) + offset;
-        clonedMergesXml.push(`<mergeCell ref="${col1}${r1}:${col2}${r2}"/>`);
-      }
-    }
-
-    if (clonedMergesXml.length > 0) {
-      sheetXml = sheetXml.replace(/<\/mergeCells>/, clonedMergesXml.join('\n') + '\n</mergeCells>');
-    }
-
-    const newIntermediateMergeCount = 79 + clonedMergesXml.length;
-    sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${newIntermediateMergeCount}">`);
   }
 
-  // Intermediate merge count verification
+  // Deterministic Merge Relocation & Cloning (BLOCKER A)
+  const relocatedMergesXml = [];
+  for (const m of srcMergeMatches) {
+    const c1 = m[1];
+    const r1 = parseInt(m[2], 10);
+    const c2 = m[3];
+    const r2 = parseInt(m[4], 10);
+
+    if (r1 < 31 && r2 < 31) {
+      relocatedMergesXml.push(`<mergeCell ref="${c1}${r1}:${c2}${r2}"/>`);
+    } else if (r1 >= 31 && r2 >= 31) {
+      relocatedMergesXml.push(`<mergeCell ref="${c1}${r1 + extraRows}:${c2}${r2 + extraRows}"/>`);
+    } else {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Unexpected SOURCE merge crossing threshold row 31: ${c1}${r1}:${c2}${r2}`);
+    }
+  }
+
+  for (let b = 1; b <= extraBlocks; b++) {
+    const offset = 4 * b;
+    for (const mRef of sourceBlockMerges) {
+      const [start, end] = mRef.split(':');
+      const col1 = start.match(/^[A-Z]+/)[0];
+      const r1 = parseInt(start.match(/\d+/)[0], 10) + offset;
+      const col2 = end.match(/^[A-Z]+/)[0];
+      const r2 = parseInt(end.match(/\d+/)[0], 10) + offset;
+      relocatedMergesXml.push(`<mergeCell ref="${col1}${r1}:${col2}${r2}"/>`);
+    }
+  }
+
+  const newIntermediateMergeBlockXml = `<mergeCells count="${relocatedMergesXml.length}">\n` + relocatedMergesXml.join('\n') + '\n</mergeCells>';
+  sheetXml = sheetXml.replace(/<mergeCells count="\d+">[\s\S]*?<\/mergeCells>/, newMergeBlockXml => newIntermediateMergeBlockXml);
+
+  // --------------------------------------------------------------------------
+  // BLOCKER D: Source-Backed Post-Structural Topology Validation
+  // --------------------------------------------------------------------------
   const interMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
   if (interMerges.length !== layout.intermediateMergeCount) {
     throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Intermediate merge count mismatch: expected ${layout.intermediateMergeCount}, got ${interMerges.length}`);
   }
 
+  for (const rangeStr of layout.ratingScaleStaticRanges) {
+    if (!interMerges.includes(rangeStr)) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing Rating Scale static merge ${rangeStr}`);
+    }
+  }
+
+  for (const rowNum of layout.protectedPaddingRows) {
+    if (!sheetXml.includes(`<row r="${rowNum}"`)) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing protected padding row ${rowNum}`);
+    }
+  }
+
+  const sanAddressSet = new Set(layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r)));
+  if (sanAddressSet.size !== layout.effectiveDynamicCount) {
+    throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Effective sanitization address count mismatch: expected ${layout.effectiveDynamicCount}, got ${sanAddressSet.size}`);
+  }
+
+  const protectedStaticAddrs = new Set();
+  for (const rangeStr of layout.ratingScaleStaticRanges) {
+    expandRangeToAddresses(rangeStr).forEach(a => protectedStaticAddrs.add(a));
+  }
+  for (const rowNum of layout.protectedPaddingRows) {
+    for (let c = 1; c <= 24; c++) {
+      const colStr = String.fromCharCode(64 + c);
+      protectedStaticAddrs.add(`${colStr}${rowNum}`);
+    }
+  }
+
+  for (const addr of sanAddressSet) {
+    if (protectedStaticAddrs.has(addr)) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Sanitization address ${addr} overlaps with protected static topology`);
+    }
+  }
+
   // --------------------------------------------------------------------------
   // PASS 3: Presentation Title-Merge Overlay
   // --------------------------------------------------------------------------
-  const overlayMergesXml = [];
+  const finalMergesXml = [...relocatedMergesXml];
   if (competencyCount >= 7) {
-    overlayMergesXml.push('<mergeCell ref="B31:J31"/>');
+    finalMergesXml.push('<mergeCell ref="B31:J31"/>');
   }
   if (competencyCount === 8) {
-    overlayMergesXml.push('<mergeCell ref="B35:J35"/>');
+    finalMergesXml.push('<mergeCell ref="B35:J35"/>');
   }
 
-  if (overlayMergesXml.length > 0) {
-    sheetXml = sheetXml.replace(/<\/mergeCells>/, overlayMergesXml.join('\n') + '\n</mergeCells>');
-    sheetXml = sheetXml.replace(/<mergeCells count="\d+">/, `<mergeCells count="${layout.finalOverlayMergeCount}">`);
+  if (finalMergesXml.length !== layout.finalOverlayMergeCount) {
+    throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Final merge count mismatch: expected ${layout.finalOverlayMergeCount}, got ${finalMergesXml.length}`);
   }
+
+  const finalMergeBlockXml = `<mergeCells count="${finalMergesXml.length}">\n` + finalMergesXml.join('\n') + '\n</mergeCells>';
+  sheetXml = sheetXml.replace(/<mergeCells count="\d+">[\s\S]*?<\/mergeCells>/, finalMergeBlockXml);
 
   // --------------------------------------------------------------------------
   // PASS 4: Raw OOXML Cell Value Sanitization
   // --------------------------------------------------------------------------
-  const sanAddressSet = new Set(layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r)));
   sheetXml = sanitizeRawSheetXml(sheetXml, sanAddressSet);
 
   // --------------------------------------------------------------------------
