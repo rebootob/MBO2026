@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-B1-R10 STATIC REVIEW PASS / RUNTIME EVIDENCE PENDING
+# AI ACTIVE TASK — R2-B1 PASS / CLOSED / R2-B2 PROPOSED
 
 Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file, then `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`, `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`, and only exact Part A source/test/profile evidence needed.
+Read `D2_REVIEW_FAST_START.md` first, then this file, then `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`, `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`, and only exact evidence/source/tests for the next authorized gate.
 
 ## 1. Current truth
 
@@ -14,10 +14,10 @@ D2 = IN PROGRESS
 D2_PART_A_STRUCTURAL = PASS / CLOSED
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
-D2_WP004_R2_B1 = R10 STATIC REVIEW PASS / RUNTIME EVIDENCE PENDING / NOT CLOSED
+D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
 D2_WP004_R2_B1_R8 = RELATIONSHIP PROOF PASS / FROZEN
-D2_WP004_R2_B1_R9 = EXECUTED / NO-FILTER PROOF EXPOSED PRODUCTION DEFECT / STOPPED
-D2_WP004_R2_B1_R10 = IMPLEMENTED / STATIC REVIEW PASS / RUNTIME EVIDENCE PENDING
+D2_WP004_R2_B1_R9 = EXECUTED / CONFIRMED PRODUCTION DEFECT / STOPPED
+D2_WP004_R2_B1_R10 = PASS / CLOSED
 
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -27,16 +27,17 @@ ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT CONTROL REVIEW EVIDENCE
+ANTIGRAVITY = STOP / WAIT OWNER
+R2_B1_PRODUCTION_SOURCE = PASS / FROZEN
 R2_B1_RELATIONSHIP_PROOF = PASS / FROZEN
-R2_B1_CELL_STRUCTURAL_CODE_REVIEW = PASS
-R2_B1_RUNTIME_PROOF = PENDING
-R2-B2 = NOT AUTHORIZED
+R2_B1_CELL_STRUCTURAL_PROOF = PASS / FROZEN
+R2_B1_RUNTIME_PROOF = PASS
+R2-B2 = PROPOSED / NOT AUTHORIZED
 R2-C = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. R10 identity / scope review
+## 2. R10 closure identity
 
 ```text
 R10_AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R10-SOURCE-TEST-CORRECTIVE-20260903-01
@@ -48,77 +49,73 @@ CHANGED_FILES = EXACTLY TWO AUTHORIZED FILES
   tests/mbo-xlsx-template-preparer.test.js
 SCOPE_REVIEW = PASS
 TOKEN_STATE = CONSUMED / DO NOT REUSE
-GITHUB_COMBINED_STATUS = NONE
-GITHUB_WORKFLOW_RUNS = NONE
 ```
 
-## 3. Static source review — PASS
+## 3. Independent source/test review — PASS
 
-R10 corrects the confirmed R9 causal defect:
+R10 corrected the R9 production structural defect by replacing XlsxPopulate worksheet write/re-serialization sanitization with raw OOXML value-payload sanitization.
 
-- removes XlsxPopulate worksheet/range write sanitization;
-- no `range(...).value(null)` / `cell(...).value(null)` mutation pass remains as sanitizer;
-- sensitive-token collection remains read-only;
-- exact `sheet1.xml` is sanitized through raw OOXML;
-- only existing paired `<c ...>...</c>` nodes are targeted;
-- cell structural attributes (`r`, `s`, `t`, other attrs) are retained;
-- no missing SOURCE cell is materialized by sanitization;
+Accepted source behavior:
+- no Part A worksheet/range `.value(null)` write sanitizer remains;
+- exact existing `sheet1.xml` cell nodes are sanitized in raw OOXML;
+- structural cell attributes (`r`, `s`, `t`, other attrs) are preserved;
+- missing SOURCE cells are not materialized;
 - unexpected formula payload in a targeted sensitive cell fails closed;
-- stale sharedStrings sensitive-token purge remains;
-- row/merge/dimension/Print_Area/rId3/media behavior remains on the accepted path;
-- final output is generated directly from the mutated zip, avoiding worksheet reserialization.
+- stale shared-string sensitive token purge remains;
+- accepted row/merge/dimension/Print_Area/rId3/media behavior remains;
+- final package is emitted directly from the mutated ZIP.
 
-No new material production-source defect was found in the R10 diff.
+Accepted test behavior:
+- no style/sanitization-range/`s="1"`/type filtering remains;
+- exact SOURCE-derived row/cell structural objects are deep-equaled for rows 1:28, inserted rows, and relocated downstream rows;
+- R9 regression proves existing shared-string cell N6 retains `t="s"`;
+- R9 regression proves absent empty/merged-range cell nodes are not materialized;
+- exact relationship/package/privacy/frozen-authority proofs remain active;
+- owner-template loading is fail-closed and not skipped.
 
-## 4. Static test review — PASS
+## 4. Accepted runtime evidence — PASS
 
-R10 removes the R8/R9 test weakening:
+Owner-provided live Antigravity execution evidence is accepted for the exact R10 implementation commit `673137c2f28587e058844e93af66dad9fc722d24`.
 
-- `filterSanitizerMaterializedCells()` removed;
-- no style/sanitization-range/`s="1"`/type cell filtering remains in exact row proof;
-- rows 1:28 use direct SOURCE-derived cell-object `deepEqual`;
-- inserted rows use direct SOURCE row28 cell-object `deepEqual`;
-- relocated downstream rows use direct SOURCE-derived cell-object `deepEqual`;
-- parser retains `t`, `s`, and other parsed structural cell attributes;
-- targeted regression asserts N6 retains `t="s"`;
-- targeted regression asserts an absent empty/merged-range cell node is not materialized;
-- owner template loading remains fail-closed with exact SHA and no skip path;
-- relationship/package/privacy/frozen-authority proof remains present.
-
-No new material test weakening was found in the R10 diff.
-
-## 5. Remaining closure blocker — runtime evidence only
-
-Control Plane cannot independently execute the focused Node test in the current environment because the repository runtime dependencies / owner-template execution environment are not available here, and GitHub exposes no CI status or workflow run for the implementation commit.
-
-Therefore R2-B1 is not yet declared PASS/CLOSED solely from static inspection.
-
-Required existing R10 execution evidence:
+Focused command:
 
 `node --test tests/mbo-xlsx-template-preparer.test.js`
 
-Need raw console evidence showing:
+Observed execution result:
 
 ```text
+PASS = 4
 FAIL = 0
 SKIP = 0
 real owner-template integration = EXECUTED / NOT SKIPPED
 N4..N10 matrix = PASS
-no-filter exact cell structural parity = PASS
-confirmed R9 regressions = PASS
-relationship proof = PASS
-package-wide privacy = PASS
 ```
 
-Preferred next action: provide the raw Antigravity final test output/screenshot from the already-authorized R10 run. No code change is needed.
+Because independent static review confirmed the strict no-filter structural parity, R9 regression, relationship, privacy and package-authority assertions are part of this focused suite, the all-green focused run closes the remaining runtime gate.
 
-If that output is unavailable, a separate evidence-only rerun may be proposed; do not reuse the consumed R10 source/test token.
-
-## 6. Remaining work — NOT AUTHORIZED
+## 5. R2-B1 closure decision
 
 ```text
-R2-B2 = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
-R2-C = SECURED SEMANTIC VALUE RENDERER
+D2_WP004_R2_B1 = PASS / CLOSED
+R2_B1_SOURCE = PASS / FROZEN
+R2_B1_TEST_PROOF = PASS / FROZEN
+R2_B1_RUNTIME = PASS
+R2_B1_RELATIONSHIP = PASS / FROZEN
+```
+
+Do not reopen R2-B1 unless a proven regression is found.
+
+## 6. Exact next proposed gate — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-B2
+NAME = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = BOUNDED / LOW-CREDIT
+
+R2-C = NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = later D2 gate
 D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
+
+No Antigravity execution is authorized for R2-B2 yet. Control Plane must define the smallest exact B2 source/test contract before asking Owner approval.
