@@ -143,6 +143,45 @@ function parseRowObjectsFromXml(sheetXml) {
   return map;
 }
 
+function extractRowPayloadAuthority(sheetXml, rNum) {
+  const rowMatch = sheetXml.match(new RegExp(`<row r="${rNum}"([^>]*)>([\\s\\S]*?)<\\/row>`));
+  if (!rowMatch) return null;
+
+  const rawAttrsStr = rowMatch[1];
+  const bodyXml = rowMatch[2];
+
+  const attrPairs = [...rawAttrsStr.matchAll(/(\w+)="([^"]*)"/g)];
+  const rowAttrs = {};
+  for (const [, k, v] of attrPairs) {
+    if (k !== 'r') rowAttrs[k] = v;
+  }
+
+  const cells = [...bodyXml.matchAll(/<c r="([A-Z]+)\d+"([^>]*)>((?:(?!<c\b)[\s\S])*?)<\/c>|<c r="([A-Z]+)\d+"([^>]*)\/>/g)].map(cm => {
+    if (cm[4] !== undefined) {
+      // Self-closing cell
+      const col = cm[4];
+      const cellAttrsStr = cm[5];
+      const rawAttrs = {};
+      for (const [, k, v] of [...cellAttrsStr.matchAll(/(\w+)="([^"]*)"/g)]) {
+        if (k !== 'r') rawAttrs[k] = v;
+      }
+      return { col, attrs: rawAttrs, payload: '' };
+    } else {
+      // Paired cell tag
+      const col = cm[1];
+      const cellAttrsStr = cm[2];
+      const rawAttrs = {};
+      for (const [, k, v] of [...cellAttrsStr.matchAll(/(\w+)="([^"]*)"/g)]) {
+        if (k !== 'r') rawAttrs[k] = v;
+      }
+      const payload = cm[3];
+      return { col, attrs: rawAttrs, payload };
+    }
+  });
+
+  return { rNum, rowAttrs, cells };
+}
+
 async function buildPackageAuthority(wbZip) {
   const wbXml = await wbZip.files['xl/workbook.xml'].async('string');
   const sheetNames = [...wbXml.matchAll(/<sheet [^>]*name="([^"]+)"/g)].map(m => m[1]);
@@ -242,6 +281,10 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
 
   // Exact SOURCE-derived row structural oracle
   const srcRowObjectsMap = parseRowObjectsFromXml(srcSheet1Xml);
+
+  // Exact SOURCE-derived row 30 payload authority (R4)
+  const srcRow30PayloadAuth = extractRowPayloadAuthority(srcSheet1Xml, 30);
+  assert.notEqual(srcRow30PayloadAuth, null, 'SOURCE row 30 payload authority must exist');
 
   // Exact SOURCE-derived package authority object
   const srcPackageAuthority = await buildPackageAuthority(wbSource._zip);
@@ -407,14 +450,9 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       }
     }
 
-    // H. BLOCKER A (R3): Exact Protected Static OWNER-SOURCE Value, Type, and Structure Parity
+    // H. BLOCKER A (R3): Exact Protected Rating Scale Header OWNER-SOURCE Value, Type, and Structure Parity
     const outSheet = wb.sheet(0);
     const srcSheet = wbSource.sheet(0);
-
-    for (const rowNum of layoutN.protectedPaddingRows) {
-      const rowObj = outRowObjectsMap.get(rowNum);
-      assert.equal(Boolean(rowObj), true, `Protected padding row ${rowNum} must exist for N=${n}`);
-    }
 
     for (const rangeStr of layoutN.ratingScaleStaticRanges) {
       assert.equal(actualMergeSet.has(rangeStr), true, `Rating Scale merge ${rangeStr} must be present for N=${n}`);
@@ -433,6 +471,36 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
         const srcVal = srcSheet.cell(srcAddr).value();
         const outVal = outSheet.cell(addr).value();
         assert.deepEqual(outVal, srcVal, `Protected Rating Scale cell ${addr} value/type must deep equal OWNER SOURCE cell ${srcAddr} for N=${n}`);
+      }
+    }
+
+    // H2. R4 PROTECTED PADDING OWNER-SOURCE PAYLOAD PROOF
+    for (const rowNum of layoutN.protectedPaddingRows) {
+      const rowObj = outRowObjectsMap.get(rowNum);
+      assert.equal(Boolean(rowObj), true, `Protected padding row ${rowNum} must exist for N=${n}`);
+
+      const outRowPayloadAuth = extractRowPayloadAuthority(sheetXml, rowNum);
+      assert.notEqual(outRowPayloadAuth, null, `Extracted payload authority for row ${rowNum} must exist for N=${n}`);
+
+      // 1. Row structural attributes deep equal SOURCE row 30
+      assert.deepEqual(outRowPayloadAuth.rowAttrs, srcRow30PayloadAuth.rowAttrs, `Padding row ${rowNum} attributes must deep equal SOURCE row 30 attributes for N=${n}`);
+
+      // 2. Exact cell inventory count equals SOURCE row 30
+      assert.equal(outRowPayloadAuth.cells.length, srcRow30PayloadAuth.cells.length, `Padding row ${rowNum} cell inventory count must equal SOURCE row 30 for N=${n}`);
+
+      // 3. Cell structural attributes and exact OOXML payload parity for every materialized cell
+      for (let i = 0; i < srcRow30PayloadAuth.cells.length; i++) {
+        const srcCell = srcRow30PayloadAuth.cells[i];
+        const outCell = outRowPayloadAuth.cells[i];
+
+        assert.equal(outCell.col, srcCell.col, `Cell ${i} column must match for N=${n} row ${rowNum}`);
+        assert.deepEqual(outCell.attrs, srcCell.attrs, `Cell ${srcCell.col}${rowNum} attrs must deep equal SOURCE cell ${srcCell.col}30 attrs for N=${n}`);
+        assert.deepEqual(outCell.payload, srcCell.payload, `Cell ${srcCell.col}${rowNum} OOXML payload must deep equal SOURCE cell ${srcCell.col}30 payload for N=${n}`);
+
+        // 4. Exact decoded cell value deep equal SOURCE cell
+        const srcVal = srcSheet.cell(`${srcCell.col}30`).value();
+        const outVal = outSheet.cell(`${srcCell.col}${rowNum}`).value();
+        assert.deepEqual(outVal, srcVal, `Decoded cell value ${srcCell.col}${rowNum} must deep equal SOURCE cell ${srcCell.col}30 for N=${n}`);
       }
     }
 
