@@ -1,5 +1,5 @@
 /**
- * Production Secured Semantic Value Renderer — Part A + Part B
+ * Production Secured Semantic Value Renderer — Part A + Part B (R2-C-R1)
  * 
  * Browser-safe asynchronous renderer:
  *   - Consumes prepared + sanitized XLSX bytes, secured projection object, and Template Profile.
@@ -21,6 +21,10 @@ function escapeXmlText(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function resolvePath(obj, pathStr) {
@@ -54,7 +58,7 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
 
   if (selfMatch) {
     const rawAttrsStr = selfMatch[1];
-    const attrPairs = [...rawAttrsStr.matchAll(/(\w+)="([^"]*)"/g)];
+    const attrPairs = [...rawAttrsStr.matchAll(/(\w+(?::\w+)?)="([^"]*)"/g)];
     let sAttr = null;
     const otherAttrs = [];
     for (const [, k, v] of attrPairs) {
@@ -72,7 +76,8 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
       replacement = `<c r="${addr}"${sStr}${otherStr}><v>${val}</v></c>`;
     } else if (typeof val === 'string') {
       const escaped = escapeXmlText(val);
-      replacement = `<c r="${addr}"${sStr} t="inlineStr"${otherStr}><is><t>${escaped}</t></is></c>`;
+      const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
+      replacement = `<c r="${addr}"${sStr} t="inlineStr"${otherStr}><is><t${spaceAttr}>${escaped}</t></is></c>`;
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
     }
@@ -91,7 +96,7 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} contains formula`);
     }
 
-    const attrPairs = [...rawAttrsStr.matchAll(/(\w+)="([^"]*)"/g)];
+    const attrPairs = [...rawAttrsStr.matchAll(/(\w+(?::\w+)?)="([^"]*)"/g)];
     let sAttr = null;
     const otherAttrs = [];
     for (const [, k, v] of attrPairs) {
@@ -109,7 +114,8 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
       replacement = `<c r="${addr}"${sStr}${otherStr}><v>${val}</v></c>`;
     } else if (typeof val === 'string') {
       const escaped = escapeXmlText(val);
-      replacement = `<c r="${addr}"${sStr} t="inlineStr"${otherStr}><is><t>${escaped}</t></is></c>`;
+      const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
+      replacement = `<c r="${addr}"${sStr} t="inlineStr"${otherStr}><is><t${spaceAttr}>${escaped}</t></is></c>`;
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
     }
@@ -128,7 +134,7 @@ export async function renderSecuredSemanticValues(
     profile = new MboXlsxTemplateProfile()
   } = {}
 ) {
-  // Option key validation (strict 3 keys only)
+  // 1. Option key validation (strict 3 keys only)
   const allowedOptionKeys = new Set(['partKey', 'projection', 'profile']);
   if (arguments.length > 1 && arguments[1] && typeof arguments[1] === 'object') {
     for (const key of Object.keys(arguments[1])) {
@@ -138,25 +144,25 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 1. Validate Part Key
+  // 2. Validate Part Key
   if (partKey !== 'A' && partKey !== 'B') {
     throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Invalid partKey (must be A or B)');
   }
 
-  // 2. Validate Profile integrity
+  // 3. Validate Profile integrity
   validateMappingIntegrity(profile);
 
-  // 3. Validate Projection object & exportType
+  // 4. Validate Projection object & exportType
   if (!projection || typeof projection !== 'object' || projection.exportType !== 'COMBINED_MBO_WORKBOOK_AND_PDF') {
     throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Invalid projection or exportType');
   }
 
-  // 4. Validate Prepared Bytes
+  // 5. Validate Prepared Bytes
   if (!preparedBytes || (typeof preparedBytes !== 'object' && !(preparedBytes instanceof ArrayBuffer))) {
     throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Invalid preparedBytes input');
   }
 
-  // 5. Determine Count & Validate Count Domain
+  // 6. Determine Count & Validate Count Domain
   let count;
   if (partKey === 'A') {
     count = projection.partA?.objectivesCount;
@@ -178,23 +184,66 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 6. Make Private Copy of Prepared Bytes
+  // 7. Make Private Copy & Snapshot of Prepared Bytes
   const srcView = preparedBytes instanceof Uint8Array ? preparedBytes : new Uint8Array(preparedBytes);
-  const copyBytes = new Uint8Array(srcView.byteLength || srcView.length);
-  copyBytes.set(srcView);
+  const srcSnapshot = new Uint8Array(srcView.byteLength || srcView.length);
+  srcSnapshot.set(srcView);
 
-  const wbStruct = await XlsxPopulate.fromDataAsync(copyBytes);
+  const wbStruct = await XlsxPopulate.fromDataAsync(srcSnapshot);
 
   const sheet1File = wbStruct._zip.files['xl/worksheets/sheet1.xml'];
   const wbFile = wbStruct._zip.files['xl/workbook.xml'];
-  if (!sheet1File || !wbFile) {
+  const wbRelsFile = wbStruct._zip.files['xl/_rels/workbook.xml.rels'];
+  if (!sheet1File || !wbFile || !wbRelsFile) {
     throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Required OOXML files missing');
   }
 
   let sheetXml = await sheet1File.async('string');
   let wbXml = await wbFile.async('string');
+  let wbRelsXml = await wbRelsFile.async('string');
 
-  // 7. Prepared-Buffer Pre-Write Guard
+  const layout = partKey === 'A' ? profile.getPartALayoutTopology(count) : profile.getPartBLayoutTopology(count);
+
+  // R1-A.1: Workbook main sheet identity & relationship binding to sheet1.xml
+  const escapedMainSheetName = escapeXmlText(layout.mainSheetName);
+  const sheetEntryRegex = new RegExp(`<sheet[^>]*name="${escapeRegExp(escapedMainSheetName)}"[^>]*r:id="([^"]+)"`);
+  const sheetEntryMatch = wbXml.match(sheetEntryRegex);
+  if (!sheetEntryMatch) {
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Main sheet entry missing in workbook.xml');
+  }
+  const mainSheetRId = sheetEntryMatch[1];
+
+  const relRegex = new RegExp(`<Relationship[^>]*Id="${mainSheetRId}"[^>]*Target="([^"]+)"`);
+  const relMatch = wbRelsXml.match(relRegex);
+  if (!relMatch) {
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Main sheet relationship missing in workbook.xml.rels');
+  }
+  const mainSheetTarget = relMatch[1];
+  if (mainSheetTarget !== 'worksheets/sheet1.xml' && mainSheetTarget !== 'xl/worksheets/sheet1.xml') {
+    throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Main sheet target mismatch: expected worksheets/sheet1.xml, got ${mainSheetTarget}`);
+  }
+
+  // R1-A.2 & R1-A.3 & R1-A.4: Print_Area definedName inventory & attributes
+  const printAreaMatches = [...wbXml.matchAll(/<definedName[^>]*name="_xlnm\.Print_Area"[^>]*>([\s\S]*?)<\/definedName>/g)];
+  if (printAreaMatches.length !== 1) {
+    throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Print_Area inventory count must be 1, found ${printAreaMatches.length}`);
+  }
+  const printAreaNodeStr = printAreaMatches[0][0];
+  if (!printAreaNodeStr.includes('localSheetId="0"')) {
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Print_Area missing localSheetId="0"');
+  }
+  const printAreaText = printAreaMatches[0][1].trim();
+  const expectedPrintAreaEscaped = layout.printArea.replace(/&/g, '&amp;');
+  if (printAreaText !== expectedPrintAreaEscaped) {
+    throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Print_Area text mismatch: expected ${expectedPrintAreaEscaped}, got ${printAreaText}`);
+  }
+
+  // R1-A.5: Dimension tag
+  if (!sheetXml.includes(`dimension ref="${layout.dimension}"`)) {
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Dimension tag mismatch with Profile topology');
+  }
+
+  // R1-A.6: Formula inventory = 0
   for (const fName in wbStruct._zip.files) {
     if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
       const xml = await wbStruct._zip.files[fName].async('string');
@@ -204,32 +253,27 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  const layout = partKey === 'A' ? profile.getPartALayoutTopology(count) : profile.getPartBLayoutTopology(count);
-
-  if (!sheetXml.includes(`dimension ref="${layout.dimension}"`)) {
-    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Dimension tag mismatch with Profile topology');
-  }
-
-  const escapedSheetName = escapeXmlText(layout.mainSheetName);
-  if (!wbXml.includes(`'${escapedSheetName}'!$A$1:`)) {
-    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Print_Area mismatch with Profile topology');
-  }
-
+  // R1-A.7: Pre-write payload check on effective sanitization addresses
   const sanAddresses = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
   const sanSet = new Set(sanAddresses);
 
-  // Assert every effective sanitization cell has zero value payload and zero formula before write
   for (const addr of sanAddresses) {
-    const cellMatch = sheetXml.match(new RegExp(`<c r="${addr}"([^>]*)>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>`));
-    if (cellMatch) {
-      const body = cellMatch[2];
-      if (/<(?:v|is|f)[\s>]/.test(body)) {
+    const pairedMatch = sheetXml.match(new RegExp(`<c r="${addr}"([^>]*)>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>`));
+    if (pairedMatch) {
+      const body = pairedMatch[2];
+      if (/<(?:v|is|f|t)[\s>]/.test(body)) {
         throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Sanitized cell ${addr} contains pre-write payload or formula`);
       }
     }
   }
 
+  // R1-A.8 & R1-A.9: Part A / Part B specific guards
   if (partKey === 'A') {
+    // Reject image3.png in xl/media/
+    if (wbStruct._zip.files['xl/media/image3.png']) {
+      throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Forbidden image3.png present in Part A input');
+    }
+    // Reject image3.png / rId3 in drawing rels
     const drawingRelsFile = wbStruct._zip.files['xl/drawings/_rels/drawing1.xml.rels'];
     if (drawingRelsFile) {
       const relsXml = await drawingRelsFile.async('string');
@@ -238,18 +282,50 @@ export async function renderSecuredSemanticValues(
       }
     }
   } else {
+    // Part B checks:
     const sheet2File = wbStruct._zip.files['xl/worksheets/sheet2.xml'];
     if (!sheet2File) {
       throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Auxiliary Sheet1 missing in Part B input');
     }
-    const mergeCountMatch = sheetXml.match(/<mergeCells count="(\d+)">/);
-    const declaredMergeCount = mergeCountMatch ? parseInt(mergeCountMatch[1], 10) : 0;
-    if (declaredMergeCount !== layout.finalOverlayMergeCount) {
-      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Part B merge count mismatch: expected ${layout.finalOverlayMergeCount}, got ${declaredMergeCount}`);
+
+    // Verify Sheet1 in workbook.xml binds to xl/worksheets/sheet2.xml
+    const auxSheetEntryMatch = wbXml.match(/<sheet[^>]*name="Sheet1"[^>]*r:id="([^"]+)"/);
+    if (!auxSheetEntryMatch) {
+      throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Auxiliary Sheet1 missing in workbook.xml');
+    }
+    const auxSheetRId = auxSheetEntryMatch[1];
+    const auxRelMatch = wbRelsXml.match(new RegExp(`<Relationship[^>]*Id="${auxSheetRId}"[^>]*Target="([^"]+)"`));
+    if (!auxRelMatch || (auxRelMatch[1] !== 'worksheets/sheet2.xml' && auxRelMatch[1] !== 'xl/worksheets/sheet2.xml')) {
+      throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Auxiliary Sheet1 binding mismatch');
+    }
+
+    // Merge counts: declared merge count == actual merge inventory count == Profile final merge count
+    const declaredMergeMatch = sheetXml.match(/<mergeCells count="(\d+)">/);
+    const declaredMergeCount = declaredMergeMatch ? parseInt(declaredMergeMatch[1], 10) : 0;
+    const actualMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+    const actualMergeSet = new Set(actualMerges);
+
+    if (declaredMergeCount !== layout.finalOverlayMergeCount || actualMerges.length !== layout.finalOverlayMergeCount) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Part B merge count mismatch: expected ${layout.finalOverlayMergeCount}, declared ${declaredMergeCount}, actual ${actualMerges.length}`);
+    }
+
+    // Every ratingScaleStaticRanges merge exists exactly as authorized
+    for (const staticRange of layout.ratingScaleStaticRanges) {
+      if (!actualMergeSet.has(staticRange)) {
+        throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Rating Scale static merge ${staticRange} missing`);
+      }
+    }
+
+    // Every protected padding row exists exactly once
+    for (const padRow of layout.protectedPaddingRows) {
+      const rowMatches = [...sheetXml.matchAll(new RegExp(`<row[^>]*r="${padRow}"[^>]*>`, 'g'))];
+      if (rowMatches.length !== 1) {
+        throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Protected padding row ${padRow} missing`);
+      }
     }
   }
 
-  // 8. Build Concrete Role List by Count
+  // R1-A.10 & R1-A.11: Concrete Profile-derived target node existence & uniqueness
   const roleNames = [];
   const headerRoles = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
@@ -283,17 +359,16 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 9. Resolve Roles to Addresses and Projection Paths via Profile
   const concreteTargets = [];
   const targetAddrSet = new Set();
 
   for (const rName of roleNames) {
-    const options = {
+    const roleOptions = {
       partKey,
       objectiveCount: count,
       competencyCount: count
     };
-    const roleInfo = profile.resolveSemanticRole(rName, options);
+    const roleInfo = profile.resolveSemanticRole(rName, roleOptions);
     if (!roleInfo || !roleInfo.address || !roleInfo.projectionPath) {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Could not resolve role ${rName}`);
     }
@@ -310,13 +385,25 @@ export async function renderSecuredSemanticValues(
     concreteTargets.push({ roleName: rName, address: roleInfo.address, projectionPath: roleInfo.projectionPath });
   }
 
-  // 10. Extract Secured Scalar Values from Projection & Mutate sheetXml
+  // Check that EVERY target cell node exists EXACTLY ONCE in sheetXml
+  for (const target of concreteTargets) {
+    const addr = target.address;
+    const matches = [...sheetXml.matchAll(new RegExp(`<c r="${addr}"[^>]*\\/>|<c r="${addr}"[^>]*>[\\s\\S]*?<\\/c>`, 'g'))];
+    if (matches.length === 0) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell node ${addr} missing in sheet XML`);
+    }
+    if (matches.length > 1) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell node ${addr} duplicate in sheet XML`);
+    }
+  }
+
+  // R1-B: Extract Secured Scalar Values & Mutate sheetXml
   const writtenValueMap = new Map();
 
   for (const target of concreteTargets) {
     let val = resolvePath(projection, target.projectionPath);
 
-    // Special Exception for expanded Part B presentation titles/descriptions
+    // Expanded Part B presentation titles/descriptions exception
     if (partKey === 'B') {
       if (
         target.roleName === 'COMPETENCY_7_TITLE' || target.roleName === 'COMPETENCY_7_DESCRIPTION' ||
@@ -340,9 +427,6 @@ export async function renderSecuredSemanticValues(
         if (val.length > 32767) {
           throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: String exceeds Excel limit for role ${target.roleName}`);
         }
-        if (val.trim() === '') {
-          val = '';
-        }
       } else {
         throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Invalid value type (${typeof val}) for role ${target.roleName}`);
       }
@@ -356,10 +440,10 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 11. Final Production Validation before return
+  // R1-C: Final Preservation Validation
   wbStruct._zip.file('xl/worksheets/sheet1.xml', sheetXml);
 
-  // Check zero formula inventory
+  // Formula inventory zero check
   for (const fName in wbStruct._zip.files) {
     if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
       const xml = await wbStruct._zip.files[fName].async('string');
@@ -372,10 +456,11 @@ export async function renderSecuredSemanticValues(
   // Generate NEW Uint8Array from mutated zip
   const renderedBytes = await wbStruct._zip.generateAsync({ type: 'uint8array' });
 
-  // Load fresh DOM from renderedBytes to perform final value verification
+  // Load fresh DOM from renderedBytes to perform final value & topology verification
   const wbOut = await XlsxPopulate.fromDataAsync(renderedBytes);
   const sheetOut = wbOut.sheet(0);
 
+  // Verify every written target decodes to exact secured scalar truth
   for (const target of concreteTargets) {
     const expectedVal = writtenValueMap.get(target.address);
     const decodedVal = sheetOut.cell(target.address).value();
@@ -406,10 +491,15 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // Assert caller bytes remain immutable
+  // Assert caller bytes content-identical to pre-call snapshot
   const postView = preparedBytes instanceof Uint8Array ? preparedBytes : new Uint8Array(preparedBytes);
-  if (postView.length !== srcView.length) {
-    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Caller bytes mutated (length mismatch)');
+  if (postView.length !== srcSnapshot.length) {
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Caller bytes length mutated');
+  }
+  for (let i = 0; i < postView.length; i++) {
+    if (postView[i] !== srcSnapshot[i]) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Caller bytes content mutated at offset ${i}`);
+    }
   }
 
   return renderedBytes;
