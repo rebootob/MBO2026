@@ -1,6 +1,6 @@
 # D2 REVIEW FAST-START — MBO2026
 
-Updated: 2026-09-02 ICT
+Updated: 2026-09-03 ICT
 Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
@@ -29,10 +29,12 @@ PRE2_R2 = PASS / CLOSED
 PRE2_R3 = PASS / CLOSED AFTER CORRECTIVE CHAIN THROUGH R4
 R2_A = PASS / CLOSED AFTER R1
 R2_A_R1 = PASS / CLOSED
+R2_B1 = PASS / CLOSED AFTER R10
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
-PRODUCTION_RENDERER = NOT AUTHORIZED
+R2_B2 = PROPOSED / NOT AUTHORIZED
+R2_C = NOT AUTHORIZED
 D3 = HOLD
 ```
 
@@ -85,21 +87,41 @@ PADDING = rows 30 / 34 / 38 / ZERO SANITIZATION OVERLAP
 RATING_SCALE_STATIC = B29:J29 / B33:J33 / B37:J37 / ZERO SANITIZATION OVERLAP
 ```
 
-`validateMappingIntegrity()` now fail-closes on malformed production topology including dimension, Print_Area, merge counts, summary relocation, privacy counts, exact sensitive/sanitization ranges, duplicates and protected-static contamination. Mutation tests call the production validator.
+`validateMappingIntegrity()` fail-closes on malformed production topology including dimension, Print_Area, merge counts, summary relocation, privacy counts, exact sensitive/sanitization ranges, duplicates and protected-static contamination. Mutation tests call the production validator.
 
 Closure identity:
 ```text
 R2_A_INITIAL_IMPLEMENTATION = 6dcfba1277462f230a5cd9379aacb96193253ac1 / CORRECTED
 R2_A_R1_IMPLEMENTATION = 9a93adf69a0d029fc810b6121f3f8dfe228f0c42 / PASS / CLOSES R2_A
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
 ```
+
+## Closed R2-B1 Part A production preparer / sanitizer foundation
+R2-B1 closes after R10.
+
+Accepted implementation:
+```text
+R10_AUTHORIZATION = 9a5919f20e53676508862ffce96eaa754556e109
+R10_IMPLEMENTATION = 673137c2f28587e058844e93af66dad9fc722d24
+R10_SOURCE = RAW OOXML VALUE-PAYLOAD SANITIZER / PASS
+R10_TEST = STRICT NO-FILTER SOURCE-DERIVED STRUCTURAL PROOF / PASS
+RELATIONSHIP_PROOF = PASS / FROZEN
+RUNTIME = PASS 4 / FAIL 0 / SKIP 0
+OWNER_TEMPLATE = EXECUTED / NOT SKIPPED
+N4..N10 = PASS
+R2_B1 = PASS / CLOSED
+```
+
+R9 exposed the XlsxPopulate worksheet write/re-serialization structural defect (`t="s"` loss and empty-cell materialization). R10 removed that causal path, preserved exact cell structural attributes, prevented missing-cell materialization, retained privacy/sharedStrings purge and passed the strict no-filter proof.
+
+Do not reopen R2-B1 without a proven regression.
 
 ## Exact next control-plane decision — NOT AUTHORIZED
 ```text
-R2_B = SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER ENGINE
+R2_B2 = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
 STATE = PROPOSED / NOT AUTHORIZED
 R2_C = SECURED SEMANTIC VALUE RENDERER / NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = later D2 gate
+D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
 
-R2-B exact writable file/test contract still requires Control Plane planning and separate Owner authorization. Do not auto-start Antigravity, production renderer/preparer, Kintone, deploy or D3.
+Control Plane must define the smallest exact R2-B2 source/test contract before Owner authorization. Do not auto-start Antigravity, production renderer, Kintone, deploy or D3.
