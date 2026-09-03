@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact next-gate source/test/design only. Do not reopen R2-B1 or R2-B2 without a proven regression. Do not broad-scan or auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact next-gate source/test/design only. Do not reopen R2-B1/R2-B2 without a proven regression. Do not broad-scan or auto-start Antigravity.
 
 ## Project truth
 ```text
@@ -30,7 +30,7 @@ R2_B2_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-R2_C = PROPOSED / NOT AUTHORIZED
+R2_C = EXACT PROPOSAL READY / NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
@@ -48,9 +48,7 @@ R2_B2_IMPLEMENTATION = 0b4bac862aa2906d1ac11071431dbb268c7b7b5e
 R2_B2_R1_IMPLEMENTATION = 67c60065e169f9339219dd334c51e9b70c355319
 R2_B2_R2_IMPLEMENTATION = 33f1beb3ae292f1ad24857ea04511b3fa445cd2e
 R2_B2_R3_IMPLEMENTATION = ffd2c90011706011b51612b56c63a4786d43c653
-R2_B2_R4_AUTHORIZATION = c812f4ba51144b9cadb072d65cebdf4f1fb7278d
 R2_B2_R4_IMPLEMENTATION = 401caf0d2c4132a4f224140f156d7255a1319a88
-R2_B2_R4_SCOPE = PASS / EXACTLY ONE AUTHORIZED TEST FILE
 R2_B2_R4_STATIC_REVIEW = PASS
 R2_B2_R4_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
 OWNER_TEMPLATE_INTEGRATION = EXECUTED / NOT SKIPPED
@@ -70,17 +68,53 @@ Accepted/frozen through R2-B2:
 
 No R2-B2-R5 is required.
 
-## Exact next control decision — R2-C planning / NOT AUTHORIZED
-Design authority:
+## Exact next proposal — D2-WP004-R2-C / NOT AUTHORIZED
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-C
-NAME = SECURED SEMANTIC VALUE RENDERER
-STATE = PROPOSED / NOT AUTHORIZED
+NAME = SECURED SEMANTIC VALUE RENDERER — PART A + PART B
+MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+MAX_EXECUTOR_COMMITS = 1
+
+PROPOSED WRITABLE ONLY:
+  src/services/mbo-xlsx-semantic-renderer.js   NEW
+  tests/mbo-xlsx-semantic-renderer.test.js    NEW
+
+FROZEN:
+  src/profiles/mbo-xlsx-template-profile.js
+  src/services/mbo-xlsx-template-preparer.js
+  src/services/mbo-export-service.js
+  existing XLSX tests
 ```
 
-R2-C must consume sanitized prepared buffers + secured `MboExportService` projection + centralized Template Profile. It may write only proven SAFE roles with exact secured paths present. No raw Kintone input, no scoring calculation, no semantic alias invention, and no scattered workbook literals.
+Production API proposed:
 
-Control Plane must define the smallest exact R2-C source/test contract before Owner authorization. Antigravity remains STOP until that explicit authorization.
+```js
+renderSecuredSemanticValues(preparedBytes, { partKey, projection, profile })
+```
 
-`Combined Excel parity` remains a later D2 gate. `D3 = HOLD` until D2 is fully PASS/CLOSED.
+Key boundaries:
+- accepts only prepared/sanitized bytes + exact `MboExportService.projectCombinedExport()` projection;
+- count derives from projection, not caller option;
+- Profile resolves every writable address + exact projection path;
+- no raw Kintone, aliases, scoring, formulas or reconstruction;
+- Employee-Self omitted confidential paths remain blank;
+- N7/N8 canonical presentation is required and comes only from secured `presentationTitle` / `presentationDescription`;
+- raw OOXML target-cell-only writes; no worksheet-wide reserialization;
+- non-target package/XML must remain byte/structurally identical to prepared input;
+- formula inventory remains zero.
+
+Required focused proof if authorized:
+- real owner Part A N4..N10;
+- real owner Part B N6/N7/N8;
+- Employee-Self vs Approver SAFE-only privacy boundary;
+- exact authorized-diff preservation;
+- focused FAIL=0 / SKIP=0;
+- frozen Profile/Preparer/Export regression FAIL=0.
+
+Full authoritative contract is in `AI_ACTIVE_TASK.md`.
+
+Recommended owner approval phrase:
+
+`อนุมัติ D2-WP004-R2-C SOURCE+TEST ตามขอบเขตที่เสนอ`
+
+Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
