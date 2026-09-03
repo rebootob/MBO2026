@@ -21,12 +21,12 @@ const LOCAL_PART_A_PATH = path.join(process.cwd(), 'app info', 'data', 'PMS_Staf
 
 function loadLocalTemplate() {
   if (!fs.existsSync(LOCAL_PART_A_PATH)) {
-    return null;
+    assert.fail(`Local Part A owner template file missing at ${LOCAL_PART_A_PATH}`);
   }
   const buf = fs.readFileSync(LOCAL_PART_A_PATH);
   const sha = crypto.createHash('sha256').update(buf).digest('hex');
   if (sha !== PART_A_TEMPLATE_SHA256) {
-    return null;
+    assert.fail(`Local Part A owner template SHA mismatch: expected ${PART_A_TEMPLATE_SHA256}, got ${sha}`);
   }
   return new Uint8Array(buf);
 }
@@ -280,16 +280,12 @@ function parseRowObjects(sheetXml) {
   return map;
 }
 
-test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix, deep row structural parity & frozen baseline matrix', async (t) => {
+test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix, deep row structural parity & frozen baseline matrix', async () => {
   const templateBytes = loadLocalTemplate();
-  if (!templateBytes) {
-    t.skip('Local Part A owner template unavailable or SHA mismatch');
-    return;
-  }
 
   // Verify SHA matching via computeSha256
   const sha = await computeSha256(templateBytes);
-  assert.equal(sha, PART_A_TEMPLATE_SHA256);
+  assert.equal(sha, PART_A_TEMPLATE_SHA256, `Owner Part A template SHA mismatch: expected ${PART_A_TEMPLATE_SHA256}, got ${sha}`);
 
   const wbSource = await XlsxPopulate.fromDataAsync(templateBytes);
   const srcSheetXml = await wbSource._zip.files['xl/worksheets/sheet1.xml'].async('string');
@@ -359,9 +355,9 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     assert.equal(wbXml.includes(expectedPrintArea), true, `Print_Area must be ${expectedPrintArea} for N=${n}`);
 
     // D. Absolute Page Setup Authority: paperSize="8", orientation="landscape", scale="58"
-    assert.equal(sheetXml.includes('paperSize="8"'), true);
-    assert.equal(sheetXml.includes('orientation="landscape"'), true);
-    assert.equal(sheetXml.includes('scale="58"'), true);
+    assert.equal(sheetXml.includes('paperSize="8"'), true, `paperSize="8" must be explicitly present for N=${n}`);
+    assert.equal(sheetXml.includes('orientation="landscape"'), true, `orientation="landscape" must be explicitly present for N=${n}`);
+    assert.equal(sheetXml.includes('scale="58"'), true, `scale="58" must be explicitly present for N=${n}`);
 
     // E. Frozen Baseline Matrix Checks (D2_PART_A_STRUCTURAL_CLOSURE.md):
     // Cols XML block parity
@@ -516,7 +512,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     assert.equal(rawMerges.length, expectedMergeSet.size, `Merge count must equal expected set size ${expectedMergeSet.size} for N=${n}`);
     assert.deepEqual(actualMergeSet, expectedMergeSet, `Complete merge SET must match expected set for N=${n}`);
 
-    // I. Effective sanitization ranges cleared
+    // I. Effective sanitization ranges cleared & Privacy check across worksheet and sharedStrings entries
     const sheet = wb.sheet(0);
     const layout = profile.getPartALayoutTopology(n);
     const sensitiveAddrsN = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
@@ -526,12 +522,15 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       assert.equal(val == null, true, `Sanitized cell ${addr} must be cleared/null/undefined for N=${n}`);
     }
 
-    // Stale sensitive tokens collected pre-sanitize absent from xl/sharedStrings.xml
+    // Stale sensitive tokens collected pre-sanitize absent from xl/sharedStrings.xml and xl/worksheets/sheet1.xml
+    const sheetXmlContent = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
     const ssFile = wb._zip.files['xl/sharedStrings.xml'];
-    if (ssFile) {
-      const ssXml = await ssFile.async('string');
-      for (const token of sensitiveTokens) {
-        assert.equal(ssXml.includes(token), false, `Stale sensitive token "${token}" must be absent from xl/sharedStrings.xml for N=${n}`);
+    const ssXmlContent = ssFile ? await ssFile.async('string') : '';
+
+    for (const token of sensitiveTokens) {
+      assert.equal(sheetXmlContent.includes(token), false, `Stale sensitive token "${token}" must be absent from xl/worksheets/sheet1.xml for N=${n}`);
+      if (ssFile) {
+        assert.equal(ssXmlContent.includes(token), false, `Stale sensitive token "${token}" must be absent from xl/sharedStrings.xml for N=${n}`);
       }
     }
 
