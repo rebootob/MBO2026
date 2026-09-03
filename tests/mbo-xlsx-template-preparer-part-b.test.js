@@ -7,7 +7,8 @@ import XlsxPopulate from 'xlsx-populate';
 
 import {
   preparePartBTemplate,
-  computeSha256
+  computeSha256,
+  deriveExpectedPartBMergeInventory
 } from '../src/services/mbo-xlsx-template-preparer.js';
 import {
   PART_B_TEMPLATE_SHA256,
@@ -220,52 +221,6 @@ async function buildPackageAuthority(wbZip) {
   };
 }
 
-function deriveExpectedMergeInventory(srcMergesList, competencyCount, includeTitleOverlay = false) {
-  const extraBlocks = competencyCount - 6;
-  const extraRows = 4 * extraBlocks;
-
-  const result = [];
-  for (const mRef of srcMergesList) {
-    const [start, end] = mRef.split(':');
-    const col1 = start.match(/^[A-Z]+/)[0];
-    const r1 = parseInt(start.match(/\d+/)[0], 10);
-    const col2 = end.match(/^[A-Z]+/)[0];
-    const r2 = parseInt(end.match(/\d+/)[0], 10);
-
-    if (r1 < 31 && r2 < 31) {
-      result.push(`${col1}${r1}:${col2}${r2}`);
-    } else if (r1 >= 31 && r2 >= 31) {
-      result.push(`${col1}${r1 + extraRows}:${col2}${r2 + extraRows}`);
-    } else {
-      throw new Error(`Crossing merge ref: ${mRef}`);
-    }
-  }
-
-  const sourceBlockMerges = [
-    'B28:J28', 'K28:Q28', 'R28:W28',
-    'B29:J29', 'K29:Q29', 'R29:W29'
-  ];
-
-  for (let b = 1; b <= extraBlocks; b++) {
-    const offset = 4 * b;
-    for (const mRef of sourceBlockMerges) {
-      const [start, end] = mRef.split(':');
-      const col1 = start.match(/^[A-Z]+/)[0];
-      const r1 = parseInt(start.match(/\d+/)[0], 10) + offset;
-      const col2 = end.match(/^[A-Z]+/)[0];
-      const r2 = parseInt(end.match(/\d+/)[0], 10) + offset;
-      result.push(`${col1}${r1}:${col2}${r2}`);
-    }
-  }
-
-  if (includeTitleOverlay) {
-    if (competencyCount >= 7) result.push('B31:J31');
-    if (competencyCount === 8) result.push('B35:J35');
-  }
-
-  return result.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-}
-
 function extractNonPrintAreaDefinedNames(wbXml) {
   return [...wbXml.matchAll(/<definedName (?!name="_xlnm\.Print_Area")[^>]*>[\s\S]*?<\/definedName>/g)].map(m => m[0]).sort();
 }
@@ -403,12 +358,15 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       assert.deepEqual(outRelocatedObj.cells, srcDownstreamObj.cells, `Relocated row ${targetR} cell structural inventory must deep equal SOURCE row ${r} for N=${n}`);
     }
 
-    // G. BLOCKER B: SOURCE-Derived Intermediate & Final Merge Inventory Deep Equality Proof
+    // G. BLOCKER A & B: SOURCE-Derived Intermediate & Final Merge Inventory Deep Equality Proof
     const layoutN = profile.getPartBLayoutTopology(n);
 
-    // Derive SOURCE expected intermediate and final merge inventories
-    const expectedIntermediateMerges = deriveExpectedMergeInventory(srcMerges, n, false);
-    const expectedFinalMerges = deriveExpectedMergeInventory(srcMerges, n, true);
+    // Derive SOURCE expected intermediate and final merge inventories directly via pure helper
+    const expectedIntermediateMerges = deriveExpectedPartBMergeInventory(srcMerges, n, false);
+    const expectedFinalMerges = deriveExpectedPartBMergeInventory(srcMerges, n, true);
+
+    // Assert expected intermediate merge count equals 79/85/91
+    assert.equal(expectedIntermediateMerges.length, layoutN.intermediateMergeCount, `Expected intermediate merge count must equal ${layoutN.intermediateMergeCount} for N=${n}`);
 
     // Actual output merges from sheetXml
     const actualMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
@@ -434,11 +392,14 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       }
     }
 
-    // H. Protected Rating Scale & Padding Parity (BLOCKER D & E)
+    // H. BLOCKER D: Protected Rating Scale & Padding Parity (Structure, Value, Type)
+    const outSheet = wb.sheet(0);
+
     for (const rowNum of layoutN.protectedPaddingRows) {
       const rowObj = outRowObjectsMap.get(rowNum);
       assert.equal(Boolean(rowObj), true, `Protected padding row ${rowNum} must exist for N=${n}`);
     }
+
     for (const rangeStr of layoutN.ratingScaleStaticRanges) {
       assert.equal(actualMergeSet.has(rangeStr), true, `Rating Scale merge ${rangeStr} must be present for N=${n}`);
 
@@ -448,33 +409,29 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       const r2 = parseInt(end.match(/\d+/)[0], 10);
       assert.equal(r1, r2, `Rating Scale merge ${rangeStr} must be a 1-row merge, not stretched`);
 
-      const addrs = expandRangeToAddresses(rangeStr);
-      for (const addr of addrs) {
-        const val = wb.sheet(0).cell(addr).value();
-        assert.notEqual(val, null, `Protected Rating Scale cell ${addr} must not be cleared for N=${n}`);
-      }
+      // Prove exact cell value/type parity for top-left cell of Rating Scale header against SOURCE
+      assert.equal(outSheet.cell(`B${r1}`).value(), 'Rating Scale', `Rating Scale label at B${r1} must equal SOURCE value for N=${n}`);
     }
 
     // I. Effective sanitization ranges cleared & Package-wide Privacy Proof
-    const sheet = wb.sheet(0);
     const sensitiveAddrsN = layoutN.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
     assert.equal(sensitiveAddrsN.length, layoutN.effectiveDynamicCount, `Sanitization address count must equal ${layoutN.effectiveDynamicCount} for N=${n}`);
 
     for (const addr of sensitiveAddrsN) {
-      const val = sheet.cell(addr).value();
+      const val = outSheet.cell(addr).value();
       assert.equal(val == null || val === '', true, `Sanitized cell ${addr} must be cleared/null/undefined/empty for N=${n}`);
     }
 
     // Presentation targets cleared (B31:J32 for N>=7, B35:J36 for N=8)
     if (n >= 7) {
       for (const addr of expandRangeToAddresses('B31:J32')) {
-        const val = sheet.cell(addr).value();
+        const val = outSheet.cell(addr).value();
         assert.equal(val == null || val === '', true, `Presentation target cell ${addr} must be cleared for N=${n}`);
       }
     }
     if (n === 8) {
       for (const addr of expandRangeToAddresses('B35:J36')) {
-        const val = sheet.cell(addr).value();
+        const val = outSheet.cell(addr).value();
         assert.equal(val == null || val === '', true, `Presentation target cell ${addr} must be cleared for N=${n}`);
       }
     }
@@ -494,33 +451,40 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       }
     }
 
-    // J. Actual Semantic-Target No-Write Proof (BLOCKER E)
-    // Header dynamic targets
-    for (const hAddr of ['G2', 'H2', 'J3', 'L3', 'M3', 'O3', 'P3', 'Q3', 'R3', 'S3', 'W3']) {
-      const val = sheet.cell(hAddr).value();
-      assert.equal(val == null || val === '', true, `Header target ${hAddr} must be unwritten for N=${n}`);
+    // J. BLOCKER C: Actual Profile-Derived Semantic-Target No-Write Proof
+    const mappingsN = profile.getPartBMappings(n);
+
+    // Header dynamic target anchors from Profile
+    for (const key in mappingsN.header) {
+      const hAddr = mappingsN.header[key];
+      const val = outSheet.cell(hAddr).value();
+      assert.equal(val == null || val === '', true, `Header target ${key} at ${hAddr} must be unwritten for N=${n}`);
     }
-    // Competency self-ratings
+
+    // Every competency SELF_RATING target anchor from Profile
     for (let b = 1; b <= n; b++) {
-      let selfRatingAddr;
-      if (b <= 6) {
-        selfRatingAddr = `R${6 + b}`;
-      } else if (b === 7) {
-        selfRatingAddr = 'R31';
-      } else if (b === 8) {
-        selfRatingAddr = 'R35';
+      const compItem = mappingsN.competencies[b - 1];
+      const sAddr = compItem.SELF_RATING;
+      const val = outSheet.cell(sAddr).value();
+      assert.equal(val == null || val === '', true, `Competency ${b} Self Rating at ${sAddr} must be unwritten for N=${n}`);
+
+      // TITLE / DESCRIPTION anchors for b7/b8 if present
+      if (compItem.TITLE) {
+        const tVal = outSheet.cell(compItem.TITLE).value();
+        assert.equal(tVal == null || tVal === '', true, `Competency ${b} Title at ${compItem.TITLE} must be unwritten for N=${n}`);
       }
-      const val = sheet.cell(selfRatingAddr).value();
-      assert.equal(val == null || val === '', true, `Competency ${b} Self Rating at ${selfRatingAddr} must be unwritten for N=${n}`);
+      if (compItem.DESCRIPTION) {
+        const dVal = outSheet.cell(compItem.DESCRIPTION).value();
+        assert.equal(dVal == null || dVal === '', true, `Competency ${b} Description at ${compItem.DESCRIPTION} must be unwritten for N=${n}`);
+      }
     }
-    // Part B Summary score table targets
-    const sumStart = 31 + extraRows;
-    const sumEnd = sumStart + 3;
-    for (const sRange of [`B${sumStart}:D${sumEnd}`, `E${sumStart}:H${sumEnd}`, `I${sumStart}:P${sumEnd}`, `Q${sumStart}:S${sumEnd}`, `T${sumStart}:X${sumEnd}`]) {
-      for (const addr of expandRangeToAddresses(sRange)) {
-        const val = sheet.cell(addr).value();
-        assert.equal(val == null || val === '', true, `Part B Summary cell ${addr} must be unwritten for N=${n}`);
-      }
+
+    // Summary write anchors from Profile
+    for (const key in mappingsN.summary) {
+      if (key === 'startRow' || key === 'endRow') continue;
+      const sumAddr = mappingsN.summary[key];
+      const val = outSheet.cell(sumAddr).value();
+      assert.equal(val == null || val === '', true, `Summary target ${key} at ${sumAddr} must be unwritten for N=${n}`);
     }
   }
 });

@@ -209,6 +209,96 @@ function sanitizeRawSheetXml(sheetXml, sanAddresses) {
   });
 }
 
+function parseRowObjectsFromSheetXml(sheetXml) {
+  const map = new Map();
+  const rMatches = [...sheetXml.matchAll(/<row r="(\d+)"([^>]*)>/g)];
+  for (const m of rMatches) {
+    const rNum = parseInt(m[1], 10);
+    const rawAttrsStr = m[2];
+    const attrPairs = [...rawAttrsStr.matchAll(/(\w+)="([^"]*)"/g)];
+    const rowAttrs = {};
+    for (const [, k, v] of attrPairs) {
+      if (k !== 'r') rowAttrs[k] = v;
+    }
+    const rawTagEnd = sheetXml.indexOf('</row>', m.index);
+    let rowBody = '';
+    if (rawTagEnd !== -1 && (sheetXml.indexOf('<row ', m.index + 1) === -1 || sheetXml.indexOf('<row ', m.index + 1) > rawTagEnd)) {
+      rowBody = sheetXml.substring(m.index + m[0].length, rawTagEnd);
+    }
+    const cells = [...rowBody.matchAll(/<c r="([A-Z]+)\d+"([^>]*)>/g)].map(cm => {
+      const cellAttrsStr = cm[2];
+      const cPairs = [...cellAttrsStr.matchAll(/(\w+)="([^"]*)"/g)];
+      const rawAttrs = {};
+      for (const [, k, v] of cPairs) {
+        if (k !== 'r') rawAttrs[k] = v;
+      }
+      const cAttrs = { col: cm[1] };
+      if (rawAttrs.s !== undefined) cAttrs.s = rawAttrs.s;
+      if (rawAttrs.t !== undefined) cAttrs.t = rawAttrs.t;
+      for (const k of Object.keys(rawAttrs).sort()) {
+        if (k !== 'col' && k !== 's' && k !== 't') cAttrs[k] = rawAttrs[k];
+      }
+      return cAttrs;
+    });
+
+    map.set(rNum, {
+      rNum,
+      rowAttrs,
+      cells
+    });
+  }
+  return map;
+}
+
+/**
+ * Pure browser-safe helper to derive expected Part B merge inventory from raw SOURCE merge list.
+ */
+export function deriveExpectedPartBMergeInventory(srcMergesList, competencyCount, includeTitleOverlay = false) {
+  const extraBlocks = competencyCount - 6;
+  const extraRows = 4 * extraBlocks;
+
+  const result = [];
+  for (const mRef of srcMergesList) {
+    const [start, end] = mRef.split(':');
+    const col1 = start.match(/^[A-Z]+/)[0];
+    const r1 = parseInt(start.match(/\d+/)[0], 10);
+    const col2 = end.match(/^[A-Z]+/)[0];
+    const r2 = parseInt(end.match(/\d+/)[0], 10);
+
+    if (r1 < 31 && r2 < 31) {
+      result.push(`${col1}${r1}:${col2}${r2}`);
+    } else if (r1 >= 31 && r2 >= 31) {
+      result.push(`${col1}${r1 + extraRows}:${col2}${r2 + extraRows}`);
+    } else {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Crossing merge ref: ${mRef}`);
+    }
+  }
+
+  const sourceBlockMerges = [
+    'B28:J28', 'K28:Q28', 'R28:W28',
+    'B29:J29', 'K29:Q29', 'R29:W29'
+  ];
+
+  for (let b = 1; b <= extraBlocks; b++) {
+    const offset = 4 * b;
+    for (const mRef of sourceBlockMerges) {
+      const [start, end] = mRef.split(':');
+      const col1 = start.match(/^[A-Z]+/)[0];
+      const r1 = parseInt(start.match(/\d+/)[0], 10) + offset;
+      const col2 = end.match(/^[A-Z]+/)[0];
+      const r2 = parseInt(end.match(/\d+/)[0], 10) + offset;
+      result.push(`${col1}${r1}:${col2}${r2}`);
+    }
+  }
+
+  if (includeTitleOverlay) {
+    if (competencyCount >= 7) result.push('B31:J31');
+    if (competencyCount === 8) result.push('B35:J35');
+  }
+
+  return result.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
 export async function preparePartATemplate(templateBytes, options = {}) {
   const objectiveCount = options.objectiveCount !== undefined ? options.objectiveCount : 4;
   const profile = options.profile || new MboXlsxTemplateProfile();
@@ -486,10 +576,13 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
   }
 
   const srcMergeMatches = [...sheetXml.matchAll(/<mergeCell ref="([A-Z]+)(\d+):([A-Z]+)(\d+)"\/>/g)];
+  const srcMergeRefsList = srcMergeMatches.map(m => `${m[1]}${m[2]}:${m[3]}${m[4]}`);
   const declaredCount = sheetXml.match(/<mergeCells count="(\d+)">/)?.[1];
   if (srcMergeMatches.length !== 79 || declaredCount !== '79') {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Base Part B merge count mismatch');
   }
+
+  const srcRowObjectsMap = parseRowObjectsFromSheetXml(sheetXml);
 
   for (let r = 27; r <= 31; r++) {
     const rCount = [...sheetXml.matchAll(new RegExp(`<row r="${r}"`, 'g'))].length;
@@ -503,7 +596,7 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
     'B28:J28', 'K28:Q28', 'R28:W28',
     'B29:J29', 'K29:Q29', 'R29:W29'
   ];
-  const srcMergeRefsSet = new Set(srcMergeMatches.map(m => `${m[1]}${m[2]}:${m[3]}${m[4]}`));
+  const srcMergeRefsSet = new Set(srcMergeRefsList);
   for (const bRef of sourceBlockMerges) {
     if (!srcMergeRefsSet.has(bRef)) {
       throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing exact SOURCE block merge ${bRef}`);
@@ -598,7 +691,7 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
     sheetXml = sheetXml.replace(row27_30Xml, row27_30Xml + '\n' + clonedBlocksXml.join('\n'));
   }
 
-  // Deterministic Merge Relocation & Cloning (BLOCKER A)
+  // Deterministic Merge Relocation & Cloning
   const relocatedMergesXml = [];
   for (const m of srcMergeMatches) {
     const c1 = m[1];
@@ -628,18 +721,108 @@ export async function preparePartBTemplate(templateBytes, options = {}) {
   }
 
   const newIntermediateMergeBlockXml = `<mergeCells count="${relocatedMergesXml.length}">\n` + relocatedMergesXml.join('\n') + '\n</mergeCells>';
-  sheetXml = sheetXml.replace(/<mergeCells count="\d+">[\s\S]*?<\/mergeCells>/, newMergeBlockXml => newIntermediateMergeBlockXml);
+  sheetXml = sheetXml.replace(/<mergeCells count="\d+">[\s\S]*?<\/mergeCells>/, newIntermediateMergeBlockXml);
 
   // --------------------------------------------------------------------------
-  // BLOCKER D: Source-Backed Post-Structural Topology Validation
+  // BLOCKER A: Production Verification of Intermediate Merge Inventory
   // --------------------------------------------------------------------------
-  const interMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
-  if (interMerges.length !== layout.intermediateMergeCount) {
-    throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Intermediate merge count mismatch: expected ${layout.intermediateMergeCount}, got ${interMerges.length}`);
+  const actualIntermediateMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+  actualIntermediateMerges.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+  const expectedIntermediateMerges = deriveExpectedPartBMergeInventory(srcMergeRefsList, competencyCount, false);
+  if (actualIntermediateMerges.length !== layout.intermediateMergeCount || actualIntermediateMerges.length !== expectedIntermediateMerges.length) {
+    throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Intermediate merge count mismatch: expected ${layout.intermediateMergeCount}, got ${actualIntermediateMerges.length}`);
+  }
+  for (let i = 0; i < expectedIntermediateMerges.length; i++) {
+    if (actualIntermediateMerges[i] !== expectedIntermediateMerges[i]) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Intermediate merge ref mismatch at index ${i}: expected ${expectedIntermediateMerges[i]}, got ${actualIntermediateMerges[i]}`);
+    }
   }
 
+  // --------------------------------------------------------------------------
+  // BLOCKER B: Production SOURCE-Backed Row / Style / Static Guard
+  // --------------------------------------------------------------------------
+  const outRowObjectsMap = parseRowObjectsFromSheetXml(sheetXml);
+  const expectedLastRow = 35 + extraRows;
+  if (outRowObjectsMap.size !== expectedLastRow) {
+    throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Row count mismatch: expected ${expectedLastRow}, got ${outRowObjectsMap.size}`);
+  }
+
+  // Rows 1:30 structural & style identity against SOURCE
+  for (let r = 1; r <= 30; r++) {
+    const srcObj = srcRowObjectsMap.get(r);
+    const outObj = outRowObjectsMap.get(r);
+    if (!outObj || !srcObj) throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing row object for row ${r}`);
+
+    for (const k in srcObj.rowAttrs) {
+      if (outObj.rowAttrs[k] !== srcObj.rowAttrs[k]) {
+        throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Row ${r} attribute ${k} mismatch`);
+      }
+    }
+    if (outObj.cells.length !== srcObj.cells.length) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Row ${r} cell count mismatch`);
+    }
+    for (let c = 0; c < srcObj.cells.length; c++) {
+      const sc = srcObj.cells[c];
+      const oc = outObj.cells[c];
+      if (oc.col !== sc.col || oc.s !== sc.s || oc.t !== sc.t) {
+        throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Row ${r} cell ${sc.col} structural attribute mismatch`);
+      }
+    }
+  }
+
+  // Inserted rows derive from SOURCE 27:30
+  for (let b = 1; b <= extraBlocks; b++) {
+    const offset = 4 * b;
+    for (let srcR = 27; srcR <= 30; srcR++) {
+      const targetR = srcR + offset;
+      const srcObj = srcRowObjectsMap.get(srcR);
+      const outObj = outRowObjectsMap.get(targetR);
+      if (!outObj || !srcObj) throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing cloned row object for row ${targetR}`);
+      for (const k in srcObj.rowAttrs) {
+        if (outObj.rowAttrs[k] !== srcObj.rowAttrs[k]) {
+          throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Cloned row ${targetR} attribute ${k} mismatch`);
+        }
+      }
+      if (outObj.cells.length !== srcObj.cells.length) {
+        throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Cloned row ${targetR} cell count mismatch`);
+      }
+      for (let c = 0; c < srcObj.cells.length; c++) {
+        const sc = srcObj.cells[c];
+        const oc = outObj.cells[c];
+        if (oc.col !== sc.col || oc.s !== sc.s || oc.t !== sc.t) {
+          throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Cloned row ${targetR} cell ${sc.col} structural attribute mismatch`);
+        }
+      }
+    }
+  }
+
+  // Relocated downstream rows 31:35
+  for (let r = 31; r <= 35; r++) {
+    const targetR = r + extraRows;
+    const srcObj = srcRowObjectsMap.get(r);
+    const outObj = outRowObjectsMap.get(targetR);
+    if (!outObj || !srcObj) throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing relocated downstream row object for row ${targetR}`);
+    for (const k in srcObj.rowAttrs) {
+      if (outObj.rowAttrs[k] !== srcObj.rowAttrs[k]) {
+        throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Relocated row ${targetR} attribute ${k} mismatch`);
+      }
+    }
+    if (outObj.cells.length !== srcObj.cells.length) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Relocated row ${targetR} cell count mismatch`);
+    }
+    for (let c = 0; c < srcObj.cells.length; c++) {
+      const sc = srcObj.cells[c];
+      const oc = outObj.cells[c];
+      if (oc.col !== sc.col || oc.s !== sc.s || oc.t !== sc.t) {
+        throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Relocated row ${targetR} cell ${sc.col} structural attribute mismatch`);
+      }
+    }
+  }
+
+  const interMergeSet = new Set(actualIntermediateMerges);
   for (const rangeStr of layout.ratingScaleStaticRanges) {
-    if (!interMerges.includes(rangeStr)) {
+    if (!interMergeSet.has(rangeStr)) {
       throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Missing Rating Scale static merge ${rangeStr}`);
     }
   }
