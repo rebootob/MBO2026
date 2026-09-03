@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-B1-R9 STOPPED ON CONFIRMED SOURCE DEFECT / R10 PROPOSED
+# AI ACTIVE TASK — R2-B1-R10 SOURCE+TEST AUTHORIZED / ACTIVE
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / SOURCE+TEST / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
@@ -14,47 +14,49 @@ D2 = IN PROGRESS
 D2_PART_A_STRUCTURAL = PASS / CLOSED
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
-D2_WP004_R2_B1 = CONFIRMED PRODUCTION STRUCTURAL DEFECT / NOT CLOSED
-D2_WP004_R2_B1_R4 = PRIOR SOURCE REVIEW PASS / SUPERSEDED BY NEW R9 DEFECT EVIDENCE
+D2_WP004_R2_B1 = CONFIRMED PRODUCTION STRUCTURAL DEFECT / SOURCE+TEST CORRECTIVE ACTIVE / NOT CLOSED
 D2_WP004_R2_B1_R8 = RELATIONSHIP PROOF PASS / FROZEN
-D2_WP004_R2_B1_R9 = EXECUTED / NO-FILTER PROOF EXPOSED PRODUCTION DEFECT / STOPPED / NO PUSHED IMPLEMENTATION COMMIT
+D2_WP004_R2_B1_R9 = EXECUTED / NO-FILTER PROOF EXPOSED PRODUCTION DEFECT / STOPPED
+D2_WP004_R2_B1_R10 = AUTHORIZED / ACTIVE / SOURCE+TEST
 
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-B1-R10
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-B1-R10-SOURCE-TEST-CORRECTIVE-20260903-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-B1-R10-SOURCE-TEST-CORRECTIVE-20260903-01
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / SOURCE+TEST / BOUNDED / ONE-SHOT / ONE COMMIT -> PUSH -> STOP
 R2_B1_RELATIONSHIP_PROOF = PASS / FROZEN
-R2_B1_CELL_STRUCTURAL_PROOF = FAIL DUE CONFIRMED PRODUCTION BEHAVIOR
+R2_B1_CELL_STRUCTURAL_PROOF = FAIL UNTIL R10 CORRECTIVE
 R2-B2 = NOT AUTHORIZED
 R2-C = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. R9 execution outcome
+## 2. Authorization identity
 
 ```text
-R9_AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R9-TEST-ONLY-CORRECTIVE-20260903-01
-R9_AUTHORIZATION_COMMIT = b6db31e40cfcca56ba26bdc18249c146f6e55c01
-R9_PUSHED_IMPLEMENTATION_COMMIT = NONE
-R9_TOKEN_STATE = CONSUMED BY EXECUTION / DO NOT REUSE
-RESULT = POTENTIAL PRODUCTION SOURCE STRUCTURAL DEFECT -> CONFIRMED BY CONTROL-PLANE SOURCE REVIEW
+WORK_PACKAGE = D2-WP004-R2-B1-R10
+NAME = PART A RAW-OOXML SANITIZER STRUCTURAL-PRESERVATION CORRECTIVE
+STATE = AUTHORIZED / ACTIVE
+MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R10-SOURCE-TEST-CORRECTIVE-20260903-01
+AUTHORIZATION_BASIS_HEAD = df6a519ba3931a3af8131fbc039da484c67c9c37
+MAX_EXECUTOR_COMMITS = 1
+EXECUTOR = ANTIGRAVITY
+FINAL_EXECUTOR_STATE = SOURCE+TEST CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW
 ```
 
-Owner-provided live executor evidence reported the strict no-filter proof exposed two production effects:
+Owner authorization received exactly:
+`อนุมัติ D2-WP004-R2-B1-R10 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
 
-1. **Cell type mutation** — exact owner SOURCE cell such as `N6` contains structural attributes including `t="s"`; after Part A sanitization the output keeps the cell/style but loses `t="s"` when the value is cleared.
-2. **Cell-node materialization** — sanitization of ranges containing empty/merged cells can create new empty `<c ... s="1"/>` nodes that were absent from exact owner SOURCE XML (example evidence around `AL42:AY42` after relocation).
+Single-use token. Antigravity must STOP after one pushed SOURCE+TEST commit and must not self-declare PASS/CLOSED.
 
-Executor correctly STOPPED and did not change frozen production source/profile under R9 authority.
+## 3. Confirmed defect basis
 
-## 3. Independent causal review of production source
-
-Current production sanitizer performs a write/re-serialize pass before the raw OOXML structural pass:
+R9 strict no-filter proof exposed production structural mutation caused by the current XlsxPopulate worksheet write/re-serialize sanitizer path:
 
 ```text
 sheetSanitize.range(rangeStr).value(null)
@@ -62,101 +64,130 @@ sheetSanitize.cell(rangeStr).value(null)
 const sanitizedBytes = await wbSanitize.outputAsync()
 ```
 
-This XlsxPopulate mutation/output path is consistent with both observed structural defects:
-- clearing a shared-string cell can re-serialize the `<c>` node without its original `t="s"` attribute;
-- range writes can materialize empty cell nodes that did not exist in raw owner template XML.
+Confirmed effects:
+- existing SOURCE cells can lose structural attribute `t="s"` when value is cleared;
+- empty/merged cells within sanitization ranges can be materialized as new `<c ... s="1"/>` nodes that were absent from exact owner SOURCE XML.
 
-Therefore the exact Part A structural-preservation contract cannot be closed while sanitization depends on write/re-serialization of worksheet cells through XlsxPopulate.
+This authorization reopens production source ONLY for this narrow sanitizer structural-preservation defect. All unrelated preparer behavior remains frozen.
 
-This is now a proven new production-source defect. The prior R4 source freeze is reopened only for the narrow sanitizer-preservation defect described here. All unrelated source behavior remains frozen.
+## 4. Writable scope
 
-## 4. Exact next proposed corrective — NOT AUTHORIZED
+Writable files ONLY:
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-B1-R10
-NAME = PART A RAW-OOXML SANITIZER STRUCTURAL-PRESERVATION CORRECTIVE
-STATE = PROPOSED / NOT AUTHORIZED
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
-
-PROPOSED_WRITABLE_FILES =
-  src/services/mbo-xlsx-template-preparer.js
-  tests/mbo-xlsx-template-preparer.test.js
-
-PROFILE_CHANGE_AUTH = NONE
-MAX_EXECUTOR_COMMITS = 1
+src/services/mbo-xlsx-template-preparer.js
+tests/mbo-xlsx-template-preparer.test.js
 ```
 
-R10 must correct only the newly proven sanitizer structural-preservation defect and retain all accepted R7/R8 proof.
+Forbidden:
 
-## 5. Required R10 source design
+```text
+src/profiles/mbo-xlsx-template-profile.js
+src/services/mbo-export-service.js
+scripts/export/mbo-xlsx-ooxml-feasibility.js
+tests/mbo-xlsx-ooxml-feasibility.test.js
+project-docs/*
+package.json
+package-lock.json
+dist/*
+UI / integration
+R2-B2
+R2-C
+Combined Excel
+Kintone write/deploy/Live UAT
+D3
+```
 
-### A. Remove worksheet write/re-serialization sanitization
+## 5. Required R10 source corrective
 
-For Part A sensitive-cell clearing, production must no longer use XlsxPopulate worksheet/range write APIs such as:
+### A. Remove worksheet write/re-serialization as the Part A sanitizer
+
+For Part A sensitive-cell clearing, production must no longer mutate worksheet cells/ranges through XlsxPopulate APIs such as:
 
 ```text
 range(...).value(null)
 cell(...).value(null)
 ```
 
-followed by `wb.outputAsync()` as the sanitization transformation.
+followed by `outputAsync()` as the sanitization transformation.
 
-XlsxPopulate may be used read-only where necessary to resolve existing SOURCE values/tokens, but worksheet cell writes must not be the sanitizer mechanism.
+XlsxPopulate may remain for read-only parsing where necessary, but must not be the mechanism that writes/clears Part A worksheet cell values.
 
-### B. Sanitize exact existing SOURCE cell nodes in raw OOXML
+### B. Sanitize exact existing cell nodes in raw `sheet1.xml`
 
-Operate on exact `xl/worksheets/sheet1.xml` from the SHA-validated owner template package.
+Operate on exact `xl/worksheets/sheet1.xml` from the SHA-validated owner-template package.
 
-For every authorized effective sanitization address:
-- if an exact `<c r="...">...</c>` node exists, clear only its value payload;
-- preserve the original cell opening-tag structural attributes exactly, including `s`, `t`, and any other attributes;
-- preserve the original cell reference/column topology;
-- do not create a cell node where SOURCE had no cell node;
-- do not materialize blank/merged cells merely because they fall inside a sanitization range;
-- if a cell is already self-closing/blank, leave its structural node unchanged;
-- zero formulas remain mandatory; unexpected formula payload in an authorized sanitization cell must fail closed rather than be silently rewritten.
+For each authorized effective sanitization address:
+- locate the exact existing SOURCE `<c r="...">...</c>` node if present;
+- preserve opening-tag structural attributes exactly, including `r`, `s`, `t`, and any other attributes;
+- clear only value-bearing payload;
+- do not create a `<c>` node where SOURCE has none;
+- do not materialize blank/merged cells merely because an address lies inside an authorized range;
+- if an existing cell is self-closing/blank, leave its structural node unchanged;
+- unexpected formula payload must fail closed; do not silently rewrite formulas.
 
-Authorized payload clearing may remove value-bearing content such as `<v>...</v>` and inline-string payload as appropriate while retaining the exact structural `<c ...>` authority.
+Permitted payload clearing must be minimal and deterministic, e.g. remove/empty only payload elements appropriate to the existing cell representation such as `<v>...</v>` and inline-string payload while retaining the exact cell structural opening tag.
 
-### C. Retain privacy purge
+### C. Preserve sensitive-token collection and stale shared-string purge
 
-Retain deterministic sensitive-token collection and package privacy proof.
+Privacy remains mandatory:
+- sensitive tokens must continue to be derived from authorized SOURCE sensitive cells only;
+- `xl/sharedStrings.xml` stale sensitive token purge must remain effective;
+- package-wide privacy test remains fail-closed;
+- no broad token exemptions.
 
-`xl/sharedStrings.xml` stale sensitive-token removal must remain effective even when worksheet cell structure is preserved.
-
-Do not broaden exemptions and do not reintroduce sensitive tokens elsewhere in the package.
+If read-only XlsxPopulate access is needed to resolve SOURCE values/tokens, it must not serialize the worksheet before raw-OOXML sanitization.
 
 ### D. Preserve all unrelated production behavior
 
-Do not redesign:
-- objective-count validation;
-- profile validation;
-- SHA validation;
-- raw row/cell row-number shifting;
+Do not redesign or change unless directly required by the defect:
+- objectiveCount domain validation;
+- Profile integrity validation;
+- owner template SHA validation;
+- caller-input immutability;
+- raw row shift >=29;
+- cell row-number relocation;
 - row28 cloning;
 - merge shifting/cloning;
 - dimension update;
 - Print_Area update;
 - exact rId3 relationship/anchor/media removal;
-- browser-safe/no-fs/no-path/no-node-crypto contract;
-- caller input immutability;
-- zero semantic writes/scoring/formulas/Part B mutation.
+- browser-safe contract;
+- zero semantic/user writes;
+- zero scoring/recalculation;
+- zero formulas;
+- zero Part B mutation.
 
-## 6. Required R10 test acceptance
+R8 exact relationship proof is accepted/frozen and must remain unchanged in behavior.
 
-The R9 no-filter proof becomes mandatory acceptance evidence and must remain strict:
+## 6. Required R10 test corrective / acceptance
+
+R9 no-filter proof is the mandatory acceptance gate. Do NOT weaken it.
+
+Required:
 - no style filtering;
 - no sanitization-range cell filtering;
 - no `s="1"` filtering;
 - no type filtering;
-- deep-equal complete ordered structural cell inventories from exact SOURCE;
-- SOURCE `t` present / OUTPUT missing must fail;
+- exact SOURCE-derived ordered cell inventory;
+- deep-equal complete normalized cell structural objects;
+- SOURCE `t` present / OUTPUT missing = FAIL;
+- SOURCE `t` absent / OUTPUT added = FAIL;
 - no extra/missing cells;
-- inserted/downstream row structural equality remains SOURCE-derived;
-- complete frozen package authority remains deep-equal after only authorized rId3/image3 normalization;
-- package-wide privacy remains clean.
+- rows 1:28, inserted rows, and relocated downstream rows remain exact SOURCE-derived structural equality;
+- complete frozen package authority remains deep-equal after only already-authorized rId3/image3 normalization;
+- package-wide privacy remains clean;
+- relationship proof remains PASS.
 
-Focused run:
+Add/retain targeted regression proof for the confirmed defect, including at minimum:
+- an existing shared-string sensitive cell preserves its original structural attributes, including `t="s"`, after sanitization while its sensitive payload is cleared;
+- authorized empty/merged-range addresses that had no SOURCE cell node do not gain new cell nodes in output.
+
+Do not introduce test-only normalization to hide source mutations.
+
+## 7. Required focused run
+
+Run exactly:
 
 `node --test tests/mbo-xlsx-template-preparer.test.js`
 
@@ -170,41 +201,38 @@ N4..N10 matrix = PASS
 no-filter exact cell structural parity = PASS
 relationship proof = PASS
 package-wide privacy = PASS
+confirmed R9 regression cases = PASS
 ```
 
-If a new unrelated production defect appears, STOP and report it; do not widen source changes without new owner authority.
+If a new unrelated production defect appears, STOP and report exact evidence. Do not widen source changes without new owner authority.
 
-## 7. R10 forbidden scope
+## 8. Executor protocol
 
 ```text
-src/profiles/mbo-xlsx-template-profile.js = FROZEN / FORBIDDEN
-src/services/mbo-export-service.js = FORBIDDEN
-scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
-tests/mbo-xlsx-ooxml-feasibility.test.js = FORBIDDEN
-project-docs/* = FORBIDDEN TO EXECUTOR
-package.json / package-lock.json = FORBIDDEN
-UI / dist / integration = FORBIDDEN
-R2-B2 = NOT AUTHORIZED
-R2-C = NOT AUTHORIZED
-Combined Excel = NOT AUTHORIZED
-Kintone write/deploy/Live UAT = FORBIDDEN
-D3 = HOLD
+fresh-fetch canonical branch
+-> verify HEAD equals authorization HEAD
+-> read fast-start + this task + R2 design + Part A structural baseline
+-> inspect exact source/test/profile evidence only
+-> modify ONLY the two authorized files
+-> implement raw-OOXML sanitizer corrective
+-> retain strict no-filter proof and add/retain targeted R9 regressions
+-> run focused owner-template test
+-> git diff --name-only must show exactly the authorized source/test files (or a strict subset if one file genuinely needs no change)
+-> require FAIL=0 / SKIP=0 and all required proof PASS
+-> create exactly one SOURCE+TEST commit
+-> push ai/antigravity-wp002c
+-> report exact evidence
+-> STOP
 ```
 
-## 8. Owner decision
+Expected executor final status:
+`R2-B1-R10 SOURCE+TEST CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`
 
-No source execution is authorized now.
-
-Recommended approval phrase:
-`อนุมัติ D2-WP004-R2-B1-R10 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+## 9. Remaining work — NOT AUTHORIZED
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-R2_B1 = CONFIRMED SOURCE DEFECT / NOT CLOSED
-R2_B1_RELATIONSHIP_PROOF = PASS / FROZEN
-R2_B1_CELL_PROOF = FAIL UNTIL RAW-OOXML SANITIZER CORRECTIVE
-R2-B2 = NOT AUTHORIZED
-R2-C = NOT AUTHORIZED
-D3 = HOLD
+R2-B2 = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
+R2-C = SECURED SEMANTIC VALUE RENDERER
+COMBINED_EXCEL_PARITY = later D2 gate
+D3 = HOLD UNTIL D2 PASS / CLOSED
 ```
