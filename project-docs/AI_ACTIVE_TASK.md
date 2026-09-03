@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-B1 PASS / CLOSED / R2-B2 EXACT PROPOSAL READY
+# AI ACTIVE TASK — R2-B2 AUTHORIZED / ACTIVE
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / R2-B2 SOURCE+TEST AUTHORIZED / BOUNDED / ONE-SHOT / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
@@ -18,17 +18,17 @@ D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
 
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-B2
+ACTIVE_D2_SOURCE_CHANGE_AUTH = R2-B2 ONLY / PREPARER FILE ONLY
+ACTIVE_D2_TEST_CHANGE_AUTH = R2-B2 ONLY / NEW PART-B TEST FILE ONLY
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED / ONE-SHOT / MAX 1 COMMIT
 R2_B1_PRODUCTION_SOURCE = PASS / FROZEN
-R2-B2 = EXACT PROPOSAL READY / NOT AUTHORIZED
+R2-B2 = AUTHORIZED / ACTIVE
 R2-C = NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
@@ -46,29 +46,31 @@ R2_B1 = PASS / CLOSED / FROZEN
 
 Do not reopen R2-B1 unless a proven regression is found. Part A behavior inside `mbo-xlsx-template-preparer.js` remains frozen while B2 is implemented.
 
-## 3. Exact R2-B2 proposal — NOT AUTHORIZED
+## 3. R2-B2 authorization
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-B2
+WORK_PACKAGE = D2-WP004-R2-B2
 NAME = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
+AUTHORIZATION_BASIS_HEAD = 11c7e88eb8a516448e682f32e5a1ce755e7a79a3
+AUTHORIZATION_TOKEN = D2-WP004-R2-B2-SOURCE-TEST-20260903-01
+MAX_EXECUTOR_COMMITS = 1
 
-PROPOSED_WRITABLE_FILES =
+WRITABLE_FILES =
   src/services/mbo-xlsx-template-preparer.js
   tests/mbo-xlsx-template-preparer-part-b.test.js
 
 PROFILE_CHANGE_AUTH = NONE
 EXPORT_SERVICE_CHANGE_AUTH = NONE
 SEMANTIC_RENDERER_AUTH = NONE
-MAX_EXECUTOR_COMMITS = 1
 ```
 
 Rationale for this smallest scope:
 - production browser-safe XLSX preparation already lives in `src/services/mbo-xlsx-template-preparer.js`;
-- B2 should extend that production module rather than create a second competing preparer;
+- B2 extends that production module rather than creating a second competing preparer;
 - a new focused Part B test file keeps the already-closed Part A proof suite stable and independently reviewable;
-- Template Profile authority is already closed and must remain frozen;
+- Template Profile authority is already closed and remains frozen;
 - `scripts/export/mbo-xlsx-ooxml-feasibility.js` remains READ-ONLY oracle/evidence only and must never be imported by production.
 
 ## 4. Frozen Part B source authority
@@ -278,7 +280,7 @@ B2 MUST NOT write:
 
 In particular, B31/B32/B35/B36 must be structurally ready and sanitized/blank for R2-C; B2 must not populate `presentationTitle` or `presentationDescription`.
 
-## 13. Exact proposed test contract
+## 13. Exact test contract
 
 New focused file:
 
@@ -319,7 +321,7 @@ No test-side filtering/exclusion may hide production structural mutations.
 
 ## 14. Focused runtime gate
 
-Proposed exact command:
+Exact command:
 
 `node --test tests/mbo-xlsx-template-preparer-part-b.test.js`
 
@@ -354,18 +356,26 @@ Kintone write/deploy/Live UAT = FORBIDDEN
 D3 = HOLD
 ```
 
-## 16. Owner decision
+## 16. Execution protocol
 
-R2-B2 is NOT AUTHORIZED yet.
+Before commit:
 
-Recommended approval phrase:
+`git diff --name-only`
 
-`อนุมัติ D2-WP004-R2-B2 SOURCE+TEST ตามขอบเขตที่เสนอ`
+It MUST show only:
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-R2-B2 = EXACT PROPOSAL READY / NOT AUTHORIZED
-R2-C = NOT AUTHORIZED
-D3 = HOLD
+src/services/mbo-xlsx-template-preparer.js
+tests/mbo-xlsx-template-preparer-part-b.test.js
 ```
+
+Then:
+1. run the exact focused test;
+2. require FAIL=0 and SKIP=0;
+3. verify real owner Part B N6/N7/N8 matrix executed;
+4. create EXACTLY ONE SOURCE+TEST commit;
+5. push to `ai/antigravity-wp002c`;
+6. report pushed SHA, exact changed files and focused runtime result;
+7. STOP;
+8. do not self-declare B2 PASS/CLOSED;
+9. do not start R2-C or any later gate.
