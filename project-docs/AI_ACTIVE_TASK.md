@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-B2 AUTHORIZED / ACTIVE
+# AI ACTIVE TASK — R2-B2 REVIEWED / NOT CLOSED / R2-B2-R1 PROPOSED
 
-Mode: **CONTROL PLANE / R2-B2 SOURCE+TEST AUTHORIZED / BOUNDED / ONE-SHOT / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file, then `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`, `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`, `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`, `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`, and only exact source/profile/test evidence required for R2-B2.
+Read `D2_REVIEW_FAST_START.md` first, then this file, then `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`, `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`, `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`, `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`, and only exact source/profile/test evidence required for the next authorized gate.
 
 ## 1. Current truth
 
@@ -12,370 +12,260 @@ Read `D2_REVIEW_FAST_START.md` first, then this file, then `phase-3/D2_WP004_R2_
 D1 = PASS / CLOSED
 D2 = IN PROGRESS
 D2_PART_A_STRUCTURAL = PASS / CLOSED
-D2_PART_B_STRUCTURAL = PASS / CLOSED
-D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
+D2_PART_B_STRUCTURAL = PASS / CLOSED / FROZEN
+D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
+D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
+D2_WP004_R2_B2 = REVIEWED / SOURCE+TEST DEFECTS / NOT CLOSED
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-B2
-ACTIVE_D2_SOURCE_CHANGE_AUTH = R2-B2 ONLY / PREPARER FILE ONLY
-ACTIVE_D2_TEST_CHANGE_AUTH = R2-B2 ONLY / NEW PART-B TEST FILE ONLY
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = AUTHORIZED / BOUNDED / ONE-SHOT / MAX 1 COMMIT
+ANTIGRAVITY = STOP / WAIT OWNER
 R2_B1_PRODUCTION_SOURCE = PASS / FROZEN
-R2-B2 = AUTHORIZED / ACTIVE
+R2-B2-R1 = PROPOSED / NOT AUTHORIZED
 R2-C = NOT AUTHORIZED
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
-## 2. R2-B1 durable closure
+## 2. R2-B2 implementation identity and scope review
 
 ```text
-R10_AUTHORIZATION_COMMIT = 9a5919f20e53676508862ffce96eaa754556e109
-R10_IMPLEMENTATION_COMMIT = 673137c2f28587e058844e93af66dad9fc722d24
-R10_FOCUSED_RUNTIME = PASS 4 / FAIL 0 / SKIP 0
-OWNER_TEMPLATE_N4_TO_N10 = EXECUTED / PASS
-R2_B1 = PASS / CLOSED / FROZEN
+R2_B2_AUTHORIZATION_BASIS = 11c7e88eb8a516448e682f32e5a1ce755e7a79a3
+R2_B2_AUTHORIZATION_COMMIT = 0037436d0c90ab84fdcb744cb2d1b8e5e8a0b685
+R2_B2_AUTHORIZATION_TOKEN = D2-WP004-R2-B2-SOURCE-TEST-20260903-01
+R2_B2_IMPLEMENTATION_COMMIT = 0b4bac862aa2906d1ac11071431dbb268c7b7b5e
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES = EXACTLY TWO AUTHORIZED FILES
+  src/services/mbo-xlsx-template-preparer.js
+  tests/mbo-xlsx-template-preparer-part-b.test.js
+SCOPE_REVIEW = PASS
+TOKEN_STATE = CONSUMED / DO NOT REUSE
+GITHUB_COMBINED_STATUS = NONE
+GITHUB_WORKFLOW_RUNS = NONE
 ```
 
-Do not reopen R2-B1 unless a proven regression is found. Part A behavior inside `mbo-xlsx-template-preparer.js` remains frozen while B2 is implemented.
+The implementation remains inside the authorized file boundary. Part A test/Profile/export-service/project-docs/package/UI/Kintone/D3 were not modified by the executor.
 
-## 3. R2-B2 authorization
+## 3. Accepted portions of R2-B2 implementation
+
+The following design directions are accepted and should be preserved through corrective work:
+- `preparePartBTemplate(templateBytes, { competencyCount, profile })` production entry point exists;
+- competency domain is fail-closed to 6/7/8;
+- exact Part B SHA gate is present;
+- caller bytes are copied before working mutation;
+- production remains browser-safe with no Node fs/path/crypto imports;
+- raw OOXML value-payload sanitization reuses the accepted R10 approach rather than XlsxPopulate worksheet write/re-serialization;
+- rows/cell references at downstream rows are relocated and SOURCE rows27:30 are cloned for N7/N8;
+- dimension and Print_Area are emitted count-dependently;
+- presentation title merges are added only for B31:J31 / B35:J35;
+- Profile effective sanitization ranges are used;
+- no semantic projection/Kintone/scoring/recalculation source was added;
+- the new Part B test is fail-closed on missing/wrong owner template and uses direct owner SOURCE OOXML for row structural authority.
+
+These accepted directions do NOT close B2 because exact structural/package/privacy proof has material gaps below.
+
+## 4. BLOCKER A — production merge relocation corrupts frozen SOURCE topology
+
+Current production merge transform applies different relocation thresholds to merge start and end rows:
 
 ```text
-WORK_PACKAGE = D2-WP004-R2-B2
-NAME = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
-STATE = AUTHORIZED / ACTIVE
-MODE = SOURCE+TEST / BOUNDED / ONE-SHOT / LOW-CREDIT
-AUTHORIZATION_BASIS_HEAD = 11c7e88eb8a516448e682f32e5a1ce755e7a79a3
-AUTHORIZATION_TOKEN = D2-WP004-R2-B2-SOURCE-TEST-20260903-01
-MAX_EXECUTOR_COMMITS = 1
+if (r1 >= 31) r1 += extraRows;
+if (r2 >= 29) r2 += extraRows;
+```
 
-WRITABLE_FILES =
+This violates the frozen Part B structural authority that rows1:30 and the original source block remain structurally stable.
+
+Concrete consequence for N7/N8:
+- SOURCE `B29:J29` becomes `B29:J33` / `B29:J37`;
+- SOURCE `K29:Q29` becomes `K29:Q33` / `K29:Q37`;
+- SOURCE `R29:W29` becomes `R29:W33` / `R29:W37`;
+- cloned rating-scale merges `B33:J33` / `B37:J37` are then also added;
+- title overlays such as `B31:J31` can sit inside an incorrectly stretched SOURCE merge.
+
+This is a production structural defect, not a cosmetic test issue.
+
+Frozen authority requires:
+- original rows1:30 merge topology preserved exactly;
+- exactly six source-block merges cloned with +4/+8 offsets;
+- only downstream merge references at/after the row31 threshold relocated exactly;
+- complete intermediate merge inventory exact, not count-only.
+
+R2-B2 remains NOT CLOSED until production transform is corrected.
+
+## 5. BLOCKER B — test claims exact merge proof but checks count/presence only
+
+The focused test labels section G as complete merge-set deep equality, but it currently proves only:
+- declared count equals actual count;
+- final count equals 79/86/93;
+- B31:J31 / B35:J35 title merges are present.
+
+It does NOT derive the complete expected intermediate/final merge inventory directly from SOURCE and `deepEqual` it.
+
+Therefore the production corruption in Blocker A can escape the test while merge counts remain green.
+
+Required corrective proof:
+1. parse and sort the exact SOURCE merge inventory;
+2. derive expected N6/N7/N8 intermediate inventory directly from SOURCE using only authorized relocation/cloning rules;
+3. deepEqual actual intermediate sorted inventory to expected;
+4. derive expected final inventory as intermediate + exact authorized title overlays only;
+5. deepEqual actual final sorted inventory to expected;
+6. verify no duplicate/overlapping stale SOURCE identity and declared count = actual.
+
+No count-only substitute is acceptable.
+
+## 6. BLOCKER C — raw SOURCE guard is incomplete
+
+The authorized contract required SOURCE rows27:30 to contain exactly the frozen six source-block merge ranges. Current production only checks global merge count 79 and row existence; it does not validate the exact six source-block merge refs before mutation.
+
+Corrective production guard must derive SOURCE merge refs and require exactly:
+
+```text
+B28:J28
+K28:Q28
+R28:W28
+B29:J29
+K29:Q29
+R29:W29
+```
+
+It must also fail closed if an unexpected merge crosses the downstream row31 boundary unless that exact crossing is independently present in the frozen SOURCE authority and has a defined deterministic transform.
+
+## 7. BLOCKER D — source-backed post-structural protected/static guard is not implemented
+
+`validateMappingIntegrity(profile)` correctly validates Profile topology/counts and zero overlap with protected padding/Rating Scale ranges. It does not prove that the transformed worksheet actually matches SOURCE-derived merge/style/protected topology.
+
+Before presentation overlay/sanitization, production B2 must fail closed on material divergence in at least:
+- SOURCE-derived row/source-row relocation;
+- exact normalized merge identity;
+- protected Rating Scale topology;
+- protected padding rows;
+- style identity needed to distinguish dynamic vs protected/static cells;
+- exact Profile effective sanitization set/count;
+- zero effective-sanitization overlap with protected static addresses.
+
+Do not import/call the Node feasibility harness. Implement only browser-safe bounded checks inside the preparer.
+
+## 8. BLOCKER E — Part B proof matrix is still weaker than the authorized contract
+
+Additional proof gaps to correct in the same bounded test file:
+
+### Auxiliary Sheet1
+Current package authority stores only auxiliary dimension. Contract requires exact auxiliary `Sheet1` fingerprint preservation. Add deterministic full SOURCE-derived auxiliary worksheet fingerprint (raw XML hash or exact normalized authority) and deepEqual every N6/N7/N8 output.
+
+### Non-target defined names
+Capture all non-Print_Area defined names deterministically and prove SOURCE equality. Print_Area is the only authorized defined-name change.
+
+### Protected static preservation
+Current test proves padding row existence and Rating Scale values are merely non-null. Replace/extend this with SOURCE-derived exact structural/style/merge/value preservation for:
+
+```text
+N6: B29:J29 + padding row30
+N7: B29:J29 + B33:J33 + padding rows30/34
+N8: B29:J29 + B33:J33 + B37:J37 + padding rows30/34/38
+```
+
+For cloned protected rows/ranges, expected authority must derive from exact SOURCE rows27:30 with row-number normalization only.
+
+### No semantic writes
+Retain zero semantic-write proof and align address assertions with frozen Part B mappings; do not use unrelated cells as a proxy for competency self-rating/title/description/summary targets.
+
+## 9. Correct merge transformation contract for R2-B2-R1
+
+Build a deterministic SOURCE merge inventory before mutation.
+
+For N7/N8:
+
+1. Preserve every SOURCE merge whose endpoints are entirely before row31 exactly unchanged.
+2. Relocate every SOURCE merge whose endpoints are entirely at/after row31 by `extraRows` on BOTH endpoints.
+3. If any SOURCE merge crosses row31, fail closed unless an exact separately documented frozen transformation exists. Do not invent generic repair.
+4. Clone exactly the six SOURCE block merges for each inserted 4-row block using +4 / +8 offset on BOTH endpoints.
+5. Sort/deduplicate and verify exact intermediate inventory before overlay:
+   - N6 = 79
+   - N7 = 85
+   - N8 = 91
+6. Add only exact presentation title overlays:
+   - N7: B31:J31
+   - N8: B31:J31 + B35:J35
+7. Verify exact final inventory after overlay:
+   - N6 = 79
+   - N7 = 86
+   - N8 = 93
+8. Preserve existing description merges B32:J32 and B36:J36 exactly as required by SOURCE-derived overlay authority.
+
+## 10. Exact next proposed gate — NOT AUTHORIZED
+
+```text
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-B2-R1
+NAME = PART B EXACT MERGE TOPOLOGY + SOURCE-BACKED STATIC PROOF CORRECTIVE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+
+PROPOSED_WRITABLE_FILES =
   src/services/mbo-xlsx-template-preparer.js
   tests/mbo-xlsx-template-preparer-part-b.test.js
 
 PROFILE_CHANGE_AUTH = NONE
 EXPORT_SERVICE_CHANGE_AUTH = NONE
+PART_A_CHANGE_AUTH = NONE
 SEMANTIC_RENDERER_AUTH = NONE
+MAX_EXECUTOR_COMMITS = 1
 ```
 
-Rationale for this smallest scope:
-- production browser-safe XLSX preparation already lives in `src/services/mbo-xlsx-template-preparer.js`;
-- B2 extends that production module rather than creating a second competing preparer;
-- a new focused Part B test file keeps the already-closed Part A proof suite stable and independently reviewable;
-- Template Profile authority is already closed and remains frozen;
-- `scripts/export/mbo-xlsx-ooxml-feasibility.js` remains READ-ONLY oracle/evidence only and must never be imported by production.
+R1 must correct only Blocks A-E above. Preserve all accepted B2 and R2-B1 behavior.
 
-## 4. Frozen Part B source authority
-
-```text
-PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-MAIN_SHEET = (Part B) Competency
-AUXILIARY_SHEET = Sheet1
-COMPETENCY_COUNTS = 6 / 7 / 8
-BASE_COMPETENCY_COUNT = 6
-SOURCE_CLONE_BLOCK = ROWS 27:30
-SOURCE_BLOCK_HEIGHT = 4
-DOWNSTREAM_THRESHOLD = ROW 31
-BASE_DIMENSION = A1:X35
-BASE_INTERMEDIATE_MERGES = 79
-FORMULA_INVENTORY = 0
-```
-
-Count matrix:
-
-```text
-N6: extraRows=0 / dimension=A1:X35 / intermediateMerges=79 / finalMerges=79 / summaryStart=31
-N7: extraRows=4 / dimension=A1:X39 / intermediateMerges=85 / finalMerges=86 / summaryStart=35
-N8: extraRows=8 / dimension=A1:X43 / intermediateMerges=91 / finalMerges=93 / summaryStart=39
-```
-
-Exact Print_Area authority:
-
-```text
-N6 '(Part B) Competency'!$A$1:$X$35
-N7 '(Part B) Competency'!$A$1:$X$39
-N8 '(Part B) Competency'!$A$1:$X$43
-```
-
-Main-sheet page authority remains paperSize 9 / portrait / scale 75 / horizontal centered / sheet protection present. `Sheet1`, sheet names/states, non-target defined names, columns, gridlines, page margins, fit-to-page, vertical centering, sheet relationships, relationship tuples and media inventory remain source-baseline equal except only an independently proven authorized normalization may differ. B2 must not assume Part A `rId3/image3` removal applies to Part B.
-
-## 5. Required B2 production API
-
-Add one production entry point to the existing preparer module:
-
-```text
-preparePartBTemplate(templateBytes, { competencyCount = 6, profile } = {})
-```
-
-Contract:
-- browser-safe buffer/Uint8Array in -> NEW Uint8Array out;
-- zero Node `fs`, `path`, Node `crypto` in production;
-- validate `validateMappingIntegrity(profile)` before template mutation;
-- validate competencyCount exactly 6/7/8;
-- validate exact Part B SHA before mutation;
-- never mutate caller/source bytes in place;
-- zero Kintone access;
-- zero secured projection input;
-- zero semantic/user value writes;
-- zero scoring/recalculation;
-- zero formula creation;
-- zero Part A behavior change.
-
-## 6. Required B2 transform order
-
-Production order must be fail-closed and sentinel-free:
-
-```text
-EXACT OWNER PART B BYTES
--> SHA + raw-source guards
--> frozen structural transform
--> verify frozen intermediate structural authority
--> validate source-backed privacy/protected-static topology
--> apply exact presentation title-merge overlay
--> verify final presentation topology
--> raw-OOXML sanitization of exact Profile effective ranges
--> stale sensitive-token/sharedStrings/package purge
--> final preservation/privacy/formula validation
--> NEW output bytes
-```
-
-No proof sentinels such as `SENTINEL_ROW_31` may enter production output.
-
-## 7. Raw-source guards before mutation
-
-B2 must fail closed unless exact owner SOURCE proves:
-- main worksheet XML exists;
-- workbook XML exists;
-- main dimension exactly `A1:X35`;
-- actual merge inventory exactly 79;
-- declared merge count exactly 79;
-- source rows 27, 28, 29, 30 and downstream row31 each exist exactly once;
-- source rows27:30 contain exactly the frozen six source-block merge ranges;
-- exactly one `_xlnm.Print_Area` exists;
-- Print_Area binds localSheetId=0 and equals exact base Part B Print_Area;
-- no auxiliary `Sheet1` Print_Area exists;
-- workbook-wide formula inventory is exactly zero.
-
-Any mismatch -> `EXPORT_TEMPLATE_PREPARER_UNRESOLVED` or equally deterministic fail-closed production error.
-
-## 8. Sentinel-free frozen structural transform
-
-For N7/N8 only:
-- shift complete rows/cell row references at rows >=31 by `extraRows`;
-- clone exact SOURCE rows27:30 once for N7 and twice for N8;
-- clone exactly the SOURCE block merge topology for each inserted block;
-- shift downstream merge references exactly;
-- preserve rows1:30 structurally;
-- relocate original rows31:35 exactly by `extraRows`;
-- update dimension and Print_Area exactly;
-- declared merge count must equal actual merge inventory.
-
-Before presentation overlay, exact intermediate authority must be verified:
-
-```text
-N6 = 79 merges
-N7 = 85 merges
-N8 = 91 merges
-```
-
-Do not weaken the frozen Part B structural baseline in order to reach final overlay topology.
-
-## 9. Expanded presentation overlay
-
-Only after frozen intermediate verification:
-
-```text
-N6: no title merge added
-N7: add exactly B31:J31
-N8: add exactly B31:J31 and B35:J35
-```
-
-Existing description merges must remain:
-
-```text
-B32:J32
-B36:J36 (N8)
-```
-
-Final exact merge counts:
-
-```text
-N6 = 79
-N7 = 86
-N8 = 93
-```
-
-Protected static authority:
-
-```text
-Rating Scale = B29:J29 / B33:J33 / B37:J37 as applicable
-Padding rows = 30 / 34 / 38 as applicable
-```
-
-These protected cells/rows must not be cleared or rewritten.
-
-## 10. Source-backed privacy validation boundary
-
-B2 production must validate the exact post-structural topology against closed source authority before sanitization. It must not import/call the Node feasibility harness.
-
-At minimum, fail closed on divergence in the authority needed to distinguish dynamic vs protected cells:
-- exact row/source-row relocation;
-- style identity;
-- normalized merge identity;
-- protected padding/rating-scale topology;
-- exact Profile effective sanitization set;
-- zero overlap between effective sanitization and protected padding/rating static authority.
-
-Frozen base source-backed dynamic counts remain:
-
-```text
-N6 = 432
-N7 = 474
-N8 = 516
-```
-
-After presentation overlay authority, exact effective dynamic/sanitization counts are:
-
-```text
-N6 = 432
-N7 = 492
-N8 = 552
-```
-
-No stale source-summary classification is allowed inside inserted competency blocks.
-
-## 11. Structural-preserving raw OOXML sanitization
-
-Reuse the accepted R10 principle; do not use XlsxPopulate worksheet write/re-serialization as the sanitizer.
-
-For exact Profile `effectiveSanitizationRanges`:
-- clear only payload of existing target cell nodes;
-- preserve structural cell attributes (`r`, `s`, `t`, other attrs);
-- do not create absent cell nodes;
-- fail closed if unexpected formula payload is found;
-- preserve protected static cells exactly;
-- clear stale cloned competency-6 presentation in B31:J32 / B35:J36 before later R2-C writes;
-- clear relocated summary/signature dynamic values;
-- preserve caller bytes.
-
-Sensitive tokens derived only from authorized SOURCE-sensitive cells must be absent from relevant final UTF-8 XML/text package entries and stale shared-string remnants must be purged without broad exemptions.
-
-## 12. B2 is preparer/sanitizer only — semantic writes forbidden
-
-B2 MUST NOT write:
-- header values;
-- self ratings;
-- title/description secured values;
-- Part B score values;
-- any Kintone values;
-- any reconstructed scoring value.
-
-In particular, B31/B32/B35/B36 must be structurally ready and sanitized/blank for R2-C; B2 must not populate `presentationTitle` or `presentationDescription`.
-
-## 13. Exact test contract
-
-New focused file:
-
-```text
-tests/mbo-xlsx-template-preparer-part-b.test.js
-```
-
-The test oracle must derive expected authority DIRECTLY from the exact SHA-matching owner Part B SOURCE OOXML. It must not use feasibility output or production output as expected truth.
-
-Required proof matrix N6/N7/N8:
-- missing owner template = FAIL, never skip;
-- wrong SHA = FAIL;
-- exact caller-byte immutability success/failure;
-- no Node-only production dependency / no sentinel text;
-- exact rowRefs and uniqueness;
-- rows1:30 exact SOURCE-derived structural parity;
-- inserted rows exact normalized SOURCE rows27:30 clones;
-- downstream SOURCE rows31:35 exact relocated structural parity;
-- complete cell structural inventory, no style/type/cell filtering;
-- exact intermediate merge inventory 79/85/91 before overlay authority proof;
-- final merge inventory 79/86/93 with only exact authorized title merge additions;
-- declared merge count = actual;
-- exact dimensions and Print_Area;
-- exact sheet names/order/states;
-- exact auxiliary `Sheet1` fingerprint;
-- source-derived columns/gridlines/page margins/page setup/centering/protection/sheetRels authority;
-- complete relationship tuple inventory and media inventory baseline equality unless an exact separately proven authorized difference is present;
-- workbook formula inventory exactly zero;
-- protected Rating Scale and padding rows exact SOURCE-derived preservation;
-- exact effective sanitization address sets/counts 432/492/552;
-- every effective dynamic target cleared;
-- B31:J32/B35:J36 presentation targets cleared as applicable;
-- package-wide relevant UTF-8 privacy scan clean;
-- no semantic values written;
-- output is new Uint8Array.
-
-No test-side filtering/exclusion may hide production structural mutations.
-
-## 14. Focused runtime gate
+## 11. Required R1 focused runtime gate
 
 Exact command:
 
 `node --test tests/mbo-xlsx-template-preparer-part-b.test.js`
 
-Closure requires:
+Closure candidate requires:
 
 ```text
 FAIL = 0
 SKIP = 0
 real owner Part B template = EXECUTED / NOT SKIPPED
 N6/N7/N8 matrix = PASS
-intermediate structural authority = PASS
-final presentation overlay authority = PASS
-protected static parity = PASS
+SOURCE-derived intermediate merge inventory deep equality = PASS
+SOURCE-derived final merge inventory deep equality = PASS
+protected Rating Scale/padding exact parity = PASS
+auxiliary Sheet1 full fingerprint parity = PASS
+non-target defined-name parity = PASS
 privacy/sanitization = PASS
 package/formula preservation = PASS
 ```
 
-## 15. Forbidden scope
+If a stricter exact proof exposes another production defect, do not weaken tests. Report evidence and STOP.
+
+## 12. Forbidden until further owner authorization
 
 ```text
-src/profiles/mbo-xlsx-template-profile.js = FROZEN / FORBIDDEN
+src/profiles/mbo-xlsx-template-profile.js = FROZEN
 src/services/mbo-export-service.js = FORBIDDEN
 scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
 existing feasibility tests = FORBIDDEN
-existing Part A preparer test = FROZEN / FORBIDDEN
+existing Part A preparer test = FROZEN
 project-docs/* = FORBIDDEN TO EXECUTOR
 package.json / package-lock.json = FORBIDDEN
 UI / dist / integration = FORBIDDEN
-R2-C semantic renderer = NOT AUTHORIZED
+R2-C = NOT AUTHORIZED
 Combined Excel = NOT AUTHORIZED
 Kintone write/deploy/Live UAT = FORBIDDEN
 D3 = HOLD
 ```
 
-## 16. Execution protocol
+## 13. Owner decision
 
-Before commit:
+No executor is active.
 
-`git diff --name-only`
+Recommended approval phrase:
 
-It MUST show only:
-
-```text
-src/services/mbo-xlsx-template-preparer.js
-tests/mbo-xlsx-template-preparer-part-b.test.js
-```
-
-Then:
-1. run the exact focused test;
-2. require FAIL=0 and SKIP=0;
-3. verify real owner Part B N6/N7/N8 matrix executed;
-4. create EXACTLY ONE SOURCE+TEST commit;
-5. push to `ai/antigravity-wp002c`;
-6. report pushed SHA, exact changed files and focused runtime result;
-7. STOP;
-8. do not self-declare B2 PASS/CLOSED;
-9. do not start R2-C or any later gate.
+`อนุมัติ D2-WP004-R2-B2-R1 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
