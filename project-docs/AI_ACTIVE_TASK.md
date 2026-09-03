@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-B1-R5 TEST-ONLY AUTHORIZED / ACTIVE
+# AI ACTIVE TASK — R2-B1-R5 REVIEWED / TEST PROOF STILL INCOMPLETE / R6 PROPOSED
 
-Mode: **CONTROL PLANE / TEST-ONLY / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-03 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file, then the R2 renderer/sanitizer design, `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`, and only exact Part A source/profile/test evidence needed.
+Read `D2_REVIEW_FAST_START.md` first, then this file, then the R2 renderer/sanitizer design, `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`, and only exact Part A profile/source/test evidence needed.
 
 ## 1. Current truth
 
@@ -14,122 +14,117 @@ D2 = IN PROGRESS
 D2_PART_A_STRUCTURAL = PASS / CLOSED
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
-D2_WP004_R2_B1 = TEST PROOF CORRECTIVE ACTIVE / NOT CLOSED
-D2_WP004_R2_B1_R4 = SOURCE REVIEW PASS / SOURCE FROZEN / TEST PROOF INCOMPLETE
-D2_WP004_R2_B1_R5 = AUTHORIZED / ACTIVE / TEST-ONLY
+D2_WP004_R2_B1 = NEEDS TEST-ONLY CORRECTIVE / NOT CLOSED
+D2_WP004_R2_B1_R4 = SOURCE REVIEW PASS / SOURCE FROZEN
+D2_WP004_R2_B1_R5 = REVIEWED / TEST PROOF INCOMPLETE / NOT CLOSED
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-B1-R5
+ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-B1-R5-TEST-ONLY-CORRECTIVE-20260903-01
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
 ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = AUTHORIZED / TEST-ONLY / BOUNDED / ONE-SHOT / ONE COMMIT -> PUSH -> STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 R2_B1_PRODUCTION_SOURCE = ACCEPTED / FROZEN
 R2-B2 = NOT AUTHORIZED
 R2-C = NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. Authorization identity
+## 2. R5 identity / scope review
 
 ```text
-WORK_PACKAGE = D2-WP004-R2-B1-R5
-NAME = PART A FROZEN PROOF CLOSURE
-STATE = AUTHORIZED / ACTIVE
-MODE = TEST-ONLY CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
-AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R5-TEST-ONLY-CORRECTIVE-20260903-01
-AUTHORIZATION_BASIS_HEAD = 99de59c6e3d4cb2f64f78879b2eade4b89dd1d62
-MAX_EXECUTOR_COMMITS = 1
-EXECUTOR = ANTIGRAVITY
-FINAL_EXECUTOR_STATE = TEST CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW
+R5_AUTHORIZATION_TOKEN = D2-WP004-R2-B1-R5-TEST-ONLY-CORRECTIVE-20260903-01
+R5_AUTHORIZATION_COMMIT = e6700ff83ba1627b5fcdac181f23641df7ae14f7
+R5_IMPLEMENTATION_COMMIT = 961febd3e62164d05ed5448e1868d62287dcb4c3
+AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
+CHANGED_FILES = EXACTLY ONE AUTHORIZED FILE
+  tests/mbo-xlsx-template-preparer.test.js
+SCOPE_REVIEW = PASS
+TOKEN_STATE = CONSUMED / DO NOT REUSE
+GITHUB_COMBINED_STATUS = NONE
+GITHUB_WORKFLOW_RUNS = NONE
 ```
 
-Owner authorization received exactly:
-`อนุมัติ D2-WP004-R2-B1-R5 TEST-ONLY CORRECTIVE ตามขอบเขตที่เสนอ`
+R5 accepted improvements:
+- missing owner template now FAILS instead of returning null;
+- owner-template SHA mismatch now FAILS;
+- integration test no longer uses `t.skip()` for missing/wrong owner template;
+- exact page-setup assertions have explicit failure messages;
+- stale sensitive token checks now include `sheet1.xml` in addition to `sharedStrings.xml`.
 
-This authorization is single-use. Antigravity must STOP after one pushed TEST-ONLY commit and must not self-declare PASS/CLOSED.
+These improvements are accepted but do not satisfy the full R5 authorization contract.
 
-## 3. R4 accepted source freeze
+## 3. MATERIAL TEST BLOCKER A — exact row structural equality still not proven
+
+Current `parseRowObjects()` stores selected fields and a `{col, style}` cell list. Integration assertions still iterate SOURCE cells and look for matching OUTPUT cells. This remains one-way inclusion rather than exact structural equality.
+
+Required remaining proof for rows 1:28, inserted rows, and relocated downstream rows:
+- deterministic normalized row-attribute object equality after removing/rewriting only row-number authority;
+- exact ordered cell structural inventory deep equality;
+- exact cell-column/reference topology and style pattern;
+- output cell count must equal expected cell count;
+- no extra cells and no missing cells;
+- inserted row = exact normalized source row 28 at target row;
+- downstream row = exact normalized source row at relocated row;
+- no stale/lost/duplicate downstream structural identity.
+
+Do not use source-subset `.find()` proof as closure evidence.
+
+## 4. MATERIAL TEST BLOCKER B — frozen metadata/package object still incomplete
+
+Frozen baseline requires exact equality for:
 
 ```text
-R4_AUTHORIZATION_COMMIT = 83928aff4bae8d8e1160897fbe78524f856e996f
-R4_IMPLEMENTATION_COMMIT = fc9b1a87f3883c49eb30f918189c679f5a1aa411
-R4_REVIEW_STATE_COMMIT = 99de59c6e3d4cb2f64f78879b2eade4b89dd1d62
-R4_SCOPE_REVIEW = PASS
-R4_SOURCE_REVIEW = PASS / ACCEPTED / FROZEN
+sheetNames
+sheetStates
+colsHash
+showGridLines
+pageMargins
+paperSize
+orientation
+scale
+fitToPage
+horizontalCentered
+verticalCentered
+sheetProtection
+sheetRels
+relationship tuples
+media inventory
+formula inventory = EMPTY
 ```
 
-Do not modify `src/services/mbo-xlsx-template-preparer.js` in R5. Accepted production behavior includes exact owner SHA validation, browser-safe Part A N4..N10 preparation, Profile-driven sanitization, canonical self-closing rId3 relationship validation/removal, post-removal no-reference checks, zero semantic writer/scoring/Part B/Kintone/deploy scope.
+Current test still does not fully prove this deterministic object:
+- `sheetStates` is not asserted;
+- `fitToPage` is not explicitly source-derived/asserted;
+- pageMargins / printOptions / sheetProtection are guarded by `if (sourceTag)` and therefore do not prove source-absence equals output-absence;
+- relationship proof is limited to selected drawing/sheet relationship files rather than complete normalized relevant package relationship-tuple inventory;
+- `colsHash` is not explicitly derived as a deterministic authority object, even though exact cols XML is partially compared.
 
-## 4. Writable scope
+R6 must build one source-derived frozen metadata/package object and deep-equal the normalized output object for every N4..N10.
 
-Writable file ONLY:
+## 5. MATERIAL TEST BLOCKER C — privacy/profile proof still incomplete
 
-```text
-tests/mbo-xlsx-template-preparer.test.js
-```
+Current R5 test checks privacy strings in sensitive cells, `sharedStrings.xml`, and `sheet1.xml` only.
 
-Forbidden in R5:
+Still required:
+- protected/static topology mutation rejection through real `validateMappingIntegrity()`;
+- stale sensitive tokens absent from all relevant UTF-8 XML/text package entries, excluding only explicitly justified source-authorized static text;
+- do not inspect binary media as text.
 
-```text
-src/services/mbo-xlsx-template-preparer.js
-src/profiles/mbo-xlsx-template-profile.js
-src/services/mbo-export-service.js
-scripts/export/mbo-xlsx-ooxml-feasibility.js
-tests/mbo-xlsx-ooxml-feasibility.test.js
-project-docs/*
-package.json
-package-lock.json
-dist/*
-UI / integration
-R2-B2
-R2-C
-Combined Excel
-Kintone write/deploy/Live UAT
-D3
-```
+Same-count sanitization substitution proof is accepted and must remain.
 
-## 5. Exact R5 proof corrective
+## 6. Runtime evidence
 
-Use the REAL production `preparePartATemplate()` for mutation. Test-side oracle/inspection only.
+The focused integration can no longer silently skip, which is accepted. However repository truth for R5 still exposes no combined CI status and no workflow run. No persisted independent runtime artifact is available in GitHub.
 
-For every N=4..10, complete all remaining proof:
-
-1. **Exact row structural equality**
-   - rows 1:28: deep-equal normalized row attribute map and exact ordered cell structural inventory;
-   - prove exact cell reference/column topology and style pattern;
-   - prove no extra cells and no missing cells;
-   - inserted rows: exact normalized source-row-28 clone at each target row;
-   - downstream rows: exact source identity relocated by `extraRows`, with no stale/lost/duplicate structure.
-
-2. **Complete frozen metadata/package matrix**
-   Derive a deterministic source authority object and deep-equal output for:
-   `sheetNames`, `sheetStates`, `colsHash`, `showGridLines`, `pageMargins`, `paperSize`, `orientation`, `scale`, `fitToPage`, `horizontalCentered`, `verticalCentered`, `sheetProtection`, `sheetRels`, relationship tuple inventory, media inventory, and empty formula inventory.
-   Source absence must equal output absence; do not skip equality when tags are absent.
-   Keep exact merge set, dimensions, Print_Area, and paperSize=8 / landscape / scale=58.
-   Normalize package parity by removing only accepted rId3/image3 target artifacts.
-
-3. **Privacy/profile proof**
-   - every effective sanitization address cleared;
-   - source privacy strings collected from authorized sensitive ranges absent from final sensitive cells, sharedStrings, and relevant final UTF-8 XML/text entries;
-   - same-count sanitization substitution rejects via production `validateMappingIntegrity()`;
-   - protected/static topology mutation rejects via production `validateMappingIntegrity()`;
-   - caller bytes unchanged on success/failure;
-   - zero semantic/user writes, scoring/recalculation, and Part B mutation.
-
-4. **Owner-template execution must fail closed, never skip**
-   Focused owner-template integration must NOT use `t.skip()` for missing template or SHA mismatch. Missing/wrong owner template must fail the focused test explicitly.
-
-## 6. Required focused run
-
-Run exactly:
+For closure, executor must run exactly:
 
 `node --test tests/mbo-xlsx-template-preparer.test.js`
 
-Expected closure evidence:
+and report:
 
 ```text
 FAIL = 0
@@ -138,32 +133,57 @@ real owner-template integration = EXECUTED / NOT SKIPPED
 N4..N10 matrix = PASS
 ```
 
-Final executor report must state exact command, PASS/FAIL/SKIP counts, real owner-template integration status, N4..N10 result, pushed SHA, and exact changed file.
+Do not claim closure if the focused command fails.
 
-## 7. Executor protocol
+## 7. Exact next proposed corrective — NOT AUTHORIZED
 
 ```text
-fresh-fetch canonical branch
--> verify HEAD equals authorization HEAD
--> read fast-start + this active task + R2 design + Part A structural baseline
--> inspect source/profile read-only as needed
--> modify ONLY tests/mbo-xlsx-template-preparer.test.js
--> run focused owner-template test
--> git diff --name-only must show exactly the authorized test file
--> create exactly one TEST-ONLY commit
--> push ai/antigravity-wp002c
--> report evidence
--> STOP
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-B1-R6
+NAME = PART A EXACT PROOF MATRIX COMPLETION
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = TEST-ONLY CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+
+PROPOSED_WRITABLE_FILES =
+  tests/mbo-xlsx-template-preparer.test.js
+
+SOURCE_CHANGE_AUTH = NONE
+PROFILE_CHANGE_AUTH = NONE
+MAX_EXECUTOR_COMMITS = 1
 ```
 
-Expected executor final status:
-`R2-B1-R5 TEST CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`
+R6 must correct ONLY Blockers A-C and run the focused owner-template test. Do not modify production source/profile.
 
-## 8. Remaining work — NOT AUTHORIZED
+## 8. R6 forbidden scope
 
 ```text
-R2-B2 = PART B SENTINEL-FREE PRODUCTION TEMPLATE PREPARER / SANITIZER EXPANSION
-R2-C = SECURED SEMANTIC VALUE RENDERER
-COMBINED_EXCEL_PARITY = later D2 gate
-D3 = HOLD UNTIL D2 PASS / CLOSED
+src/services/mbo-xlsx-template-preparer.js = FROZEN / FORBIDDEN
+src/profiles/mbo-xlsx-template-profile.js = FROZEN / FORBIDDEN
+src/services/mbo-export-service.js = FORBIDDEN
+scripts/export/mbo-xlsx-ooxml-feasibility.js = FORBIDDEN
+tests/mbo-xlsx-ooxml-feasibility.test.js = FORBIDDEN
+project-docs/* = FORBIDDEN TO EXECUTOR
+package.json / package-lock.json = FORBIDDEN
+UI / dist / integration = FORBIDDEN
+R2-B2 = NOT AUTHORIZED
+R2-C = NOT AUTHORIZED
+Combined Excel = NOT AUTHORIZED
+Kintone write/deploy/Live UAT = FORBIDDEN
+D3 = HOLD
+```
+
+## 9. Owner decision
+
+No execution is authorized now.
+
+Recommended approval phrase:
+`อนุมัติ D2-WP004-R2-B1-R6 TEST-ONLY CORRECTIVE ตามขอบเขตที่เสนอ`
+
+```text
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
+R2_B1_SOURCE = ACCEPTED / FROZEN
+R2_B1_TEST_PROOF = NOT CLOSED
+R2-B2 = NOT AUTHORIZED
+R2-C = NOT AUTHORIZED
+D3 = HOLD
 ```
