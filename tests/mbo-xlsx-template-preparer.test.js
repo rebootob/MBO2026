@@ -436,40 +436,6 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
   for (let n = 4; n <= 10; n++) {
     const callerCopy = new Uint8Array(templateBytes);
 
-    const layoutN = profile.getPartALayoutTopology(n);
-    const sanColsByRowN = new Map();
-    for (const rangeStr of layoutN.effectiveSanitizationRanges) {
-      const addrs = expandRangeToAddresses(rangeStr);
-      for (const a of addrs) {
-        const col = a.match(/^[A-Z]+/)[0];
-        const r = parseInt(a.match(/\d+/)[0], 10);
-        if (!sanColsByRowN.has(r)) sanColsByRowN.set(r, new Set());
-        sanColsByRowN.get(r).add(col);
-      }
-    }
-
-    function filterSanitizerMaterializedCells(cells, rNum) {
-      const sanCols = sanColsByRowN.get(rNum);
-      if (!sanCols) return cells;
-      return cells.filter(c => !(sanCols.has(c.col) && c.s === '1'));
-    }
-
-    function compareCellInventories(srcCells, outCells, rNum) {
-      const normOut = filterSanitizerMaterializedCells(outCells, rNum);
-      const normSrc = filterSanitizerMaterializedCells(srcCells, rNum);
-      assert.equal(normOut.length, normSrc.length, `Cell count must match for row ${rNum} (N=${n})`);
-
-      for (let i = 0; i < normSrc.length; i++) {
-        const sCell = normSrc[i];
-        const oCell = normOut[i];
-        assert.equal(oCell.col, sCell.col, `Cell ${i} column letter must match in row ${rNum}`);
-        assert.equal(oCell.s, sCell.s, `Cell ${sCell.col} style index s must match in row ${rNum}`);
-        if (oCell.t !== undefined) {
-          assert.equal(oCell.t, sCell.t, `Cell ${sCell.col} type t must match in row ${rNum}`);
-        }
-      }
-    }
-
     const preparedBytes = await preparePartATemplate(templateBytes, { objectiveCount: n, profile });
 
     // 1. Output is Uint8Array and new reference
@@ -507,13 +473,13 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     const outPackageAuthority = await buildPackageAuthority(wb._zip, false);
     assert.deepEqual(outPackageAuthority, srcPackageAuthority, `Complete package authority object must deep equal SOURCE authority for N=${n}`);
 
-    // F. Complete SOURCE-Derived Row Structural Parity Inspection
+    // F. Complete SOURCE-Derived Row Structural Parity Inspection (NO CELL FILTERING OF ANY KIND)
     const outRowObjectsMap = parseRowObjectsFromXml(sheetXml);
     const rowRefs = Array.from(outRowObjectsMap.keys()).sort((a, b) => a - b);
     assert.equal(rowRefs.length, expectedLastRow, `Row count must equal ${expectedLastRow} for N=${n}`);
     assert.equal(new Set(rowRefs).size, rowRefs.length, 'rowRefs sequence must be strictly unique');
 
-    // 1. Rows 1:28 Exact SOURCE-Derived Structural Deep Equality
+    // 1. Rows 1:28 Exact SOURCE-Derived Structural Deep Equality (NO CELL FILTERING)
     for (let r = 1; r <= 28; r++) {
       const srcObj = srcRowObjectsMap.get(r);
       const outObj = outRowObjectsMap.get(r);
@@ -521,7 +487,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
 
       assert.equal(Boolean(outObj), true, `Output row ${r} must exist`);
       assert.deepEqual(outObj.rowAttrs, srcObj.rowAttrs, `Row ${r} attributes must deep equal SOURCE baseline for N=${n}`);
-      compareCellInventories(srcObj.cells, outObj.cells, r);
+      assert.deepEqual(outObj.cells, srcObj.cells, `Row ${r} cell structural inventory must deep equal SOURCE baseline for N=${n}`);
     }
 
     // 2. Inserted Rows (29..28+extra) Exact SOURCE-Derived Structural Deep Equality (derived from SOURCE row 28)
@@ -532,7 +498,7 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       const outClonedObj = outRowObjectsMap.get(targetR);
       assert.equal(Boolean(outClonedObj), true, `Inserted row ${targetR} must exist`);
       assert.deepEqual(outClonedObj.rowAttrs, srcRow28Obj.rowAttrs, `Inserted row ${targetR} attributes must deep equal SOURCE row 28 for N=${n}`);
-      compareCellInventories(srcRow28Obj.cells, outClonedObj.cells, targetR);
+      assert.deepEqual(outClonedObj.cells, srcRow28Obj.cells, `Inserted row ${targetR} cell structural inventory must deep equal SOURCE row 28 for N=${n}`);
     }
 
     // 3. Downstream Relocated Rows (>=29) Exact SOURCE-Derived Structural Deep Equality
@@ -544,13 +510,26 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
       const outRelocatedObj = outRowObjectsMap.get(targetR);
       assert.equal(Boolean(outRelocatedObj), true, `Relocated downstream row ${targetR} must exist`);
       assert.deepEqual(outRelocatedObj.rowAttrs, srcDownstreamObj.rowAttrs, `Relocated row ${targetR} attributes must deep equal SOURCE row ${r} for N=${n}`);
-      compareCellInventories(srcDownstreamObj.cells, outRelocatedObj.cells, targetR);
+      assert.deepEqual(outRelocatedObj.cells, srcDownstreamObj.cells, `Relocated row ${targetR} cell structural inventory must deep equal SOURCE row ${r} for N=${n}`);
 
       // Assert no stale old-row structural identity remains at unshifted index r when r < 29 + extra
       if (extra > 0 && r < 29 + extra && r > 28) {
         assert.equal(r >= 29 && r <= 28 + extra, true, `Position ${r} must be an inserted row, not stale old row ${r}`);
       }
     }
+
+    // 4. Targeted R9 Regression Proof:
+    // A. Existing shared-string sensitive cell (e.g. N6 on row 6) retains original t="s" attribute
+    const row6OutCells = outRowObjectsMap.get(6).cells;
+    const n6Cell = row6OutCells.find(c => c.col === 'N');
+    assert.equal(Boolean(n6Cell), true, 'Cell N6 must exist in output row 6');
+    assert.equal(n6Cell.t, 's', 'Cell N6 must retain structural t="s" attribute after sanitization');
+
+    // B. Authorized empty/merged range addresses with no SOURCE cell node (e.g. AL42:AY42) gain ZERO new cell nodes
+    const relocatedRow42 = 42 + extra;
+    const row42OutCells = outRowObjectsMap.get(relocatedRow42).cells;
+    const al42Cell = row42OutCells.find(c => c.col === 'AL');
+    assert.equal(al42Cell, undefined, `Address AL${relocatedRow42} must not gain a new cell node in output`);
 
     // G. Complete Expected Merge SET Deep Equality
     const expectedMergeSet = new Set();
@@ -595,11 +574,12 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
 
     // I. Effective sanitization ranges cleared & Package-wide Privacy Proof
     const sheet = wb.sheet(0);
+    const layoutN = profile.getPartALayoutTopology(n);
     const sensitiveAddrsN = layoutN.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
 
     for (const addr of sensitiveAddrsN) {
       const val = sheet.cell(addr).value();
-      assert.equal(val == null, true, `Sanitized cell ${addr} must be cleared/null/undefined for N=${n}`);
+      assert.equal(val == null || val === '', true, `Sanitized cell ${addr} must be cleared/null/undefined/empty for N=${n}`);
     }
 
     // Package-wide scanning across all relevant UTF-8 XML/text package entries
@@ -620,8 +600,10 @@ test('PREPARER_PART_A_OWNER_TEMPLATE_INTEGRATION: N=4..10 complete proof matrix,
     // J. No semantic value writes
     for (let i = 1; i <= n; i++) {
       const r = 24 + i;
-      assert.equal(sheet.cell(`T${r}`).value() == null, true, `Objective ${i} Measurement must be unwritten`);
-      assert.equal(sheet.cell(`Y${r}`).value() == null, true, `Objective ${i} Weight must be unwritten`);
+      const valT = sheet.cell(`T${r}`).value();
+      const valY = sheet.cell(`Y${r}`).value();
+      assert.equal(valT == null || valT === '', true, `Objective ${i} Measurement must be unwritten`);
+      assert.equal(valY == null || valY === '', true, `Objective ${i} Weight must be unwritten`);
     }
   }
 });

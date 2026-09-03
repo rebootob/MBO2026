@@ -4,7 +4,7 @@
  * Browser-safe asynchronous preparer:
  *   owner Part A template bytes + objectiveCount N (4..10)
  *   -> prepare structural row expansion, merge cloning, print area & dimensions
- *   -> sanitize effective sensitive ranges from MboXlsxTemplateProfile
+ *   -> sanitize effective sensitive ranges from MboXlsxTemplateProfile via RAW OOXML
  *   -> remove reference image rId3 / image3.png safely with deterministic pre-removal proof
  *   -> output NEW browser-usable Uint8Array bytes
  * 
@@ -14,6 +14,7 @@
  * 3. Validate MboXlsxTemplateProfile integrity & Part A owner SHA-256 (03d1e8c3...).
  * 4. Zero proof sentinels (NO proof-only markers).
  * 5. Zero semantic value writes (no employee data, no App794 records, no scores, no formulas).
+ * 6. Raw OOXML value-payload sanitization (preserves exact <c> structural attributes & t="s").
  */
 import XlsxPopulate from 'xlsx-populate';
 import {
@@ -189,6 +190,27 @@ export function validateAndRemoveReferenceImage(zipFiles) {
   };
 }
 
+/**
+ * Raw OOXML cell value-payload sanitizer.
+ * Clears value-bearing payload (<v>...</v>, <is>...</is>) from paired cell nodes for authorized sensitive addresses.
+ * Preserves exact opening-tag structural attributes (including r, s, t) and never materializes new cell nodes.
+ */
+function sanitizeRawSheetXml(sheetXml, sanAddresses) {
+  return sheetXml.replace(/<c r="([A-Z]+\d+)"([^>]*)>((?:(?!<c\b)[\s\S])*?)<\/c>/g, (match, addr, attrs, body) => {
+    if (!sanAddresses.has(addr)) {
+      return match;
+    }
+    if (/<f[\s>]/i.test(body)) {
+      throw new Error(`EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Unexpected formula in sensitive cell ${addr}`);
+    }
+    const cleanBody = body.replace(/<(?:v|is)>[\s\S]*?<\/(?:v|is)>/g, '');
+    if (cleanBody.trim().length === 0) {
+      return `<c r="${addr}"${attrs}/>`;
+    }
+    return `<c r="${addr}"${attrs}>${cleanBody}</c>`;
+  });
+}
+
 export async function preparePartATemplate(templateBytes, options = {}) {
   const objectiveCount = options.objectiveCount !== undefined ? options.objectiveCount : 4;
   const profile = options.profile || new MboXlsxTemplateProfile();
@@ -219,37 +241,21 @@ export async function preparePartATemplate(templateBytes, options = {}) {
   const srcView = templateBytes instanceof Uint8Array ? templateBytes : new Uint8Array(templateBytes);
   copyBytes.set(srcView);
 
-  // --------------------------------------------------------------------------
-  // PASS 1: Cell & Shared-String Sanitization via XlsxPopulate
-  // --------------------------------------------------------------------------
-  const wbSanitize = await XlsxPopulate.fromDataAsync(copyBytes);
-  const sheetSanitize = wbSanitize.sheet(0);
+  const wbStruct = await XlsxPopulate.fromDataAsync(copyBytes);
 
-  // Base sensitive range clearing on base template
+  // --------------------------------------------------------------------------
+  // PASS 1: Read-Only Sensitive Token Collection & SharedStrings Purge
+  // --------------------------------------------------------------------------
   const baseLayout = profile.getPartALayoutTopology(4);
   const sensitiveTokens = [];
   const sensitiveAddrs = baseLayout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+  const sheetReadOnly = wbStruct.sheet(0);
   for (const addr of sensitiveAddrs) {
-    const val = sheetSanitize.cell(addr).value();
+    const val = sheetReadOnly.cell(addr).value();
     if (val && typeof val === 'string' && val.trim().length >= 2) {
       sensitiveTokens.push(val.trim());
     }
   }
-
-  for (const rangeStr of baseLayout.effectiveSanitizationRanges) {
-    if (rangeStr.includes(':')) {
-      sheetSanitize.range(rangeStr).value(null);
-    } else {
-      sheetSanitize.cell(rangeStr).value(null);
-    }
-  }
-
-  const sanitizedBytes = await wbSanitize.outputAsync();
-
-  // --------------------------------------------------------------------------
-  // PASS 2: Raw OOXML Structural Row/Merge Shift, Dimension Tag, Shared Strings Purge & Reference Image Removal
-  // --------------------------------------------------------------------------
-  const wbStruct = await XlsxPopulate.fromDataAsync(sanitizedBytes);
 
   // Purge sensitive string tokens from xl/sharedStrings.xml directly on zip
   const ssFile = wbStruct._zip.files['xl/sharedStrings.xml'];
@@ -267,11 +273,18 @@ export async function preparePartATemplate(templateBytes, options = {}) {
     }
   }
 
+  // --------------------------------------------------------------------------
+  // PASS 2: Raw OOXML Cell Value Sanitization, Row/Merge Shift, Dimension Tag & Image Removal
+  // --------------------------------------------------------------------------
   const sheetFile = wbStruct._zip.files['xl/worksheets/sheet1.xml'];
   if (!sheetFile) {
     throw new Error('EXPORT_TEMPLATE_PREPARER_UNRESOLVED: Sheet1 XML missing');
   }
   let sheetXml = await sheetFile.async('string');
+
+  // Sanitize exact existing cell nodes in raw sheet1.xml (value payload clearing only)
+  const sanAddressSet = new Set(sensitiveAddrs);
+  sheetXml = sanitizeRawSheetXml(sheetXml, sanAddressSet);
 
   const extraRows = objectiveCount - 4;
 
