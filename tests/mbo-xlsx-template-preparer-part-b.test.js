@@ -358,7 +358,7 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       assert.deepEqual(outRelocatedObj.cells, srcDownstreamObj.cells, `Relocated row ${targetR} cell structural inventory must deep equal SOURCE row ${r} for N=${n}`);
     }
 
-    // G. BLOCKER A & B: SOURCE-Derived Intermediate & Final Merge Inventory Deep Equality Proof
+    // G. BLOCKER B (R3): Explicit Intermediate Merge Test Proof & Final Merge Inventory Deep Equality Proof
     const layoutN = profile.getPartBLayoutTopology(n);
 
     // Derive SOURCE expected intermediate and final merge inventories directly via pure helper
@@ -368,11 +368,26 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
     // Assert expected intermediate merge count equals 79/85/91
     assert.equal(expectedIntermediateMerges.length, layoutN.intermediateMergeCount, `Expected intermediate merge count must equal ${layoutN.intermediateMergeCount} for N=${n}`);
 
-    // Actual output merges from sheetXml
+    // Derive observable intermediate candidate from actual final output by removing ONLY exact authorized presentation title overlays
     const actualMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
-    const actualSortedFinalMerges = [...actualMerges].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
-    // DeepEqual actual final merge inventory to expected final merge inventory
+    const actualIntermediateCandidate = [...actualMerges];
+    if (n >= 7) {
+      const idx = actualIntermediateCandidate.indexOf('B31:J31');
+      if (idx !== -1) actualIntermediateCandidate.splice(idx, 1);
+    }
+    if (n === 8) {
+      const idx = actualIntermediateCandidate.indexOf('B35:J35');
+      if (idx !== -1) actualIntermediateCandidate.splice(idx, 1);
+    }
+    actualIntermediateCandidate.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    // Requirement B: Explicit intermediate merge candidate deep equality
+    assert.deepEqual(actualIntermediateCandidate, expectedIntermediateMerges, `Observable intermediate merge candidate must deep equal SOURCE-derived expected intermediate inventory for N=${n}`);
+    assert.equal(actualIntermediateCandidate.length, layoutN.intermediateMergeCount, `Intermediate merge candidate count must equal ${layoutN.intermediateMergeCount} for N=${n}`);
+
+    // Actual final merges comparison
+    const actualSortedFinalMerges = [...actualMerges].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     assert.deepEqual(actualSortedFinalMerges, expectedFinalMerges, `Complete final merge inventory must deep equal SOURCE-derived expected inventory for N=${n}`);
 
     // Declared count attribute equals actual inventory length
@@ -392,8 +407,9 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       }
     }
 
-    // H. BLOCKER D: Protected Rating Scale & Padding Parity (Structure, Value, Type)
+    // H. BLOCKER A (R3): Exact Protected Static OWNER-SOURCE Value, Type, and Structure Parity
     const outSheet = wb.sheet(0);
+    const srcSheet = wbSource.sheet(0);
 
     for (const rowNum of layoutN.protectedPaddingRows) {
       const rowObj = outRowObjectsMap.get(rowNum);
@@ -409,8 +425,15 @@ test('PREPARER_PART_B_OWNER_TEMPLATE_INTEGRATION: N=6/7/8 complete proof matrix,
       const r2 = parseInt(end.match(/\d+/)[0], 10);
       assert.equal(r1, r2, `Rating Scale merge ${rangeStr} must be a 1-row merge, not stretched`);
 
-      // Prove exact cell value/type parity for top-left cell of Rating Scale header against SOURCE
-      assert.equal(outSheet.cell(`B${r1}`).value(), 'Rating Scale', `Rating Scale label at B${r1} must equal SOURCE value for N=${n}`);
+      // Prove exact cell value/type parity for protected Rating Scale cells directly against OWNER SOURCE
+      const addrs = expandRangeToAddresses(rangeStr);
+      for (const addr of addrs) {
+        const col = addr.match(/^[A-Z]+/)[0];
+        const srcAddr = `${col}29`; // SOURCE Rating Scale header row is row 29
+        const srcVal = srcSheet.cell(srcAddr).value();
+        const outVal = outSheet.cell(addr).value();
+        assert.deepEqual(outVal, srcVal, `Protected Rating Scale cell ${addr} value/type must deep equal OWNER SOURCE cell ${srcAddr} for N=${n}`);
+      }
     }
 
     // I. Effective sanitization ranges cleared & Package-wide Privacy Proof
