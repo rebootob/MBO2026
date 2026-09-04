@@ -85,7 +85,7 @@ function buildSyntheticPartAProjection(count, options = {}) {
     partA: Object.freeze({
       objectivesCount: count,
       header: Object.freeze({
-        fiscalYear: '2026',
+        fiscalYear: 2026,
         employeeName: 'Jane Staff',
         department: 'Engineering',
         section: 'Software',
@@ -126,7 +126,7 @@ function buildSyntheticPartBProjection(count, options = {}) {
     exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
     partA: Object.freeze({
       header: Object.freeze({
-        fiscalYear: '2026',
+        fiscalYear: 2026,
         employeeName: 'Jane Staff',
         department: 'Engineering',
         section: 'Software',
@@ -136,7 +136,7 @@ function buildSyntheticPartBProjection(count, options = {}) {
     }),
     partB: Object.freeze({
       header: Object.freeze({
-        fiscalYear: '2026',
+        fiscalYear: 2026,
         employeeName: 'Jane Staff',
         department: 'Engineering',
         section: 'Software',
@@ -466,9 +466,12 @@ test('RENDERER_TEST_C: Full Part A exact Profile/projection truth matrix proof (
 
       const decodedVal = sheetFull.cell(roleInfo.address).value();
       if (typeof expectedVal === 'number') {
+        assert.equal(typeof decodedVal, 'number', `Value at ${roleInfo.address} must be typed number for role ${rName}`);
+        assert.equal(Number.isFinite(decodedVal), true, `Numeric value at ${roleInfo.address} must be finite for role ${rName}`);
         assert.equal(decodedVal, expectedVal, `Numeric scalar mismatch for role ${rName} at ${roleInfo.address}`);
       } else {
-        assert.equal(String(decodedVal), String(expectedVal), `String scalar mismatch for role ${rName} at ${roleInfo.address}`);
+        assert.equal(typeof decodedVal, 'string', `Value at ${roleInfo.address} must be typed string for role ${rName}`);
+        assert.equal(decodedVal, expectedVal, `String scalar mismatch for role ${rName} at ${roleInfo.address}`);
       }
     }
 
@@ -530,10 +533,13 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
     const preparedBytes = await preparePartBTemplate(templateB, { competencyCount: n, profile });
     const preparedCopy = new Uint8Array(preparedBytes);
 
-    // Baseline XML from preparedBytes
+    // Baseline XML and DOM from preparedBytes
     const zipPrep = await JSZip.loadAsync(preparedBytes);
     const xmlPrepBefore = await zipPrep.files['xl/worksheets/sheet1.xml'].async('string');
+    const wbPrepBefore = await XlsxPopulate.fromDataAsync(preparedBytes);
+    const sheetPrepBefore = wbPrepBefore.sheet(0);
 
+    // 1. FULL SUMMARY PROJECTION VARIANT
     const projFull = buildSyntheticPartBProjection(n, { includeSummary: true });
     const renderedBytes = await renderSecuredSemanticValues(preparedBytes, {
       partKey: 'B',
@@ -574,11 +580,29 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
 
       const decodedVal = sheetFull.cell(roleInfo.address).value();
       if (typeof expectedVal === 'number') {
+        assert.equal(typeof decodedVal, 'number', `Value at ${roleInfo.address} must be typed number for role ${rName}`);
+        assert.equal(Number.isFinite(decodedVal), true, `Numeric value at ${roleInfo.address} must be finite for role ${rName}`);
         assert.equal(decodedVal, expectedVal, `Numeric scalar mismatch for role ${rName} at ${roleInfo.address}`);
       } else {
-        assert.equal(String(decodedVal), String(expectedVal), `String scalar mismatch for role ${rName} at ${roleInfo.address}`);
+        assert.equal(typeof decodedVal, 'string', `Value at ${roleInfo.address} must be typed string for role ${rName}`);
+        assert.equal(decodedVal, expectedVal, `String scalar mismatch for role ${rName} at ${roleInfo.address}`);
       }
     }
+
+    // 2. SUMMARY OMITTED PROJECTION VARIANT
+    const projOmitted = buildSyntheticPartBProjection(n, { includeSummary: false });
+    const renderedOmittedBytes = await renderSecuredSemanticValues(preparedBytes, {
+      partKey: 'B',
+      projection: projOmitted,
+      profile
+    });
+    const wbOmitted = await XlsxPopulate.fromDataAsync(renderedOmittedBytes);
+    const sheetOmitted = wbOmitted.sheet(0);
+
+    const rawBScoreRole = profile.resolveSemanticRole('SUMMARY_PART_B_RAW_SCORE', { partKey: 'B', competencyCount: n });
+    const wtdBScoreRole = profile.resolveSemanticRole('SUMMARY_PART_B_WEIGHTED_SCORE', { partKey: 'B', competencyCount: n });
+    assert.equal(sheetOmitted.cell(rawBScoreRole.address).value() == null || sheetOmitted.cell(rawBScoreRole.address).value() === '', true, `Omitted Part B raw score at ${rawBScoreRole.address} must remain blank`);
+    assert.equal(sheetOmitted.cell(wtdBScoreRole.address).value() == null || sheetOmitted.cell(wtdBScoreRole.address).value() === '', true, `Omitted Part B weighted score at ${wtdBScoreRole.address} must remain blank`);
 
     // Verify FULL Chief R:X effective sanitization ranges remain blank
     const layout = profile.getPartBLayoutTopology(n);
@@ -592,22 +616,27 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
       }
     }
 
-    // b1..b6 static title/description exact prepared-before parity
-    const wbPrepBefore = await XlsxPopulate.fromDataAsync(preparedBytes);
-    const sheetPrepBefore = wbPrepBefore.sheet(0);
-    for (const staticAddr of ['B28', 'B31', 'B35']) {
-      if (!writtenAddrs.has(staticAddr)) {
-        assert.equal(String(sheetFull.cell(staticAddr).value()), String(sheetPrepBefore.cell(staticAddr).value()), `Static text at ${staticAddr} must have exact prepared-before parity`);
+    // Complete b1..b6 static title/description presentation authority parity
+    const staticB1to6Addrs = ['B7', 'B8', 'B11', 'B12', 'B15', 'B16', 'B19', 'B20', 'B23', 'B24', 'B27', 'B28'];
+    for (const staticAddr of staticB1to6Addrs) {
+      assert.equal(String(sheetFull.cell(staticAddr).value()), String(sheetPrepBefore.cell(staticAddr).value()), `Static presentation text at ${staticAddr} must have exact prepared-before parity for N=${n}`);
+    }
+
+    // Complete Rating Scale static ranges parity across full range
+    for (const staticRange of layout.ratingScaleStaticRanges) {
+      const rangeAddrs = expandRangeToAddresses(staticRange);
+      for (const cellAddr of rangeAddrs) {
+        const valAfter = sheetFull.cell(cellAddr).value();
+        const valBefore = sheetPrepBefore.cell(cellAddr).value();
+        if (typeof valBefore === 'object' && valBefore !== null) {
+          assert.equal(String(valAfter), String(valBefore), `Rating Scale range cell ${cellAddr} text must match prepared-before for N=${n}`);
+        } else {
+          assert.equal(valAfter, valBefore, `Rating Scale range cell ${cellAddr} value must match prepared-before for N=${n}`);
+        }
       }
     }
 
-    // Rating Scale static ranges exact prepared-before parity
-    for (const staticRange of layout.ratingScaleStaticRanges) {
-      const startCell = staticRange.split(':')[0];
-      assert.equal(sheetFull.cell(startCell).value(), 'Rating Scale', `Rating Scale header at ${startCell} must be preserved for N=${n}`);
-    }
-
-    // Complete protected padding row/cell/type/value/payload parity
+    // Complete protected padding row exact XML parity
     const zipRend = await JSZip.loadAsync(renderedBytes);
     const sheetXmlRend = await zipRend.files['xl/worksheets/sheet1.xml'].async('string');
 
@@ -619,10 +648,10 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
       assert.equal(rowMatchAfter[0], rowMatchBefore[0], `Protected padding row ${padRow} must have exact byte/attribute/cell parity for N=${n}`);
     }
 
-    // Merges unchanged (79 for N6, 86 for N7, 93 for N8)
-    const actualMerges = [...sheetXmlRend.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
-    const expectedMergeCount = n === 6 ? 79 : (n === 7 ? 86 : 93);
-    assert.equal(actualMerges.length, expectedMergeCount, `Merge count must be ${expectedMergeCount} for N=${n}`);
+    // Complete sorted merge inventory equality
+    const mergesBefore = [...xmlPrepBefore.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
+    const mergesAfter = [...sheetXmlRend.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]).sort();
+    assert.deepEqual(mergesAfter, mergesBefore, `Complete sorted merge ref inventory must equal prepared-before for N=${n}`);
 
     // Auxiliary sheet2.xml byte/content parity
     const sheet2Before = await zipPrep.files['xl/worksheets/sheet2.xml'].async('uint8array');
@@ -643,15 +672,15 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   const templateA = loadLocalPartA();
   const profile = new MboXlsxTemplateProfile();
 
-  // Prepare Part A template with injected collision sentinels into writable target N6
+  // Prepare Part A template with injected collision sentinels and deliberate noncanonical whitespace into writable target T26
   const prepA = await preparePartATemplate(templateA, { objectiveCount: 4, profile });
   const zipPrepA = await JSZip.loadAsync(prepA);
   let xmlPrepA = await zipPrepA.files['xl/worksheets/sheet1.xml'].async('string');
 
-  // Inject custom:r, custom:t, data-r, data-t sentinels into N6 opening tag while retaining unprefixed r="N6" and t="s"
+  // Inject custom:r, custom:t, data-r, data-t sentinels and noncanonical spacing (\t, \n) into T26 opening tag
   xmlPrepA = xmlPrepA.replace(
-    /(<c\b[^>]*?\br="N6"[^>]*?>)([\s\S]*?<\/c>)?/,
-    '<c r="N6" s="385" custom:r="KEEP_CUSTOM_R" custom:t="KEEP_CUSTOM_T" data-r="KEEP_DATA_R" data-t="KEEP_DATA_T" t="s"/>'
+    /<c\b[^>]*?(?<=\s|^)r="T26"(?=[\s/>])(?:[^>]*?\/>|[^>]*?>[\s\S]*?<\/c>)/,
+    '<c  r="T26" \t  s="385"   custom:r="KEEP_CUSTOM_R" custom:t="KEEP_CUSTOM_T" data-r="KEEP_DATA_R" data-t="KEEP_DATA_T" \n\tt="s"/>'
   );
   zipPrepA.file('xl/worksheets/sheet1.xml', xmlPrepA);
   const prepAWithSentinels = await zipPrepA.generateAsync({ type: 'uint8array' });
@@ -682,15 +711,17 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   const addrsAfterA = [...xmlAfterA.matchAll(/<c\b[^>]*?(?<=[\s<])r="([A-Z0-9]+)"(?=[\s/>])/g)].map(m => m[1]);
   assert.deepEqual(addrsAfterA, addrsBeforeA, 'Cell address inventory must be 100% identical before vs after');
 
-  // 3. Prove ALL FOUR collision sentinels survived byte-for-byte in rendered output
-  const matchN6Rendered = xmlAfterA.match(/<c\b[^>]*?(?<=[\s<])r="N6"(?=[\s/>])[^>]*?>/);
-  assert.notEqual(matchN6Rendered, null, 'Rendered N6 opening tag must exist');
-  assert.equal(matchN6Rendered[0].includes('custom:r="KEEP_CUSTOM_R"'), true, 'custom:r sentinel must survive');
-  assert.equal(matchN6Rendered[0].includes('custom:t="KEEP_CUSTOM_T"'), true, 'custom:t sentinel must survive');
-  assert.equal(matchN6Rendered[0].includes('data-r="KEEP_DATA_R"'), true, 'data-r sentinel must survive');
-  assert.equal(matchN6Rendered[0].includes('data-t="KEEP_DATA_T"'), true, 'data-t sentinel must survive');
+  // 3. Prove ALL FOUR collision sentinels AND deliberate whitespace survived byte-for-byte in rendered output
+  const matchT26Rendered = xmlAfterA.match(/<c\b[^>]*?(?<=[\s<])r="T26"(?=[\s/>])[^>]*?>/);
+  assert.notEqual(matchT26Rendered, null, 'Rendered T26 opening tag must exist');
+  assert.equal(matchT26Rendered[0].includes('custom:r="KEEP_CUSTOM_R"'), true, 'custom:r sentinel must survive');
+  assert.equal(matchT26Rendered[0].includes('custom:t="KEEP_CUSTOM_T"'), true, 'custom:t sentinel must survive');
+  assert.equal(matchT26Rendered[0].includes('data-r="KEEP_DATA_R"'), true, 'data-r sentinel must survive');
+  assert.equal(matchT26Rendered[0].includes('data-t="KEEP_DATA_T"'), true, 'data-t sentinel must survive');
+  assert.equal(matchT26Rendered[0].includes('  r="T26" \t  s="385"'), true, 'Deliberate spaces/tabs before attributes must survive byte-for-byte');
+  assert.equal(/\r?\n\tt="inlineStr"/.test(matchT26Rendered[0]), true, 'Deliberate newline/tab before t attribute must survive byte-for-byte');
 
-  // 4. Independent test oracle normalization (normalizes ONLY exact unprefixed t="..." and body payload)
+  // 4. Independent test oracle normalization (no .trim() or .trimEnd() on opening tags)
   const roleNamesA = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
     'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
@@ -703,29 +734,29 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   ];
   const targetAddrsA = roleNamesA.map(r => profile.resolveSemanticRole(r, { partKey: 'A', objectiveCount: 4 }).address);
 
-  const normalizeTargetNodesInXml = (xmlStr, targetAddrs) => {
+  const normalizeTargetNodesInXmlTest = (xmlStr, targetAddrs) => {
     let norm = xmlStr;
     for (const addr of targetAddrs) {
       norm = norm.replace(
-        new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>\\/]*>)[\\s\\S]*?<\\/c>`, 'g'),
+        new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`, 'g'),
         (match, openTag) => {
-          const cleanAttrs = openTag.replace(/\/?>$/, '').replace(/(?<=\s|^)t="[^"]*"/, '').trim();
-          return `${cleanAttrs}/>`;
+          const cleanOpen = openTag.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
+          return cleanOpen.replace(/\s*\/?>$/, '/>');
         }
       );
       norm = norm.replace(
-        new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>`, 'g'),
+        new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>]*?\\/>`, 'g'),
         (match) => {
-          const cleanAttrs = match.replace(/\/?>$/, '').replace(/(?<=\s|^)t="[^"]*"/, '').trim();
-          return `${cleanAttrs}/>`;
+          const cleanSelf = match.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
+          return cleanSelf.replace(/\s*\/?>$/, '/>');
         }
       );
     }
     return norm;
   };
 
-  const normBeforeA = normalizeTargetNodesInXml(xmlBeforeA, targetAddrsA);
-  const normAfterA = normalizeTargetNodesInXml(xmlAfterA, targetAddrsA);
+  const normBeforeA = normalizeTargetNodesInXmlTest(xmlBeforeA, targetAddrsA);
+  const normAfterA = normalizeTargetNodesInXmlTest(xmlAfterA, targetAddrsA);
   assert.equal(normAfterA, normBeforeA, 'Part A sheet1.xml must be 100% string-equal outside normalized target nodes');
 });
 

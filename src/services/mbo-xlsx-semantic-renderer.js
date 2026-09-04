@@ -63,43 +63,55 @@ function isValidXml10String(str) {
   return true;
 }
 
+function mutateOpeningTag(fullOpenTag, targetTVal) {
+  const hasUnprefixedT = /(?<=\s|^)t="[^"]*"/.test(fullOpenTag);
+  let newTag = fullOpenTag;
+  if (targetTVal === 'inlineStr') {
+    if (hasUnprefixedT) {
+      newTag = newTag.replace(/(?<=\s|^)t="[^"]*"/, 't="inlineStr"');
+    } else {
+      if (newTag.endsWith('/>')) {
+        newTag = newTag.slice(0, -2) + ' t="inlineStr"/>';
+      } else if (newTag.endsWith('>')) {
+        newTag = newTag.slice(0, -1) + ' t="inlineStr">';
+      }
+    }
+  } else if (targetTVal === null) {
+    if (hasUnprefixedT) {
+      newTag = newTag.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
+    }
+  }
+  return newTag;
+}
+
 function mutateCellInSheetXml(sheetXml, addr, val) {
-  // Unprefixed address match: (?<=[\s<])r="${addr}"(?=[\s\/>])
-  // 1. Try self-closing cell tag first: <c ... r="ADDR" ... />
-  const selfRegex = new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>`);
+  const selfRegex = new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>]*?\\/>`);
   const selfMatch = sheetXml.match(selfRegex);
 
   if (selfMatch) {
     const fullSelfTag = selfMatch[0];
-    const rawOpenAttrs = fullSelfTag.slice(2, -2); // strip leading '<c' and trailing '/>'
 
-    let newOpenAttrs = rawOpenAttrs;
     if (val === undefined || val === null || val === '') {
-      // Remove unprefixed t attribute if present
-      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
-      const newSelfTag = `<c ${newOpenAttrs.trim()}/>`;
+      const newSelfTag = mutateOpeningTag(fullSelfTag, null);
       return sheetXml.replace(fullSelfTag, () => newSelfTag);
     } else if (typeof val === 'number') {
-      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
-      const newPairedTag = `<c ${newOpenAttrs.trim()}><v>${val}</v></c>`;
+      const openTag = fullSelfTag.slice(0, -2) + '>';
+      const mutatedOpen = mutateOpeningTag(openTag, null);
+      const newPairedTag = `${mutatedOpen}<v>${val}</v></c>`;
       return sheetXml.replace(fullSelfTag, () => newPairedTag);
     } else if (typeof val === 'string') {
-      if (/(?<=\s|^)t="[^"]*"/.test(newOpenAttrs)) {
-        newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"/, 't="inlineStr"');
-      } else {
-        newOpenAttrs = newOpenAttrs.trim() + ' t="inlineStr"';
-      }
+      const openTag = fullSelfTag.slice(0, -2) + '>';
+      const mutatedOpen = mutateOpeningTag(openTag, 'inlineStr');
       const escaped = escapeXmlText(val);
       const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
-      const newPairedTag = `<c ${newOpenAttrs.trim()}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      const newPairedTag = `${mutatedOpen}<is><t${spaceAttr}>${escaped}</t></is></c>`;
       return sheetXml.replace(fullSelfTag, () => newPairedTag);
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
     }
   }
 
-  // 2. Try paired cell tag second: <c ... r="ADDR" ... >...</c>
-  const pairedRegex = new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>\\/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`);
+  const pairedRegex = new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`);
   const pairedMatch = sheetXml.match(pairedRegex);
 
   if (pairedMatch) {
@@ -109,26 +121,20 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
     if (body && /<f[\s>]/.test(body)) {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} contains formula`);
     }
-    const rawOpenAttrs = fullOpenTag.slice(2, -1); // strip leading '<c' and trailing '>'
 
-    let newOpenAttrs = rawOpenAttrs;
     if (val === undefined || val === null || val === '') {
-      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
-      const newSelfTag = `<c ${newOpenAttrs.trim()}/>`;
-      return sheetXml.replace(oldMatchStr, () => newSelfTag);
+      const selfOpen = fullOpenTag.slice(0, -1) + '/>';
+      const mutatedSelf = mutateOpeningTag(selfOpen, null);
+      return sheetXml.replace(oldMatchStr, () => mutatedSelf);
     } else if (typeof val === 'number') {
-      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
-      const newPairedTag = `<c ${newOpenAttrs.trim()}><v>${val}</v></c>`;
-      return sheetXml.replace(oldMatchStr, () => newPairedTag);
+      const mutatedOpen = mutateOpeningTag(fullOpenTag, null);
+      const newPairedTag = `${mutatedOpen}<v>${val}</v></c>`;
+      return sheetXml.replace(oldMatchStr, () => mutatedOpen + `<v>${val}</v></c>`);
     } else if (typeof val === 'string') {
-      if (/(?<=\s|^)t="[^"]*"/.test(newOpenAttrs)) {
-        newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"/, 't="inlineStr"');
-      } else {
-        newOpenAttrs = newOpenAttrs.trim() + ' t="inlineStr"';
-      }
+      const mutatedOpen = mutateOpeningTag(fullOpenTag, 'inlineStr');
       const escaped = escapeXmlText(val);
       const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
-      const newPairedTag = `<c ${newOpenAttrs.trim()}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      const newPairedTag = `${mutatedOpen}<is><t${spaceAttr}>${escaped}</t></is></c>`;
       return sheetXml.replace(oldMatchStr, () => newPairedTag);
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
@@ -136,6 +142,27 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
   }
 
   throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} node missing in sheet XML`);
+}
+
+function normalizeTargetNodesForPreservation(xmlStr, targetAddrs) {
+  let norm = xmlStr;
+  for (const addr of targetAddrs) {
+    norm = norm.replace(
+      new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`, 'g'),
+      (match, openTag) => {
+        const cleanOpen = openTag.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
+        return cleanOpen.replace(/\s*\/?>$/, '/>');
+      }
+    );
+    norm = norm.replace(
+      new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>]*?\\/>`, 'g'),
+      (match) => {
+        const cleanSelf = match.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
+        return cleanSelf.replace(/\s*\/?>$/, '/>');
+      }
+    );
+  }
+  return norm;
 }
 
 export async function renderSecuredSemanticValues(
@@ -520,6 +547,21 @@ export async function renderSecuredSemanticValues(
         throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Formula detected after rendering');
       }
     }
+  }
+
+  // 5. Complete sheet1.xml prepared-before preservation check (R4-B)
+  const targetAddrs = concreteTargets.map(t => t.address);
+  const normSrcSheet1 = normalizeTargetNodesForPreservation(srcSheet1Xml, targetAddrs);
+  const normRenderedSheet1 = normalizeTargetNodesForPreservation(sheetXml, targetAddrs);
+  if (normRenderedSheet1 !== normSrcSheet1) {
+    console.log("PRESERVATION FAIL: normSrc len=", normSrcSheet1.length, "normRend len=", normRenderedSheet1.length);
+    for (let i = 0; i < Math.max(normSrcSheet1.length, normRenderedSheet1.length); i++) {
+      if (normSrcSheet1[i] !== normRenderedSheet1[i]) {
+        console.log(`Diff offset ${i}:\nSRC:  ${JSON.stringify(normSrcSheet1.slice(Math.max(0, i-20), i+40))}\nREND: ${JSON.stringify(normRenderedSheet1.slice(Math.max(0, i-20), i+40))}`);
+        break;
+      }
+    }
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Complete sheet1 preservation check failed');
   }
 
   // Load fresh DOM from renderedBytes to perform final value & topology verification
