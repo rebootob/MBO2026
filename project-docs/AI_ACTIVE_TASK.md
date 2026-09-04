@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-C PASS / CLOSED / R2-D-PRE1 COMBINED XLSX EVIDENCE PROPOSAL READY
+# AI ACTIVE TASK — R2-D-PRE1 COMBINED XLSX EVIDENCE AUTHORIZED
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / BOUNDED EVIDENCE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-04 ICT
 
@@ -21,7 +21,8 @@ D2_WP004_R2_B2 = PASS / CLOSED / FROZEN
 D2_WP004_R2_C = PASS / CLOSED / FROZEN
 R2_C_RUNTIME_EVIDENCE = PASS / OWNER WORKSTATION
 
-ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-D-PRE1
+ACTIVE_D2_EVIDENCE_AUTH = D2-WP004-R2-D-PRE1-EVIDENCE-ONLY-20260904-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
@@ -29,13 +30,25 @@ ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED EVIDENCE ONLY
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = PLANNING / PRE1 EVIDENCE PROPOSED / NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = PRE1 EVIDENCE AUTHORIZED / IMPLEMENTATION NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. Combined Excel deliverable authority
+## 2. Owner authorization
+
+Owner explicitly authorized on 2026-09-04 ICT:
+
+`อนุมัติ D2-WP004-R2-D-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+
+Single-use authorization token:
+
+`D2-WP004-R2-D-PRE1-EVIDENCE-ONLY-20260904-01`
+
+This token authorizes exactly one bounded evidence commit and is consumed when that implementation/evidence commit is pushed.
+
+## 3. Combined Excel deliverable authority
 
 Repository export skill requires:
 
@@ -59,32 +72,18 @@ PART_B_AUXILIARY_SHEET = Sheet1
 
 The Part B auxiliary sheet is not automatically authorized to appear in the Combined Workbook. Target combined output remains exactly two business sheets unless evidence proves a different owner authority.
 
-## 3. Why an evidence gate is required before implementation
-
-A safe combined workbook cannot be inferred by simply copying `sheet1.xml` from one XLSX into another. XLSX package-level dependencies can be workbook-global, including:
-- `xl/styles.xml` style IDs and cellXfs;
-- `xl/sharedStrings.xml` indices;
-- workbook sheet IDs and relationship IDs;
-- `[Content_Types].xml` overrides;
-- worksheet relationships, drawings/media/comments/tables/hyperlinks;
-- themes, defined names, properties and other package relationships.
-
-Both closed preparer and renderer intentionally preserve owner-template package authority. Combined composition must not invalidate that authority by guessing/remapping package-global identities without exact evidence.
-
-Therefore implementation is NOT yet authorized.
-
-## 4. Exact next proposal — D2-WP004-R2-D-PRE1
+## 4. Authorized work package — D2-WP004-R2-D-PRE1
 
 ```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-D-PRE1
+WORK_PACKAGE = D2-WP004-R2-D-PRE1
 NAME = COMBINED XLSX OWNER-TEMPLATE + OOXML COMPOSITION COMPATIBILITY EVIDENCE
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
-EXPECTED_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
+WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
 ```
 
-If later authorized, writable scope is ONLY the expected evidence Markdown file. No source, tests, Profile, template binaries, package files, UI or dist are writable.
+Writable scope is ONLY the evidence Markdown file above. No source, tests, Profile, template binaries, package files, UI, dist or control docs are writable by executor.
 
 ## 5. PRE1 exact evidence contract
 
@@ -171,10 +170,35 @@ PRE1 must NOT:
 - generate or commit an XLSX binary;
 - perform Kintone reads/writes beyond already available local evidence;
 - deploy or build UI/dist;
+- modify `project-docs/AI_ACTIVE_TASK.md`, `D2_REVIEW_FAST_START.md` or any other control document;
 - start PDF work;
 - start D3.
 
-## 7. Review/closure rule
+If any conclusion requires a source/test/template/control-doc change, STOP and report the blocker instead of changing scope.
+
+## 7. Required executor verification before push
+
+Before commit/push, executor must prove:
+
+```text
+git diff --name-only
+  = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md only
+
+git diff --check
+  = PASS
+
+XLSX_BINARY_ADDED_OR_MODIFIED = NONE
+SOURCE_CHANGED = NONE
+TEST_CHANGED = NONE
+PROFILE_CHANGED = NONE
+CONTROL_DOC_CHANGED = NONE
+KINTONE_WRITE = 0
+DEPLOY = 0
+```
+
+Commit exactly once, push canonical branch, then STOP. Do not self-authorize the next gate.
+
+## 8. Review/closure rule
 
 After evidence is pushed, ChatGPT independently reviews the exact evidence against frozen package/template authorities.
 
@@ -187,12 +211,8 @@ PRE1 closes only if it gives a deterministic, source-backed answer for:
 
 PRE1 closure does NOT authorize Combined XLSX implementation.
 
-## 8. Owner decision
-
-No executor is active. This proposal is NOT authorized.
-
-Recommended owner approval phrase:
-
-`อนุมัติ D2-WP004-R2-D-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+## 9. Stop boundary
 
 Combined Excel implementation, Kintone writes, deploy, Live UAT, PDF and D3 remain forbidden until separately authorized.
+
+Antigravity must push the single evidence commit and STOP for independent review.
