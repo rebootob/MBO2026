@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / PRIVACY CLOSED / XLSX SEMANTIC+PROFILE CLOSED / R2 RENDERER DESIGN COMPLETE / PRE1 EVIDENCE REQUIRED**. Updated 2026-09-02 ICT.
+Status: **IN PROGRESS / XLSX PREPARER + SECURED RENDERER CLOSED / COMBINED EXCEL PARITY NOT AUTHORIZED**. Updated 2026-09-04 ICT.
 
 Frozen authority:
 ```text
@@ -9,12 +9,16 @@ MboExportService_SECURED_PROJECTION = EXPORT DATA AUTHORITY
 SCORING_SOURCE = KINTONE / APP794 + CONFIRMED CONFIG
 PRESERVATION = PASS / CLOSED
 REFERENCE_IMAGE = PASS / CLOSED
-PART_A_STRUCTURAL = PASS / CLOSED
-PART_B_STRUCTURAL = PASS / CLOSED
+PART_A_STRUCTURAL = PASS / CLOSED / FROZEN
+PART_B_STRUCTURAL = PASS / CLOSED / FROZEN
 FORMULA_AUTHORITY = PASS / CLOSED
-PART_B_EXPANDED_PRIVACY = PASS / CLOSED
+PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
-XLSX_TEMPLATE_PROFILE = PASS / CLOSED
+XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
+R2_A_PROFILE_FOUNDATION = PASS / CLOSED
+R2_B1_PART_A_PREPARER = PASS / CLOSED / FROZEN
+R2_B2_PART_B_PREPARER = PASS / CLOSED / FROZEN
+R2_C_SECURED_SEMANTIC_RENDERER = PASS / CLOSED / FROZEN
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 ```
@@ -22,48 +26,59 @@ PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 Durable authorities:
 - `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_SEMANTIC_MAPPING_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
+- `CONFIRMED_BASELINE/D2_PART_B_EXPANDED_PRIVACY_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
+- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
+- `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`
 
+Current semantic/profile authority:
 ```text
-SAFE_TO_MAP = 18 EXACT
+SAFE_TO_MAP = 20 EXACT
 UNRESOLVED = 22 EXACT
 NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-## R2 renderer/sanitizer READ-ONLY design
-Design:
-`phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
+## Closed production XLSX engine
 
-Confirmed design rules:
-- production renderer consumes only secured `MboExportService` projection;
-- absent safe paths in Employee-Self stay cleared; never reconstruct confidential values;
-- production XLSX core should be bytes/buffer-in -> bytes/buffer-out and not `fs`/path-coupled;
-- existing `xlsx-populate` dependency is reusable; package change is unnecessary;
-- feasibility source is proof authority but not production code and its structural builders contain proof-only sentinels;
-- sanitization must clear broader sensitive/unresolved/no-source areas before secured writes, not only the 18 writable targets;
-- no scattered important workbook addresses in renderer code.
-
-## Pre-render blocker
-The owner Part B template is N=6. N7/N8 structural expansion clones source rows 27:30, but current semantic/profile authority proves only `COMPETENCY_b_SELF_RATING` writes. Current competency source evidence shows management competency sets contain real additional items 7/8. Exact visible presentation target cells and deterministic secured projection/source-selection paths for those new items are not yet proven.
-
-Therefore renderer implementation is NOT AUTHORIZED.
+Production flow authority is now closed through R2-C:
 
 ```text
-PROPOSED_PRE1 = D2-WP004-R2-PRE1
-NAME = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
-MODE = EVIDENCE-ONLY / LOW-CREDIT / NOT AUTHORIZED
-EXPECTED_FILE = phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
+OWNER TEMPLATE BYTES
+  -> sentinel-free structural preparation / sanitization
+  -> exact Profile topology validation
+  -> secured MboExportService projection only
+  -> secured semantic renderer
+  -> formula inventory remains 0
+  -> package/static/privacy preservation guards
+  -> NEW output bytes / caller input immutable
 ```
 
-PRE1 must inspect the exact owner Part B template READ-ONLY and prove or reject candidate presentation semantics without proximity/alias inference. After independent PRE1 review, R2 can define centralized geometry/sanitization metadata and the smallest production engine contract.
+Part A owner counts N4..N10 and Part B N6/N7/N8 are covered by exact truth/preservation tests. b7/b8 expanded presentation is canonical-only; b1..b6 presentation remains owner-template static. Chief R:X remains non-writable privacy authority.
+
+R2-C final accepted runtime evidence on owner workstation:
 
 ```text
+Focused renderer = 7/7 PASS / FAIL 0 / SKIP 0
+Frozen regression = 30/30 PASS / FAIL 0 / SKIP 0
+node --check renderer = PASS
+git diff --check = PASS
+```
+
+`D2-WP004-R2-C = PASS / CLOSED`.
+
+## Current next D2 gate
+
+```text
+COMBINED_EXCEL_PARITY = NEXT LATER D2 GATE / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
-PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
+
+Before Combined Excel parity is proposed, Control Plane must inspect current repository truth and define the smallest parity contract against the closed preparer + renderer authority. Do not reopen R2-C or start implementation without a proven regression and explicit owner authorization.
