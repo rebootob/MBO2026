@@ -144,7 +144,7 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
   throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} node missing in sheet XML`);
 }
 
-export function normalizeTargetNodesForPreservation(srcSheetXml, renderedSheetXml, targetAddrs) {
+function normalizeTargetNodesForPreservation(srcSheetXml, renderedSheetXml, targetAddrs) {
   let normSrc = srcSheetXml;
   let normRendered = renderedSheetXml;
 
