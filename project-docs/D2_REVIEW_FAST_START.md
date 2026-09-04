@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate evidence only. Do not reopen R2-B1/R2-B2/R2-C without proven regression. Do not auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `EXCEL_EXPORT.md` -> exact current-gate evidence only. Do not reopen R2-B1/R2-B2/R2-C without proven regression. Do not auto-start Antigravity.
 
 ## Project truth
 
@@ -21,67 +21,75 @@ FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
-R2_A = PASS / CLOSED AFTER R1
-R2_B1 = PASS / CLOSED AFTER R10
-R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
-R2_C = PASS / CLOSED AFTER R7 + ACCEPTED OWNER RUNTIME PROOF
-R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
-R2_C_RUNTIME_FOCUSED = PASS / 7 OF 7 / FAIL 0 / SKIP 0
-R2_C_RUNTIME_REGRESSION = PASS / 30 OF 30 / FAIL 0 / SKIP 0
-R2_C_NODE_CHECK = PASS
-R2_C_GIT_DIFF_CHECK = PASS
-R2_C_RENDERER_SOURCE_TEST = PASS / CLOSED / FROZEN
+R2_A = PASS / CLOSED
+R2_B1 = PASS / CLOSED / FROZEN
+R2_B2 = PASS / CLOSED / FROZEN
+R2_C = PASS / CLOSED / FROZEN
+R2_D_PRE1 = COMBINED XLSX OOXML COMPATIBILITY EVIDENCE PROPOSED / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE
+COMBINED_EXCEL_PARITY = PLANNING / PRE1 PROPOSED / NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## Durable closed gates
-R2-B1, R2-B2 and R2-C are PASS/CLOSED/FROZEN. R5 exact `t` mutation + Part B proof, R6 source-aware comparator/oracle, and R7 private-surface cleanup are accepted authority and must not be reopened without proven regression.
+## R2-C closure evidence
 
-## R2-C final runtime closure
+Final implementation:
+`fec70c6c0745e7bb9450be8d388928463c6552cb`
 
-Accepted owner-workstation evidence on 2026-09-04 ICT:
-
-Focused renderer:
-
+Accepted owner runtime:
 ```text
-node --test tests/mbo-xlsx-semantic-renderer.test.js
-TESTS 7
-PASS 7
-FAIL 0
-SKIP 0
-```
-
-Frozen regression:
-
-```text
-node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js
-TESTS 30
-PASS 30
-FAIL 0
-SKIP 0
-```
-
-Additional checks:
-
-```text
-node --check src/services/mbo-xlsx-semantic-renderer.js = PASS
+Focused renderer = 7/7 PASS / FAIL 0 / SKIP 0
+Frozen regression = 30/30 PASS / FAIL 0 / SKIP 0
+node --check renderer = PASS
 git diff --check = PASS
 ```
 
-Closure verdict:
+R2-C secured semantic renderer is frozen. No new source/test change is authorized.
 
-`D2-WP004-R2-C = PASS / CLOSED`.
+## Combined Excel authority
 
-## Current exact gate
+Repository Excel-export skill defines Combined Workbook as:
 
-No executor is active and no source/test change is authorized.
+```text
+ONE .xlsx
+Sheet 1 = PART A
+Sheet 2 = PART B
+```
 
-`COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE`.
+Current closed production engine renders Part A and Part B from separate owner templates. Part B owner workbook has main `(Part B) Competency` plus auxiliary `Sheet1`. No production combined-workbook composer exists yet.
 
-Before proposing the next gate, fresh-read current `AI_ACTIVE_TASK.md`, `EXCEL_EXPORT.md`, and only directly relevant frozen closure/baseline authority. Use Antigravity only if implementation/evidence work is genuinely necessary.
+Frozen owner identities:
+```text
+PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+PART_A_MAIN = MBO Staff & Chief
+PART_B_MAIN = (Part B) Competency
+PART_B_AUX = Sheet1
+```
 
-Do not auto-start Combined Excel, Kintone writes, deploy, Live UAT or D3. `D3 = HOLD` until all D2 gates are PASS/CLOSED.
+## Exact next proposal — D2-WP004-R2-D-PRE1
+
+```text
+NAME = COMBINED XLSX OWNER-TEMPLATE + OOXML COMPOSITION COMPATIBILITY EVIDENCE
+MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / LOW-CREDIT
+STATE = PROPOSED / NOT AUTHORIZED
+MAX_EXECUTOR_COMMITS = 1
+EXPECTED_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
+```
+
+Purpose: inspect exact local owner XLSX package dependencies before any merge implementation. Must determine:
+- whether an owner/legacy Combined workbook already exists;
+- whether Part B auxiliary `Sheet1` is required;
+- exact styles/sharedStrings/relationships/content-types/theme dependencies;
+- whether direct Part B sheet copy into Part A package is safe;
+- one smallest next composition strategy.
+
+If later authorized, executor writable scope is ONLY the expected evidence Markdown file. Source/test/Profile/template binary/UI/dist/Kintone/deploy/PDF/D3 remain forbidden.
+
+Full contract is in `AI_ACTIVE_TASK.md`.
+
+Recommended owner approval phrase:
+
+`อนุมัติ D2-WP004-R2-D-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
