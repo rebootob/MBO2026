@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate evidence only. Do not reopen R2-B1/R2-B2/R2-C without proven regression. Do not auto-start broader implementation.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate files only. Do not reopen R2-B1/R2-B2/R2-C or R2-D PRE1 evidence without a proven regression. Do not auto-start Antigravity.
 
 ## Project truth
 
@@ -25,19 +25,20 @@ R2_A = PASS / CLOSED
 R2_B1 = PASS / CLOSED / FROZEN
 R2_B2 = PASS / CLOSED / FROZEN
 R2_C = PASS / CLOSED / FROZEN
-R2_D_PRE1 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_D_PRE1_R1 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_D_PRE1_R2 = AUTHORIZED / ACTIVE
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-D-PRE1-R2
-ANTIGRAVITY = AUTHORIZED / BOUNDED EVIDENCE ONLY / MAX 1 COMMIT
+R2_D_PRE1 = PASS / CLOSED / FROZEN
+R2_D_PRE1_R1 = PASS / CLOSED / FROZEN
+R2_D_PRE1_R2 = PASS / CLOSED / FROZEN
+R2_D1 = ISOLATED COMPOSER SOURCE+TEST PROPOSAL READY / NOT AUTHORIZED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = PRE1-R2 TARGETED CORRECTIVE EVIDENCE AUTHORIZED / IMPLEMENTATION NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = IMPLEMENTATION PLANNING / NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## R2-C closure evidence
+## R2-C closure
 
-Final implementation:
+Final secured renderer implementation:
 `fec70c6c0745e7bb9450be8d388928463c6552cb`
 
 Accepted owner runtime:
@@ -48,78 +49,71 @@ node --check renderer = PASS
 git diff --check = PASS
 ```
 
-R2-C secured semantic renderer is frozen.
+R2-C remains frozen.
 
-## Combined Excel authority
+## Combined Excel target
 
-Target remains:
 ```text
 ONE .xlsx
-Sheet 1 = PART A
-Sheet 2 = PART B
+Sheet 1 = MBO Staff & Chief
+Sheet 2 = (Part B) Competency
 ```
+
+Part B auxiliary `Sheet1` is excluded.
 
 Frozen owner identities:
 ```text
 PART_A_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
 PART_B_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-PART_A_MAIN = MBO Staff & Chief
-PART_B_MAIN = (Part B) Competency
-PART_B_AUX = Sheet1
+THEME_SHA256_BOTH = e6029ab4958414b8bb862b17ffed3a708d1513e61a07d88e966071cca31d1bd4
 ```
 
-## Accepted PRE1 / PRE1-R1 evidence
+## R2-D PRE1 evidence closure
 
-PRE1 evidence:
-`a77cbf6317b5744e0b9a0d696ab293878563c89d`
+Evidence commits:
+```text
+PRE1    = a77cbf6317b5744e0b9a0d696ab293878563c89d
+PRE1-R1 = 4b2cea2ecaecbb9438d476b0ce5bf7f40088aab2
+PRE1-R2 = a5ffbe8440a5236ba040c8f5fc06af6b8a233c76
+```
 
-PRE1-R1 evidence:
-`4b2cea2ecaecbb9438d476b0ce5bf7f40088aab2`
+Final accepted evidence:
+```text
+OWNER_COMBINED_TEMPLATE = NOT_FOUND
+PART_B_AUXILIARY = AUXILIARY_NOT_REQUIRED_FOR_COMBINED
+DIRECT_COPY = DIRECT_COPY_UNSAFE_REMAP_REQUIRED
+DYNAMIC_PRINT_AREA_PRESERVATION = EXACT
+PRINTER_SETTINGS_PART_GRAPH = EXACT
+RELATIONSHIP_NAMESPACE_MODEL = EXACT
+DEFAULT_STYLE0_PARITY = REMAP_REQUIRED
+APP_PROPERTIES = UPDATE_REQUIRED
+GLOBAL_REMAP_DEPENDENCIES = EXACT
+NEXT_STRATEGY = POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP
+```
 
-Accepted:
-- exact owner SHAs found;
-- no owner combined workbook found in authorized locations;
-- Part B auxiliary `Sheet1` not required for final Combined output;
-- direct raw Part B sheet copy without workbook-global remap is unsafe;
-- R1 full package SHA inventory / used style IDs / used SST IDs / relationship tuples accepted;
-- post-render OOXML composition remains candidate direction.
+Critical production rule added by independent review:
+- composer consumes already-rendered Part A and Part B bytes;
+- style/shared-string maps MUST be derived from those actual rendered packages;
+- owner-template style/SST counts or offsets are evidence only and must never become fixed production offsets;
+- all actual style-bearing references must be handled or fail closed.
 
-PRE1 is still not closed only because residual package-graph evidence remains:
-- preserve dynamic rendered Print_Areas rather than hard-code fixed values;
-- remap actual same-path Part B `printerSettings1.bin` collision;
-- correct local relationship-ID namespace vs global OPC-path collision semantics;
-- derive/check free workbook rId and part paths rather than hard-code candidates;
-- prove/default-remap style 0;
-- classify `docProps/app.xml` update requirements.
-
-## Active gate — D2-WP004-R2-D-PRE1-R2
-
-Authorization basis HEAD:
-`106ef390a2b86f7b756e853604a5d270517d6244`
-
-Authorization token:
-`D2-WP004-R2-D-PRE1-R2-EVIDENCE-ONLY-20260904-01`
+## Exact next proposal — D2-WP004-R2-D1
 
 ```text
-NAME = COMBINED XLSX DYNAMIC PRINT-AREA + RESIDUAL OPC PART-GRAPH CORRECTIVE EVIDENCE
-MODE = EVIDENCE-ONLY / TARGETED READ-ONLY OWNER+RENDERED AUTHORITY CHECK / ULTRA-LOW-CREDIT
-STATE = AUTHORIZED / ACTIVE
+NAME = ISOLATED POST-RENDER COMBINED XLSX COMPOSER FOUNDATION
+MODE = SOURCE+TEST / BOUNDED / LOW-CREDIT
+STATE = PROPOSED / NOT AUTHORIZED
 MAX_EXECUTOR_COMMITS = 1
-WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
+PROPOSED_NEW_SOURCE = src/services/mbo-xlsx-combined-composer.js
+PROPOSED_NEW_TEST = tests/mbo-xlsx-combined-composer.test.js
 ```
 
-R2 is targeted only. Do not redo accepted R1 inventory.
+If later authorized, executor may create/modify ONLY those two new files. Existing preparer, renderer, Profile, export service, existing tests, template binaries and control docs stay read-only.
 
-It must close only:
-- dynamic already-rendered Print_Area preservation for Part A objective counts 4..10 and Part B N=6/7/8;
-- unique Part B printerSettings part-path handling;
-- exact relationship namespace / OPC collision model;
-- derive-and-check-free contract for workbook rId / worksheet / drawing / printerSettings / media paths;
-- default style-0 parity or remap requirement;
-- deterministic `docProps/app.xml` classification.
+D1 must build an isolated post-render OOXML composer and exhaustive proof without integrating it into `mbo-export-service.js` yet. Full proposed source/test contract is in `AI_ACTIVE_TASK.md`.
 
-Executor may modify ONLY the existing evidence Markdown file. No source/test/Profile/template binary/control-doc/package/UI/Kintone/deploy/PDF/D3 change is authorized.
+Recommended approval phrase:
 
-Full contract is authoritative in `AI_ACTIVE_TASK.md`.
+`อนุมัติ D2-WP004-R2-D1 SOURCE+TEST ตามขอบเขตที่เสนอ`
 
-After exactly one evidence commit is pushed, Antigravity must STOP for independent ChatGPT review.
+No Combined XLSX implementation, export-service integration, Kintone write/deploy, PDF or D3 work may start without separate Owner authorization.
