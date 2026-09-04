@@ -27,11 +27,11 @@ R2_B2 = PASS / CLOSED / FROZEN
 R2_C = PASS / CLOSED / FROZEN
 R2_D_PRE1 = REVIEWED / PARTIAL PASS / NOT CLOSED
 R2_D_PRE1_R1 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_D_PRE1_R2 = RESIDUAL PACKAGE-GRAPH CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+R2_D_PRE1_R2 = AUTHORIZED / ACTIVE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-D-PRE1-R2
+ANTIGRAVITY = AUTHORIZED / BOUNDED EVIDENCE ONLY / MAX 1 COMMIT
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = PRE1-R1 REVIEWED / IMPLEMENTATION NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = PRE1-R2 TARGETED CORRECTIVE EVIDENCE AUTHORIZED / IMPLEMENTATION NOT AUTHORIZED
 D3 = HOLD
 ```
 
@@ -48,11 +48,11 @@ node --check renderer = PASS
 git diff --check = PASS
 ```
 
-R2-C secured semantic renderer is frozen. No new source/test change is authorized.
+R2-C secured semantic renderer is frozen.
 
 ## Combined Excel authority
 
-Combined Workbook target remains:
+Target remains:
 ```text
 ONE .xlsx
 Sheet 1 = PART A
@@ -68,7 +68,7 @@ PART_B_MAIN = (Part B) Competency
 PART_B_AUX = Sheet1
 ```
 
-## PRE1 / PRE1-R1 review
+## Accepted PRE1 / PRE1-R1 evidence
 
 PRE1 evidence:
 `a77cbf6317b5744e0b9a0d696ab293878563c89d`
@@ -76,47 +76,50 @@ PRE1 evidence:
 PRE1-R1 evidence:
 `4b2cea2ecaecbb9438d476b0ce5bf7f40088aab2`
 
-R1 scope = PASS: exactly one evidence commit and only the authorized evidence Markdown changed.
-
-Accepted/frozen direction:
-- exact frozen Part A/Part B owner SHAs found;
-- no owner combined template found in authorized locations;
-- Part B auxiliary `Sheet1` is not required for Combined output;
+Accepted:
+- exact owner SHAs found;
+- no owner combined workbook found in authorized locations;
+- Part B auxiliary `Sheet1` not required for final Combined output;
 - direct raw Part B sheet copy without workbook-global remap is unsafe;
-- full package SHA inventory, used style/SST sets and relationship tuple inventory are accepted as R1 evidence;
-- post-render OOXML composition remains the candidate next architecture.
+- R1 full package SHA inventory / used style IDs / used SST IDs / relationship tuples accepted;
+- post-render OOXML composition remains candidate direction.
 
-PRE1 is still NOT CLOSED because R1's strategy map has residual material defects:
-- Part A Print_Area was incorrectly written as `$X$52`; frozen authority is `$BJ$52..$BJ$58` for objective counts 4..10;
-- Part B Print_Area was hard-coded to `$X$35`; frozen authority is `$X$35/$X$39/$X$43` for N=6/7/8;
-- the composer strategy must preserve each already-rendered Print_Area rather than reconstruct a fixed value;
-- both main sheets point to different `xl/printerSettings/printerSettings1.bin` payloads under the same OPC path, but R1 omitted this collision/remap;
-- worksheet/drawing `rId` values are local to each `.rels` namespace, so same rId values across different relationship parts are not themselves collisions;
-- `image1.jpeg` and `image1.png` are distinct full OPC paths; R1 mischaracterized them as a mandatory media collision;
-- current next-free `rId5` / `sheet2.xml` / `drawing2.xml` are evidence candidates, but production must derive/check availability rather than blindly hard-code them;
-- style 0/default semantics for cells without explicit `s` require parity proof or explicit preservation strategy;
-- `docProps/app.xml` impact from adding Sheet 2 must be deterministically classified.
+PRE1 is still not closed only because residual package-graph evidence remains:
+- preserve dynamic rendered Print_Areas rather than hard-code fixed values;
+- remap actual same-path Part B `printerSettings1.bin` collision;
+- correct local relationship-ID namespace vs global OPC-path collision semantics;
+- derive/check free workbook rId and part paths rather than hard-code candidates;
+- prove/default-remap style 0;
+- classify `docProps/app.xml` update requirements.
 
-## Exact next proposal — D2-WP004-R2-D-PRE1-R2
+## Active gate — D2-WP004-R2-D-PRE1-R2
+
+Authorization basis HEAD:
+`106ef390a2b86f7b756e853604a5d270517d6244`
+
+Authorization token:
+`D2-WP004-R2-D-PRE1-R2-EVIDENCE-ONLY-20260904-01`
 
 ```text
 NAME = COMBINED XLSX DYNAMIC PRINT-AREA + RESIDUAL OPC PART-GRAPH CORRECTIVE EVIDENCE
 MODE = EVIDENCE-ONLY / TARGETED READ-ONLY OWNER+RENDERED AUTHORITY CHECK / ULTRA-LOW-CREDIT
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MAX_EXECUTOR_COMMITS = 1
 WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
 ```
 
-R2 is targeted only; do not redo accepted R1 inventory. It must close:
-- dynamic Print_Area preservation from already-rendered Part A/Part B packages;
-- exact Part B printerSettings part-path remap;
-- correct relationship namespace/global OPC collision model;
-- derived/free workbook-rId, worksheet, drawing, printerSettings and media part-path contract;
+R2 is targeted only. Do not redo accepted R1 inventory.
+
+It must close only:
+- dynamic already-rendered Print_Area preservation for Part A objective counts 4..10 and Part B N=6/7/8;
+- unique Part B printerSettings part-path handling;
+- exact relationship namespace / OPC collision model;
+- derive-and-check-free contract for workbook rId / worksheet / drawing / printerSettings / media paths;
 - default style-0 parity or remap requirement;
 - deterministic `docProps/app.xml` classification.
 
-No source/test/Profile/template binary/control-doc change by executor. No composer implementation. Full corrective contract is in `AI_ACTIVE_TASK.md`.
+Executor may modify ONLY the existing evidence Markdown file. No source/test/Profile/template binary/control-doc/package/UI/Kintone/deploy/PDF/D3 change is authorized.
 
-Recommended owner approval phrase:
+Full contract is authoritative in `AI_ACTIVE_TASK.md`.
 
-`อนุมัติ D2-WP004-R2-D-PRE1-R2 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+After exactly one evidence commit is pushed, Antigravity must STOP for independent ChatGPT review.
