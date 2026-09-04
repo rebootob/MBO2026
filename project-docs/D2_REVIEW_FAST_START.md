@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate source/test only. Do not reopen R2-B1/R2-B2 or accepted R5 behavior without proven regression. Do not broad-scan or auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate source/test only. Do not reopen R2-B1/R2-B2 or accepted R5/R6 behavior without proven regression. Do not broad-scan or auto-start Antigravity.
 
 ## Project truth
 
@@ -25,11 +25,12 @@ R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
 R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
 R2_C = REVIEWED / NOT CLOSED
-R2_C_R5_IMPLEMENTATION = 383104b69b096ca9f8b12d5e2410feeaf8864b45
-R2_C_R5 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_C_R5_MUTATION = PASS / FROZEN
-R2_C_R5_PART_B_PROOF = PASS / FROZEN
-R2_C_R6 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+R2_C_R6_IMPLEMENTATION = c9269e3fe20ff585ca0b89e33e74a1faeb2f43af
+R2_C_R6 = REVIEWED / PARTIAL PASS / NOT CLOSED
+R2_C_R6_COMPARATOR_LOGIC = PASS / FROZEN
+R2_C_R6_TEST_ORACLE = PASS / FROZEN
+R2_C_R6_GOVERNANCE_SURFACE = BLOCKED / TEST-ONLY PUBLIC EXPORT
+R2_C_R7 = MINIMAL SURFACE CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
@@ -38,42 +39,41 @@ D3 = HOLD
 ```
 
 ## Durable closed / accepted gates
-R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. R5 exact `t`-token mutation and R5 Part B complete nonwritten/Rating Scale parity are accepted and must not be reopened without proven regression.
+R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. R5 exact `t` mutation + Part B proof and R6 source-aware comparator/oracle logic are accepted and must not be reopened without proven regression.
 
-## R2-C-R5 independent review
+## R2-C-R6 independent review
 
 Authorization:
-`d8b49b26b37de5e01465a59859b051f71c38aab7`
+`e59989f5b6ce5a378b37d1c9c6c20cd3313f0e24`
 
 Implementation:
-`383104b69b096ca9f8b12d5e2410feeaf8864b45`
+`c9269e3fe20ff585ca0b89e33e74a1faeb2f43af`
 
 Scope PASS:
 - exactly one corrective commit;
 - only `src/services/mbo-xlsx-semantic-renderer.js` and `tests/mbo-xlsx-semantic-renderer.test.js` changed;
 - no frozen-file changes.
 
-Accepted R5 improvements:
-- production exact unprefixed `t` removal now deletes only the token; trailing separator whitespace is no longer consumed by the mutation;
-- post-`t` whitespace sentinel survives representative rendering;
-- Part A typed exact truth/omission proof retained;
-- Part B typed truth/summary omission retained;
-- complete `effectiveSanitizationRanges` nonwritten blank proof is added for full + omitted variants;
-- Rating Scale cells now prove raw cell-node XML parity plus typed value parity;
-- static/padding/sorted-merge/sheet2/privacy/canonical/XML/formula/caller-immutability proof retained.
+Accepted R6 improvements:
+- production preservation comparator is source-aware and no longer trims/canonicalizes target opening-tag whitespace;
+- exact unprefixed `t` token masking preserves surrounding bytes;
+- source/rendered target uniqueness is fail-closed;
+- independent scanner/splice oracle is retained without trim/canonicalizing tag rebuild;
+- one-byte unauthorized whitespace negative-control detects mismatch;
+- all accepted R5 matrices/privacy/canonical/XML/formula/package/caller-immutability proof remains.
 
-Remaining blockers:
-- production `normalizeTargetNodesForPreservation()` still removes `t` with trailing `\s*`, uses `.trim()`, and reconstructs canonical `<c .../>` nodes, so complete-sheet preservation can hide unauthorized whitespace differences;
-- the purported independent test oracle repeats the same essential `t="..."\s*` + `.trim()` + node-reconstruction normalization and is therefore not independent/byte-sensitive enough;
-- no negative-control proves the oracle fails if exactly one unauthorized separator whitespace byte is changed.
+Remaining blocker:
+- `normalizeTargetNodesForPreservation` was changed from private helper to a named export solely so the test can call production comparator directly;
+- this violates the explicit R6 rule `Do not add a public debug API solely for testing.`;
+- the R6 clause required direct production-comparator negative-control only if reachable without exposing a new production API, so this export is unnecessary.
 
-GitHub has no CI/status/workflow signal for the R5 implementation. Static proof blockers prevent closure.
+GitHub has no CI/status/workflow signal for the R6 implementation. Static governance blocker prevents closure.
 
-## Exact next proposal — D2-WP004-R2-C-R6 / NOT AUTHORIZED
+## Exact next proposal — D2-WP004-R2-C-R7 / NOT AUTHORIZED
 
 ```text
-NAME = SECURED SEMANTIC RENDERER SOURCE-AWARE BYTE-COMPARATOR + INDEPENDENT ORACLE CLOSURE
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
+NAME = SECURED SEMANTIC RENDERER PRIVATE-COMPARATOR SURFACE CLOSURE
+MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / ULTRA-LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
 
 PROPOSED WRITABLE ONLY:
@@ -87,16 +87,16 @@ FROZEN:
   existing Profile/Preparer/Feasibility/export tests
 ```
 
-R6 closes only:
-- production source-aware complete-sheet comparator with no trim, no trailing-whitespace consumption and no opening-tag reconstruction;
-- truly independent byte oracle using a different boundary/splice strategy;
-- negative-control proving one unauthorized whitespace-byte change is detected;
-- all accepted R5 matrices/security proof must remain passing without reopening.
+R7 closes only:
+- restore `normalizeTargetNodesForPreservation` to private/non-exported helper;
+- remove test import/direct call of the private production helper;
+- retain independent one-byte negative-control and all accepted R5/R6 proof;
+- no comparator redesign or matrix changes.
 
-Full authoritative R6 proposal is in `AI_ACTIVE_TASK.md`.
+Full authoritative R7 proposal is in `AI_ACTIVE_TASK.md`.
 
 Recommended owner approval phrase:
 
-`อนุมัติ D2-WP004-R2-C-R6 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-C-R7 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
 
 Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
