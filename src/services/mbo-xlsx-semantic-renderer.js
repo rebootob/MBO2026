@@ -144,46 +144,73 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
   throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} node missing in sheet XML`);
 }
 
-function normalizeTargetNodesForPreservation(srcSheetXml, renderedSheetXml, targetAddrs) {
+export function normalizeTargetNodesForPreservation(srcSheetXml, renderedSheetXml, targetAddrs) {
   let normSrc = srcSheetXml;
   let normRendered = renderedSheetXml;
 
   for (const addr of targetAddrs) {
-    const nodeRegex = new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])(?:[^>]*?\\/>|[^>]*?>[\\s\\S]*?<\\/c>)`);
-    const srcMatch = normSrc.match(nodeRegex);
-    const renderedMatch = normRendered.match(nodeRegex);
+    const nodeRegex = new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])(?:[^>]*?\\/>|[^>]*?>[\\s\\S]*?<\\/c>)`, 'g');
+    const srcMatches = [...normSrc.matchAll(nodeRegex)];
+    const renderedMatches = [...normRendered.matchAll(nodeRegex)];
 
-    if (!srcMatch || !renderedMatch) {
-      continue;
+    if (srcMatches.length !== 1) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Preservation check failed: Target cell node ${addr} not unique in source XML (found ${srcMatches.length})`);
+    }
+    if (renderedMatches.length !== 1) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Preservation check failed: Target cell node ${addr} not unique in rendered XML (found ${renderedMatches.length})`);
     }
 
-    const srcFullNode = srcMatch[0];
-    const renderedFullNode = renderedMatch[0];
+    const srcNode = srcMatches[0][0];
+    const renderedNode = renderedMatches[0][0];
 
-    const srcOpenMatch = srcFullNode.match(/^<c\b[^>]*?>/);
-    const renderedOpenMatch = renderedFullNode.match(/^<c\b[^>]*?>/);
-    if (!srcOpenMatch || !renderedOpenMatch) continue;
+    const srcOpenMatch = srcNode.match(/^<c\b[^>]*?>/);
+    const renderedOpenMatch = renderedNode.match(/^<c\b[^>]*?>/);
+    if (!srcOpenMatch || !renderedOpenMatch) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} opening tag missing`);
+    }
 
     const srcOpenTag = srcOpenMatch[0];
     const renderedOpenTag = renderedOpenMatch[0];
 
-    const srcCleanAttrs = srcOpenTag
-      .replace(/^<c\s*/, '')
-      .replace(/\/?>$/, '')
-      .replace(/(?<=\s|^)t="[^"]*"\s*/, '')
-      .trim();
+    const srcIsSelfClosing = srcOpenTag.endsWith('/>');
+    const renderedIsSelfClosing = renderedOpenTag.endsWith('/>');
 
-    const renderedCleanAttrs = renderedOpenTag
-      .replace(/^<c\s*/, '')
-      .replace(/\/?>$/, '')
-      .replace(/(?<=\s|^)t="[^"]*"\s*/, '')
-      .trim();
+    const srcHead = srcIsSelfClosing ? srcOpenTag.slice(0, -2) : srcOpenTag.slice(0, -1);
+    const renderedHead = renderedIsSelfClosing ? renderedOpenTag.slice(0, -2) : renderedOpenTag.slice(0, -1);
 
-    const normSrcNode = srcCleanAttrs ? `<c ${srcCleanAttrs}/>` : '<c/>';
-    const normRenderedNode = renderedCleanAttrs ? `<c ${renderedCleanAttrs}/>` : '<c/>';
+    const srcTMatch = srcOpenTag.match(/(?<=\s|^)t="[^"]*"/);
+    const renderedTMatch = renderedOpenTag.match(/(?<=\s|^)t="[^"]*"/);
 
-    normSrc = normSrc.replace(srcFullNode, () => normSrcNode);
-    normRendered = normRendered.replace(renderedFullNode, () => normRenderedNode);
+    const srcHasT = Boolean(srcTMatch);
+    const renderedHasT = Boolean(renderedTMatch);
+
+    let srcMaskedHead;
+    let renderedMaskedHead;
+
+    if (srcHasT) {
+      const srcTText = srcTMatch[0];
+      if (renderedHasT) {
+        const renderedTText = renderedTMatch[0];
+        srcMaskedHead = srcHead.replace(srcTText, '');
+        renderedMaskedHead = renderedHead.replace(renderedTText, '');
+      } else {
+        srcMaskedHead = srcHead.replace(srcTText, '');
+        renderedMaskedHead = renderedHead;
+      }
+    } else {
+      srcMaskedHead = srcHead;
+      if (renderedHasT) {
+        renderedMaskedHead = renderedHead.replace(' t="inlineStr"', '');
+      } else {
+        renderedMaskedHead = renderedHead;
+      }
+    }
+
+    const normSrcNode = srcMaskedHead + '/>';
+    const normRenderedNode = renderedMaskedHead + '/>';
+
+    normSrc = normSrc.replace(srcNode, () => normSrcNode);
+    normRendered = normRendered.replace(renderedNode, () => normRenderedNode);
   }
 
   return { normSrc, normRendered };

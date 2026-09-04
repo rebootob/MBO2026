@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import JSZip from 'jszip';
 import XlsxPopulate from 'xlsx-populate';
 
-import { renderSecuredSemanticValues } from '../src/services/mbo-xlsx-semantic-renderer.js';
+import { renderSecuredSemanticValues, normalizeTargetNodesForPreservation } from '../src/services/mbo-xlsx-semantic-renderer.js';
 import {
   preparePartATemplate,
   preparePartBTemplate
@@ -751,7 +751,7 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   assert.equal(matchT26Rendered[0].includes('  r="T26" \t  s="385"'), true, 'Deliberate spaces/tabs before attributes must survive byte-for-byte');
   assert.equal(/\r?\n\tt="inlineStr" \t /.test(matchT26Rendered[0]), true, 'Deliberate newline/tab before and post-t whitespace after t attribute must survive byte-for-byte');
 
-  // 4. Truly independent test oracle (does NOT reuse production normalizer or regex strategy)
+  // 4. Truly independent test oracle (scanner/splice based, zero-trim, no helper reuse)
   const roleNamesA = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
     'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
@@ -764,52 +764,80 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   ];
   const targetAddrsA = roleNamesA.map(r => profile.resolveSemanticRole(r, { partKey: 'A', objectiveCount: 4 }).address);
 
-  const oracleNormalizeXml = (xmlText, targetAddresses) => {
-    let result = xmlText;
-    for (const address of targetAddresses) {
-      const tagPrefix = `r="${address}"`;
-      let searchIdx = 0;
-      while (searchIdx < result.length) {
-        const foundPos = result.indexOf(tagPrefix, searchIdx);
-        if (foundPos === -1) break;
-
-        const openStart = result.lastIndexOf('<c', foundPos);
-        if (openStart !== -1 && openStart < foundPos) {
-          let openEnd = result.indexOf('>', foundPos);
-          if (openEnd !== -1) {
-            let nodeEnd = openEnd + 1;
-            const isOpenSelfClosing = result.substring(openStart, openEnd + 1).endsWith('/>');
-            if (!isOpenSelfClosing) {
-              const closeTagPos = result.indexOf('</c>', openEnd);
-              if (closeTagPos !== -1) {
-                nodeEnd = closeTagPos + 4;
-              }
+  const findOracleNodeInfo = (xmlText, address) => {
+    const tagPrefix = `r="${address}"`;
+    let searchIdx = 0;
+    while (searchIdx < xmlText.length) {
+      const foundPos = xmlText.indexOf(tagPrefix, searchIdx);
+      if (foundPos === -1) break;
+      const nodeStart = xmlText.lastIndexOf('<c', foundPos);
+      if (nodeStart !== -1 && nodeStart < foundPos) {
+        const openEnd = xmlText.indexOf('>', foundPos);
+        if (openEnd !== -1) {
+          const isOpenSelfClosing = xmlText.substring(nodeStart, openEnd + 1).endsWith('/>');
+          let nodeEnd = openEnd + 1;
+          if (!isOpenSelfClosing) {
+            const closeTagPos = xmlText.indexOf('</c>', openEnd);
+            if (closeTagPos !== -1) {
+              nodeEnd = closeTagPos + 4;
             }
-
-            const rawNode = result.substring(openStart, nodeEnd);
-            const openTagOnly = rawNode.match(/^<c\b[^>]*?>/)[0];
-            const cleanAttrs = openTagOnly
-              .replace(/^<c\s*/, '')
-              .replace(/\/?>$/, '')
-              .replace(/(?<=\s|^)t="[^"]*"\s*/, '')
-              .trim();
-
-            const normalizedNode = cleanAttrs ? `<c ${cleanAttrs}/>` : '<c/>';
-
-            result = result.substring(0, openStart) + normalizedNode + result.substring(nodeEnd);
-            searchIdx = openStart + normalizedNode.length;
-            continue;
           }
+          const rawNode = xmlText.substring(nodeStart, nodeEnd);
+          const rawOpenTag = rawNode.match(/^<c\b[^>]*?>/)[0];
+          const isSelfClosing = rawOpenTag.endsWith('/>');
+          const head = isSelfClosing ? rawOpenTag.slice(0, -2) : rawOpenTag.slice(0, -1);
+          const tMatch = rawOpenTag.match(/(?<=\s|^)t="[^"]*"/);
+          return { nodeStart, nodeEnd, rawNode, rawOpenTag, head, tMatch: tMatch ? tMatch[0] : null };
         }
-        searchIdx = foundPos + tagPrefix.length;
       }
+      searchIdx = foundPos + tagPrefix.length;
     }
-    return result;
+    return null;
   };
 
-  const normBeforeA = oracleNormalizeXml(xmlBeforeA, targetAddrsA);
-  const normAfterA = oracleNormalizeXml(xmlAfterA, targetAddrsA);
-  assert.equal(normAfterA, normBeforeA, 'Part A sheet1.xml must be 100% string-equal outside normalized target nodes according to independent oracle');
+  const oracleNormalizeXmlPair = (srcXml, rendXml, targetAddresses) => {
+    let normSrc = srcXml;
+    let normRend = rendXml;
+
+    for (const address of targetAddresses) {
+      const srcInfo = findOracleNodeInfo(normSrc, address);
+      const rendInfo = findOracleNodeInfo(normRend, address);
+
+      if (!srcInfo || !rendInfo) continue;
+
+      let srcMaskedHead;
+      let rendMaskedHead;
+
+      if (srcInfo.tMatch) {
+        srcMaskedHead = srcInfo.head.replace(srcInfo.tMatch, '');
+        rendMaskedHead = rendInfo.tMatch ? rendInfo.head.replace(rendInfo.tMatch, '') : rendInfo.head;
+      } else {
+        srcMaskedHead = srcInfo.head;
+        rendMaskedHead = rendInfo.tMatch ? rendInfo.head.replace(' t="inlineStr"', '') : rendInfo.head;
+      }
+
+      const normSrcNode = srcMaskedHead + '/>';
+      const normRendNode = rendMaskedHead + '/>';
+
+      normSrc = normSrc.substring(0, srcInfo.nodeStart) + normSrcNode + normSrc.substring(srcInfo.nodeEnd);
+      normRend = normRend.substring(0, rendInfo.nodeStart) + normRendNode + normRend.substring(rendInfo.nodeEnd);
+    }
+
+    return { normSrc, normRend };
+  };
+
+  const { normSrc: oracleBeforeA, normRend: oracleAfterA } = oracleNormalizeXmlPair(xmlBeforeA, xmlAfterA, targetAddrsA);
+  assert.equal(oracleAfterA, oracleBeforeA, 'Part A sheet1.xml must be 100% string-equal outside normalized target nodes according to independent oracle');
+
+  // 5. R6-C Negative controls:
+  // 5a. Independent oracle negative control (mutating 1 post-t whitespace byte in rendered XML)
+  const xmlAfterAPerturbed = xmlAfterA.replace('\tt="inlineStr" \t ', '\tt="inlineStr" ');
+  const { normSrc: nSrcP, normRend: nRendP } = oracleNormalizeXmlPair(xmlBeforeA, xmlAfterAPerturbed, targetAddrsA);
+  assert.notEqual(nRendP, nSrcP, 'Independent oracle MUST detect 1-byte unauthorized whitespace mutation');
+
+  // 5b. Production preservation path negative control (testing production comparator rejection on 1-byte whitespace mutation)
+  const { normSrc: prodNormSrcP, normRendered: prodNormRendP } = normalizeTargetNodesForPreservation(xmlBeforeA, xmlAfterAPerturbed, targetAddrsA);
+  assert.notEqual(prodNormRendP, prodNormSrcP, 'Production preservation check MUST fail closed when target XML whitespace is perturbed');
 });
 
 test('RENDERER_TEST_F: Real privacy & N7 + N8 canonical presentation / alias resistance proof', async () => {
