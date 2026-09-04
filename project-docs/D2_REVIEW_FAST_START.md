@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> `EXCEL_EXPORT.md` -> exact current-gate evidence only. Do not reopen R2-B1/R2-B2/R2-C without proven regression. Do not auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate evidence only. Do not reopen R2-B1/R2-B2/R2-C without proven regression. Do not auto-start broader implementation.
 
 ## Project truth
 
@@ -26,11 +26,11 @@ R2_B1 = PASS / CLOSED / FROZEN
 R2_B2 = PASS / CLOSED / FROZEN
 R2_C = PASS / CLOSED / FROZEN
 R2_D_PRE1 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_D_PRE1_R1 = CORRECTIVE EVIDENCE PROPOSAL READY / NOT AUTHORIZED
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+R2_D_PRE1_R1 = AUTHORIZED / ACTIVE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-D-PRE1-R1
+ANTIGRAVITY = AUTHORIZED / BOUNDED EVIDENCE ONLY / MAX 1 COMMIT
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = PRE1 EVIDENCE REVIEWED / IMPLEMENTATION NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = PRE1-R1 CORRECTIVE EVIDENCE AUTHORIZED / IMPLEMENTATION NOT AUTHORIZED
 D3 = HOLD
 ```
 
@@ -69,43 +69,37 @@ PART_B_AUX = Sheet1
 
 ## PRE1 review
 
-Authorization HEAD:
-`40a300405e22c59096e6902f2bd2709ee9bd9098`
-
-Evidence implementation:
+PRE1 evidence commit:
 `a77cbf6317b5744e0b9a0d696ab293878563c89d`
 
-Scope = PASS: exactly one evidence commit and only:
-`project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md`
-
-Accepted direction:
-- exact frozen Part A/Part B owner SHAs were found;
-- no owner combined template was found in the authorized inspected locations;
+Scope = PASS. Accepted direction:
+- exact frozen Part A/Part B owner SHAs found;
+- no owner combined template found in authorized inspected locations;
 - direct raw Part B sheet copy without workbook-global remap is unsafe;
-- post-render OOXML composition remains the candidate architecture direction.
+- post-render OOXML composition remains candidate direction.
 
-PRE1 is NOT CLOSED because exact package dependency inventory is incomplete and the recommendation contains a concrete `rId2` conflict: Part A already uses workbook `rId2 -> styles.xml`, while PRE1 proposed the new Part B sheet as `r:id="rId2"`.
+PRE1 remains NOT CLOSED because exact package dependency evidence was incomplete and the recommendation contained a workbook relationship conflict (`rId2` already belongs to Part A styles).
 
-Other required corrective evidence:
-- full package fingerprints rather than truncated hashes;
-- exact used style-ID sets for both main sheets and representative style collisions;
-- exact used shared-string index sets and representative collisions;
-- exact worksheet relationship tuples and explicit comments/tables/hyperlinks/externalLinks/drawing inventory;
-- exhaustive proof that Part B auxiliary `Sheet1` has no required dependency;
-- exact recursive style dependency graph and unique drawing/media/workbook-rId handling for the future composer.
-
-## Exact next proposal — D2-WP004-R2-D-PRE1-R1
+## Active gate — D2-WP004-R2-D-PRE1-R1
 
 ```text
 NAME = COMBINED XLSX EXACT PACKAGE-DEPENDENCY + RELATIONSHIP-ID CORRECTIVE EVIDENCE
 MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / ULTRA-LOW-CREDIT
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
+AUTH_TOKEN = D2-WP004-R2-D-PRE1-R1-EVIDENCE-ONLY-20260904-01
 MAX_EXECUTOR_COMMITS = 1
 WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
 ```
 
-No source/test/Profile/template binary/control-doc changes by executor. No composer implementation. Full corrective contract is in `AI_ACTIVE_TASK.md`.
+R1 must close only the exact evidence gaps:
+- full package SHA-256 fingerprints and exact style-table inventories;
+- exact used style-ID and shared-string index sets for both main sheets;
+- exact worksheet/drawing relationship tuples and dependency presence/absence matrix;
+- exhaustive auxiliary `Sheet1` dependency proof;
+- exact representative direct-copy collisions;
+- corrected unique workbook rId / worksheet part / drawing part / media naming strategy;
+- recursive used-style dependency graph and correct two-Print_Area/localSheetId handling.
 
-Recommended owner approval phrase:
+Executor may modify ONLY the existing evidence Markdown file. No source/test/Profile/template binary/control-doc/package/UI/Kintone/deploy/PDF/D3 change is authorized.
 
-`อนุมัติ D2-WP004-R2-D-PRE1-R1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+Full contract is in `AI_ACTIVE_TASK.md`. After one evidence commit is pushed, Antigravity must STOP for independent ChatGPT review.
