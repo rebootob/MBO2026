@@ -1,9 +1,9 @@
-# Combined XLSX Owner-Template + OOXML Composition Compatibility Evidence (D2-WP004-R2-D-PRE1-R1)
+# Combined XLSX Owner-Template + OOXML Composition Compatibility Evidence (D2-WP004-R2-D-PRE1-R2)
 
-- **Authorization Token**: `D2-WP004-R2-D-PRE1-R1-EVIDENCE-ONLY-20260904-01`
-- **Inspected Canonical HEAD SHA**: `d272f1b7012fcec5bafa2f7338613c46bf2a278e`
+- **Authorization Token**: `D2-WP004-R2-D-PRE1-R2-EVIDENCE-ONLY-20260904-01`
+- **Inspected Canonical HEAD SHA**: `526ac796d976ec06427d0fecd0c076f640ffab98`
 - **Date**: 2026-09-04 ICT
-- **Mode**: `EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / ULTRA-LOW-CREDIT`
+- **Mode**: `EVIDENCE-ONLY / TARGETED READ-ONLY OWNER+RENDERED AUTHORITY CHECK / ULTRA-LOW-CREDIT`
 
 ---
 
@@ -11,11 +11,16 @@
 
 | Dimension | Result / Verdict |
 | :--- | :--- |
-| **PRE1-R1 Corrective Evidence Gate Result** | **`PASS`** |
+| **PRE1-R2 Corrective Evidence Gate Result** | **`PASS`** |
 | **Owner Combined Template Identity** | **`NOT_FOUND`** (Zero combined `.xlsx` workbooks exist in repository/workspace) |
 | **Part B Auxiliary Sheet Necessity** | **`AUXILIARY_NOT_REQUIRED_FOR_COMBINED`** (`(Part B) Competency` has zero dependencies on `Sheet1`) |
 | **Direct Copy Compatibility** | **`DIRECT_COPY_UNSAFE_REMAP_REQUIRED`** (Styles, sharedStrings, drawings & rels differ between templates) |
-| **Global Remap Dependencies** | **`EXACT`** (All style, SST, rels, and media dependency mappings deterministically specified) |
+| **Dynamic Print Area Preservation** | **`EXACT`** (Rendered `_xlnm.Print_Area` preserved per sheet; hard-coding ranges forbidden) |
+| **Printer Settings Part Graph** | **`EXACT`** (Part B printerSettings remapped to derived free path `xl/printerSettings/printerSettings2.bin`) |
+| **Relationship Namespace Model** | **`EXACT`** (Local `.rels` IDs isolated; OPC path collisions global; `image1.png` vs `.jpeg` has no path collision) |
+| **Default Style 0 Parity** | **`REMAP_REQUIRED`** (Part A `fontId="0"` is Arial 10pt vs Part B Calibri 11pt; Part B cells specify explicit `s="ID"`) |
+| **App Properties Classification** | **`UPDATE_REQUIRED`** (`docProps/app.xml` vector counts and part titles updated to 2 sheets & 2 Print_Areas) |
+| **Global Remap Dependencies** | **`EXACT`** (All style, SST, rels, printerSettings, appProps, and media mappings deterministically specified) |
 | **Recommended Next Strategy** | **`POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP`** |
 
 ---
@@ -264,57 +269,129 @@ Same shared string index `<v>INDEX</v>` resolves to completely different text pa
 
 - **Worksheet Relationship ID Conflict**: In Part A, `sheet1.xml` uses `rId2` for `../drawings/drawing1.xml`. In Part B, `sheet1.xml` also uses `rId2` for `../drawings/drawing1.xml`.
 - **Drawing Part Name Conflict**: Both Part A and Part B own a drawing file named `xl/drawings/drawing1.xml`. Direct copy overwrites Part A drawing with Part B drawing.
-- **Media Target & Extension Collision**: In Part A `drawing1.xml.rels`, `rId1` points to `../media/image1.jpeg`. In Part B `drawing1.xml.rels`, `rId1` points to `../media/image1.png`.
+- **PrinterSettings Part Conflict**: Both Part A and Part B own `xl/printerSettings/printerSettings1.bin` but with completely different binary contents (5,420 bytes vs 1,264 bytes).
 
 ### Final Verdict
 **`DIRECT_COPY_UNSAFE_REMAP_REQUIRED`**
 
 ---
 
-## 6. Corrected Future Strategy Dependency Map (PRE1-R1-D)
+## 6. Residual Package-Graph Corrective Evidence (PRE1-R2)
 
-If `POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP` is authorized for implementation in future gates, the composer design MUST strictly enforce:
+### 6.1 Dynamic Print Area Preservation (R2-A)
 
-1. **Part A Package Base Authority**: Part A rendered package serves as the primary base authority container (`workbook.xml`, `styles.xml`, `sharedStrings.xml`, `theme1.xml`, `sheet1.xml`).
-2. **New Unique Workbook Relationship ID**:
-   - Part A `xl/_rels/workbook.xml.rels` currently uses `rId1` (`sheet1.xml`), `rId2` (`theme1.xml`), `rId3` (`styles.xml`), and `rId4` (`sharedStrings.xml`).
-   - **Correction**: The future composer MUST allocate **`rId5`** for Part B main sheet (`xl/worksheets/sheet2.xml`). Hard-coding `rId2` (as incorrectly drafted in PRE1) is FORBIDDEN as it collides with `theme1.xml`.
-3. **Unique Worksheet Part Path**: Insert Part B main sheet as `xl/worksheets/sheet2.xml`.
-4. **Unique Drawing Part Name**: Rename Part B drawing to `xl/drawings/drawing2.xml` and update `xl/worksheets/_rels/sheet2.xml.rels` accordingly.
-5. **Unique Media Part Target**: Copy Part B logo `image1.png` to `xl/media/image_partb_1.png` and update `xl/drawings/_rels/drawing2.xml.rels` (`rId1` -> `../media/image_partb_1.png`).
-6. **Recursive Style Dependency Remap**:
-   - Append referenced Part B style components to Part A style collections:
-     - `numFmt`: Map Part B custom `numFmtId="164"` to unused custom `numFmtId` in Part A (e.g. `165`).
-     - `fonts`: Append Part B unique fonts to Part A `<fonts>`, building `mapFontB(old) -> new`.
-     - `fills`: Append Part B unique fills to Part A `<fills>`, building `mapFillB(old) -> new`.
-     - `borders`: Append Part B unique borders to Part A `<borders>`, building `mapBorderB(old) -> new`.
-     - `cellStyleXfs`: Map/append `cellStyleXfs` references (`xfId`).
-   - Append Part B `cellXfs` to Part A `<cellXfs>`, remapping child attribute IDs (`numFmtId`, `fontId`, `fillId`, `borderId`, `xfId`).
-   - Build style translation function `mapStyleB(oldStyleId) -> (429 + offset)`.
-7. **Shared String Remap**:
-   - Append Part B shared strings (indices `0..49`) to Part A `sharedStrings.xml`, building index translation map `mapSstB(oldIdx) -> (127 + oldIdx)`.
-   - Update `<v>INDEX</v>` elements in Part B `sheet2.xml` using `mapSstB`.
-8. **Defined Names & Print Area Handling**:
-   - Exclude auxiliary `Sheet1`.
-   - Set Sheet 1 definedName: `<definedName name="_xlnm.Print_Area" localSheetId="0">'MBO Staff & Chief'!$A$1:$X$52</definedName>`
-   - Set Sheet 2 definedName: `<definedName name="_xlnm.Print_Area" localSheetId="1">'(Part B) Competency'!$A$1:$X$35</definedName>`
-9. **Content Types & Relationships**:
-   - Add `/xl/worksheets/sheet2.xml` and `/xl/drawings/drawing2.xml` to `[Content_Types].xml`.
-   - Update `xl/workbook.xml` with `<sheet name="(Part B) Competency" sheetId="2" r:id="rId5"/>`.
-10. **Preservation & Non-Regression**:
-   - 100% preservation of Part A package authority, formulas count = 0, and expanded privacy behavior.
+- **Frozen Acceptance Authority**:
+  - Part A `objectiveCount` 4..10 ranges: `'MBO Staff & Chief'!$A$1:$BJ$52` through `'MBO Staff & Chief'!$A$1:$BJ$58`.
+  - Part B competency ranges: N=6 -> `'(Part B) Competency'!$A$1:$X$35`, N=7 -> `'(Part B) Competency'!$A$1:$X$39`, N=8 -> `'(Part B) Competency'!$A$1:$X$43`.
+- **Production Composition Contract**:
+  - The future composer **MUST NOT** calculate or hard-code print area ranges from objective/competency counts.
+  - Production logic MUST:
+    1. Extract exact `_xlnm.Print_Area` text from the already-rendered Part A package.
+    2. Extract exact `_xlnm.Print_Area` text from the already-rendered Part B package.
+    3. Require exactly one valid `Print_Area` definedName per business workbook.
+    4. Bind Part A's exact value to final `localSheetId="0"`.
+    5. Bind Part B's exact value to final `localSheetId="1"`.
+    6. Fail closed on missing, duplicate, malformed, or wrong-sheet Print_Area definitions.
+- **Verdict**: **`DYNAMIC_PRINT_AREA_PRESERVATION = EXACT`**
+
+---
+
+### 6.2 Printer Settings OPC Part-Graph Collision (R2-B)
+
+- **Inspection Evidence**:
+  - Part A: `xl/printerSettings/printerSettings1.bin` (5,420 bytes, SHA-256 `c68f7b67595fcf72d3bff7e6458f779b3d940880214403040282481d4114ed95`).
+  - Part B: `xl/printerSettings/printerSettings1.bin` (1,264 bytes, SHA-256 `23c239bceed53fbeeaa24c392ba3f3d77eee5d9d7e20ede3c05e05100c89eba7`).
+- **Graph Remap Requirement**:
+  1. Preserve Part A `xl/printerSettings/printerSettings1.bin` unchanged.
+  2. Derive a free Part B printer settings path, such as `xl/printerSettings/printerSettings2.bin`.
+  3. Copy Part B binary payload to `xl/printerSettings/printerSettings2.bin`.
+  4. Update Part B worksheet relationship (`xl/worksheets/_rels/sheet2.xml.rels`) to point to `../printerSettings/printerSettings2.bin`.
+  5. Retain local relationship ID `rId1` in `sheet2.xml.rels` (since `rId1` is local to `sheet2.xml.rels`).
+  6. Register `/xl/printerSettings/printerSettings2.bin` in `[Content_Types].xml`.
+  7. Never overwrite Part A printer settings payload.
+- **Verdict**: **`PRINTER_SETTINGS_PART_GRAPH = EXACT`**
+
+---
+
+### 6.3 Relationship Namespace & Media OPC Path Model (R2-C)
+
+- **Relationship Namespace Rules**:
+  1. `xl/_rels/workbook.xml.rels` relationship IDs are unique **only within `workbook.xml.rels`**.
+  2. Worksheet relationship IDs are local **only to that specific worksheet's `.rels` file** (e.g. `xl/worksheets/_rels/sheet1.xml.rels`).
+  3. Drawing relationship IDs are local **only to that specific drawing's `.rels` file** (e.g. `xl/drawings/_rels/drawing1.xml.rels`).
+  4. Identical local relationship IDs in separate `.rels` files (e.g. `rId1` in `sheet1.xml.rels` and `sheet2.xml.rels`) do **NOT** collide.
+  5. Global OPC collisions occur **only when two parts share the exact same full zip path** (e.g. `xl/printerSettings/printerSettings1.bin` or `xl/drawings/drawing1.xml`).
+- **Media Path Analysis**:
+  - Part A media files: `xl/media/image1.jpeg`, `xl/media/image2.jpeg`, `xl/media/image3.png`, `xl/media/image4.png`.
+  - Part B media file: `xl/media/image1.png`.
+  - Comparison: `xl/media/image1.jpeg` (Part A) vs `xl/media/image1.png` (Part B) are **different OPC paths**.
+  - **Verdict on `PART_B_IMAGE1_PNG_EXACT_PATH_COLLISION`**: **`NO`**.
+  - Renaming `image1.png` to `image_partb_1.png` is an optional defensive measure, not a mandatory collision remap.
+- **Verdict**: **`RELATIONSHIP_NAMESPACE_MODEL = EXACT`**
+
+---
+
+### 6.4 Derived Free IDs and Part Paths (R2-D)
+
+To prevent hard-coded assumptions, the future composition contract requires deriving and verifying free candidates at runtime from the actual rendered base package:
+
+| OPC Object / ID | Expected Free Candidate | Runtime Production Contract |
+| :--- | :--- | :--- |
+| **Workbook Relationship ID** | `rId5` | Derive first unused `rId` in rendered Part A `workbook.xml.rels`. Fail closed if candidate occupied. |
+| **Worksheet Part Path** | `xl/worksheets/sheet2.xml` | Derive first unused worksheet path in rendered Part A package. Fail closed if occupied. |
+| **Drawing Part Path** | `xl/drawings/drawing2.xml` | Derive first unused drawing path in rendered Part A package. Fail closed if occupied. |
+| **PrinterSettings Part Path** | `xl/printerSettings/printerSettings2.bin` | Derive first unused printerSettings path in rendered Part A package. Fail closed if occupied. |
+| **Media Part Path** | `xl/media/image_partb_1.png` | Optional defensive rename. Derive first unused media path if defensive rename enabled. |
+
+---
+
+### 6.5 Default Style 0 Parity & Remap Requirement (R2-E)
+
+- **Styles Comparison**:
+  - Part A `cellXfs[0]`: `numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"` -> `fontId="0"` resolves to **Arial 10pt**.
+  - Part B `cellXfs[0]`: `numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"` -> `fontId="0"` resolves to **Calibri 11pt**.
+- **Inspection Evidence**:
+  - Part B Sheet1 contains 840 cells total; **0 cells lack an explicit `s="ID"` attribute**. Every cell explicitly references a style index `s="1..141"`.
+- **Preservation Contract**:
+  - Because `fontId="0"` differs between packages (Arial 10pt vs Calibri 11pt), merging Part B `cellXfs` without handling style 0 would cause unformatted cells (or column defaults) to revert to Part A's Arial 10pt font.
+  - The composer MUST ensure all Part B cells maintain explicit `s="mappedStyleB"` bindings, mapping Part B style 0 to a dedicated combined `cellXfs` entry if referenced.
+- **Verdict**: **`DEFAULT_STYLE0_PARITY = REMAP_REQUIRED`**
+
+---
+
+### 6.6 `docProps/app.xml` Classification (R2-F)
+
+- **Current Part A `docProps/app.xml`**:
+  - Worksheets count: `<vt:i4>1</vt:i4>`
+  - TitlesOfParts: `<vt:lpstr>MBO Staff &amp; Chief</vt:lpstr>`, `<vt:lpstr>'MBO Staff &amp; Chief'!Print_Area</vt:lpstr>`
+- **Combined Target State**:
+  - Combined workbook contains **2 business worksheets** (`MBO Staff & Chief` and `(Part B) Competency`) and **2 Print_Areas**.
+- **Update Requirement**:
+  - The future composer MUST update `docProps/app.xml`:
+    1. `<HeadingPairs>`: Set Worksheets count to `<vt:i4>2</vt:i4>`, Named Ranges count to `<vt:i4>2</vt:i4>`, vector size to `4`.
+    2. `<TitlesOfParts>`: Set vector size to `4` containing:
+       - `MBO Staff & Chief`
+       - `(Part B) Competency`
+       - `'MBO Staff & Chief'!Print_Area`
+       - `'(Part B) Competency'!Print_Area`
+- **Verdict**: **`APP_PROPERTIES = UPDATE_REQUIRED`**
 
 ---
 
 ## 7. Machine-Readable Summary
 
 ```text
-=== BEGIN R2-D-PRE1-R1 EVIDENCE SUMMARY ===
-AUTHORIZATION_TOKEN = D2-WP004-R2-D-PRE1-R1-EVIDENCE-ONLY-20260904-01
-PRE1_R1_RESULT = PASS
+=== BEGIN R2-D-PRE1-R2 EVIDENCE SUMMARY ===
+AUTHORIZATION_TOKEN = D2-WP004-R2-D-PRE1-R2-EVIDENCE-ONLY-20260904-01
+PRE1_R2_RESULT = PASS
 OWNER_COMBINED_TEMPLATE = NOT_FOUND
 PART_B_AUXILIARY = AUXILIARY_NOT_REQUIRED_FOR_COMBINED
 DIRECT_COPY = DIRECT_COPY_UNSAFE_REMAP_REQUIRED
+DYNAMIC_PRINT_AREA_PRESERVATION = EXACT
+PRINTER_SETTINGS_PART_GRAPH = EXACT
+RELATIONSHIP_NAMESPACE_MODEL = EXACT
+DEFAULT_STYLE0_PARITY = REMAP_REQUIRED
+APP_PROPERTIES = UPDATE_REQUIRED
 GLOBAL_REMAP_DEPENDENCIES = EXACT
 NEXT_STRATEGY = POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP
 SOURCE_CHANGE = 0
@@ -323,7 +400,7 @@ TEMPLATE_CHANGE = 0
 XLSX_BINARY_COMMITTED = 0
 KINTONE_WRITE = 0
 DEPLOY = 0
-=== END R2-D-PRE1-R1 EVIDENCE SUMMARY ===
+=== END R2-D-PRE1-R2 EVIDENCE SUMMARY ===
 ```
 
 ---
