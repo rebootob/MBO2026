@@ -47,6 +47,27 @@ function loadLocalPartB() {
   return new Uint8Array(buf);
 }
 
+function resolvePath(obj, pathStr) {
+  if (!obj || typeof obj !== 'object') return undefined;
+  const parts = pathStr.split(/\.|\/|\[|\]/).filter(Boolean);
+  let curr = obj;
+  for (const p of parts) {
+    if (curr == null) return undefined;
+    const isArrIdx = /^\d+$/.test(p);
+    if (isArrIdx) {
+      const idx = parseInt(p, 10);
+      if (!Array.isArray(curr) || idx >= curr.length) return undefined;
+      curr = curr[idx];
+    } else {
+      if (typeof curr !== 'object' || !Object.prototype.hasOwnProperty.call(curr, p)) {
+        return undefined;
+      }
+      curr = curr[p];
+    }
+  }
+  return curr;
+}
+
 function buildSyntheticPartAProjection(count, options = {}) {
   const objectives = [];
   for (let i = 1; i <= count; i++) {
@@ -394,18 +415,18 @@ test('RENDERER_TEST_B: Complete fail-closed boundary & perturbation matrix', asy
   }, 'Part B aux sheet2 binding corruption');
 });
 
-test('RENDERER_TEST_C: Full Profile-derived Part A N4..N10 matrix proof', async () => {
+test('RENDERER_TEST_C: Full Part A exact Profile/projection truth matrix proof (N4..N10)', async () => {
   const templateA = loadLocalPartA();
   const profile = new MboXlsxTemplateProfile();
 
   for (let n = 4; n <= 10; n++) {
     const preparedBytes = await preparePartATemplate(templateA, { objectiveCount: n, profile });
     const preparedCopy = new Uint8Array(preparedBytes);
-    const proj = buildSyntheticPartAProjection(n, { includeScores: true, includeSummary: true });
+    const projFull = buildSyntheticPartAProjection(n, { includeScores: true, includeSummary: true });
 
     const renderedBytes = await renderSecuredSemanticValues(preparedBytes, {
       partKey: 'A',
-      projection: proj,
+      projection: projFull,
       profile
     });
 
@@ -413,8 +434,8 @@ test('RENDERER_TEST_C: Full Profile-derived Part A N4..N10 matrix proof', async 
     assert.notEqual(renderedBytes, preparedBytes);
     assert.deepEqual(preparedBytes, preparedCopy, `Prepared input bytes must remain content-unchanged for N=${n}`);
 
-    const wb = await XlsxPopulate.fromDataAsync(renderedBytes);
-    const sheet = wb.sheet(0);
+    const wbFull = await XlsxPopulate.fromDataAsync(renderedBytes);
+    const sheetFull = wbFull.sheet(0);
 
     // Build exact Profile-derived role set
     const roleNames = [
@@ -438,8 +459,17 @@ test('RENDERER_TEST_C: Full Profile-derived Part A N4..N10 matrix proof', async 
       const roleInfo = profile.resolveSemanticRole(rName, { partKey: 'A', objectiveCount: n });
       assert.notEqual(roleInfo, null);
       writtenAddrs.add(roleInfo.address);
-      const val = sheet.cell(roleInfo.address).value();
-      assert.equal(val != null && val !== '', true, `Target ${roleInfo.address} for role ${rName} must be populated for N=${n}`);
+
+      // Independently resolve exact projectionPath in TEST code
+      const expectedVal = resolvePath(projFull, roleInfo.projectionPath);
+      assert.notEqual(expectedVal, undefined, `Expected value for role ${rName} path ${roleInfo.projectionPath} must not be undefined`);
+
+      const decodedVal = sheetFull.cell(roleInfo.address).value();
+      if (typeof expectedVal === 'number') {
+        assert.equal(decodedVal, expectedVal, `Numeric scalar mismatch for role ${rName} at ${roleInfo.address}`);
+      } else {
+        assert.equal(String(decodedVal), String(expectedVal), `String scalar mismatch for role ${rName} at ${roleInfo.address}`);
+      }
     }
 
     // Verify all other effective sanitization addresses outside written set remain blank
@@ -447,10 +477,31 @@ test('RENDERER_TEST_C: Full Profile-derived Part A N4..N10 matrix proof', async 
     const sanAddrs = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
     for (const addr of sanAddrs) {
       if (!writtenAddrs.has(addr)) {
-        const val = sheet.cell(addr).value();
+        const val = sheetFull.cell(addr).value();
         assert.equal(val == null || val === '', true, `Sanitized cell ${addr} must remain blank for N=${n}`);
       }
     }
+
+    // Run SECOND projection with optional averageScores and Part A summaries omitted
+    const projOmitted = buildSyntheticPartAProjection(n, { includeScores: false, includeSummary: false });
+    const renderedOmittedBytes = await renderSecuredSemanticValues(preparedBytes, {
+      partKey: 'A',
+      projection: projOmitted,
+      profile
+    });
+    const wbOmitted = await XlsxPopulate.fromDataAsync(renderedOmittedBytes);
+    const sheetOmitted = wbOmitted.sheet(0);
+
+    // Verify omitted optional averageScores and summary scores remain blank
+    for (let i = 1; i <= n; i++) {
+      const scoreRole = profile.resolveSemanticRole(`OBJECTIVE_${i}_AVERAGE_SCORE`, { partKey: 'A', objectiveCount: n });
+      const scoreVal = sheetOmitted.cell(scoreRole.address).value();
+      assert.equal(scoreVal == null || scoreVal === '', true, `Omitted average score at ${scoreRole.address} must remain blank`);
+    }
+    const rawSumRole = profile.resolveSemanticRole('SUMMARY_PART_A_RAW_SCORE', { partKey: 'A', objectiveCount: n });
+    const wtdSumRole = profile.resolveSemanticRole('SUMMARY_PART_A_WEIGHTED_SCORE', { partKey: 'A', objectiveCount: n });
+    assert.equal(sheetOmitted.cell(rawSumRole.address).value() == null || sheetOmitted.cell(rawSumRole.address).value() === '', true);
+    assert.equal(sheetOmitted.cell(wtdSumRole.address).value() == null || sheetOmitted.cell(wtdSumRole.address).value() === '', true);
 
     // Formula inventory zero
     const zipRend = await JSZip.loadAsync(renderedBytes);
@@ -471,18 +522,22 @@ test('RENDERER_TEST_C: Full Profile-derived Part A N4..N10 matrix proof', async 
   }
 });
 
-test('RENDERER_TEST_D: Full Profile-derived Part B N6/N7/N8 matrix proof', async () => {
+test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matrix proof (N6/N7/N8)', async () => {
   const templateB = loadLocalPartB();
   const profile = new MboXlsxTemplateProfile();
 
   for (const n of [6, 7, 8]) {
     const preparedBytes = await preparePartBTemplate(templateB, { competencyCount: n, profile });
     const preparedCopy = new Uint8Array(preparedBytes);
-    const proj = buildSyntheticPartBProjection(n, { includeSummary: true });
 
+    // Baseline XML from preparedBytes
+    const zipPrep = await JSZip.loadAsync(preparedBytes);
+    const xmlPrepBefore = await zipPrep.files['xl/worksheets/sheet1.xml'].async('string');
+
+    const projFull = buildSyntheticPartBProjection(n, { includeSummary: true });
     const renderedBytes = await renderSecuredSemanticValues(preparedBytes, {
       partKey: 'B',
-      projection: proj,
+      projection: projFull,
       profile
     });
 
@@ -490,8 +545,8 @@ test('RENDERER_TEST_D: Full Profile-derived Part B N6/N7/N8 matrix proof', async
     assert.notEqual(renderedBytes, preparedBytes);
     assert.deepEqual(preparedBytes, preparedCopy, `Prepared input bytes must remain content-unchanged for N=${n}`);
 
-    const wb = await XlsxPopulate.fromDataAsync(renderedBytes);
-    const sheet = wb.sheet(0);
+    const wbFull = await XlsxPopulate.fromDataAsync(renderedBytes);
+    const sheetFull = wbFull.sheet(0);
 
     const roleNames = [
       'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
@@ -512,8 +567,17 @@ test('RENDERER_TEST_D: Full Profile-derived Part B N6/N7/N8 matrix proof', async
       const roleInfo = profile.resolveSemanticRole(rName, { partKey: 'B', competencyCount: n });
       assert.notEqual(roleInfo, null);
       writtenAddrs.add(roleInfo.address);
-      const val = sheet.cell(roleInfo.address).value();
-      assert.equal(val != null && val !== '', true, `Target ${roleInfo.address} for role ${rName} must be populated for N=${n}`);
+
+      // Independently resolve exact projectionPath in TEST code
+      const expectedVal = resolvePath(projFull, roleInfo.projectionPath);
+      assert.notEqual(expectedVal, undefined, `Expected value for role ${rName} path ${roleInfo.projectionPath} must not be undefined`);
+
+      const decodedVal = sheetFull.cell(roleInfo.address).value();
+      if (typeof expectedVal === 'number') {
+        assert.equal(decodedVal, expectedVal, `Numeric scalar mismatch for role ${rName} at ${roleInfo.address}`);
+      } else {
+        assert.equal(String(decodedVal), String(expectedVal), `String scalar mismatch for role ${rName} at ${roleInfo.address}`);
+      }
     }
 
     // Verify FULL Chief R:X effective sanitization ranges remain blank
@@ -522,27 +586,48 @@ test('RENDERER_TEST_D: Full Profile-derived Part B N6/N7/N8 matrix proof', async
     for (const addr of sanAddrs) {
       if (addr.startsWith('R') || addr.startsWith('S') || addr.startsWith('T') || addr.startsWith('U') || addr.startsWith('V') || addr.startsWith('W') || addr.startsWith('X')) {
         if (!writtenAddrs.has(addr)) {
-          const val = sheet.cell(addr).value();
+          const val = sheetFull.cell(addr).value();
           assert.equal(val == null || val === '', true, `Chief authority cell ${addr} must remain blank for N=${n}`);
         }
       }
     }
 
-    // Rating Scale static ranges and protected padding rows unchanged
+    // b1..b6 static title/description exact prepared-before parity
+    const wbPrepBefore = await XlsxPopulate.fromDataAsync(preparedBytes);
+    const sheetPrepBefore = wbPrepBefore.sheet(0);
+    for (const staticAddr of ['B28', 'B31', 'B35']) {
+      if (!writtenAddrs.has(staticAddr)) {
+        assert.equal(String(sheetFull.cell(staticAddr).value()), String(sheetPrepBefore.cell(staticAddr).value()), `Static text at ${staticAddr} must have exact prepared-before parity`);
+      }
+    }
+
+    // Rating Scale static ranges exact prepared-before parity
     for (const staticRange of layout.ratingScaleStaticRanges) {
       const startCell = staticRange.split(':')[0];
-      assert.equal(sheet.cell(startCell).value(), 'Rating Scale', `Rating Scale header at ${startCell} must be preserved for N=${n}`);
+      assert.equal(sheetFull.cell(startCell).value(), 'Rating Scale', `Rating Scale header at ${startCell} must be preserved for N=${n}`);
+    }
+
+    // Complete protected padding row/cell/type/value/payload parity
+    const zipRend = await JSZip.loadAsync(renderedBytes);
+    const sheetXmlRend = await zipRend.files['xl/worksheets/sheet1.xml'].async('string');
+
+    for (const padRow of layout.protectedPaddingRows) {
+      const rowMatchBefore = xmlPrepBefore.match(new RegExp(`<row[^>]*r="${padRow}"[^>]*>[\\s\\S]*?<\\/row>|<row[^>]*r="${padRow}"[^>]*\\/>`));
+      const rowMatchAfter = sheetXmlRend.match(new RegExp(`<row[^>]*r="${padRow}"[^>]*>[\\s\\S]*?<\\/row>|<row[^>]*r="${padRow}"[^>]*\\/>`));
+      assert.notEqual(rowMatchBefore, null);
+      assert.notEqual(rowMatchAfter, null);
+      assert.equal(rowMatchAfter[0], rowMatchBefore[0], `Protected padding row ${padRow} must have exact byte/attribute/cell parity for N=${n}`);
     }
 
     // Merges unchanged (79 for N6, 86 for N7, 93 for N8)
-    const zipRend = await JSZip.loadAsync(renderedBytes);
-    const sheetXml = await zipRend.files['xl/worksheets/sheet1.xml'].async('string');
-    const actualMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
+    const actualMerges = [...sheetXmlRend.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
     const expectedMergeCount = n === 6 ? 79 : (n === 7 ? 86 : 93);
     assert.equal(actualMerges.length, expectedMergeCount, `Merge count must be ${expectedMergeCount} for N=${n}`);
 
-    // Auxiliary sheet2.xml exists and untouched
-    assert.notEqual(zipRend.files['xl/worksheets/sheet2.xml'], null);
+    // Auxiliary sheet2.xml byte/content parity
+    const sheet2Before = await zipPrep.files['xl/worksheets/sheet2.xml'].async('uint8array');
+    const sheet2After = await zipRend.files['xl/worksheets/sheet2.xml'].async('uint8array');
+    assert.deepEqual(sheet2After, sheet2Before, `Auxiliary sheet2.xml must be byte-equal for N=${n}`);
 
     // Formulas zero
     for (const fName in zipRend.files) {
@@ -554,19 +639,19 @@ test('RENDERER_TEST_D: Full Profile-derived Part B N6/N7/N8 matrix proof', async
   }
 });
 
-test('RENDERER_TEST_E: Independent authorized-diff exact-attribute proof with sentinels', async () => {
+test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribute proof with sentinels', async () => {
   const templateA = loadLocalPartA();
   const profile = new MboXlsxTemplateProfile();
 
-  // Prepare Part A template with injected sentinel non-type attributes outside prior parser comfort zone
+  // Prepare Part A template with injected collision sentinels into writable target N6
   const prepA = await preparePartATemplate(templateA, { objectiveCount: 4, profile });
   const zipPrepA = await JSZip.loadAsync(prepA);
   let xmlPrepA = await zipPrepA.files['xl/worksheets/sheet1.xml'].async('string');
 
-  // Inject sentinels into N6 opening tag
+  // Inject custom:r, custom:t, data-r, data-t sentinels into N6 opening tag while retaining unprefixed r="N6" and t="s"
   xmlPrepA = xmlPrepA.replace(
-    /<c r="N6"([^>]*)\/>/,
-    '<c r="N6" s="385" custom:sentinel="test-val" data-hyphenated="my-data" t="s"/>'
+    /(<c\b[^>]*?\br="N6"[^>]*?>)([\s\S]*?<\/c>)?/,
+    '<c r="N6" s="385" custom:r="KEEP_CUSTOM_R" custom:t="KEEP_CUSTOM_T" data-r="KEEP_DATA_R" data-t="KEEP_DATA_T" t="s"/>'
   );
   zipPrepA.file('xl/worksheets/sheet1.xml', xmlPrepA);
   const prepAWithSentinels = await zipPrepA.generateAsync({ type: 'uint8array' });
@@ -590,20 +675,22 @@ test('RENDERER_TEST_E: Independent authorized-diff exact-attribute proof with se
     }
   }
 
-  // 2. Cell address inventory before vs after 100% equal
+  // 2. Cell address inventory before vs after 100% equal (unprefixed r="ADDR" check)
   const xmlBeforeA = await zipBeforeA.files['xl/worksheets/sheet1.xml'].async('string');
   const xmlAfterA = await zipAfterA.files['xl/worksheets/sheet1.xml'].async('string');
-  const addrsBeforeA = [...xmlBeforeA.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
-  const addrsAfterA = [...xmlAfterA.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
+  const addrsBeforeA = [...xmlBeforeA.matchAll(/<c\b[^>]*?(?<=[\s<])r="([A-Z0-9]+)"(?=[\s/>])/g)].map(m => m[1]);
+  const addrsAfterA = [...xmlAfterA.matchAll(/<c\b[^>]*?(?<=[\s<])r="([A-Z0-9]+)"(?=[\s/>])/g)].map(m => m[1]);
   assert.deepEqual(addrsAfterA, addrsBeforeA, 'Cell address inventory must be 100% identical before vs after');
 
-  // 3. Prove sentinel non-type attributes survived 100% byte-for-byte in rendered output
-  const matchN6Rendered = xmlAfterA.match(/<c\b[^>]*?\br="N6"[^>]*?>/);
+  // 3. Prove ALL FOUR collision sentinels survived byte-for-byte in rendered output
+  const matchN6Rendered = xmlAfterA.match(/<c\b[^>]*?(?<=[\s<])r="N6"(?=[\s/>])[^>]*?>/);
   assert.notEqual(matchN6Rendered, null, 'Rendered N6 opening tag must exist');
-  assert.equal(matchN6Rendered[0].includes('custom:sentinel="test-val"'), true, 'Namespaced sentinel must survive');
-  assert.equal(matchN6Rendered[0].includes('data-hyphenated="my-data"'), true, 'Hyphenated sentinel must survive');
+  assert.equal(matchN6Rendered[0].includes('custom:r="KEEP_CUSTOM_R"'), true, 'custom:r sentinel must survive');
+  assert.equal(matchN6Rendered[0].includes('custom:t="KEEP_CUSTOM_T"'), true, 'custom:t sentinel must survive');
+  assert.equal(matchN6Rendered[0].includes('data-r="KEEP_DATA_R"'), true, 'data-r sentinel must survive');
+  assert.equal(matchN6Rendered[0].includes('data-t="KEEP_DATA_T"'), true, 'data-t sentinel must survive');
 
-  // 4. Independent normalization of target nodes
+  // 4. Independent test oracle normalization (normalizes ONLY exact unprefixed t="..." and body payload)
   const roleNamesA = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
     'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
@@ -616,16 +703,20 @@ test('RENDERER_TEST_E: Independent authorized-diff exact-attribute proof with se
   ];
   const targetAddrsA = roleNamesA.map(r => profile.resolveSemanticRole(r, { partKey: 'A', objectiveCount: 4 }).address);
 
-  // Independent test oracle normalization (strips t="..." and body from target nodes)
   const normalizeTargetNodesInXml = (xmlStr, targetAddrs) => {
     let norm = xmlStr;
     for (const addr of targetAddrs) {
       norm = norm.replace(
-        new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>\\/]*>[\\s\\S]*?<\\/c>|<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`, 'g'),
+        new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>\\/]*>)[\\s\\S]*?<\\/c>`, 'g'),
+        (match, openTag) => {
+          const cleanAttrs = openTag.replace(/\/?>$/, '').replace(/(?<=\s|^)t="[^"]*"/, '').trim();
+          return `${cleanAttrs}/>`;
+        }
+      );
+      norm = norm.replace(
+        new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>`, 'g'),
         (match) => {
-          const openTagMatch = match.match(/<c\b[^>]*?\/?>/);
-          const openTag = openTagMatch ? openTagMatch[0] : match;
-          const cleanAttrs = openTag.replace(/\/?>$/, '').replace(/\s*\bt="[^"]*"/, '');
+          const cleanAttrs = match.replace(/\/?>$/, '').replace(/(?<=\s|^)t="[^"]*"/, '').trim();
           return `${cleanAttrs}/>`;
         }
       );
@@ -764,7 +855,7 @@ test('RENDERER_TEST_F: Real privacy & N7 + N8 canonical presentation / alias res
   }
 });
 
-test('RENDERER_TEST_G: Exact string / XML preservation proof', async () => {
+test('RENDERER_TEST_G: XML 1.0 exact string validity & Unicode / emoji preservation proof', async () => {
   const templateA = loadLocalPartA();
 
   const projStringTest = {
@@ -773,14 +864,14 @@ test('RENDERER_TEST_G: Exact string / XML preservation proof', async () => {
       objectivesCount: 4,
       header: {
         fiscalYear: ' 2026 ',
-        employeeName: 'Jane Staff   ',
+        employeeName: 'Jane Staff 🚀   ',
         department: '   ',
         section: 'Software & Technology <QA>',
         position: 'Senior "Lead" Engineer\'s Role',
         employeeCode: ' EMP001 '
       },
       hoshin: {
-        departmentHoshinTitle: 'นวัตกรรมและเทคโนโลยี 2026',
+        departmentHoshinTitle: 'นวัตกรรมและเทคโนโลยี 2026 🌍',
         sectionHoshinTitle: 'Section Hoshin & Goals'
       },
       objectives: [
@@ -797,26 +888,26 @@ test('RENDERER_TEST_G: Exact string / XML preservation proof', async () => {
   const wbA = await XlsxPopulate.fromDataAsync(rendA);
   const sheetA = wbA.sheet(0);
 
-  // Assert exact string preservation including whitespace and XML entities
+  // Assert exact string preservation including whitespace, XML entities, Thai, and supplementary plane emoji
   assert.equal(sheetA.cell('N6').value(), ' 2026 ', 'Leading and trailing space must be preserved');
-  assert.equal(sheetA.cell('AT7').value(), 'Jane Staff   ', 'Trailing space must be preserved');
+  assert.equal(sheetA.cell('AT7').value(), 'Jane Staff 🚀   ', 'Emoji and trailing space must be preserved');
   assert.equal(sheetA.cell('Z7').value(), '   ', 'Whitespace-only NONEMPTY string must be preserved');
   assert.equal(sheetA.cell('AG7').value(), 'Software & Technology <QA>', 'XML entities & < > must be preserved');
   assert.equal(sheetA.cell('BD7').value(), 'Senior "Lead" Engineer\'s Role', 'Quotes and apostrophes must be preserved');
   assert.equal(sheetA.cell('AQ7').value(), ' EMP001 ', 'Leading space must be preserved');
-  assert.equal(sheetA.cell('G16').value(), 'นวัตกรรมและเทคโนโลยี 2026', 'Thai/Unicode string must be preserved');
+  assert.equal(sheetA.cell('G16').value(), 'นวัตกรรมและเทคโนโลยี 2026 🌍', 'Thai/Unicode string and emoji 🌍 must be preserved');
 
   // Check OOXML sheet1.xml contains xml:space="preserve" for preserved whitespace
   const zipA = await JSZip.loadAsync(rendA);
   const sheetXmlA = await zipA.files['xl/worksheets/sheet1.xml'].async('string');
   assert.equal(sheetXmlA.includes('xml:space="preserve"'), true, 'xml:space="preserve" must be present for whitespace strings');
 
-  // Test invalid XML control characters fail closed
+  // Test invalid XML control characters fail closed (C0 control)
   const invalidControlProj = {
     ...projStringTest,
     partA: {
       ...projStringTest.partA,
-      header: { ...projStringTest.partA.header, employeeName: 'Invalid\x00Control' }
+      header: { ...projStringTest.partA.header, employeeName: 'Invalid\x05Control' }
     }
   };
   await assert.rejects(
@@ -825,6 +916,53 @@ test('RENDERER_TEST_G: Exact string / XML preservation proof', async () => {
     },
     (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
   );
+
+  // Test lone high surrogate fails closed
+  const loneHighSurrogateProj = {
+    ...projStringTest,
+    partA: {
+      ...projStringTest.partA,
+      header: { ...projStringTest.partA.header, employeeName: 'LoneHigh\uD800Surrogate' }
+    }
+  };
+  await assert.rejects(
+    async () => {
+      await renderSecuredSemanticValues(prepA, { partKey: 'A', projection: loneHighSurrogateProj });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+  );
+
+  // Test lone low surrogate fails closed
+  const loneLowSurrogateProj = {
+    ...projStringTest,
+    partA: {
+      ...projStringTest.partA,
+      header: { ...projStringTest.partA.header, employeeName: 'LoneLow\uDC00Surrogate' }
+    }
+  };
+  await assert.rejects(
+    async () => {
+      await renderSecuredSemanticValues(prepA, { partKey: 'A', projection: loneLowSurrogateProj });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+  );
+
+  // Test non-characters U+FFFE and U+FFFF fail closed
+  for (const nonChar of ['\uFFFE', '\uFFFF']) {
+    const nonCharProj = {
+      ...projStringTest,
+      partA: {
+        ...projStringTest.partA,
+        header: { ...projStringTest.partA.header, employeeName: `NonChar${nonChar}Test` }
+      }
+    };
+    await assert.rejects(
+      async () => {
+        await renderSecuredSemanticValues(prepA, { partKey: 'A', projection: nonCharProj });
+      },
+      (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+    );
+  }
 
   // Test >32767 text length fails closed
   const overLengthProj = {

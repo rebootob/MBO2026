@@ -1,9 +1,10 @@
 /**
- * Production Secured Semantic Value Renderer — Part A + Part B (R2-C-R2)
+ * Production Secured Semantic Value Renderer — Part A + Part B (R2-C-R3)
  * 
  * Browser-safe asynchronous renderer:
  *   - Consumes prepared + sanitized XLSX bytes, secured projection object, and Template Profile.
  *   - Performs raw OOXML target-cell-only mutation on xl/worksheets/sheet1.xml.
+ *   - Matches and mutates exact unprefixed r="ADDR" and unprefixed t="..." attributes only.
  *   - Preserves exact raw opening tag attributes, attribute values, and attribute ordering.
  *   - Resolves all write targets through profile.resolveSemanticRole(roleName, { partKey, objectiveCount, competencyCount }).
  *   - Zero calculation, zero raw-record lookup, zero formula creation, zero hard-coded workbook addresses.
@@ -53,9 +54,19 @@ function resolvePath(obj, pathStr) {
   return curr;
 }
 
+function isValidXml10String(str) {
+  if (typeof str !== 'string') return false;
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(str)) return false;
+  if (/[\uFFFE\uFFFF]/.test(str)) return false;
+  if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/.test(str)) return false;
+  if (/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(str)) return false;
+  return true;
+}
+
 function mutateCellInSheetXml(sheetXml, addr, val) {
+  // Unprefixed address match: (?<=[\s<])r="${addr}"(?=[\s\/>])
   // 1. Try self-closing cell tag first: <c ... r="ADDR" ... />
-  const selfRegex = new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`);
+  const selfRegex = new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>`);
   const selfMatch = sheetXml.match(selfRegex);
 
   if (selfMatch) {
@@ -64,22 +75,23 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
 
     let newOpenAttrs = rawOpenAttrs;
     if (val === undefined || val === null || val === '') {
-      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
-      const newSelfTag = `<c${newOpenAttrs}/>`;
+      // Remove unprefixed t attribute if present
+      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
+      const newSelfTag = `<c ${newOpenAttrs.trim()}/>`;
       return sheetXml.replace(fullSelfTag, () => newSelfTag);
     } else if (typeof val === 'number') {
-      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
-      const newPairedTag = `<c${newOpenAttrs}><v>${val}</v></c>`;
+      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
+      const newPairedTag = `<c ${newOpenAttrs.trim()}><v>${val}</v></c>`;
       return sheetXml.replace(fullSelfTag, () => newPairedTag);
     } else if (typeof val === 'string') {
-      if (/\bt="[^"]*"/.test(newOpenAttrs)) {
-        newOpenAttrs = newOpenAttrs.replace(/\bt="[^"]*"/, 't="inlineStr"');
+      if (/(?<=\s|^)t="[^"]*"/.test(newOpenAttrs)) {
+        newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"/, 't="inlineStr"');
       } else {
-        newOpenAttrs = newOpenAttrs + ' t="inlineStr"';
+        newOpenAttrs = newOpenAttrs.trim() + ' t="inlineStr"';
       }
       const escaped = escapeXmlText(val);
       const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
-      const newPairedTag = `<c${newOpenAttrs}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      const newPairedTag = `<c ${newOpenAttrs.trim()}><is><t${spaceAttr}>${escaped}</t></is></c>`;
       return sheetXml.replace(fullSelfTag, () => newPairedTag);
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
@@ -87,7 +99,7 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
   }
 
   // 2. Try paired cell tag second: <c ... r="ADDR" ... >...</c>
-  const pairedRegex = new RegExp(`(<c\\b[^>]*?\\br="${addr}"[^>]*?>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`);
+  const pairedRegex = new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>\\/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`);
   const pairedMatch = sheetXml.match(pairedRegex);
 
   if (pairedMatch) {
@@ -101,22 +113,22 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
 
     let newOpenAttrs = rawOpenAttrs;
     if (val === undefined || val === null || val === '') {
-      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
-      const newSelfTag = `<c${newOpenAttrs}/>`;
+      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
+      const newSelfTag = `<c ${newOpenAttrs.trim()}/>`;
       return sheetXml.replace(oldMatchStr, () => newSelfTag);
     } else if (typeof val === 'number') {
-      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
-      const newPairedTag = `<c${newOpenAttrs}><v>${val}</v></c>`;
+      newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"\s*/, '').trimEnd();
+      const newPairedTag = `<c ${newOpenAttrs.trim()}><v>${val}</v></c>`;
       return sheetXml.replace(oldMatchStr, () => newPairedTag);
     } else if (typeof val === 'string') {
-      if (/\bt="[^"]*"/.test(newOpenAttrs)) {
-        newOpenAttrs = newOpenAttrs.replace(/\bt="[^"]*"/, 't="inlineStr"');
+      if (/(?<=\s|^)t="[^"]*"/.test(newOpenAttrs)) {
+        newOpenAttrs = newOpenAttrs.replace(/(?<=\s|^)t="[^"]*"/, 't="inlineStr"');
       } else {
-        newOpenAttrs = newOpenAttrs + ' t="inlineStr"';
+        newOpenAttrs = newOpenAttrs.trim() + ' t="inlineStr"';
       }
       const escaped = escapeXmlText(val);
       const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
-      const newPairedTag = `<c${newOpenAttrs}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      const newPairedTag = `<c ${newOpenAttrs.trim()}><is><t${spaceAttr}>${escaped}</t></is></c>`;
       return sheetXml.replace(oldMatchStr, () => newPairedTag);
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
@@ -259,7 +271,7 @@ export async function renderSecuredSemanticValues(
   const sanSet = new Set(sanAddresses);
 
   for (const addr of sanAddresses) {
-    const pairedMatch = sheetXml.match(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>`));
+    const pairedMatch = sheetXml.match(new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>\\/]*>([\\s\\S]*?)<\\/c>`));
     if (pairedMatch) {
       const body = pairedMatch[1];
       if (/<(?:v|is|f|t)[\s>]/.test(body)) {
@@ -386,10 +398,10 @@ export async function renderSecuredSemanticValues(
     concreteTargets.push({ roleName: rName, address: roleInfo.address, projectionPath: roleInfo.projectionPath });
   }
 
-  // Check that EVERY target cell node exists EXACTLY ONCE in sheetXml
+  // Check that EVERY target cell node exists EXACTLY ONCE in sheetXml using exact unprefixed r="ADDR"
   for (const target of concreteTargets) {
     const addr = target.address;
-    const matches = [...sheetXml.matchAll(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>|<c\\b[^>]*?\\br="${addr}"[^>]*?>[\\s\\S]*?<\\/c>`, 'g'))];
+    const matches = [...sheetXml.matchAll(new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>|<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>\\/]*>[\\s\\S]*?<\\/c>`, 'g'))];
     if (matches.length === 0) {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell node ${addr} missing in sheet XML`);
     }
@@ -398,7 +410,7 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // R1-B / R2-A: Extract Secured Scalar Values & Mutate sheetXml
+  // R1-B / R2-A / R3-F: Extract Secured Scalar Values & Mutate sheetXml
   const writtenValueMap = new Map();
 
   for (const target of concreteTargets) {
@@ -422,8 +434,8 @@ export async function renderSecuredSemanticValues(
           throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Non-finite number for role ${target.roleName}`);
         }
       } else if (typeof val === 'string') {
-        if (/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(val)) {
-          throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Invalid XML control char in string for role ${target.roleName}`);
+        if (!isValidXml10String(val)) {
+          throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Invalid XML 1.0 string for role ${target.roleName}`);
         }
         if (val.length > 32767) {
           throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: String exceeds Excel limit for role ${target.roleName}`);
@@ -441,7 +453,7 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // R2-B: Production Post-Write Preservation Validation
+  // R2-B / R3-B: Production Post-Write Preservation Validation
   zip.file('xl/worksheets/sheet1.xml', sheetXml);
 
   // Generate NEW Uint8Array from mutated zip directly (preserving all raw XML attributes)
@@ -474,9 +486,9 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 2. Cell address inventory unchanged before vs after
-  const srcCellAddrs = [...srcSheet1Xml.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
-  const renderedCellAddrs = [...sheetXml.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
+  // 2. Cell address inventory unchanged before vs after (unprefixed r="ADDR" check)
+  const srcCellAddrs = [...srcSheet1Xml.matchAll(/<c\b[^>]*?(?<=[\s<])r="([A-Z0-9]+)"(?=[\s/>])/g)].map(m => m[1]);
+  const renderedCellAddrs = [...sheetXml.matchAll(/<c\b[^>]*?(?<=[\s<])r="([A-Z0-9]+)"(?=[\s/>])/g)].map(m => m[1]);
   if (renderedCellAddrs.length !== srcCellAddrs.length) {
     throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Cell address inventory count mismatch: expected ${srcCellAddrs.length}, got ${renderedCellAddrs.length}`);
   }
@@ -486,14 +498,14 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 3. Target non-type opening tag authority unchanged
+  // 3. Target non-type opening tag authority unchanged (unprefixed t="..." check)
   for (const target of concreteTargets) {
     const addr = target.address;
-    const srcMatch = srcSheet1Xml.match(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?>|<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`));
-    const renderedMatch = sheetXml.match(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?>|<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`));
+    const srcMatch = srcSheet1Xml.match(new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?>|<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>`));
+    const renderedMatch = sheetXml.match(new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?>|<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s\\/>])[^>]*?\\/>`));
     if (srcMatch && renderedMatch) {
-      const srcAttrsClean = srcMatch[0].replace(/\/?>$/, '').replace(/\s*\bt="[^"]*"/, '');
-      const renderedAttrsClean = renderedMatch[0].replace(/\/?>$/, '').replace(/\s*\bt="[^"]*"/, '');
+      const srcAttrsClean = srcMatch[0].replace(/\/?>$/, '').replace(/(?<=\s|^)t="[^"]*"/, '').trim();
+      const renderedAttrsClean = renderedMatch[0].replace(/\/?>$/, '').replace(/(?<=\s|^)t="[^"]*"/, '').trim();
       if (srcAttrsClean !== renderedAttrsClean) {
         throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Non-type target opening tag modified for ${addr}`);
       }
