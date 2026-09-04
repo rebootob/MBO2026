@@ -1,6 +1,6 @@
 # 00 MASTER JOBLIST — MBO2026
 
-Updated: 2026-09-02 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/design/evidence -> exact diff.
+Updated: 2026-09-04 ICT. Fast route: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/design/evidence -> exact diff.
 
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
@@ -13,23 +13,36 @@ D6 = PENDING
 D7 = SOURCE FUNCTIONALITY CLOSED
 ```
 
-D2 closed: Preservation, Reference Image, Part A Structural, Part B Structural, Formula Authority, Part B Expanded Privacy, XLSX Template Semantic Mapping, XLSX Template Profile.
+D2 closed/frozen authority:
+- Preservation
+- Reference Image
+- Part A Structural
+- Part B Structural
+- Formula Authority
+- Part B Expanded Privacy
+- XLSX Template Semantic Mapping
+- XLSX Template Profile
+- R2-A Profile Foundation
+- R2-B1 Part A Preparer
+- R2-B2 Part B Preparer
+- R2-C Secured Semantic Renderer
 
-Production XLSX Renderer/Sanitizer status:
+R2-C final closure:
 ```text
-D2-WP004-R2 = READ-ONLY DESIGN COMPLETE / IMPLEMENTATION NOT AUTHORIZED
-DESIGN = phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md
-PRE_RENDER_BLOCKER = PART B N7/N8 COMPETENCY PRESENTATION AUTHORITY UNPROVEN
+IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
+STATIC_REVIEW = PASS
+FOCUSED_RUNTIME = 7/7 PASS / FAIL 0 / SKIP 0
+FROZEN_REGRESSION = 30/30 PASS / FAIL 0 / SKIP 0
+NODE_CHECK = PASS
+GIT_DIFF_CHECK = PASS
+VERDICT = PASS / CLOSED / FROZEN
 ```
 
-Next proposed smallest gate:
+Current next D2 gate:
 ```text
-D2-WP004-R2-PRE1 = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
-MODE = EVIDENCE-ONLY / READ-ONLY INSPECTION / LOW-CREDIT / NOT AUTHORIZED
-EXPECTED_FILE = phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
+COMBINED_EXCEL_PARITY = NEXT LATER D2 GATE / NOT AUTHORIZED
+CONTROL-PLANE PLANNING REQUIRED BEFORE ANY EXECUTOR WORK
 ```
-
-PRE1 is required because the N6 Part B owner template is structurally cloned for N7/N8, while current semantic authority proves only competency self-rating writes. Additional visible competency 7/8 presentation must not be duplicated or guessed.
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
@@ -37,6 +50,7 @@ ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
-PRODUCTION_RENDERER = NOT AUTHORIZED
 D3 = HOLD
 ```
+
+Do not reopen closed R2-A/R2-B1/R2-B2/R2-C without proven regression. Do not auto-start Combined Excel parity. Control Plane must define the smallest exact contract from current repository truth, then obtain explicit owner authorization before any bounded Antigravity work.
