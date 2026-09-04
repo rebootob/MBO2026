@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-C-R7 STATIC PASS / RUNTIME EVIDENCE REQUIRED
+# AI ACTIVE TASK — R2-C PASS / CLOSED / NEXT D2 GATE NOT AUTHORIZED
 
 Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-04 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file. Do not reopen closed R2-B1/R2-B2 or accepted R5/R6/R7 behavior without a proven regression.
+Read `D2_REVIEW_FAST_START.md` first, then this file. Do not reopen closed R2-B1/R2-B2/R2-C without a proven regression.
 
 ## 1. Current truth
 
@@ -18,8 +18,8 @@ D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
 D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
 D2_WP004_R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
+D2_WP004_R2_C = PASS / CLOSED AFTER R7 + ACCEPTED RUNTIME PROOF
 
-R2-C = STATIC PASS / NOT CLOSED / RUNTIME EVIDENCE REQUIRED
 R2_C_R5_IMPLEMENTATION = 383104b69b096ca9f8b12d5e2410feeaf8864b45
 R2_C_R5_MUTATION = PASS / FROZEN
 R2_C_R5_PART_B_PROOF = PASS / FROZEN
@@ -28,8 +28,8 @@ R2_C_R6_COMPARATOR_LOGIC = PASS / FROZEN
 R2_C_R6_TEST_ORACLE = PASS / FROZEN
 R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
 R2_C_R7_STATIC_REVIEW = PASS
-R2_C_R7_RUNTIME_REPOSITORY_SIGNAL = UNAVAILABLE / NO STATUS / NO WORKFLOW RUN
-R2_C_RUNTIME_EVIDENCE = REQUIRED
+R2_C_RUNTIME_EVIDENCE = PASS / OWNER WORKSTATION
+R2_C_RENDERER_SOURCE_TEST = PASS / CLOSED / FROZEN
 
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -41,75 +41,73 @@ ACTIVE_DEPLOY_AUTH = NONE
 
 ANTIGRAVITY = STOP
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
+COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE
 D3 = HOLD
 ```
 
-## 2. R2-C-R7 independent review identity
+## 2. R2-C closure identity
 
 ```text
 R2_C_R7_AUTHORIZATION_HEAD = 1b27a265778e76a7cdbd01c60e9c3bd523c82488
-R2_C_R7_AUTHORIZATION_TOKEN = D2-WP004-R2-C-R7-SOURCE-TEST-CORRECTIVE-20260904-01
 R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
 AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-IMPLEMENTATION_MESSAGE = fix(d2): restore private comparator surface (R2-C-R7)
 CHANGED_FILES =
   src/services/mbo-xlsx-semantic-renderer.js
   tests/mbo-xlsx-semantic-renderer.test.js
 OUT_OF_SCOPE_CHANGE = NONE
 ```
 
-The R7 token is consumed. No further change is authorized by it.
+Accepted static closure:
+- preservation comparator is private/non-exported;
+- R6 source-aware no-trim byte comparator remains accepted;
+- independent scanner/splice oracle + one-byte unauthorized-whitespace negative control remain accepted;
+- R5 exact `t` mutation, Part A/Part B matrices, privacy, canonical, XML, package, formula and caller-immutability proof remain accepted.
 
-## 3. Accepted R7 closure
+## 3. Accepted runtime evidence
 
-Independent static review accepts:
-- `normalizeTargetNodesForPreservation` is private/non-exported again;
-- test no longer imports or directly calls the production comparator helper;
-- only the forbidden direct production-helper negative-control assertion was removed;
-- independent scanner/splice one-byte negative-control remains;
-- R6 comparator algorithm is unchanged;
-- R5/R6 Part A, Part B, privacy, canonical, XML, formula, package and caller-immutability proof was not redesigned or weakened by the R7 diff;
-- scope is exactly one implementation commit and exactly the two authorized files.
+Owner-workstation runtime evidence on 2026-09-04 ICT:
 
-No static source/test blocker remains from R2-C-R7 review.
-
-## 4. Runtime evidence required before R2-C closure
-
-GitHub provides no CI/status/workflow signal for `fec70c6c0745e7bb9450be8d388928463c6552cb`.
-
-Run on the repository/workstation that has the owner XLSX templates:
-
-Focused:
-
-`node --test tests/mbo-xlsx-semantic-renderer.test.js`
-
-Required: `FAIL = 0`, `SKIP = 0`.
-
-Frozen regression:
-
-`node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js`
-
-Required: `FAIL = 0`.
-
-Also:
+Focused renderer suite:
 
 ```text
-node --check src/services/mbo-xlsx-semantic-renderer.js
-git diff --check
+node --test tests/mbo-xlsx-semantic-renderer.test.js
+TESTS = 7
+PASS = 7
+FAIL = 0
+SKIP = 0
 ```
 
-All must PASS.
+Frozen regression bundle:
 
-Acceptable owner runtime evidence is terminal text/screenshot/log showing the commands and final PASS/FAIL/SKIP counts. No new source/test commit is authorized or required for this evidence gate.
+```text
+node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js
+TESTS = 30
+PASS = 30
+FAIL = 0
+SKIP = 0
+```
 
-## 5. Closure rule
+Additional checks:
 
-If focused runtime + frozen regression + syntax/diff checks PASS and no new repository regression exists:
-- close `D2-WP004-R2-C = PASS / CLOSED`;
-- freeze secured semantic renderer source/test;
-- do NOT auto-start Combined Excel or D3.
+```text
+node --check src/services/mbo-xlsx-semantic-renderer.js = PASS / NO OUTPUT / EXIT TO PROMPT
+git diff --check = PASS / NO OUTPUT / EXIT TO PROMPT
+```
 
-If runtime fails: keep R2-C NOT CLOSED and diagnose exact failing test before any new authorization.
+No newer repository regression existed before closure.
 
-Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
+## 4. Closure decision
+
+`D2-WP004-R2-C = PASS / CLOSED`.
+
+The secured semantic renderer source/test and all accepted supporting authority are now frozen. Reopen only on a proven regression.
+
+No executor is active. No further R2-C source/test change is authorized.
+
+## 5. Next D2 gate
+
+`COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE`.
+
+Do not auto-start it. Control Plane must first fresh-read the exact current D2/Excel-export authority and produce the smallest bounded proposal. Antigravity remains STOP until owner approval.
+
+Kintone writes, deploy, Live UAT and D3 remain forbidden. `D3 = HOLD` until all D2 gates are PASS/CLOSED.
