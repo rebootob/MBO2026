@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-C-R7 AUTHORIZED / ACTIVE
+# AI ACTIVE TASK — R2-C-R7 STATIC PASS / RUNTIME EVIDENCE REQUIRED
 
-Mode: **CONTROL PLANE / BOUNDED EXECUTION AUTHORIZED / ULTRA-LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-04 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file. This file is authoritative for the active R7 gate if fast-start still shows the immediately preceding proposal state. Read only exact R2-C renderer/test evidence required by the current gate. Do not reopen closed R2-B1/R2-B2 or accepted R5/R6 behavior without a proven regression.
+Read `D2_REVIEW_FAST_START.md` first, then this file. Do not reopen closed R2-B1/R2-B2 or accepted R5/R6/R7 behavior without a proven regression.
 
 ## 1. Current truth
 
@@ -19,185 +19,80 @@ D2_WP004_R2_A = PASS / CLOSED AFTER R1
 D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
 D2_WP004_R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
 
-R2-C = REVIEWED / NOT CLOSED
+R2-C = STATIC PASS / NOT CLOSED / RUNTIME EVIDENCE REQUIRED
 R2_C_R5_IMPLEMENTATION = 383104b69b096ca9f8b12d5e2410feeaf8864b45
 R2_C_R5_MUTATION = PASS / FROZEN
 R2_C_R5_PART_B_PROOF = PASS / FROZEN
 R2_C_R6_IMPLEMENTATION = c9269e3fe20ff585ca0b89e33e74a1faeb2f43af
-R2_C_R6_COMPARATOR_LOGIC = PASS / FROZEN / SOURCE-AWARE NO-TRIM BYTE COMPARISON ACCEPTED
-R2_C_R6_TEST_ORACLE = PASS / FROZEN / INDEPENDENT SCANNER-SPLICE + ONE-BYTE NEGATIVE CONTROL ACCEPTED
-R2_C_R6_GOVERNANCE_SURFACE = NOT PASS / TEST-ONLY PUBLIC EXPORT ADDED
-R2_C_R6_RUNTIME_REPOSITORY_SIGNAL = UNAVAILABLE / NO STATUS / NO WORKFLOW RUN
+R2_C_R6_COMPARATOR_LOGIC = PASS / FROZEN
+R2_C_R6_TEST_ORACLE = PASS / FROZEN
+R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
+R2_C_R7_STATIC_REVIEW = PASS
+R2_C_R7_RUNTIME_REPOSITORY_SIGNAL = UNAVAILABLE / NO STATUS / NO WORKFLOW RUN
+R2_C_RUNTIME_EVIDENCE = REQUIRED
 
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-C-R7
-ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-C-R7-SOURCE-TEST-CORRECTIVE-20260904-01
-ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-C-R7-SOURCE-TEST-CORRECTIVE-20260904-01
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
+ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
-ACTIVE_D2_RENDERER_CHANGE_AUTH = D2-WP004-R2-C-R7-SOURCE-TEST-CORRECTIVE-20260904-01
+ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = BOUNDED / ONE-SHOT / MAX 1 COMMIT
+ANTIGRAVITY = STOP
 CLAUDE = STOP
-R2_B1_PRODUCTION_SOURCE = PASS / FROZEN
-R2_B2_PRODUCTION_SOURCE = PASS / FROZEN
-R2_B2_TEST_PROOF = PASS / FROZEN
-R2_B2_RUNTIME_PROOF = PASS
-R2-C-R7 = AUTHORIZED / ACTIVE
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
-## 2. R2-C-R7 authorization identity
+## 2. R2-C-R7 independent review identity
 
 ```text
-WORK_PACKAGE = D2-WP004-R2-C-R7
-NAME = SECURED SEMANTIC RENDERER PRIVATE-COMPARATOR SURFACE CLOSURE
-STATE = AUTHORIZED / ACTIVE
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / ULTRA-LOW-CREDIT
-MAX_EXECUTOR_COMMITS = 1
-AUTHORIZATION_BASIS_HEAD = 2df0a066df6d19a2fce7bc7f848c35a1f89cb6eb
-AUTHORIZATION_TOKEN = D2-WP004-R2-C-R7-SOURCE-TEST-CORRECTIVE-20260904-01
-```
-
-Owner authorization:
-
-`อนุมัติ D2-WP004-R2-C-R7 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
-
-The token is single-use and is consumed when executor pushes the one authorized implementation commit or stops after beginning execution due to a contract blocker.
-
-## 3. R2-C-R6 review identity and accepted behavior
-
-```text
-R2_C_R6_AUTHORIZATION_HEAD = e59989f5b6ce5a378b37d1c9c6c20cd3313f0e24
-R2_C_R6_AUTHORIZATION_TOKEN = D2-WP004-R2-C-R6-SOURCE-TEST-CORRECTIVE-20260904-01
-R2_C_R6_IMPLEMENTATION = c9269e3fe20ff585ca0b89e33e74a1faeb2f43af
+R2_C_R7_AUTHORIZATION_HEAD = 1b27a265778e76a7cdbd01c60e9c3bd523c82488
+R2_C_R7_AUTHORIZATION_TOKEN = D2-WP004-R2-C-R7-SOURCE-TEST-CORRECTIVE-20260904-01
+R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
 AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-IMPLEMENTATION_MESSAGE = fix(d2): close source-aware byte comparator (R2-C-R6)
+IMPLEMENTATION_MESSAGE = fix(d2): restore private comparator surface (R2-C-R7)
 CHANGED_FILES =
   src/services/mbo-xlsx-semantic-renderer.js
   tests/mbo-xlsx-semantic-renderer.test.js
 OUT_OF_SCOPE_CHANGE = NONE
 ```
 
-The R6 token is consumed. No further change is authorized by it.
+The R7 token is consumed. No further change is authorized by it.
 
-Independent review accepts and freezes unless a proven regression exists:
-- production preservation comparator no longer uses `.trim()` / `.trimStart()` / `.trimEnd()`;
-- production comparator no longer deletes `t` with trailing `\s*` and preserves bytes around exact unprefixed `t` token spans;
-- source/rendered preservation targets are required exactly once and fail closed otherwise;
-- source-with-`t` and source-without-`t` cases use target-local authorized masking only;
-- complete `sheet1.xml` comparison remains the production preservation gate;
-- independent test oracle uses a separate character-index/scanner-splice approach and no trim/canonicalizing attribute reconstruction;
-- post-`t` whitespace sentinel remains;
-- one-byte unauthorized whitespace negative control is present and detects mismatch;
-- all accepted R5 Part A/Part B/privacy/canonical/XML/formula/package/caller-immutability proof remains retained.
+## 3. Accepted R7 closure
 
-## 4. Exact blocker being corrected
+Independent static review accepts:
+- `normalizeTargetNodesForPreservation` is private/non-exported again;
+- test no longer imports or directly calls the production comparator helper;
+- only the forbidden direct production-helper negative-control assertion was removed;
+- independent scanner/splice one-byte negative-control remains;
+- R6 comparator algorithm is unchanged;
+- R5/R6 Part A, Part B, privacy, canonical, XML, formula, package and caller-immutability proof was not redesigned or weakened by the R7 diff;
+- scope is exactly one implementation commit and exactly the two authorized files.
 
-R6 changed:
+No static source/test blocker remains from R2-C-R7 review.
 
-```js
-function normalizeTargetNodesForPreservation(...)
-```
+## 4. Runtime evidence required before R2-C closure
 
-to:
+GitHub provides no CI/status/workflow signal for `fec70c6c0745e7bb9450be8d388928463c6552cb`.
 
-```js
-export function normalizeTargetNodesForPreservation(...)
-```
-
-and the test imports that production helper solely to exercise the production comparator negative-control directly.
-
-This violates the explicit governance rule:
-
-`Do not add a public debug API solely for testing.`
-
-The comparator logic itself is PASS/FROZEN. The blocker is only the newly exposed module surface.
-
-The production-comparator negative-control requirement applies only to the extent reachable through an existing bounded test seam without exposing new production API. Therefore the test-only export must be removed and no replacement test seam may be introduced.
-
-## 5. Writable scope
-
-Writable ONLY:
-
-```text
-src/services/mbo-xlsx-semantic-renderer.js
-tests/mbo-xlsx-semantic-renderer.test.js
-```
-
-Frozen / forbidden:
-
-```text
-src/profiles/mbo-xlsx-template-profile.js = FROZEN
-src/services/mbo-xlsx-template-preparer.js = FROZEN
-src/services/mbo-export-service.js = FROZEN
-existing Profile/Preparer/Feasibility/export tests = FROZEN
-project-docs/* = FORBIDDEN TO EXECUTOR
-package.json / package-lock.json = FORBIDDEN
-UI / dist / integration = FORBIDDEN
-Combined Excel parity = NOT AUTHORIZED
-Kintone write/deploy/Live UAT = FORBIDDEN
-D3 = HOLD
-```
-
-## 6. R2-C-R7 exact corrective contract
-
-### R7-A — restore private production surface
-
-In `src/services/mbo-xlsx-semantic-renderer.js`:
-- remove the `export` from `normalizeTargetNodesForPreservation`;
-- keep the accepted R6 comparator implementation byte-for-byte otherwise unless a proven regression requires the smallest necessary correction;
-- do not add any alternate debug/test-only named export, global hook, class method or public seam.
-
-### R7-B — remove test dependency on private production helper
-
-In `tests/mbo-xlsx-semantic-renderer.test.js`:
-- remove `normalizeTargetNodesForPreservation` from the production-module import;
-- remove only the direct production-helper negative-control assertion that depends on that test-only export;
-- retain the independent oracle one-byte negative-control;
-- retain the real renderer path, which already executes the production comparator on every successful render;
-- do not weaken any accepted R5/R6 matrix, privacy, canonical, XML, preservation or fail-closed proof.
-
-The production-comparator negative-control clause is considered satisfied to the extent reachable without introducing a new public test API; no new production seam is authorized.
-
-### R7-C — no scope expansion
-
-R7 is not a redesign. Do not change:
-- exact `t` mutation semantics;
-- R6 comparator algorithm;
-- independent scanner/splice oracle algorithm except removal of the forbidden production-helper dependency;
-- Part A/Part B role matrices;
-- privacy/canonical/XML/package behavior.
-
-If any broader source change appears necessary: STOP and report.
-
-## 7. Runtime / regression gate
+Run on the repository/workstation that has the owner XLSX templates:
 
 Focused:
 
 `node --test tests/mbo-xlsx-semantic-renderer.test.js`
 
-Required:
+Required: `FAIL = 0`, `SKIP = 0`.
 
-```text
-FAIL = 0
-SKIP = 0
-production comparator remains private = PASS
-R6 source-aware no-trim comparator behavior = PASS / retained
-independent no-trim oracle = PASS / retained
-one-byte negative-control = PASS / retained
-all R5/R6 matrices/security proof = PASS / retained
-formula inventory = 0
-```
-
-Frozen regression bundle:
+Frozen regression:
 
 `node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js`
 
 Required: `FAIL = 0`.
 
-Also run:
+Also:
 
 ```text
 node --check src/services/mbo-xlsx-semantic-renderer.js
@@ -206,37 +101,15 @@ git diff --check
 
 All must PASS.
 
-## 8. Executor protocol
+Acceptable owner runtime evidence is terminal text/screenshot/log showing the commands and final PASS/FAIL/SKIP counts. No new source/test commit is authorized or required for this evidence gate.
 
-Before modification:
-- fresh-fetch canonical branch;
-- HEAD MUST equal the R7 authorization commit generated by this control update;
-- verify exact R7 token;
-- read this exact contract;
-- no broad exploration / no Git delivery rediscovery.
+## 5. Closure rule
 
-Before commit run `git diff --name-only`. It MUST show ONLY:
+If focused runtime + frozen regression + syntax/diff checks PASS and no new repository regression exists:
+- close `D2-WP004-R2-C = PASS / CLOSED`;
+- freeze secured semantic renderer source/test;
+- do NOT auto-start Combined Excel or D3.
 
-```text
-src/services/mbo-xlsx-semantic-renderer.js
-tests/mbo-xlsx-semantic-renderer.test.js
-```
+If runtime fails: keep R2-C NOT CLOSED and diagnose exact failing test before any new authorization.
 
-If any broader/frozen-file change is required: STOP. Do not weaken tests. Do not broaden scope.
-
-If all checks PASS:
-1. create EXACTLY ONE SOURCE+TEST corrective commit;
-2. suggested message: `fix(d2): restore private comparator surface (R2-C-R7)`;
-3. push `ai/antigravity-wp002c`;
-4. report pushed SHA, exact changed files, focused PASS/FAIL/SKIP, private comparator proof, retained comparator/oracle/negative-control proof, retained R5/R6 matrices/privacy/XML/regression, `node --check`, and `git diff --check`;
-5. STOP.
-
-Do NOT modify `project-docs/*`.
-Do NOT self-declare R2-C PASS/CLOSED.
-Do NOT start Combined Excel.
-Do NOT perform Kintone writes/deploy/Live UAT.
-Do NOT start D3.
-
-Final executor state after successful push:
-
-`R2-C-R7 SOURCE+TEST CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`
+Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
