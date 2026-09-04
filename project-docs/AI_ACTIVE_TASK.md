@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-C PASS / CLOSED / NEXT D2 GATE NOT AUTHORIZED
+# AI ACTIVE TASK — R2-C PASS / CLOSED / R2-D-PRE1 COMBINED XLSX EVIDENCE PROPOSAL READY
 
 Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-04 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file. Do not reopen closed R2-B1/R2-B2/R2-C without a proven regression.
+Read `D2_REVIEW_FAST_START.md` first, then this file. Do not reopen R2-B1/R2-B2/R2-C without a proven regression.
 
 ## 1. Current truth
 
@@ -15,21 +15,11 @@ D2_PART_A_STRUCTURAL = PASS / CLOSED / FROZEN
 D2_PART_B_STRUCTURAL = PASS / CLOSED / FROZEN
 D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
 D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
-D2_WP004_R2_A = PASS / CLOSED AFTER R1
-D2_WP004_R2_B1 = PASS / CLOSED AFTER R10
-D2_WP004_R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
-D2_WP004_R2_C = PASS / CLOSED AFTER R7 + ACCEPTED RUNTIME PROOF
-
-R2_C_R5_IMPLEMENTATION = 383104b69b096ca9f8b12d5e2410feeaf8864b45
-R2_C_R5_MUTATION = PASS / FROZEN
-R2_C_R5_PART_B_PROOF = PASS / FROZEN
-R2_C_R6_IMPLEMENTATION = c9269e3fe20ff585ca0b89e33e74a1faeb2f43af
-R2_C_R6_COMPARATOR_LOGIC = PASS / FROZEN
-R2_C_R6_TEST_ORACLE = PASS / FROZEN
-R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
-R2_C_R7_STATIC_REVIEW = PASS
+D2_WP004_R2_A = PASS / CLOSED
+D2_WP004_R2_B1 = PASS / CLOSED / FROZEN
+D2_WP004_R2_B2 = PASS / CLOSED / FROZEN
+D2_WP004_R2_C = PASS / CLOSED / FROZEN
 R2_C_RUNTIME_EVIDENCE = PASS / OWNER WORKSTATION
-R2_C_RENDERER_SOURCE_TEST = PASS / CLOSED / FROZEN
 
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
@@ -39,75 +29,170 @@ ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP
+ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE
+COMBINED_EXCEL_PARITY = PLANNING / PRE1 EVIDENCE PROPOSED / NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. R2-C closure identity
+## 2. Combined Excel deliverable authority
+
+Repository export skill requires:
 
 ```text
-R2_C_R7_AUTHORIZATION_HEAD = 1b27a265778e76a7cdbd01c60e9c3bd523c82488
-R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-CHANGED_FILES =
-  src/services/mbo-xlsx-semantic-renderer.js
-  tests/mbo-xlsx-semantic-renderer.test.js
-OUT_OF_SCOPE_CHANGE = NONE
+COMBINED_WORKBOOK = ONE .xlsx
+SHEET_1 = PART A
+SHEET_2 = PART B
 ```
 
-Accepted static closure:
-- preservation comparator is private/non-exported;
-- R6 source-aware no-trim byte comparator remains accepted;
-- independent scanner/splice oracle + one-byte unauthorized-whitespace negative control remain accepted;
-- R5 exact `t` mutation, Part A/Part B matrices, privacy, canonical, XML, package, formula and caller-immutability proof remain accepted.
+Current closed production engine renders Part A and Part B from separate owner templates. No production combined-XLSX composition/orchestration module exists in the current source tree.
 
-## 3. Accepted runtime evidence
-
-Owner-workstation runtime evidence on 2026-09-04 ICT:
-
-Focused renderer suite:
+Frozen source identities:
 
 ```text
-node --test tests/mbo-xlsx-semantic-renderer.test.js
-TESTS = 7
-PASS = 7
-FAIL = 0
-SKIP = 0
+PART_A_TEMPLATE_SHA256 = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
+PART_B_TEMPLATE_SHA256 = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+PART_A_MAIN_SHEET = MBO Staff & Chief
+PART_B_MAIN_SHEET = (Part B) Competency
+PART_B_AUXILIARY_SHEET = Sheet1
 ```
 
-Frozen regression bundle:
+The Part B auxiliary sheet is not automatically authorized to appear in the Combined Workbook. Target combined output remains exactly two business sheets unless evidence proves a different owner authority.
+
+## 3. Why an evidence gate is required before implementation
+
+A safe combined workbook cannot be inferred by simply copying `sheet1.xml` from one XLSX into another. XLSX package-level dependencies can be workbook-global, including:
+- `xl/styles.xml` style IDs and cellXfs;
+- `xl/sharedStrings.xml` indices;
+- workbook sheet IDs and relationship IDs;
+- `[Content_Types].xml` overrides;
+- worksheet relationships, drawings/media/comments/tables/hyperlinks;
+- themes, defined names, properties and other package relationships.
+
+Both closed preparer and renderer intentionally preserve owner-template package authority. Combined composition must not invalidate that authority by guessing/remapping package-global identities without exact evidence.
+
+Therefore implementation is NOT yet authorized.
+
+## 4. Exact next proposal — D2-WP004-R2-D-PRE1
 
 ```text
-node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js
-TESTS = 30
-PASS = 30
-FAIL = 0
-SKIP = 0
+PROPOSED_WORK_PACKAGE = D2-WP004-R2-D-PRE1
+NAME = COMBINED XLSX OWNER-TEMPLATE + OOXML COMPOSITION COMPATIBILITY EVIDENCE
+STATE = PROPOSED / NOT AUTHORIZED
+MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / LOW-CREDIT
+MAX_EXECUTOR_COMMITS = 1
+EXPECTED_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
 ```
 
-Additional checks:
+If later authorized, writable scope is ONLY the expected evidence Markdown file. No source, tests, Profile, template binaries, package files, UI or dist are writable.
 
-```text
-node --check src/services/mbo-xlsx-semantic-renderer.js = PASS / NO OUTPUT / EXIT TO PROMPT
-git diff --check = PASS / NO OUTPUT / EXIT TO PROMPT
-```
+## 5. PRE1 exact evidence contract
 
-No newer repository regression existed before closure.
+### PRE1-A — exact local owner-template discovery
 
-## 4. Closure decision
+Read-only inspect the local repository/workspace locations already used for owner XLSX evidence, including `app info/data` and `exp` where present.
 
-`D2-WP004-R2-C = PASS / CLOSED`.
+Record:
+- all plausible MBO/PMS `.xlsx` candidate filenames and paths;
+- SHA-256 of candidates;
+- workbook sheet names/order/state;
+- whether an owner/legacy Combined workbook already exists.
 
-The secured semantic renderer source/test and all accepted supporting authority are now frozen. Reopen only on a proven regression.
+Do NOT copy/upload XLSX binaries into Git. Do NOT modify template files.
 
-No executor is active. No further R2-C source/test change is authorized.
+Require exact frozen identities for the known Part A and Part B owner templates. If the expected SHA cannot be found, report `BLOCKED_OWNER_TEMPLATE_IDENTITY` and STOP evidence conclusions.
 
-## 5. Next D2 gate
+### PRE1-B — exact package dependency inventory
 
-`COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE`.
+For exact Part A and Part B owner workbooks, record read-only package inventories and fingerprints relevant to composition:
+- `[Content_Types].xml`;
+- `xl/workbook.xml` + `xl/_rels/workbook.xml.rels`;
+- `xl/styles.xml` including key table counts/fingerprint;
+- `xl/sharedStrings.xml` presence/count/fingerprint;
+- `xl/theme/*`;
+- main worksheet path + worksheet `.rels`;
+- drawings/media/comments/tables/hyperlinks/external links if any;
+- workbook defined names;
+- package relationships/properties relevant to sheet insertion.
 
-Do not auto-start it. Control Plane must first fresh-read the exact current D2/Excel-export authority and produce the smallest bounded proposal. Antigravity remains STOP until owner approval.
+For each main business sheet, derive:
+- referenced style-ID set;
+- static shared-string index usage/count if applicable;
+- sheet-local relationship IDs and targets;
+- whether any dependency points to auxiliary sheets.
 
-Kintone writes, deploy, Live UAT and D3 remain forbidden. `D3 = HOLD` until all D2 gates are PASS/CLOSED.
+### PRE1-C — Part B auxiliary-sheet necessity
+
+Prove whether `(Part B) Competency` depends on auxiliary `Sheet1` through formulas, defined names, relationships, external references, tables, charts, drawings or any other required package dependency.
+
+Formula authority remains zero. Do not assume the auxiliary sheet is removable merely because formulas are zero.
+
+Verdict must be one of:
+- `AUXILIARY_NOT_REQUIRED_FOR_COMBINED`
+- `AUXILIARY_REQUIRED_FOR_MAIN_SHEET`
+- `AUXILIARY_DEPENDENCY_UNRESOLVED`
+
+### PRE1-D — direct-copy compatibility verdict
+
+Determine whether copying the rendered Part B main worksheet into the Part A workbook as Sheet 2 could preserve exact visual/layout semantics **without** remapping workbook-global dependencies.
+
+Explicitly assess styles, shared strings, relationships, content types and theme authority.
+
+Verdict must be one of:
+- `DIRECT_COPY_SAFE_WITH_PROOF`
+- `DIRECT_COPY_UNSAFE_REMAP_REQUIRED`
+- `DIRECT_COPY_BLOCKED_UNRESOLVED`
+
+No implementation may be performed.
+
+### PRE1-E — composition strategy recommendation
+
+Evidence must select exactly one next strategy:
+
+1. `REUSE_EXISTING_OWNER_COMBINED_TEMPLATE`
+   - only if an exact owner/legacy combined template is discovered and its authority is proven;
+
+2. `POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP`
+   - Part A and Part B remain independently prepared/rendered through frozen engines, then a new bounded composition layer merges only the two business sheets and remaps proven workbook-global dependencies;
+
+3. `COMPOSITION_BLOCKED_PENDING_NEW_OWNER_AUTHORITY`
+   - if exact visual/package parity cannot be proven safely.
+
+For the selected strategy, state the smallest future source/test file boundary but DO NOT implement it.
+
+## 6. Mandatory non-goals
+
+PRE1 must NOT:
+- modify `src/services/mbo-xlsx-template-preparer.js`;
+- modify `src/services/mbo-xlsx-semantic-renderer.js`;
+- modify `src/services/mbo-export-service.js`;
+- modify `src/profiles/mbo-xlsx-template-profile.js`;
+- modify any existing test;
+- generate or commit an XLSX binary;
+- perform Kintone reads/writes beyond already available local evidence;
+- deploy or build UI/dist;
+- start PDF work;
+- start D3.
+
+## 7. Review/closure rule
+
+After evidence is pushed, ChatGPT independently reviews the exact evidence against frozen package/template authorities.
+
+PRE1 closes only if it gives a deterministic, source-backed answer for:
+- whether an owner combined template exists;
+- whether Part B auxiliary `Sheet1` is required;
+- whether direct sheet copy is safe;
+- exact global dependencies needing remap if direct copy is unsafe;
+- one smallest future composition strategy.
+
+PRE1 closure does NOT authorize Combined XLSX implementation.
+
+## 8. Owner decision
+
+No executor is active. This proposal is NOT authorized.
+
+Recommended owner approval phrase:
+
+`อนุมัติ D2-WP004-R2-D-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+
+Combined Excel implementation, Kintone writes, deploy, Live UAT, PDF and D3 remain forbidden until separately authorized.
