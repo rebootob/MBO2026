@@ -25,11 +25,12 @@ R2_A = PASS / CLOSED
 R2_B1 = PASS / CLOSED / FROZEN
 R2_B2 = PASS / CLOSED / FROZEN
 R2_C = PASS / CLOSED / FROZEN
-R2_D_PRE1 = COMBINED XLSX OOXML COMPATIBILITY EVIDENCE PROPOSED / NOT AUTHORIZED
+R2_D_PRE1 = REVIEWED / PARTIAL PASS / NOT CLOSED
+R2_D_PRE1_R1 = CORRECTIVE EVIDENCE PROPOSAL READY / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = PLANNING / PRE1 PROPOSED / NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = PRE1 EVIDENCE REVIEWED / IMPLEMENTATION NOT AUTHORIZED
 D3 = HOLD
 ```
 
@@ -50,15 +51,12 @@ R2-C secured semantic renderer is frozen. No new source/test change is authorize
 
 ## Combined Excel authority
 
-Repository Excel-export skill defines Combined Workbook as:
-
+Combined Workbook target remains:
 ```text
 ONE .xlsx
 Sheet 1 = PART A
 Sheet 2 = PART B
 ```
-
-Current closed production engine renders Part A and Part B from separate owner templates. Part B owner workbook has main `(Part B) Competency` plus auxiliary `Sheet1`. No production combined-workbook composer exists yet.
 
 Frozen owner identities:
 ```text
@@ -69,27 +67,45 @@ PART_B_MAIN = (Part B) Competency
 PART_B_AUX = Sheet1
 ```
 
-## Exact next proposal — D2-WP004-R2-D-PRE1
+## PRE1 review
+
+Authorization HEAD:
+`40a300405e22c59096e6902f2bd2709ee9bd9098`
+
+Evidence implementation:
+`a77cbf6317b5744e0b9a0d696ab293878563c89d`
+
+Scope = PASS: exactly one evidence commit and only:
+`project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md`
+
+Accepted direction:
+- exact frozen Part A/Part B owner SHAs were found;
+- no owner combined template was found in the authorized inspected locations;
+- direct raw Part B sheet copy without workbook-global remap is unsafe;
+- post-render OOXML composition remains the candidate architecture direction.
+
+PRE1 is NOT CLOSED because exact package dependency inventory is incomplete and the recommendation contains a concrete `rId2` conflict: Part A already uses workbook `rId2 -> styles.xml`, while PRE1 proposed the new Part B sheet as `r:id="rId2"`.
+
+Other required corrective evidence:
+- full package fingerprints rather than truncated hashes;
+- exact used style-ID sets for both main sheets and representative style collisions;
+- exact used shared-string index sets and representative collisions;
+- exact worksheet relationship tuples and explicit comments/tables/hyperlinks/externalLinks/drawing inventory;
+- exhaustive proof that Part B auxiliary `Sheet1` has no required dependency;
+- exact recursive style dependency graph and unique drawing/media/workbook-rId handling for the future composer.
+
+## Exact next proposal — D2-WP004-R2-D-PRE1-R1
 
 ```text
-NAME = COMBINED XLSX OWNER-TEMPLATE + OOXML COMPOSITION COMPATIBILITY EVIDENCE
-MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / LOW-CREDIT
+NAME = COMBINED XLSX EXACT PACKAGE-DEPENDENCY + RELATIONSHIP-ID CORRECTIVE EVIDENCE
+MODE = EVIDENCE-ONLY / READ-ONLY OWNER-TEMPLATE INSPECTION / ULTRA-LOW-CREDIT
 STATE = PROPOSED / NOT AUTHORIZED
 MAX_EXECUTOR_COMMITS = 1
-EXPECTED_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
+WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
 ```
 
-Purpose: inspect exact local owner XLSX package dependencies before any merge implementation. Must determine:
-- whether an owner/legacy Combined workbook already exists;
-- whether Part B auxiliary `Sheet1` is required;
-- exact styles/sharedStrings/relationships/content-types/theme dependencies;
-- whether direct Part B sheet copy into Part A package is safe;
-- one smallest next composition strategy.
-
-If later authorized, executor writable scope is ONLY the expected evidence Markdown file. Source/test/Profile/template binary/UI/dist/Kintone/deploy/PDF/D3 remain forbidden.
-
-Full contract is in `AI_ACTIVE_TASK.md`.
+No source/test/Profile/template binary/control-doc changes by executor. No composer implementation. Full corrective contract is in `AI_ACTIVE_TASK.md`.
 
 Recommended owner approval phrase:
 
-`อนุมัติ D2-WP004-R2-D-PRE1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-D-PRE1-R1 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
