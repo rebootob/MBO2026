@@ -1,13 +1,14 @@
 # D2 REVIEW FAST-START — MBO2026
 
-Updated: 2026-09-03 ICT
+Updated: 2026-09-04 ICT
 Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact next-gate source/test/design only. Do not reopen R2-B1/R2-B2 without a proven regression. Do not broad-scan or auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate source/test only. Do not reopen R2-B1/R2-B2 without proven regression. Do not broad-scan or auto-start Antigravity.
 
 ## Project truth
+
 ```text
 OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
 D1 = PASS / CLOSED
@@ -20,18 +21,15 @@ FORMULA_AUTHORITY = PASS / CLOSED
 PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
 XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
 XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
-PRE1/PRE2 BASELINES = CLOSED AS DOCUMENTED
 R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
 R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
-R2_B2_PRODUCTION_SOURCE = PASS / FROZEN
-R2_B2_TEST_PROOF = PASS / FROZEN
-R2_B2_RUNTIME = PASS 3 / FAIL 0 / SKIP 0
 R2_C = REVIEWED / NOT CLOSED
 R2_C_IMPLEMENTATION = d9af2feb5fb2af1834675123fcd83f27a62fceb2
 R2_C_R1_IMPLEMENTATION = aee75a8f01c681766ac6258cb02c267469ae97ff
-R2_C_R1 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_C_R2 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+R2_C_R2_IMPLEMENTATION = cdc68c35f7b110bf3a80ed6026b1d14ed89ffd52
+R2_C_R2 = REVIEWED / PARTIAL PASS / NOT CLOSED
+R2_C_R3 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
@@ -40,44 +38,44 @@ D3 = HOLD
 ```
 
 ## Durable closed gates
-R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. Do not reopen without proven regression.
+R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. No regression was found.
 
-## R2-C-R1 independent review
+## R2-C-R2 independent review
 
 Authorization:
-`0bd15f14918751b2cda2c2acc66ea3ab6d40f61f`
+`4b7fd8a3bb203f0e69249f4dcb3de741058cf490`
 
 Implementation:
-`aee75a8f01c681766ac6258cb02c267469ae97ff`
+`cdc68c35f7b110bf3a80ed6026b1d14ed89ffd52`
 
 Scope PASS:
 - exactly one corrective commit;
 - only `src/services/mbo-xlsx-semantic-renderer.js` and `tests/mbo-xlsx-semantic-renderer.test.js` changed;
 - no frozen-file changes.
 
-Accepted R1 improvements:
-- exact main-sheet relation / exact Print_Area / dimension guards;
-- target cell EXACTLY-ONCE pre-write guard;
-- stronger Part A image3 and Part B merge/rating/padding/aux guards;
-- caller-byte content immutability;
-- whitespace-only strings preserved and `xml:space="preserve"` added;
-- representative BOTH-Part privacy and authorized-diff tests improved.
+Accepted R2 improvements:
+- direct JSZip raw OOXML mutation;
+- raw opening-tag preservation instead of full attribute rebuild;
+- strong prepared-buffer guards retained;
+- non-sheet1 byte parity and cell-inventory post-write checks added;
+- full Profile-derived role-name sets and exact role counts added;
+- fail-closed perturbation coverage substantially expanded;
+- N8 `COMP_STRAT` canonical presentation + alias-resistance added.
 
-Remaining material blockers:
-- production still parses/rebuilds target opening attributes instead of preserving exact raw non-`t` authority;
-- production final post-write preservation does not yet explicitly compare all required prepared-before package/topology/cell-inventory invariants;
-- Part A N4..N10 test remains spot-check based rather than every Profile-derived SAFE role + exact role counts + full sanitization blank proof;
-- Part B N6/N7/N8 remains spot-check based (`K9`/`R31`/`B29` examples) rather than full Profile-derived matrix, full Chief R:X, summaries, static/padding/rating/aux parity and nonwritten-sensitive proof;
-- fail-closed perturbation matrix still misses malformed Part B count, duplicate Print_Area, sheet-name identity, independent forbidden image relationship, actual merge corruption, padding/aux corruption, full invalid-scalar set and Part B caller-immutability cases;
-- authorized-diff normalizer uses the same parser/rebuilder pattern as production and can normalize away the defect it should detect;
-- real canonical privacy/presentation proof still needs N8 `COMP_STRAT` + alias-resistance closure.
+Remaining blockers:
+- `\bt=` / `\br=` can collide with namespaced `custom:t` / `custom:r`; exact unprefixed attribute identity is not yet guaranteed;
+- test authorized-diff normalizer uses the same word-boundary `t` pattern and can hide that defect;
+- Part A full matrix checks populated/nonblank rather than exact independent `projectionPath` truth and all optional omissions;
+- Part B full matrix likewise lacks exact secured truth, absent-summary proof, complete b1..b6 static parity, complete Rating Scale/padding payload parity and auxiliary sheet byte parity;
+- production should close final sheet authority with complete prepared-before `sheet1.xml` equality after narrowly normalizing only exact authorized target body + unprefixed `t` representation;
+- XML 1.0-invalid lone surrogates/U+FFFE/U+FFFF are not yet explicitly rejected/proven.
 
-Repository CI/status/workflow evidence for R1 is unavailable, but static blockers already prevent closure.
+GitHub has no CI/status/workflow evidence for R2; static blockers already prevent closure.
 
-## Exact next proposal — D2-WP004-R2-C-R2 / NOT AUTHORIZED
+## Exact next proposal — D2-WP004-R2-C-R3 / NOT AUTHORIZED
 
 ```text
-NAME = SECURED SEMANTIC RENDERER EXACT ATTRIBUTE + FULL MATRIX CLOSURE
+NAME = SECURED SEMANTIC RENDERER UNPREFIXED-ATTRIBUTE + EXACT-TRUTH CLOSURE
 MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
 
@@ -92,19 +90,18 @@ FROZEN:
   existing Profile/Preparer/Feasibility/export tests
 ```
 
-R2 must close only:
-- exact raw opening-tag preservation except authorized `t`/payload change;
-- exact production post-write package/topology/cell-inventory preservation;
-- full Part A N4..N10 Profile-derived role matrix;
-- full Part B N6/N7/N8 Profile-derived role/privacy/static matrix;
-- complete fail-closed perturbations;
-- independent authorized-diff oracle with sentinel non-type attributes;
-- N7 + N8 real canonical presentation and alias-resistance privacy proof.
+R3 closes only:
+- exact unprefixed cell `r` / `t` handling without namespaced collisions;
+- complete prepared-before sheet1 preservation proof;
+- exact Part A N4..N10 Profile/projection truth + all optional omissions;
+- exact Part B N6/N7/N8 Profile/projection truth + static/rating/padding/aux parity;
+- independent `custom:t/custom:r/data-t/data-r` collision sentinel proof;
+- XML 1.0 exact string-validity boundary.
 
-Full authoritative R2 proposal is in `AI_ACTIVE_TASK.md`.
+Full authoritative R3 proposal is in `AI_ACTIVE_TASK.md`.
 
 Recommended owner approval phrase:
 
-`อนุมัติ D2-WP004-R2-C-R2 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-C-R3 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
 
 Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
