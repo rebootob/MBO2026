@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate source/test only. Do not reopen R2-B1/R2-B2 or accepted R5/R6 behavior without proven regression. Do not broad-scan or auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate evidence only. Do not reopen R2-B1/R2-B2 or accepted R5/R6/R7 behavior without proven regression. Do not auto-start Antigravity.
 
 ## Project truth
 
@@ -24,79 +24,63 @@ XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
 R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
 R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
-R2_C = REVIEWED / NOT CLOSED
-R2_C_R6_IMPLEMENTATION = c9269e3fe20ff585ca0b89e33e74a1faeb2f43af
-R2_C_R6 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_C_R6_COMPARATOR_LOGIC = PASS / FROZEN
-R2_C_R6_TEST_ORACLE = PASS / FROZEN
-R2_C_R6_GOVERNANCE_SURFACE = BLOCKED / TEST-ONLY PUBLIC EXPORT
-R2_C_R7 = MINIMAL SURFACE CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+R2_C = STATIC PASS / NOT CLOSED / RUNTIME EVIDENCE REQUIRED
+R2_C_R7_IMPLEMENTATION = fec70c6c0745e7bb9450be8d388928463c6552cb
+R2_C_R7_STATIC_REVIEW = PASS
+R2_C_RUNTIME_EVIDENCE = REQUIRED
 ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = STOP
 CLAUDE = STOP
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
-## Durable closed / accepted gates
-R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. R5 exact `t` mutation + Part B proof and R6 source-aware comparator/oracle logic are accepted and must not be reopened without proven regression.
+## Durable accepted gates
+R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. R5 exact `t` mutation + Part B proof, R6 source-aware comparator/oracle, and R7 private-surface cleanup are accepted and must not be reopened without proven regression.
 
-## R2-C-R6 independent review
+## R2-C-R7 independent review
 
 Authorization:
-`e59989f5b6ce5a378b37d1c9c6c20cd3313f0e24`
+`1b27a265778e76a7cdbd01c60e9c3bd523c82488`
 
 Implementation:
-`c9269e3fe20ff585ca0b89e33e74a1faeb2f43af`
+`fec70c6c0745e7bb9450be8d388928463c6552cb`
 
 Scope PASS:
 - exactly one corrective commit;
 - only `src/services/mbo-xlsx-semantic-renderer.js` and `tests/mbo-xlsx-semantic-renderer.test.js` changed;
-- no frozen-file changes.
+- renderer diff is only removal of the test-only `export`;
+- test diff removes only the production-helper import/direct assertion and retains the independent one-byte negative-control.
 
-Accepted R6 improvements:
-- production preservation comparator is source-aware and no longer trims/canonicalizes target opening-tag whitespace;
-- exact unprefixed `t` token masking preserves surrounding bytes;
-- source/rendered target uniqueness is fail-closed;
-- independent scanner/splice oracle is retained without trim/canonicalizing tag rebuild;
-- one-byte unauthorized whitespace negative-control detects mismatch;
-- all accepted R5 matrices/privacy/canonical/XML/formula/package/caller-immutability proof remains.
+Static verdict:
+- production comparator is private again;
+- R6 comparator algorithm unchanged;
+- independent oracle retained;
+- no static R2-C blocker remains from this review.
 
-Remaining blocker:
-- `normalizeTargetNodesForPreservation` was changed from private helper to a named export solely so the test can call production comparator directly;
-- this violates the explicit R6 rule `Do not add a public debug API solely for testing.`;
-- the R6 clause required direct production-comparator negative-control only if reachable without exposing a new production API, so this export is unnecessary.
+GitHub has no CI/status/workflow signal for the R7 implementation.
 
-GitHub has no CI/status/workflow signal for the R6 implementation. Static governance blocker prevents closure.
+## Current exact gate — runtime evidence only
 
-## Exact next proposal — D2-WP004-R2-C-R7 / NOT AUTHORIZED
+No new executor/source/test authorization is needed.
+
+Run on the workstation/repository with owner XLSX templates:
+
+Focused:
+`node --test tests/mbo-xlsx-semantic-renderer.test.js`
+
+Require: `FAIL = 0`, `SKIP = 0`.
+
+Frozen regression:
+`node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js`
+
+Require: `FAIL = 0`.
+
+Also:
 
 ```text
-NAME = SECURED SEMANTIC RENDERER PRIVATE-COMPARATOR SURFACE CLOSURE
-MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / ULTRA-LOW-CREDIT
-MAX_EXECUTOR_COMMITS = 1
-
-PROPOSED WRITABLE ONLY:
-  src/services/mbo-xlsx-semantic-renderer.js
-  tests/mbo-xlsx-semantic-renderer.test.js
-
-FROZEN:
-  src/profiles/mbo-xlsx-template-profile.js
-  src/services/mbo-xlsx-template-preparer.js
-  src/services/mbo-export-service.js
-  existing Profile/Preparer/Feasibility/export tests
+node --check src/services/mbo-xlsx-semantic-renderer.js
+git diff --check
 ```
 
-R7 closes only:
-- restore `normalizeTargetNodesForPreservation` to private/non-exported helper;
-- remove test import/direct call of the private production helper;
-- retain independent one-byte negative-control and all accepted R5/R6 proof;
-- no comparator redesign or matrix changes.
-
-Full authoritative R7 proposal is in `AI_ACTIVE_TASK.md`.
-
-Recommended owner approval phrase:
-
-`อนุมัติ D2-WP004-R2-C-R7 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
-
-Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
+If all runtime evidence PASS and no newer repository regression exists, Control Plane may close `R2-C = PASS / CLOSED`. Do not auto-start Combined Excel or D3.
