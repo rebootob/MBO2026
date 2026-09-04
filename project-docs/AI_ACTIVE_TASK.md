@@ -1,10 +1,10 @@
-# AI ACTIVE TASK — R2-C-R2 REVIEWED / NOT CLOSED / R2-C-R3 EXACT CORRECTIVE PROPOSAL READY
+# AI ACTIVE TASK — R2-C-R3 AUTHORIZED / ACTIVE
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / BOUNDED EXECUTION AUTHORIZED / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-04 ICT
 
-Read `D2_REVIEW_FAST_START.md` first, then this file, then only exact R2-C renderer/test/Profile/export/preparer evidence required by the current gate. Do not reopen closed R2-B1/R2-B2 without proven regression.
+Read `D2_REVIEW_FAST_START.md` first, then this file. This file is authoritative for the active R3 gate if fast-start still shows the immediately preceding proposal state. Read only exact R2-C renderer/test/Profile/export/preparer evidence required by this gate. Do not reopen closed R2-B1/R2-B2 without proven regression.
 
 ## 1. Current truth
 
@@ -25,158 +25,47 @@ R2_C_R1_IMPLEMENTATION = aee75a8f01c681766ac6258cb02c267469ae97ff
 R2_C_R2_IMPLEMENTATION = cdc68c35f7b110bf3a80ed6026b1d14ed89ffd52
 R2_C_R2_SOURCE = PARTIAL PASS / ONE MATERIAL ATTRIBUTE-IDENTITY DEFECT REMAINS
 R2_C_R2_TEST_PROOF = PARTIAL / EXACT-TRUTH + PARITY GAPS REMAIN
-R2_C_R2_RUNTIME_REPOSITORY_SIGNAL = UNAVAILABLE / NO STATUS / NO WORKFLOW RUN
 
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-C-R3
+ACTIVE_D2_SOURCE_CHANGE_AUTH = D2-WP004-R2-C-R3-SOURCE-TEST-CORRECTIVE-20260904-01
+ACTIVE_D2_TEST_CHANGE_AUTH = D2-WP004-R2-C-R3-SOURCE-TEST-CORRECTIVE-20260904-01
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
-ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
+ACTIVE_D2_RENDERER_CHANGE_AUTH = D2-WP004-R2-C-R3-SOURCE-TEST-CORRECTIVE-20260904-01
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = BOUNDED / ONE-SHOT / MAX 1 COMMIT
 CLAUDE = STOP
 R2_B1_PRODUCTION_SOURCE = PASS / FROZEN
 R2_B2_PRODUCTION_SOURCE = PASS / FROZEN
 R2_B2_TEST_PROOF = PASS / FROZEN
 R2_B2_RUNTIME_PROOF = PASS
-R2-C-R3 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+R2-C-R3 = AUTHORIZED / ACTIVE
 COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
-## 2. R2-C-R2 review identity
+## 2. R2-C-R3 authorization identity
 
 ```text
-R2_C_R2_AUTHORIZATION_HEAD = 4b7fd8a3bb203f0e69249f4dcb3de741058cf490
-R2_C_R2_AUTHORIZATION_TOKEN = D2-WP004-R2-C-R2-SOURCE-TEST-CORRECTIVE-20260903-01
-R2_C_R2_IMPLEMENTATION = cdc68c35f7b110bf3a80ed6026b1d14ed89ffd52
-AUTH_TO_IMPLEMENTATION = EXACTLY ONE COMMIT
-IMPLEMENTATION_MESSAGE = fix(d2): close exact renderer attributes and full matrix (R2-C-R2)
-CHANGED_FILES =
-  src/services/mbo-xlsx-semantic-renderer.js
-  tests/mbo-xlsx-semantic-renderer.test.js
-OUT_OF_SCOPE_CHANGE = NONE
-```
-
-The R2 token is consumed. No further change is authorized by it.
-
-## 3. Accepted R2 improvements — MUST PRESERVE
-
-Independent review accepts these R2 improvements:
-
-- renderer now uses direct `JSZip` package mutation rather than worksheet-wide serialization;
-- raw target opening-tag text is retained instead of rebuilding all attributes from parsed key/value pairs;
-- pre-write exact main-sheet / Print_Area / dimension / target-exactly-once / Part A image / Part B merge-rating-padding-aux guards remain;
-- non-sheet1 package entries are post-write byte-compared;
-- sheet1 cell-address inventory is post-write compared;
-- target non-type opening-tag authority is post-write compared;
-- caller bytes remain content-immutable;
-- whitespace/XML preservation behavior remains;
-- fail-closed suite now covers many previously missing malformed Part B / Print_Area / sheet-name / relationship / merge / padding / scalar cases;
-- Part A and Part B tests now build complete Profile-derived role-name sets and check exact role counts;
-- real privacy proof now exercises N8 canonical `COMP_STRAT` together with N7 `COMP_LEAD` and conflicting alias fields.
-
-These improvements are partial PASS only. R2-C remains NOT CLOSED.
-
-## 4. Independent blockers after R2
-
-### BLOCK A — exact unprefixed `t` / `r` identity is still not safe
-
-Production now preserves raw attributes generally, but its narrow regex uses word-boundary forms such as `\bt="..."` and `\br="..."`.
-
-A word boundary also exists after a namespace colon. Therefore valid attributes such as:
-
-```text
-custom:t="KEEP"
-custom:r="KEEP"
-```
-
-can collide with logic intended only for the cell's **unprefixed** `t` / `r` attributes. This violates the R2 requirement that namespaced attributes survive exactly.
-
-R3 must:
-- identify cell address only from the exact unprefixed `r` attribute;
-- modify/remove/replace only the exact unprefixed cell `t` attribute;
-- never match or change `prefix:r`, `prefix:t`, `data-r`, `data-t` or similar attributes;
-- preserve all non-target attributes byte-for-byte and in order;
-- use browser-safe logic without Node-only dependencies.
-
-### BLOCK B — authorized-diff oracle can still hide the same `custom:t` defect
-
-The R2 test normalizer also removes `t` using a word-boundary pattern similar to production. Its sentinel uses `custom:sentinel` and `data-hyphenated`, but not a collision-prone `custom:t` / `custom:r` case.
-
-R3 test proof must be independent and must inject at least:
-
-```text
-custom:t="KEEP_CUSTOM_T"
-custom:r="KEEP_CUSTOM_R"
-data-t="KEEP_DATA_T"
-data-r="KEEP_DATA_R"
-```
-
-on a writable target while retaining the real unprefixed `r` and, where appropriate, unprefixed `t`.
-
-After render all sentinel attributes must survive exactly and the oracle must normalize only the unprefixed cell `t` representation and authorized body payload.
-
-### BLOCK C — Part A “full matrix” still does not prove exact projection truth
-
-R2 builds the complete Profile-derived role set and correct 30..60 role counts, but for each role it only proves the target is nonblank.
-
-R3 must independently resolve each `projectionPath` in TEST code and assert:
-- every path-present target equals the exact secured projection scalar;
-- numeric values compare numerically and strings exactly;
-- every path-absent optional target is blank;
-- include a second projection per N with optional average scores / summaries omitted so **all** optional paths are checked, not one sample cell;
-- every effective sanitization address outside the actually-written target set remains blank.
-
-Expected truth must never come from renderer output.
-
-### BLOCK D — Part B “full matrix” still lacks exact truth / absent-summary / static parity closure
-
-R2 builds exact 14/17/20 role sets, but again checks role targets mainly for nonblank presence.
-
-R3 must prove for N=6/7/8:
-- every Profile-derived target equals exact secured `projectionPath` truth;
-- all self-rating targets exact;
-- both summary targets exact when present;
-- both summary targets blank when omitted;
-- b7/b8 canonical presentation exact;
-- all effective nonwritten sensitive addresses blank;
-- FULL Chief R:X blank;
-- b1..b6 static presentation exact prepared-before parity;
-- every Rating Scale static range exact prepared-before parity, not only the start-cell label;
-- every protected padding row exact prepared-before row/cell/value/payload parity;
-- complete merge inventory exact prepared-before parity;
-- auxiliary `Sheet1` (`sheet2.xml`) byte/content parity with prepared-before.
-
-### BLOCK E — production post-write preservation should close with complete prepared-before sheet authority
-
-Current post-write checks are strong but split across inventory/open-tag/value checks. R3 should add a narrow production preservation comparison over `sheet1.xml`:
-- normalize only exact authorized target unprefixed `t` representation + target value body;
-- compare the complete remaining rendered `sheet1.xml` against prepared-before;
-- this directly proves dimension, merges, row/padding/rating/static/non-target XML remain unchanged;
-- the production normalizer must itself obey exact unprefixed attribute identity and must not normalize namespaced `*:t` attributes.
-
-The independent TEST oracle must be implemented separately and must not copy the production normalizer strategy blindly.
-
-### BLOCK F — XML validity boundary needs exact XML 1.0 character proof
-
-Existing validation covers C0 controls but not every XML 1.0-invalid JavaScript string, such as lone surrogate code units and noncharacters U+FFFE/U+FFFF.
-
-R3 production/test should fail closed for XML 1.0-invalid scalar strings while preserving valid Thai/Unicode/supplementary characters.
-
-## 5. Exact next corrective proposal — D2-WP004-R2-C-R3
-
-```text
-PROPOSED_WORK_PACKAGE = D2-WP004-R2-C-R3
+WORK_PACKAGE = D2-WP004-R2-C-R3
 NAME = SECURED SEMANTIC RENDERER UNPREFIXED-ATTRIBUTE + EXACT-TRUTH CLOSURE
-STATE = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
+AUTHORIZATION_BASIS_HEAD = 86834f0c1b51cd6694dfa0e34817f6394f67f7f7
+AUTHORIZATION_TOKEN = D2-WP004-R2-C-R3-SOURCE-TEST-CORRECTIVE-20260904-01
 ```
 
-Proposed writable files ONLY:
+Owner authorization:
+
+`อนุมัติ D2-WP004-R2-C-R3 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+
+The token is single-use and is consumed when executor pushes the one authorized implementation commit or stops after beginning execution due to a contract blocker.
+
+## 3. Writable scope
+
+Writable ONLY:
 
 ```text
 src/services/mbo-xlsx-semantic-renderer.js
@@ -198,56 +87,76 @@ Kintone write/deploy/Live UAT = FORBIDDEN
 D3 = HOLD
 ```
 
-## 6. R2-C-R3 exact corrective contract
+## 4. Accepted R2 behavior — MUST PRESERVE
+
+Do not weaken:
+- direct browser-safe `JSZip` raw OOXML package mutation;
+- secured projection only, frozen Profile-derived semantic roles/paths;
+- exact prepared-buffer main-sheet / Print_Area / dimension / target-exactly-once guards;
+- Part A reference-image removal guard;
+- Part B merge / Rating Scale / padding / auxiliary-sheet guards;
+- non-sheet1 package byte comparison;
+- caller-byte content immutability;
+- whitespace preservation with `xml:space="preserve"` where required;
+- no formulas, no score reconstruction, no raw Kintone access;
+- N7 `COMP_LEAD` and N8 `COMP_STRAT` canonical presentation + alias-resistance privacy proof.
+
+## 5. R2-C-R3 exact corrective contract
 
 ### R3-A — exact unprefixed cell-attribute handling
 
 Correct production target matching/mutation so:
-- target identity is the exact unprefixed XML attribute `r="ADDRESS"` only;
+- target identity is ONLY the exact unprefixed XML attribute `r="ADDRESS"`;
 - only the exact unprefixed XML attribute `t="..."` may be inserted/replaced/removed;
-- namespace-prefixed or hyphenated lookalikes are never interpreted as cell `r`/`t`;
-- all other raw opening-tag bytes, attribute values and ordering are preserved exactly;
+- `custom:r`, `custom:t`, `prefix:r`, `prefix:t`, `data-r`, `data-t` and similar attributes MUST NOT be interpreted as cell `r`/`t`;
+- all other raw opening-tag bytes, values and attribute ordering are preserved exactly;
 - missing or duplicate exact unprefixed target cell => fail closed;
-- formula target => fail closed.
+- formula target => fail closed;
+- browser-safe only; no Node-only production dependency.
 
 ### R3-B — complete production prepared-before preservation
 
-Before return:
+Before return prove:
 - package inventory unchanged;
-- non-sheet1 entries byte-equal;
-- cell inventory unchanged;
-- complete `sheet1.xml` equals prepared-before after normalizing ONLY authorized target body plus exact unprefixed cell `t` representation;
-- namespaced/hyphenated sentinel-like attributes are never normalized away;
-- existing formula/value/privacy/caller-immutability validation remains.
+- every non-sheet1 entry byte/content-equal to prepared-before;
+- exact cell-address inventory unchanged;
+- complete `sheet1.xml` equals prepared-before after normalizing ONLY authorized target body and exact unprefixed cell `t` representation;
+- namespaced/hyphenated/lookalike attributes are never normalized away;
+- existing formula/value/privacy/caller-immutability checks remain.
 
 ### R3-C — exact Part A truth matrix
 
-For every OWNER Part A N=4..10:
-- exact 30..60 role set from Profile;
-- independently resolve every `projectionPath` in test code;
-- exact value equality for every path-present role;
-- run optional-omission projection and prove all absent averageScore + Part A summary paths blank;
-- every other effective sanitization address blank;
-- formula/reference-image/input-immutability retained.
+For every exact OWNER Part A N=4..10:
+- exact Profile-derived role count = `10 + 5*N` => 30/35/40/45/50/55/60;
+- independently resolve every `projectionPath` in TEST code;
+- every path-present target equals exact secured projection scalar (numbers numeric, strings exact);
+- run a second projection per N with optional average scores and Part A summaries omitted;
+- prove EVERY omitted optional role remains blank;
+- every effective sanitization address outside actually written target set remains blank;
+- formula/reference-image/input-immutability proof retained.
+
+Expected truth must never derive from renderer output.
 
 ### R3-D — exact Part B truth/static matrix
 
-For OWNER Part B N=6/7/8:
-- exact 14/17/20 role sets;
-- independent exact `projectionPath` value equality for all roles;
-- summaries present exact + omitted blank;
-- b7/b8 canonical exact;
-- full nonwritten/Chief R:X blank;
-- b1..b6 static presentation prepared-before parity;
-- complete Rating Scale static range parity;
-- complete protected padding row/cell/value/payload parity;
-- exact final merge inventory parity;
-- auxiliary `sheet2.xml` byte/content parity;
+For exact OWNER Part B N=6/7/8:
+- exact Profile-derived role counts = 14/17/20;
+- independently resolve every `projectionPath` in TEST code;
+- all self-ratings exact;
+- both summaries exact when present and blank when omitted;
+- b7/b8 canonical presentation exact;
+- every nonwritten effective sensitive address blank;
+- FULL Chief R:X authority blank;
+- b1..b6 static title/description exact prepared-before parity;
+- every Rating Scale static range exact prepared-before parity;
+- every protected padding row exact prepared-before row/cell/type/value/payload parity;
+- complete merge inventory exact prepared-before parity;
+- auxiliary `xl/worksheets/sheet2.xml` byte/content parity;
 - formulas/input immutability retained.
 
 ### R3-E — independent collision-proof authorized-diff oracle
 
-Test must inject collision-prone sentinels on a writable target:
+TEST must inject on a writable target, while preserving real unprefixed `r` and where applicable unprefixed `t`:
 
 ```text
 custom:t="KEEP_CUSTOM_T"
@@ -256,12 +165,12 @@ data-t="KEEP_DATA_T"
 data-r="KEEP_DATA_R"
 ```
 
-Requirements:
-- real unprefixed `r` remains the target identity;
-- all sentinel attrs survive byte-for-byte;
-- test oracle strips/normalizes only the exact unprefixed cell `t` attribute and target body;
-- complete sheet1 equality after narrow normalization;
-- cell inventory unchanged;
+Require:
+- all four sentinels survive byte-for-byte;
+- test oracle is independent of production mutation logic;
+- oracle normalizes ONLY exact unprefixed cell `t` and authorized target body;
+- complete remaining `sheet1.xml` equality;
+- exact cell inventory unchanged;
 - non-sheet1 byte equality.
 
 ### R3-F — XML 1.0 exact string validity
@@ -273,9 +182,9 @@ Fail closed for XML 1.0-invalid strings including:
 - U+FFFE;
 - U+FFFF.
 
-Prove valid Thai/Unicode and a valid supplementary-plane character survive exactly.
+Prove valid Thai/Unicode and at least one valid supplementary-plane character survive exactly.
 
-## 7. Runtime / regression gate if R3 is later authorized
+## 6. Runtime / regression gate
 
 Focused:
 
@@ -300,23 +209,48 @@ Frozen regression bundle:
 
 `node --test tests/mbo-xlsx-template-profile.test.js tests/mbo-xlsx-template-preparer.test.js tests/mbo-xlsx-template-preparer-part-b.test.js tests/mbo-export-service.test.js`
 
-Required regression: `FAIL = 0`.
+Required: `FAIL = 0`.
 
-Also:
+Also run:
 
 ```text
 node --check src/services/mbo-xlsx-semantic-renderer.js
 git diff --check
 ```
 
-Before commit, `git diff --name-only` must show ONLY the two authorized files.
+All must PASS.
 
-If strict proof requires any frozen-file modification, executor must STOP. Do not weaken tests or broaden scope.
+## 7. Executor protocol
 
-## 8. Owner decision
+Before modification:
+- fresh-fetch canonical branch;
+- HEAD must equal the authorization commit generated by this control update;
+- verify this exact token;
+- read this exact R3 contract;
+- no broad exploration / no Git delivery rediscovery.
 
-No executor is active. R2-C remains NOT CLOSED.
+Before commit run `git diff --name-only`. It MUST show ONLY:
 
-Recommended approval phrase:
+```text
+src/services/mbo-xlsx-semantic-renderer.js
+tests/mbo-xlsx-semantic-renderer.test.js
+```
 
-`อนุมัติ D2-WP004-R2-C-R3 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+If strict proof requires any frozen-file change: STOP. Do not weaken tests. Do not broaden scope.
+
+If all required checks pass:
+1. create EXACTLY ONE SOURCE+TEST corrective commit;
+2. suggested message: `fix(d2): close unprefixed attributes and exact truth (R2-C-R3)`;
+3. push `ai/antigravity-wp002c`;
+4. report pushed SHA, exact changed files, focused PASS/FAIL/SKIP, Part A/Part B matrices, collision proof, privacy/canonical proof, XML proof, regression result, `node --check`, and `git diff --check`;
+5. STOP.
+
+Do NOT modify `project-docs/*`.
+Do NOT self-declare R2-C PASS/CLOSED.
+Do NOT start Combined Excel.
+Do NOT perform Kintone writes/deploy/Live UAT.
+Do NOT start D3.
+
+Final executor state after successful push:
+
+`R2-C-R3 SOURCE+TEST CORRECTIVE COMPLETE / AWAITING CHATGPT INDEPENDENT REVIEW`
