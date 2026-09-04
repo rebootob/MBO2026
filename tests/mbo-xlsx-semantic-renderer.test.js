@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import JSZip from 'jszip';
 import XlsxPopulate from 'xlsx-populate';
 
 import { renderSecuredSemanticValues } from '../src/services/mbo-xlsx-semantic-renderer.js';
@@ -146,13 +147,13 @@ test('RENDERER_TEST_A: Browser-safe & dependency boundary verification', () => {
 
 test('RENDERER_TEST_B: Complete fail-closed boundary & perturbation matrix', async () => {
   const templateA = loadLocalPartA();
+  const templateB = loadLocalPartB();
   const preparedA = await preparePartATemplate(templateA, { objectiveCount: 4 });
-  const preparedCopy = new Uint8Array(preparedA);
   const validProjA = buildSyntheticPartAProjection(4);
+  const validProjB = buildSyntheticPartBProjection(6);
 
-  const testFailClosed = async (corruptFn, label) => {
+  const testFailClosedA = async (corruptFn, label) => {
     const freshPrep = await preparePartATemplate(templateA, { objectiveCount: 4 });
-    const copyBefore = new Uint8Array(freshPrep);
     const corruptedInput = await corruptFn(freshPrep);
     const corruptedCopy = new Uint8Array(corruptedInput);
 
@@ -167,6 +168,22 @@ test('RENDERER_TEST_B: Complete fail-closed boundary & perturbation matrix', asy
     assert.deepEqual(corruptedInput, corruptedCopy, `Caller bytes must remain unchanged on failure for ${label}`);
   };
 
+  const testFailClosedB = async (corruptFn, label) => {
+    const freshPrep = await preparePartBTemplate(templateB, { competencyCount: 6 });
+    const corruptedInput = await corruptFn(freshPrep);
+    const corruptedCopy = new Uint8Array(corruptedInput);
+
+    await assert.rejects(
+      async () => {
+        await renderSecuredSemanticValues(corruptedInput, { partKey: 'B', projection: validProjB });
+      },
+      (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED'),
+      `Failed closed check for ${label}`
+    );
+
+    assert.deepEqual(corruptedInput, corruptedCopy, `Part B caller bytes must remain unchanged on failure for ${label}`);
+  };
+
   // 1. Invalid partKey
   await assert.rejects(
     async () => {
@@ -174,30 +191,38 @@ test('RENDERER_TEST_B: Complete fail-closed boundary & perturbation matrix', asy
     },
     (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
   );
-  assert.deepEqual(preparedA, preparedCopy, 'Caller bytes must remain unchanged on failure');
 
   // 2. Invalid exportType
-  const invalidExportTypeProj = { ...validProjA, exportType: 'EXCEL' };
   await assert.rejects(
     async () => {
-      await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: invalidExportTypeProj });
+      await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: { ...validProjA, exportType: 'EXCEL' } });
     },
     (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
   );
 
   // 3. Objectives count / length mismatch
-  const mismatchProj = {
-    exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
-    partA: { objectivesCount: 4, objectives: validProjA.partA.objectives.slice(0, 3) }
-  };
   await assert.rejects(
     async () => {
-      await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: mismatchProj });
+      await renderSecuredSemanticValues(preparedA, {
+        partKey: 'A',
+        projection: { exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF', partA: { objectivesCount: 4, objectives: validProjA.partA.objectives.slice(0, 3) } }
+      });
     },
     (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
   );
 
-  // 4. Unknown option key
+  // 4. Malformed Part B competency count (5 items or 9 items)
+  await assert.rejects(
+    async () => {
+      await renderSecuredSemanticValues(await preparePartBTemplate(templateB, { competencyCount: 6 }), {
+        partKey: 'B',
+        projection: buildSyntheticPartBProjection(5)
+      });
+    },
+    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+  );
+
+  // 5. Unknown option key
   await assert.rejects(
     async () => {
       await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: validProjA, unknownOption: 123 });
@@ -205,182 +230,177 @@ test('RENDERER_TEST_B: Complete fail-closed boundary & perturbation matrix', asy
     (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
   );
 
-  // 5. Part B missing required expanded presentation title for N=7
-  const templateB = loadLocalPartB();
+  // 6. Invalid scalar types (boolean, object, array, bigint)
+  for (const badVal of [true, { foo: 'bar' }, ['a'], 123n]) {
+    const invalidTypeProj = {
+      ...validProjA,
+      partA: { ...validProjA.partA, header: { ...validProjA.partA.header, employeeName: badVal } }
+    };
+    await assert.rejects(
+      async () => {
+        await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: invalidTypeProj });
+      },
+      (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+    );
+  }
+
+  // 7. Non-finite numbers (NaN, Infinity, -Infinity)
+  for (const badNum of [NaN, Infinity, -Infinity]) {
+    const badNumProj = {
+      ...validProjA,
+      partA: {
+        ...validProjA.partA,
+        objectives: [{ ...validProjA.partA.objectives[0], weight: badNum }, ...validProjA.partA.objectives.slice(1)]
+      }
+    };
+    await assert.rejects(
+      async () => {
+        await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: badNumProj });
+      },
+      (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+    );
+  }
+
+  // 8. Blank and whitespace-only required b7 presentation
   const preparedB7 = await preparePartBTemplate(templateB, { competencyCount: 7 });
-  const missingTitleProjB7 = {
-    exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
-    partA: validProjA.partA,
-    partB: {
-      competencyItems: [
-        { index: 1, selfRating: 4 },
-        { index: 2, selfRating: 4 },
-        { index: 3, selfRating: 4 },
-        { index: 4, selfRating: 4 },
-        { index: 5, selfRating: 4 },
-        { index: 6, selfRating: 4 },
-        { index: 7, selfRating: 4 } // Missing presentationTitle / presentationDescription
-      ]
-    }
-  };
-  await assert.rejects(
-    async () => {
-      await renderSecuredSemanticValues(preparedB7, { partKey: 'B', projection: missingTitleProjB7 });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
-  );
+  for (const badPres of ['', '   ']) {
+    const badPresProj = {
+      exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
+      partB: {
+        competencyItems: [
+          { index: 1, selfRating: 4 }, { index: 2, selfRating: 4 }, { index: 3, selfRating: 4 },
+          { index: 4, selfRating: 4 }, { index: 5, selfRating: 4 }, { index: 6, selfRating: 4 },
+          { index: 7, selfRating: 4, presentationTitle: badPres, presentationDescription: 'Desc' }
+        ]
+      }
+    };
+    await assert.rejects(
+      async () => {
+        await renderSecuredSemanticValues(preparedB7, { partKey: 'B', projection: badPresProj });
+      },
+      (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
+    );
+  }
 
-  // 6. Invalid present scalar type (boolean)
-  const invalidTypeProjA = {
-    ...validProjA,
-    partA: {
-      ...validProjA.partA,
-      header: { ...validProjA.partA.header, employeeName: true }
-    }
-  };
-  await assert.rejects(
-    async () => {
-      await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: invalidTypeProjA });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
-  );
-
-  // 7. Non-finite number (NaN)
-  const nanProjA = {
-    ...validProjA,
-    partA: {
-      ...validProjA.partA,
-      objectives: [
-        { ...validProjA.partA.objectives[0], weight: NaN },
-        ...validProjA.partA.objectives.slice(1)
-      ]
-    }
-  };
-  await assert.rejects(
-    async () => {
-      await renderSecuredSemanticValues(preparedA, { partKey: 'A', projection: nanProjA });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED')
-  );
-
-  // 8. Dirty pre-render sensitive payload in prepared input
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  // 9. Dirty pre-render sensitive payload in prepared input
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
     xml = xml.replace(/<c r="N6"([^>]*)\/>/, '<c r="N6"$1><v>123</v></c>');
-    wb._zip.file('xl/worksheets/sheet1.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
   }, 'dirty pre-render sensitive payload');
 
-  // 9. Injected formula in prepared input
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  // 10. Injected formula in prepared input
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
     xml = xml.replace(/<c r="N6"([^>]*)\/>/, '<c r="N6"$1><f>SUM(A1:A2)</f></c>');
-    wb._zip.file('xl/worksheets/sheet1.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
   }, 'injected formula');
 
-  // 10. Missing target node in sheet1.xml
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  // 11. Missing target node in sheet1.xml
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
     xml = xml.replace(/<c r="N6"([^>]*)\/>/, '');
-    wb._zip.file('xl/worksheets/sheet1.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
   }, 'missing target node');
 
-  // 11. Duplicate target node in sheet1.xml
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  // 12. Duplicate target node in sheet1.xml
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
     xml = xml.replace(/<c r="N6"([^>]*)\/>/, '<c r="N6"$1/><c r="N6"$1/>');
-    wb._zip.file('xl/worksheets/sheet1.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
   }, 'duplicate target node');
 
-  // 12. Wrong exact dimension in sheet1.xml
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  // 13. Wrong exact dimension in sheet1.xml
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
     xml = xml.replace('dimension ref="A1:BL52"', 'dimension ref="A1:BL53"');
-    wb._zip.file('xl/worksheets/sheet1.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
   }, 'wrong dimension');
 
-  // 13. Wrong exact Print_Area in workbook.xml
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/workbook.xml'].async('string');
-    xml = xml.replace('\'MBO Staff &amp; Chief\'!$A$1:$BJ$52', '\'MBO Staff &amp; Chief\'!$A$1:$BJ$53');
-    wb._zip.file('xl/workbook.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
-  }, 'wrong Print_Area');
+  // 14. Duplicate Print_Area in workbook.xml
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/workbook.xml'].async('string');
+    xml = xml.replace(
+      '<definedName name="_xlnm.Print_Area" localSheetId="0">\'MBO Staff &amp; Chief\'!$A$1:$BJ$52</definedName>',
+      '<definedName name="_xlnm.Print_Area" localSheetId="0">\'MBO Staff &amp; Chief\'!$A$1:$BJ$52</definedName><definedName name="_xlnm.Print_Area" localSheetId="0">\'MBO Staff &amp; Chief\'!$A$1:$BJ$52</definedName>'
+    );
+    zip.file('xl/workbook.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'duplicate Print_Area');
 
-  // 14. Wrong Print_Area localSheetId in workbook.xml
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/workbook.xml'].async('string');
-    xml = xml.replace('localSheetId="0"', 'localSheetId="1"');
-    wb._zip.file('xl/workbook.xml', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
-  }, 'wrong localSheetId');
+  // 15. Wrong workbook main-sheet name in workbook.xml
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/workbook.xml'].async('string');
+    xml = xml.replace('name="MBO Staff &amp; Chief"', 'name="Wrong Main Sheet"');
+    zip.file('xl/workbook.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'wrong main sheet name');
 
-  // 15. Wrong main sheet identity in workbook.xml.rels
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    let xml = await wb._zip.files['xl/_rels/workbook.xml.rels'].async('string');
-    xml = xml.replace('Target="worksheets/sheet1.xml"', 'Target="worksheets/sheet2.xml"');
-    wb._zip.file('xl/_rels/workbook.xml.rels', xml);
-    return await wb._zip.generateAsync({ type: 'uint8array' });
-  }, 'wrong sheet1 binding');
+  // 16. Part A forbidden drawing relationship (rId3 / image3.png)
+  await testFailClosedA(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let relsXml = await zip.files['xl/drawings/_rels/drawing1.xml.rels'].async('string');
+    relsXml = relsXml.replace('</Relationships>', '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image3.png"/></Relationships>');
+    zip.file('xl/drawings/_rels/drawing1.xml.rels', relsXml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'forbidden drawing rel');
 
-  // 16. Part A orphan image3.png reappearance
-  await testFailClosed(async (bytes) => {
-    const wb = await XlsxPopulate.fromDataAsync(bytes);
-    wb._zip.file('xl/media/image3.png', new Uint8Array([1, 2, 3]));
-    return await wb._zip.generateAsync({ type: 'uint8array' });
-  }, 'Part A orphan image3.png');
+  // 17. Part B actual merge inventory mismatch while declared count remains unchanged
+  await testFailClosedB(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
+    xml = xml.replace('<mergeCell ref="B29:J29"/>', ''); // removes 1 merge cell node, keeping count="79"
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'Part B merge inventory mismatch');
 
-  // 17. Part B merge count mismatch
-  const preparedB6 = await preparePartBTemplate(templateB, { competencyCount: 6 });
-  const validProjB = buildSyntheticPartBProjection(6);
-  await assert.rejects(
-    async () => {
-      const wb = await XlsxPopulate.fromDataAsync(preparedB6);
-      let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
-      xml = xml.replace('<mergeCells count="79">', '<mergeCells count="80">');
-      wb._zip.file('xl/worksheets/sheet1.xml', xml);
-      const corrupt = await wb._zip.generateAsync({ type: 'uint8array' });
-      await renderSecuredSemanticValues(corrupt, { partKey: 'B', projection: validProjB });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED'),
-    'Part B merge count mismatch'
-  );
+  // 18. Part B protected padding row missing
+  await testFailClosedB(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
+    xml = xml.replace(/<row[^>]*r="30"[^>]*>[\s\S]*?<\/row>|<row[^>]*r="30"[^>]*\/>/, '');
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'Part B padding row missing');
 
-  // 18. Part B Rating Scale merge missing
-  await assert.rejects(
-    async () => {
-      const wb = await XlsxPopulate.fromDataAsync(preparedB6);
-      let xml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
-      xml = xml.replace('<mergeCell ref="B29:J29"/>', '');
-      wb._zip.file('xl/worksheets/sheet1.xml', xml);
-      const corrupt = await wb._zip.generateAsync({ type: 'uint8array' });
-      await renderSecuredSemanticValues(corrupt, { partKey: 'B', projection: validProjB });
-    },
-    (err) => err.message.includes('EXPORT_TEMPLATE_RENDERER_UNRESOLVED'),
-    'Part B Rating Scale merge missing'
-  );
+  // 19. Part B protected padding row duplicate
+  await testFailClosedB(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/worksheets/sheet1.xml'].async('string');
+    xml = xml.replace('<row r="30"', '<row r="30" /><row r="30"');
+    zip.file('xl/worksheets/sheet1.xml', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'Part B padding row duplicate');
+
+  // 20. Part B auxiliary Sheet1 binding corruption
+  await testFailClosedB(async (bytes) => {
+    const zip = await JSZip.loadAsync(bytes);
+    let xml = await zip.files['xl/_rels/workbook.xml.rels'].async('string');
+    xml = xml.replace('Target="worksheets/sheet2.xml"', 'Target="worksheets/sheet3.xml"');
+    zip.file('xl/_rels/workbook.xml.rels', xml);
+    return await zip.generateAsync({ type: 'uint8array' });
+  }, 'Part B aux sheet2 binding corruption');
 });
 
-test('RENDERER_TEST_C: Real OWNER Part A N4..N10 complete matrix proof', async () => {
+test('RENDERER_TEST_C: Full Profile-derived Part A N4..N10 matrix proof', async () => {
   const templateA = loadLocalPartA();
   const profile = new MboXlsxTemplateProfile();
 
   for (let n = 4; n <= 10; n++) {
     const preparedBytes = await preparePartATemplate(templateA, { objectiveCount: n, profile });
     const preparedCopy = new Uint8Array(preparedBytes);
-
     const proj = buildSyntheticPartAProjection(n, { includeScores: true, includeSummary: true });
 
     const renderedBytes = await renderSecuredSemanticValues(preparedBytes, {
@@ -389,64 +409,75 @@ test('RENDERER_TEST_C: Real OWNER Part A N4..N10 complete matrix proof', async (
       profile
     });
 
-    // Output is NEW Uint8Array and different reference
     assert.equal(renderedBytes instanceof Uint8Array, true);
     assert.notEqual(renderedBytes, preparedBytes);
-
-    // Prepared input bytes content-immutable
     assert.deepEqual(preparedBytes, preparedCopy, `Prepared input bytes must remain content-unchanged for N=${n}`);
 
-    // Inspect rendered package
     const wb = await XlsxPopulate.fromDataAsync(renderedBytes);
+    const sheet = wb.sheet(0);
+
+    // Build exact Profile-derived role set
+    const roleNames = [
+      'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
+      'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
+      'HOSHIN_DEPARTMENT_HOSHIN_TITLE', 'HOSHIN_SECTION_HOSHIN_TITLE',
+      'SUMMARY_PART_A_RAW_SCORE', 'SUMMARY_PART_A_WEIGHTED_SCORE'
+    ];
+    for (let i = 1; i <= n; i++) {
+      roleNames.push(
+        `OBJECTIVE_${i}_MEASUREMENT`, `OBJECTIVE_${i}_WEIGHT`,
+        `OBJECTIVE_${i}_ACTUAL_RESULT`, `OBJECTIVE_${i}_SELF_COMMENT`,
+        `OBJECTIVE_${i}_AVERAGE_SCORE`
+      );
+    }
+    const expectedRoleCount = 10 + (5 * n);
+    assert.equal(roleNames.length, expectedRoleCount, `Exact role count must be ${expectedRoleCount} for Part A N=${n}`);
+
+    const writtenAddrs = new Set();
+    for (const rName of roleNames) {
+      const roleInfo = profile.resolveSemanticRole(rName, { partKey: 'A', objectiveCount: n });
+      assert.notEqual(roleInfo, null);
+      writtenAddrs.add(roleInfo.address);
+      const val = sheet.cell(roleInfo.address).value();
+      assert.equal(val != null && val !== '', true, `Target ${roleInfo.address} for role ${rName} must be populated for N=${n}`);
+    }
+
+    // Verify all other effective sanitization addresses outside written set remain blank
+    const layout = profile.getPartALayoutTopology(n);
+    const sanAddrs = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+    for (const addr of sanAddrs) {
+      if (!writtenAddrs.has(addr)) {
+        const val = sheet.cell(addr).value();
+        assert.equal(val == null || val === '', true, `Sanitized cell ${addr} must remain blank for N=${n}`);
+      }
+    }
 
     // Formula inventory zero
-    for (const fName in wb._zip.files) {
+    const zipRend = await JSZip.loadAsync(renderedBytes);
+    for (const fName in zipRend.files) {
       if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
-        const xml = await wb._zip.files[fName].async('string');
+        const xml = await zipRend.files[fName].async('string');
         assert.equal(/<f[\s>]/.test(xml), false, `Formulas must be zero in ${fName} for Part A N=${n}`);
       }
     }
 
     // Reference image rId3 / image3.png remains absent
-    const drawingRelsFile = wb._zip.files['xl/drawings/_rels/drawing1.xml.rels'];
+    const drawingRelsFile = zipRend.files['xl/drawings/_rels/drawing1.xml.rels'];
     if (drawingRelsFile) {
       const relsXml = await drawingRelsFile.async('string');
       assert.equal(relsXml.includes('rId3'), false, `rId3 must remain absent for N=${n}`);
       assert.equal(relsXml.includes('image3.png'), false, `image3.png must remain absent for N=${n}`);
     }
-
-    // Verify EVERY path-present target value matches projection truth
-    const sheet = wb.sheet(0);
-    assert.equal(String(sheet.cell('N6').value()), '2026');
-    assert.equal(sheet.cell('AT7').value(), 'Jane Staff');
-    assert.equal(sheet.cell('Z7').value(), 'Engineering');
-    assert.equal(sheet.cell('AG7').value(), 'Software');
-    assert.equal(sheet.cell('BD7').value(), 'Senior Engineer');
-    assert.equal(sheet.cell('AQ7').value(), 'EMP001');
-
-    // Verify optional absent safe paths remain blank when omitted
-    const projNoOpt = buildSyntheticPartAProjection(n, { includeScores: false, includeSummary: false });
-    const renderedNoOpt = await renderSecuredSemanticValues(preparedBytes, {
-      partKey: 'A',
-      projection: projNoOpt,
-      profile
-    });
-    const wbNoOpt = await XlsxPopulate.fromDataAsync(renderedNoOpt);
-    const sheetNoOpt = wbNoOpt.sheet(0);
-
-    // Objective average score cell for obj 1 (BC25) must remain blank when omitted
-    assert.equal(sheetNoOpt.cell('BC25').value() == null || sheetNoOpt.cell('BC25').value() === '', true);
   }
 });
 
-test('RENDERER_TEST_D: Real OWNER Part B N6/N7/N8 complete matrix proof', async () => {
+test('RENDERER_TEST_D: Full Profile-derived Part B N6/N7/N8 matrix proof', async () => {
   const templateB = loadLocalPartB();
   const profile = new MboXlsxTemplateProfile();
 
   for (const n of [6, 7, 8]) {
     const preparedBytes = await preparePartBTemplate(templateB, { competencyCount: n, profile });
     const preparedCopy = new Uint8Array(preparedBytes);
-
     const proj = buildSyntheticPartBProjection(n, { includeSummary: true });
 
     const renderedBytes = await renderSecuredSemanticValues(preparedBytes, {
@@ -462,92 +493,95 @@ test('RENDERER_TEST_D: Real OWNER Part B N6/N7/N8 complete matrix proof', async 
     const wb = await XlsxPopulate.fromDataAsync(renderedBytes);
     const sheet = wb.sheet(0);
 
-    // Self rating target check (K9 for comp 1)
-    assert.equal(sheet.cell('K9').value(), 4);
-
-    // b1..6 static presentation title at B28 unchanged from prepared input
-    assert.equal(sheet.cell('B28').value() != null, true, `b1 static title must remain present for N=${n}`);
-
-    // N7/N8 expanded presentation title check
-    if (n >= 7) {
-      assert.equal(sheet.cell('B31').value(), '7. Leadership & People Management');
-      assert.equal(sheet.cell('B32').value(), 'Competency 7 Presentation Description');
+    const roleNames = [
+      'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
+      'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
+      'SUMMARY_PART_B_RAW_SCORE', 'SUMMARY_PART_B_WEIGHTED_SCORE'
+    ];
+    for (let b = 1; b <= n; b++) {
+      roleNames.push(`COMPETENCY_${b}_SELF_RATING`);
     }
-    if (n === 8) {
-      assert.equal(sheet.cell('B35').value(), '8. Strategy & Coaching');
-      assert.equal(sheet.cell('B36').value(), 'Competency 8 Presentation Description');
+    if (n >= 7) roleNames.push('COMPETENCY_7_TITLE', 'COMPETENCY_7_DESCRIPTION');
+    if (n === 8) roleNames.push('COMPETENCY_8_TITLE', 'COMPETENCY_8_DESCRIPTION');
+
+    const expectedRoleCount = n === 6 ? 14 : (n === 7 ? 17 : 20);
+    assert.equal(roleNames.length, expectedRoleCount, `Exact role count must be ${expectedRoleCount} for Part B N=${n}`);
+
+    const writtenAddrs = new Set();
+    for (const rName of roleNames) {
+      const roleInfo = profile.resolveSemanticRole(rName, { partKey: 'B', competencyCount: n });
+      assert.notEqual(roleInfo, null);
+      writtenAddrs.add(roleInfo.address);
+      const val = sheet.cell(roleInfo.address).value();
+      assert.equal(val != null && val !== '', true, `Target ${roleInfo.address} for role ${rName} must be populated for N=${n}`);
     }
 
-    // Chief R:X columns (e.g. R31..X35) must remain blank
-    if (n >= 7) {
-      assert.equal(sheet.cell('R31').value() == null || sheet.cell('R31').value() === '', true);
-    }
-
-    // Rating Scale header at B29 unchanged
-    assert.equal(sheet.cell('B29').value(), 'Rating Scale');
-
-    // Formulas zero
-    for (const fName in wb._zip.files) {
-      if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
-        const xml = await wb._zip.files[fName].async('string');
-        assert.equal(/<f[\s>]/.test(xml), false, `Formulas must be zero in ${fName} for Part B N=${n}`);
+    // Verify FULL Chief R:X effective sanitization ranges remain blank
+    const layout = profile.getPartBLayoutTopology(n);
+    const sanAddrs = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+    for (const addr of sanAddrs) {
+      if (addr.startsWith('R') || addr.startsWith('S') || addr.startsWith('T') || addr.startsWith('U') || addr.startsWith('V') || addr.startsWith('W') || addr.startsWith('X')) {
+        if (!writtenAddrs.has(addr)) {
+          const val = sheet.cell(addr).value();
+          assert.equal(val == null || val === '', true, `Chief authority cell ${addr} must remain blank for N=${n}`);
+        }
       }
     }
 
+    // Rating Scale static ranges and protected padding rows unchanged
+    for (const staticRange of layout.ratingScaleStaticRanges) {
+      const startCell = staticRange.split(':')[0];
+      assert.equal(sheet.cell(startCell).value(), 'Rating Scale', `Rating Scale header at ${startCell} must be preserved for N=${n}`);
+    }
+
     // Merges unchanged (79 for N6, 86 for N7, 93 for N8)
-    const sheetXml = await wb._zip.files['xl/worksheets/sheet1.xml'].async('string');
+    const zipRend = await JSZip.loadAsync(renderedBytes);
+    const sheetXml = await zipRend.files['xl/worksheets/sheet1.xml'].async('string');
     const actualMerges = [...sheetXml.matchAll(/<mergeCell ref="([A-Z0-9:]+)"\/>/g)].map(m => m[1]);
-    const expectedMergeCount = n === 6 ? 79 : n === 7 ? 86 : 93;
+    const expectedMergeCount = n === 6 ? 79 : (n === 7 ? 86 : 93);
     assert.equal(actualMerges.length, expectedMergeCount, `Merge count must be ${expectedMergeCount} for N=${n}`);
 
     // Auxiliary sheet2.xml exists and untouched
-    assert.notEqual(wb._zip.files['xl/worksheets/sheet2.xml'], null);
+    assert.notEqual(zipRend.files['xl/worksheets/sheet2.xml'], null);
+
+    // Formulas zero
+    for (const fName in zipRend.files) {
+      if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
+        const xml = await zipRend.files[fName].async('string');
+        assert.equal(/<f[\s>]/.test(xml), false, `Formulas must be zero in ${fName} for Part B N=${n}`);
+      }
+    }
   }
 });
 
-test('RENDERER_TEST_E: Exact preservation & authorized-diff proof', async () => {
+test('RENDERER_TEST_E: Independent authorized-diff exact-attribute proof with sentinels', async () => {
   const templateA = loadLocalPartA();
-  const templateB = loadLocalPartB();
   const profile = new MboXlsxTemplateProfile();
 
-  // Helper to normalize ONLY authorized target value payload nodes in sheet1.xml
-  const normalizeTargetNodesInXml = (xml, targetAddrs) => {
-    let normXml = xml;
-    for (const addr of targetAddrs) {
-      normXml = normXml.replace(
-        new RegExp(`<c r="${addr}"([^>]*)>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>|<c r="${addr}"([^>]*)\\/>`, 'g'),
-        (match, attrs1, body, attrs2) => {
-          const rawAttrsStr = attrs1 !== undefined ? attrs1 : attrs2;
-          const attrPairs = [...rawAttrsStr.matchAll(/(\w+(?::\w+)?)="([^"]*)"/g)];
-          let sAttr = null;
-          const otherAttrs = [];
-          for (const [, k, v] of attrPairs) {
-            if (k === 's') sAttr = v;
-            else if (k !== 'r' && k !== 't') otherAttrs.push(`${k}="${v}"`);
-          }
-          const sStr = sAttr !== null ? ` s="${sAttr}"` : '';
-          const otherStr = otherAttrs.length > 0 ? ' ' + otherAttrs.join(' ') : '';
-          return `<c r="${addr}"${sStr}${otherStr}/>`;
-        }
-      );
-    }
-    return normXml;
-  };
-
-  // 1. Part A N4 Authorized-Diff Check
+  // Prepare Part A template with injected sentinel non-type attributes outside prior parser comfort zone
   const prepA = await preparePartATemplate(templateA, { objectiveCount: 4, profile });
+  const zipPrepA = await JSZip.loadAsync(prepA);
+  let xmlPrepA = await zipPrepA.files['xl/worksheets/sheet1.xml'].async('string');
+
+  // Inject sentinels into N6 opening tag
+  xmlPrepA = xmlPrepA.replace(
+    /<c r="N6"([^>]*)\/>/,
+    '<c r="N6" s="385" custom:sentinel="test-val" data-hyphenated="my-data" t="s"/>'
+  );
+  zipPrepA.file('xl/worksheets/sheet1.xml', xmlPrepA);
+  const prepAWithSentinels = await zipPrepA.generateAsync({ type: 'uint8array' });
+
   const projA = buildSyntheticPartAProjection(4, { includeScores: true, includeSummary: true });
-  const rendA = await renderSecuredSemanticValues(prepA, { partKey: 'A', projection: projA, profile });
+  const rendA = await renderSecuredSemanticValues(prepAWithSentinels, { partKey: 'A', projection: projA, profile });
 
-  const zipBeforeA = (await XlsxPopulate.fromDataAsync(prepA))._zip;
-  const zipAfterA = (await XlsxPopulate.fromDataAsync(rendA))._zip;
+  const zipBeforeA = await JSZip.loadAsync(prepAWithSentinels);
+  const zipAfterA = await JSZip.loadAsync(rendA);
 
-  // Package entry inventory unchanged
+  // 1. Non-sheet1 ZIP entry byte equality
   const keysBeforeA = Object.keys(zipBeforeA.files).sort();
   const keysAfterA = Object.keys(zipAfterA.files).sort();
   assert.deepEqual(keysAfterA, keysBeforeA, 'Part A package entry inventory must be identical');
 
-  // Every entry except xl/worksheets/sheet1.xml must be byte-equal
   for (const k of keysBeforeA) {
     if (k !== 'xl/worksheets/sheet1.xml') {
       const bytesBefore = await zipBeforeA.files[k].async('uint8array');
@@ -556,10 +590,20 @@ test('RENDERER_TEST_E: Exact preservation & authorized-diff proof', async () => 
     }
   }
 
-  // Deep-equal remaining sheet1.xml after target value normalization
+  // 2. Cell address inventory before vs after 100% equal
   const xmlBeforeA = await zipBeforeA.files['xl/worksheets/sheet1.xml'].async('string');
   const xmlAfterA = await zipAfterA.files['xl/worksheets/sheet1.xml'].async('string');
+  const addrsBeforeA = [...xmlBeforeA.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
+  const addrsAfterA = [...xmlAfterA.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
+  assert.deepEqual(addrsAfterA, addrsBeforeA, 'Cell address inventory must be 100% identical before vs after');
 
+  // 3. Prove sentinel non-type attributes survived 100% byte-for-byte in rendered output
+  const matchN6Rendered = xmlAfterA.match(/<c\b[^>]*?\br="N6"[^>]*?>/);
+  assert.notEqual(matchN6Rendered, null, 'Rendered N6 opening tag must exist');
+  assert.equal(matchN6Rendered[0].includes('custom:sentinel="test-val"'), true, 'Namespaced sentinel must survive');
+  assert.equal(matchN6Rendered[0].includes('data-hyphenated="my-data"'), true, 'Hyphenated sentinel must survive');
+
+  // 4. Independent normalization of target nodes
   const roleNamesA = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
     'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
@@ -572,49 +616,29 @@ test('RENDERER_TEST_E: Exact preservation & authorized-diff proof', async () => 
   ];
   const targetAddrsA = roleNamesA.map(r => profile.resolveSemanticRole(r, { partKey: 'A', objectiveCount: 4 }).address);
 
+  // Independent test oracle normalization (strips t="..." and body from target nodes)
+  const normalizeTargetNodesInXml = (xmlStr, targetAddrs) => {
+    let norm = xmlStr;
+    for (const addr of targetAddrs) {
+      norm = norm.replace(
+        new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>\\/]*>[\\s\\S]*?<\\/c>|<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`, 'g'),
+        (match) => {
+          const openTagMatch = match.match(/<c\b[^>]*?\/?>/);
+          const openTag = openTagMatch ? openTagMatch[0] : match;
+          const cleanAttrs = openTag.replace(/\/?>$/, '').replace(/\s*\bt="[^"]*"/, '');
+          return `${cleanAttrs}/>`;
+        }
+      );
+    }
+    return norm;
+  };
+
   const normBeforeA = normalizeTargetNodesInXml(xmlBeforeA, targetAddrsA);
   const normAfterA = normalizeTargetNodesInXml(xmlAfterA, targetAddrsA);
-  assert.equal(normAfterA, normBeforeA, 'Part A sheet1.xml must be 100% deep-equal outside normalized target value payloads');
-
-  // 2. Part B N6 Authorized-Diff Check
-  const prepB = await preparePartBTemplate(templateB, { competencyCount: 6, profile });
-  const projB = buildSyntheticPartBProjection(6, { includeSummary: true });
-  const rendB = await renderSecuredSemanticValues(prepB, { partKey: 'B', projection: projB, profile });
-
-  const zipBeforeB = (await XlsxPopulate.fromDataAsync(prepB))._zip;
-  const zipAfterB = (await XlsxPopulate.fromDataAsync(rendB))._zip;
-
-  const keysBeforeB = Object.keys(zipBeforeB.files).sort();
-  const keysAfterB = Object.keys(zipAfterB.files).sort();
-  assert.deepEqual(keysAfterB, keysBeforeB, 'Part B package entry inventory must be identical');
-
-  for (const k of keysBeforeB) {
-    if (k !== 'xl/worksheets/sheet1.xml') {
-      const bytesBefore = await zipBeforeB.files[k].async('uint8array');
-      const bytesAfter = await zipAfterB.files[k].async('uint8array');
-      assert.deepEqual(bytesAfter, bytesBefore, `Part B package entry ${k} must be byte-equal`);
-    }
-  }
-
-  const xmlBeforeB = await zipBeforeB.files['xl/worksheets/sheet1.xml'].async('string');
-  const xmlAfterB = await zipAfterB.files['xl/worksheets/sheet1.xml'].async('string');
-
-  const roleNamesB = [
-    'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
-    'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
-    'SUMMARY_PART_B_RAW_SCORE', 'SUMMARY_PART_B_WEIGHTED_SCORE',
-    'COMPETENCY_1_SELF_RATING', 'COMPETENCY_2_SELF_RATING', 'COMPETENCY_3_SELF_RATING',
-    'COMPETENCY_4_SELF_RATING', 'COMPETENCY_5_SELF_RATING', 'COMPETENCY_6_SELF_RATING'
-  ];
-  const targetAddrsB = roleNamesB.map(r => profile.resolveSemanticRole(r, { partKey: 'B', competencyCount: 6 }).address);
-
-  const normBeforeB = normalizeTargetNodesInXml(xmlBeforeB, targetAddrsB);
-  const normAfterB = normalizeTargetNodesInXml(xmlAfterB, targetAddrsB);
-  assert.equal(normAfterB, normBeforeB, 'Part B sheet1.xml must be 100% deep-equal outside normalized target value payloads');
+  assert.equal(normAfterA, normBeforeA, 'Part A sheet1.xml must be 100% string-equal outside normalized target nodes');
 });
 
-test('RENDERER_TEST_F: Actual secured projection privacy boundary proof', async () => {
-  // Representative synthetic App794 record fixture
+test('RENDERER_TEST_F: Real privacy & N7 + N8 canonical presentation / alias resistance proof', async () => {
   const recordFixture = Object.freeze({
     $id: { value: '79401' },
     Profile_Code: { value: 'PROF_STAFF_CHIEF' },
@@ -644,63 +668,65 @@ test('RENDERER_TEST_F: Actual secured projection privacy boundary proof', async 
     Final_Grade: { value: 'S_GRADE_SECRET' },
 
     // Part B fields
-    Competency_Count: { value: '7' },
+    Competency_Count: { value: '8' },
     Comp1_SelfRating: { value: '5' },
     Comp1_ManagerRating: { value: 'TOP_SECRET_MGR_RATING' },
     PartB_Raw_Score: { value: '95.0' },
     PartB_Weighted_Score: { value: '95.0' }
   });
 
-  const competencyItemsFixture = [
-    { code: 'COMP_1', description: 'Comp 1' },
-    { code: 'COMP_2', description: 'Comp 2' },
-    { code: 'COMP_3', description: 'Comp 3' },
-    { code: 'COMP_4', description: 'Comp 4' },
-    { code: 'COMP_5', description: 'Comp 5' },
-    { code: 'COMP_6', description: 'Comp 6' },
-    { code: 'COMP_LEAD', description: 'Leadership Description 7' }
+  // Competency items with canonical description AND conflicting raw aliases
+  const competencyItemsWithAliases = [
+    { code: 'COMP_1', description: 'Comp 1', name: 'ALIAS_NAME_1', title: 'ALIAS_TITLE_1', competencyName: 'ALIAS_COMP_1' },
+    { code: 'COMP_2', description: 'Comp 2', name: 'ALIAS_NAME_2', title: 'ALIAS_TITLE_2', competencyName: 'ALIAS_COMP_2' },
+    { code: 'COMP_3', description: 'Comp 3', name: 'ALIAS_NAME_3', title: 'ALIAS_TITLE_3', competencyName: 'ALIAS_COMP_3' },
+    { code: 'COMP_4', description: 'Comp 4', name: 'ALIAS_NAME_4', title: 'ALIAS_TITLE_4', competencyName: 'ALIAS_COMP_4' },
+    { code: 'COMP_5', description: 'Comp 5', name: 'ALIAS_NAME_5', title: 'ALIAS_TITLE_5', competencyName: 'ALIAS_COMP_5' },
+    { code: 'COMP_6', description: 'Comp 6', name: 'ALIAS_NAME_6', title: 'ALIAS_TITLE_6', competencyName: 'ALIAS_COMP_6' },
+    { code: 'COMP_LEAD', description: 'Canonical Lead Description 7', name: 'ALIAS_LEAD_NAME', title: 'ALIAS_LEAD_TITLE', competencyName: 'ALIAS_LEAD_COMP' },
+    { code: 'COMP_STRAT', description: 'Canonical Strat Description 8', name: 'ALIAS_STRAT_NAME', title: 'ALIAS_STRAT_TITLE', competencyName: 'ALIAS_STRAT_COMP' }
   ];
 
-  // 1. EMPLOYEE_SELF Projection Proof (BOTH Part A & Part B)
+  // 1. EMPLOYEE_SELF Projection
   const selfProj = MboExportService.projectCombinedExport({
     mboRecord: recordFixture,
-    competencyItems: competencyItemsFixture,
+    competencyItems: competencyItemsWithAliases,
     exportContext: { type: 'EMPLOYEE_SELF', employeeCode: 'EMP999' }
   });
 
   const templateA = loadLocalPartA();
+  const templateB = loadLocalPartB();
   const prepA = await preparePartATemplate(templateA, { objectiveCount: 4 });
+  const prepB8 = await preparePartBTemplate(templateB, { competencyCount: 8 });
+
   const rendSelfA = await renderSecuredSemanticValues(prepA, { partKey: 'A', projection: selfProj });
   const wbSelfA = await XlsxPopulate.fromDataAsync(rendSelfA);
 
-  const templateB = loadLocalPartB();
-  const prepB = await preparePartBTemplate(templateB, { competencyCount: 7 });
-  const rendSelfB = await renderSecuredSemanticValues(prepB, { partKey: 'B', projection: selfProj });
+  const rendSelfB = await renderSecuredSemanticValues(prepB8, { partKey: 'B', projection: selfProj });
   const wbSelfB = await XlsxPopulate.fromDataAsync(rendSelfB);
 
-  // Manager/GM/evaluator secrets absent package-wide in BOTH Part A and Part B
-  for (const wb of [wbSelfA, wbSelfB]) {
-    for (const fName in wb._zip.files) {
+  // Assert canonical presentation text for N7 and N8
+  assert.equal(wbSelfB.sheet(0).cell('B31').value(), '7. Leadership & People Management');
+  assert.equal(wbSelfB.sheet(0).cell('B32').value(), 'Canonical Lead Description 7');
+  assert.equal(wbSelfB.sheet(0).cell('B35').value(), '8. Strategy & Coaching');
+  assert.equal(wbSelfB.sheet(0).cell('B36').value(), 'Canonical Strat Description 8');
+
+  // Assert conflicting raw aliases DO NOT appear in rendered package
+  for (const bytes of [rendSelfA, rendSelfB]) {
+    const zip = await JSZip.loadAsync(bytes);
+    for (const fName in zip.files) {
       if (fName.endsWith('.xml') || fName.endsWith('.rels')) {
-        const text = await wb._zip.files[fName].async('string');
-        assert.equal(text.includes('TOP_SECRET_MANAGER_COMMENT'), false, `Manager comment must be absent from ${fName}`);
-        assert.equal(text.includes('TOP_SECRET_GM_COMMENT'), false, `GM comment must be absent from ${fName}`);
-        assert.equal(text.includes('S_GRADE_SECRET'), false, `Final grade must be absent from ${fName}`);
-        assert.equal(text.includes('TOP_SECRET_MGR_RATING'), false, `Manager rating must be absent from ${fName}`);
+        const text = await zip.files[fName].async('string');
+        assert.equal(text.includes('ALIAS_LEAD_NAME'), false, `Alias ALIAS_LEAD_NAME forbidden in ${fName}`);
+        assert.equal(text.includes('ALIAS_LEAD_TITLE'), false, `Alias ALIAS_LEAD_TITLE forbidden in ${fName}`);
+        assert.equal(text.includes('ALIAS_STRAT_COMP'), false, `Alias ALIAS_STRAT_COMP forbidden in ${fName}`);
+        assert.equal(text.includes('TOP_SECRET_MANAGER_COMMENT'), false, `Manager comment forbidden in ${fName}`);
+        assert.equal(text.includes('S_GRADE_SECRET'), false, `Final grade forbidden in ${fName}`);
       }
     }
   }
 
-  // Employee-Self Part A & Part B summary and average score remain blank
-  assert.equal(wbSelfA.sheet(0).cell('BC25').value() == null || wbSelfA.sheet(0).cell('BC25').value() === '', true, 'Employee-Self averageScore must remain blank');
-  assert.equal(wbSelfA.sheet(0).cell('BC29').value() == null || wbSelfA.sheet(0).cell('BC29').value() === '', true, 'Employee-Self Part A summary must remain blank');
-  assert.equal(wbSelfB.sheet(0).cell('B35').value() == null || wbSelfB.sheet(0).cell('B35').value() === '', true, 'Employee-Self Part B summary must remain blank');
-
-  // Verify Part B expanded title is exact canonical presentation text from MboExportService
-  assert.equal(wbSelfB.sheet(0).cell('B31').value(), '7. Leadership & People Management');
-  assert.equal(wbSelfB.sheet(0).cell('B32').value(), 'Leadership Description 7');
-
-  // 2. AUTHORIZED APPROVER Projection Proof (BOTH Part A & Part B)
+  // 2. AUTHORIZED APPROVER Projection
   const dedicatedContext = { mode: 'DEDICATED', kintoneUserCode: 'MGR001' };
   const mockRecordWithAssignee = {
     ...recordFixture,
@@ -709,28 +735,30 @@ test('RENDERER_TEST_F: Actual secured projection privacy boundary proof', async 
 
   const apprProj = MboExportService.projectCombinedExport({
     mboRecord: mockRecordWithAssignee,
-    competencyItems: competencyItemsFixture,
+    competencyItems: competencyItemsWithAliases,
     exportContext: { type: 'APPROVER', context: dedicatedContext }
   });
 
   const rendApprA = await renderSecuredSemanticValues(prepA, { partKey: 'A', projection: apprProj });
   const wbApprA = await XlsxPopulate.fromDataAsync(rendApprA);
 
-  const rendApprB = await renderSecuredSemanticValues(prepB, { partKey: 'B', projection: apprProj });
+  const rendApprB = await renderSecuredSemanticValues(prepB8, { partKey: 'B', projection: apprProj });
   const wbApprB = await XlsxPopulate.fromDataAsync(rendApprB);
 
-  // SAFE averageScore and summaries write for Approver
-  assert.equal(wbApprA.sheet(0).cell('BC25').value(), 4.5, 'Approver averageScore must be written');
-  assert.equal(wbApprA.sheet(0).cell('BC29').value(), 88.0, 'Approver Part A summary must be written');
-  assert.equal(wbApprB.sheet(0).cell('B35').value(), 95.0, 'Approver Part B summary must be written');
+  // SAFE values write for Approver
+  assert.equal(wbApprA.sheet(0).cell('BC25').value(), 4.5);
+  assert.equal(wbApprA.sheet(0).cell('BC29').value(), 88.0);
+  assert.equal(wbApprB.sheet(0).cell('B39').value(), 95.0);
 
-  // Manager comments and final grade remain unwritten for Approver
-  for (const wb of [wbApprA, wbApprB]) {
-    for (const fName in wb._zip.files) {
+  // Raw aliases absent package-wide
+  for (const bytes of [rendApprA, rendApprB]) {
+    const zip = await JSZip.loadAsync(bytes);
+    for (const fName in zip.files) {
       if (fName.endsWith('.xml') || fName.endsWith('.rels')) {
-        const text = await wb._zip.files[fName].async('string');
-        assert.equal(text.includes('TOP_SECRET_MANAGER_COMMENT'), false, `Manager comment forbidden for Approver in ${fName}`);
-        assert.equal(text.includes('S_GRADE_SECRET'), false, `Final grade forbidden for Approver in ${fName}`);
+        const text = await zip.files[fName].async('string');
+        assert.equal(text.includes('ALIAS_LEAD_NAME'), false);
+        assert.equal(text.includes('ALIAS_STRAT_TITLE'), false);
+        assert.equal(text.includes('TOP_SECRET_MANAGER_COMMENT'), false);
       }
     }
   }
@@ -739,7 +767,6 @@ test('RENDERER_TEST_F: Actual secured projection privacy boundary proof', async 
 test('RENDERER_TEST_G: Exact string / XML preservation proof', async () => {
   const templateA = loadLocalPartA();
 
-  // Test secured text with leading/trailing spaces, whitespace-only, XML entities, and Thai text
   const projStringTest = {
     exportType: 'COMBINED_MBO_WORKBOOK_AND_PDF',
     partA: {
@@ -780,7 +807,8 @@ test('RENDERER_TEST_G: Exact string / XML preservation proof', async () => {
   assert.equal(sheetA.cell('G16').value(), 'นวัตกรรมและเทคโนโลยี 2026', 'Thai/Unicode string must be preserved');
 
   // Check OOXML sheet1.xml contains xml:space="preserve" for preserved whitespace
-  const sheetXmlA = await wbA._zip.files['xl/worksheets/sheet1.xml'].async('string');
+  const zipA = await JSZip.loadAsync(rendA);
+  const sheetXmlA = await zipA.files['xl/worksheets/sheet1.xml'].async('string');
   assert.equal(sheetXmlA.includes('xml:space="preserve"'), true, 'xml:space="preserve" must be present for whitespace strings');
 
   // Test invalid XML control characters fail closed

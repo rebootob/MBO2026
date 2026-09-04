@@ -1,12 +1,14 @@
 /**
- * Production Secured Semantic Value Renderer — Part A + Part B (R2-C-R1)
+ * Production Secured Semantic Value Renderer — Part A + Part B (R2-C-R2)
  * 
  * Browser-safe asynchronous renderer:
  *   - Consumes prepared + sanitized XLSX bytes, secured projection object, and Template Profile.
  *   - Performs raw OOXML target-cell-only mutation on xl/worksheets/sheet1.xml.
+ *   - Preserves exact raw opening tag attributes, attribute values, and attribute ordering.
  *   - Resolves all write targets through profile.resolveSemanticRole(roleName, { partKey, objectiveCount, competencyCount }).
  *   - Zero calculation, zero raw-record lookup, zero formula creation, zero hard-coded workbook addresses.
  */
+import JSZip from 'jszip';
 import XlsxPopulate from 'xlsx-populate';
 import {
   MboXlsxTemplateProfile,
@@ -52,75 +54,73 @@ function resolvePath(obj, pathStr) {
 }
 
 function mutateCellInSheetXml(sheetXml, addr, val) {
-  // 1. Try self-closing cell tag first: <c r="ADDR" ... />
-  const selfClosingRegex = new RegExp(`<c r="${addr}"([^>]*)\\/>`);
-  const selfMatch = sheetXml.match(selfClosingRegex);
+  // 1. Try self-closing cell tag first: <c ... r="ADDR" ... />
+  const selfRegex = new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`);
+  const selfMatch = sheetXml.match(selfRegex);
 
   if (selfMatch) {
-    const rawAttrsStr = selfMatch[1];
-    const attrPairs = [...rawAttrsStr.matchAll(/(\w+(?::\w+)?)="([^"]*)"/g)];
-    let sAttr = null;
-    const otherAttrs = [];
-    for (const [, k, v] of attrPairs) {
-      if (k === 's') sAttr = v;
-      else if (k !== 'r' && k !== 't') otherAttrs.push(`${k}="${v}"`);
-    }
+    const fullSelfTag = selfMatch[0];
+    const rawOpenAttrs = fullSelfTag.slice(2, -2); // strip leading '<c' and trailing '/>'
 
-    const sStr = sAttr !== null ? ` s="${sAttr}"` : '';
-    const otherStr = otherAttrs.length > 0 ? ' ' + otherAttrs.join(' ') : '';
-
-    let replacement;
+    let newOpenAttrs = rawOpenAttrs;
     if (val === undefined || val === null || val === '') {
-      replacement = `<c r="${addr}"${sStr}${otherStr}/>`;
+      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
+      const newSelfTag = `<c${newOpenAttrs}/>`;
+      return sheetXml.replace(fullSelfTag, () => newSelfTag);
     } else if (typeof val === 'number') {
-      replacement = `<c r="${addr}"${sStr}${otherStr}><v>${val}</v></c>`;
+      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
+      const newPairedTag = `<c${newOpenAttrs}><v>${val}</v></c>`;
+      return sheetXml.replace(fullSelfTag, () => newPairedTag);
     } else if (typeof val === 'string') {
+      if (/\bt="[^"]*"/.test(newOpenAttrs)) {
+        newOpenAttrs = newOpenAttrs.replace(/\bt="[^"]*"/, 't="inlineStr"');
+      } else {
+        newOpenAttrs = newOpenAttrs + ' t="inlineStr"';
+      }
       const escaped = escapeXmlText(val);
       const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
-      replacement = `<c r="${addr}"${sStr} t="inlineStr"${otherStr}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      const newPairedTag = `<c${newOpenAttrs}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      return sheetXml.replace(fullSelfTag, () => newPairedTag);
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
     }
-
-    return sheetXml.replace(selfClosingRegex, () => replacement);
   }
 
-  // 2. Try paired cell tag: <c r="ADDR" ...>...</c>
-  const pairedRegex = new RegExp(`<c r="${addr}"([^>]*)>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>`);
+  // 2. Try paired cell tag second: <c ... r="ADDR" ... >...</c>
+  const pairedRegex = new RegExp(`(<c\\b[^>]*?\\br="${addr}"[^>]*?>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`);
   const pairedMatch = sheetXml.match(pairedRegex);
 
   if (pairedMatch) {
-    const rawAttrsStr = pairedMatch[1];
+    const oldMatchStr = pairedMatch[0];
+    const fullOpenTag = pairedMatch[1];
     const body = pairedMatch[2];
     if (body && /<f[\s>]/.test(body)) {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} contains formula`);
     }
+    const rawOpenAttrs = fullOpenTag.slice(2, -1); // strip leading '<c' and trailing '>'
 
-    const attrPairs = [...rawAttrsStr.matchAll(/(\w+(?::\w+)?)="([^"]*)"/g)];
-    let sAttr = null;
-    const otherAttrs = [];
-    for (const [, k, v] of attrPairs) {
-      if (k === 's') sAttr = v;
-      else if (k !== 'r' && k !== 't') otherAttrs.push(`${k}="${v}"`);
-    }
-
-    const sStr = sAttr !== null ? ` s="${sAttr}"` : '';
-    const otherStr = otherAttrs.length > 0 ? ' ' + otherAttrs.join(' ') : '';
-
-    let replacement;
+    let newOpenAttrs = rawOpenAttrs;
     if (val === undefined || val === null || val === '') {
-      replacement = `<c r="${addr}"${sStr}${otherStr}/>`;
+      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
+      const newSelfTag = `<c${newOpenAttrs}/>`;
+      return sheetXml.replace(oldMatchStr, () => newSelfTag);
     } else if (typeof val === 'number') {
-      replacement = `<c r="${addr}"${sStr}${otherStr}><v>${val}</v></c>`;
+      newOpenAttrs = newOpenAttrs.replace(/\s*\bt="[^"]*"/, '');
+      const newPairedTag = `<c${newOpenAttrs}><v>${val}</v></c>`;
+      return sheetXml.replace(oldMatchStr, () => newPairedTag);
     } else if (typeof val === 'string') {
+      if (/\bt="[^"]*"/.test(newOpenAttrs)) {
+        newOpenAttrs = newOpenAttrs.replace(/\bt="[^"]*"/, 't="inlineStr"');
+      } else {
+        newOpenAttrs = newOpenAttrs + ' t="inlineStr"';
+      }
       const escaped = escapeXmlText(val);
       const spaceAttr = /^\s|\s$/.test(val) ? ' xml:space="preserve"' : '';
-      replacement = `<c r="${addr}"${sStr} t="inlineStr"${otherStr}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      const newPairedTag = `<c${newOpenAttrs}><is><t${spaceAttr}>${escaped}</t></is></c>`;
+      return sheetXml.replace(oldMatchStr, () => newPairedTag);
     } else {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Unsupported value type for cell ${addr}`);
     }
-
-    return sheetXml.replace(pairedRegex, () => replacement);
   }
 
   throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} node missing in sheet XML`);
@@ -189,22 +189,23 @@ export async function renderSecuredSemanticValues(
   const srcSnapshot = new Uint8Array(srcView.byteLength || srcView.length);
   srcSnapshot.set(srcView);
 
-  const wbStruct = await XlsxPopulate.fromDataAsync(srcSnapshot);
+  const zip = await JSZip.loadAsync(srcSnapshot);
 
-  const sheet1File = wbStruct._zip.files['xl/worksheets/sheet1.xml'];
-  const wbFile = wbStruct._zip.files['xl/workbook.xml'];
-  const wbRelsFile = wbStruct._zip.files['xl/_rels/workbook.xml.rels'];
+  const sheet1File = zip.file('xl/worksheets/sheet1.xml');
+  const wbFile = zip.file('xl/workbook.xml');
+  const wbRelsFile = zip.file('xl/_rels/workbook.xml.rels');
   if (!sheet1File || !wbFile || !wbRelsFile) {
     throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Required OOXML files missing');
   }
 
-  let sheetXml = await sheet1File.async('string');
-  let wbXml = await wbFile.async('string');
-  let wbRelsXml = await wbRelsFile.async('string');
+  const srcSheet1Xml = await sheet1File.async('string');
+  const wbXml = await wbFile.async('string');
+  const wbRelsXml = await wbRelsFile.async('string');
+  let sheetXml = srcSheet1Xml;
 
   const layout = partKey === 'A' ? profile.getPartALayoutTopology(count) : profile.getPartBLayoutTopology(count);
 
-  // R1-A.1: Workbook main sheet identity & relationship binding to sheet1.xml
+  // R1-A.1 / R2-F: Workbook main sheet identity & relationship binding to sheet1.xml
   const escapedMainSheetName = escapeXmlText(layout.mainSheetName);
   const sheetEntryRegex = new RegExp(`<sheet[^>]*name="${escapeRegExp(escapedMainSheetName)}"[^>]*r:id="([^"]+)"`);
   const sheetEntryMatch = wbXml.match(sheetEntryRegex);
@@ -223,7 +224,7 @@ export async function renderSecuredSemanticValues(
     throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Main sheet target mismatch: expected worksheets/sheet1.xml, got ${mainSheetTarget}`);
   }
 
-  // R1-A.2 & R1-A.3 & R1-A.4: Print_Area definedName inventory & attributes
+  // R1-A.2 / R2-F: Print_Area definedName inventory & attributes
   const printAreaMatches = [...wbXml.matchAll(/<definedName[^>]*name="_xlnm\.Print_Area"[^>]*>([\s\S]*?)<\/definedName>/g)];
   if (printAreaMatches.length !== 1) {
     throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Print_Area inventory count must be 1, found ${printAreaMatches.length}`);
@@ -244,9 +245,9 @@ export async function renderSecuredSemanticValues(
   }
 
   // R1-A.6: Formula inventory = 0
-  for (const fName in wbStruct._zip.files) {
+  for (const fName in zip.files) {
     if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
-      const xml = await wbStruct._zip.files[fName].async('string');
+      const xml = await zip.files[fName].async('string');
       if (/<f[\s>]/.test(xml)) {
         throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Formula found in prepared input');
       }
@@ -258,23 +259,23 @@ export async function renderSecuredSemanticValues(
   const sanSet = new Set(sanAddresses);
 
   for (const addr of sanAddresses) {
-    const pairedMatch = sheetXml.match(new RegExp(`<c r="${addr}"([^>]*)>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>`));
+    const pairedMatch = sheetXml.match(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?>((?:(?!<c\\b)[\\s\\S])*?)<\\/c>`));
     if (pairedMatch) {
-      const body = pairedMatch[2];
+      const body = pairedMatch[1];
       if (/<(?:v|is|f|t)[\s>]/.test(body)) {
         throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Sanitized cell ${addr} contains pre-write payload or formula`);
       }
     }
   }
 
-  // R1-A.8 & R1-A.9: Part A / Part B specific guards
+  // R1-A.8 / R2-F: Part A / Part B specific guards
   if (partKey === 'A') {
     // Reject image3.png in xl/media/
-    if (wbStruct._zip.files['xl/media/image3.png']) {
+    if (zip.files['xl/media/image3.png']) {
       throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Forbidden image3.png present in Part A input');
     }
     // Reject image3.png / rId3 in drawing rels
-    const drawingRelsFile = wbStruct._zip.files['xl/drawings/_rels/drawing1.xml.rels'];
+    const drawingRelsFile = zip.files['xl/drawings/_rels/drawing1.xml.rels'];
     if (drawingRelsFile) {
       const relsXml = await drawingRelsFile.async('string');
       if (relsXml.includes('rId3') || relsXml.includes('image3.png')) {
@@ -283,7 +284,7 @@ export async function renderSecuredSemanticValues(
     }
   } else {
     // Part B checks:
-    const sheet2File = wbStruct._zip.files['xl/worksheets/sheet2.xml'];
+    const sheet2File = zip.files['xl/worksheets/sheet2.xml'];
     if (!sheet2File) {
       throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Auxiliary Sheet1 missing in Part B input');
     }
@@ -325,7 +326,7 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // R1-A.10 & R1-A.11: Concrete Profile-derived target node existence & uniqueness
+  // R1-A.10 / R2-C / R2-D: Concrete Profile-derived target node existence & uniqueness
   const roleNames = [];
   const headerRoles = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
@@ -388,7 +389,7 @@ export async function renderSecuredSemanticValues(
   // Check that EVERY target cell node exists EXACTLY ONCE in sheetXml
   for (const target of concreteTargets) {
     const addr = target.address;
-    const matches = [...sheetXml.matchAll(new RegExp(`<c r="${addr}"[^>]*\\/>|<c r="${addr}"[^>]*>[\\s\\S]*?<\\/c>`, 'g'))];
+    const matches = [...sheetXml.matchAll(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>|<c\\b[^>]*?\\br="${addr}"[^>]*?>[\\s\\S]*?<\\/c>`, 'g'))];
     if (matches.length === 0) {
       throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell node ${addr} missing in sheet XML`);
     }
@@ -397,7 +398,7 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // R1-B: Extract Secured Scalar Values & Mutate sheetXml
+  // R1-B / R2-A: Extract Secured Scalar Values & Mutate sheetXml
   const writtenValueMap = new Map();
 
   for (const target of concreteTargets) {
@@ -440,21 +441,74 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // R1-C: Final Preservation Validation
-  wbStruct._zip.file('xl/worksheets/sheet1.xml', sheetXml);
+  // R2-B: Production Post-Write Preservation Validation
+  zip.file('xl/worksheets/sheet1.xml', sheetXml);
 
-  // Formula inventory zero check
-  for (const fName in wbStruct._zip.files) {
+  // Generate NEW Uint8Array from mutated zip directly (preserving all raw XML attributes)
+  const renderedBytes = await zip.generateAsync({ type: 'uint8array' });
+
+  // 1. Package entry inventory unchanged & non-sheet1 byte equality
+  const renderedZip = await JSZip.loadAsync(renderedBytes);
+  const srcZipKeys = Object.keys(zip.files).sort();
+  const renderedZipKeys = Object.keys(renderedZip.files).sort();
+
+  if (renderedZipKeys.length !== srcZipKeys.length) {
+    throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Package entry inventory count mismatch');
+  }
+  for (let i = 0; i < srcZipKeys.length; i++) {
+    if (srcZipKeys[i] !== renderedZipKeys[i]) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Package entry key mismatch at index ${i}`);
+    }
+    const key = srcZipKeys[i];
+    if (key !== 'xl/worksheets/sheet1.xml') {
+      const srcBytes = await zip.files[key].async('uint8array');
+      const renderedBytesEntry = await renderedZip.files[key].async('uint8array');
+      if (srcBytes.length !== renderedBytesEntry.length) {
+        throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Non-sheet1 entry ${key} length mismatch`);
+      }
+      for (let b = 0; b < srcBytes.length; b++) {
+        if (srcBytes[b] !== renderedBytesEntry[b]) {
+          throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Non-sheet1 entry ${key} byte mismatch at offset ${b}`);
+        }
+      }
+    }
+  }
+
+  // 2. Cell address inventory unchanged before vs after
+  const srcCellAddrs = [...srcSheet1Xml.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
+  const renderedCellAddrs = [...sheetXml.matchAll(/<c\b[^>]*?\br="([A-Z0-9]+)"/g)].map(m => m[1]);
+  if (renderedCellAddrs.length !== srcCellAddrs.length) {
+    throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Cell address inventory count mismatch: expected ${srcCellAddrs.length}, got ${renderedCellAddrs.length}`);
+  }
+  for (let i = 0; i < srcCellAddrs.length; i++) {
+    if (srcCellAddrs[i] !== renderedCellAddrs[i]) {
+      throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Cell address inventory mismatch at index ${i}`);
+    }
+  }
+
+  // 3. Target non-type opening tag authority unchanged
+  for (const target of concreteTargets) {
+    const addr = target.address;
+    const srcMatch = srcSheet1Xml.match(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?>|<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`));
+    const renderedMatch = sheetXml.match(new RegExp(`<c\\b[^>]*?\\br="${addr}"[^>]*?>|<c\\b[^>]*?\\br="${addr}"[^>]*?\\/>`));
+    if (srcMatch && renderedMatch) {
+      const srcAttrsClean = srcMatch[0].replace(/\/?>$/, '').replace(/\s*\bt="[^"]*"/, '');
+      const renderedAttrsClean = renderedMatch[0].replace(/\/?>$/, '').replace(/\s*\bt="[^"]*"/, '');
+      if (srcAttrsClean !== renderedAttrsClean) {
+        throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Non-type target opening tag modified for ${addr}`);
+      }
+    }
+  }
+
+  // 4. Formula inventory zero check
+  for (const fName in renderedZip.files) {
     if (fName.startsWith('xl/worksheets/') && fName.endsWith('.xml')) {
-      const xml = await wbStruct._zip.files[fName].async('string');
+      const xml = await renderedZip.files[fName].async('string');
       if (/<f[\s>]/.test(xml)) {
         throw new Error('EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Formula detected after rendering');
       }
     }
   }
-
-  // Generate NEW Uint8Array from mutated zip
-  const renderedBytes = await wbStruct._zip.generateAsync({ type: 'uint8array' });
 
   // Load fresh DOM from renderedBytes to perform final value & topology verification
   const wbOut = await XlsxPopulate.fromDataAsync(renderedBytes);
