@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-D-PRE1-R1 REVIEWED / PARTIAL PASS / PRE1-R2 PROPOSAL READY
+# AI ACTIVE TASK — R2-D-PRE1-R2 RESIDUAL PACKAGE-GRAPH EVIDENCE AUTHORIZED
 
-Mode: **CONTROL PLANE / NO ACTIVE EXECUTOR / ULTRA-LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / BOUNDED EVIDENCE EXECUTOR / ULTRA-LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-04 ICT
 
@@ -23,10 +23,10 @@ R2_C_RUNTIME_EVIDENCE = PASS / OWNER WORKSTATION
 
 D2_WP004_R2_D_PRE1 = REVIEWED / PARTIAL PASS / NOT CLOSED
 D2_WP004_R2_D_PRE1_R1 = REVIEWED / PARTIAL PASS / NOT CLOSED
-D2_WP004_R2_D_PRE1_R2 = RESIDUAL PACKAGE-GRAPH CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+D2_WP004_R2_D_PRE1_R2 = AUTHORIZED / ACTIVE
 
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_EVIDENCE_AUTH = NONE
+ACTIVE_WORK_PACKAGE = D2-WP004-R2-D-PRE1-R2
+ACTIVE_D2_EVIDENCE_AUTH = D2-WP004-R2-D-PRE1-R2-EVIDENCE-ONLY-20260904-01
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
 ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
@@ -34,39 +34,30 @@ ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
 ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 
-ANTIGRAVITY = STOP / WAIT OWNER
+ANTIGRAVITY = AUTHORIZED / BOUNDED EVIDENCE ONLY / MAX 1 COMMIT
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = PRE1-R1 REVIEWED / IMPLEMENTATION NOT AUTHORIZED
+COMBINED_EXCEL_PARITY = PRE1-R2 TARGETED CORRECTIVE EVIDENCE AUTHORIZED / IMPLEMENTATION NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## 2. Reviewed PRE1-R1 evidence
+## 2. Owner authorization
 
-Authorization HEAD:
-`d272f1b7012fcec5bafa2f7338613c46bf2a278e`
+Owner explicitly authorized on 2026-09-04 ICT:
 
-Evidence commit:
-`4b2cea2ecaecbb9438d476b0ce5bf7f40088aab2`
+`อนุมัติ D2-WP004-R2-D-PRE1-R2 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
 
-Commit message:
-`docs: complete combined xlsx dependency evidence (R2-D-PRE1-R1)`
+Authorization basis HEAD:
+`106ef390a2b86f7b756e853604a5d270517d6244`
 
-Scope review:
-```text
-AHEAD_BY = 1
-BEHIND_BY = 0
-CHANGED_FILES = 1
-ONLY_CHANGED_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
-SOURCE_CHANGE = 0
-TEST_CHANGE = 0
-TEMPLATE_BINARY_CHANGE = 0
-```
+Single-use authorization token:
 
-Scope = PASS.
+`D2-WP004-R2-D-PRE1-R2-EVIDENCE-ONLY-20260904-01`
+
+This token authorizes exactly one bounded R2 evidence commit. It is consumed when that evidence commit is pushed.
 
 ## 3. Accepted / frozen from PRE1 + PRE1-R1
 
-The following findings are accepted and do not need another broad rediscovery unless contradictory exact evidence appears:
+Do not redo these unless contradictory exact evidence appears:
 
 ```text
 PART_A_OWNER_SHA_FOUND = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
@@ -82,172 +73,212 @@ RELATIONSHIP_TUPLE_INVENTORY = ACCEPTED AS R1 EVIDENCE
 CANDIDATE_DIRECTION = POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP
 ```
 
-The auxiliary verdict is accepted because R1 records no formulas, defined-name dependency, data validation, hyperlink, table, chart, external reference/link, worksheet relationship, or literal main-sheet cross-reference requiring auxiliary `Sheet1`.
+Evidence commits:
+- PRE1: `a77cbf6317b5744e0b9a0d696ab293878563c89d`
+- PRE1-R1: `4b2cea2ecaecbb9438d476b0ce5bf7f40088aab2`
 
-The direct-copy verdict is accepted because style definitions and shared-string indices differ across the two workbook-global authorities and the two packages contain same-named drawing/printer-settings parts. Some R1 collision wording is not exact (see Blocker C), but the final unsafe verdict remains correct.
+## 4. Frozen structural authorities relevant to R2
 
-## 4. Why PRE1/PRE1-R1 are still NOT CLOSED
-
-R1 substantially improved exact evidence, but the future dependency map still contains material contradictions with frozen structural authority and omits one same-path package collision. Therefore `GLOBAL_REMAP_DEPENDENCIES = EXACT` is not yet accepted.
-
-### Blocker A — Part A Print_Area is wrong and loses dynamic authority
-
-R1 proposes:
-```text
-'MBO Staff & Chief'!$A$1:$X$52
-```
-
-Frozen Part A structural authority is:
+Part A:
 ```text
 objectiveCount 4..10
 Print_Area = 'MBO Staff & Chief'!$A$1:$BJ$52 .. $BJ$58
+formula inventory = 0
 ```
 
-The composer must not reconstruct a fixed/base Print_Area. It must preserve the exact already-rendered Part A `_xlnm.Print_Area` value and keep it bound to final `localSheetId=0`.
-
-### Blocker B — Part B Print_Area is incorrectly hard-coded to N=6
-
-R1 proposes fixed:
+Part B:
 ```text
-'(Part B) Competency'!$A$1:$X$35
+N=6 -> '(Part B) Competency'!$A$1:$X$35
+N=7 -> '(Part B) Competency'!$A$1:$X$39
+N=8 -> '(Part B) Competency'!$A$1:$X$43
+formula inventory = 0
 ```
 
-Frozen Part B authority is dynamic:
-```text
-N=6 -> $X$35
-N=7 -> $X$39
-N=8 -> $X$43
-```
+The future composer must preserve already-rendered workbook authority. It must not re-calculate print areas from counts.
 
-The composer must preserve the exact already-rendered Part B Print_Area and rebind it to final `localSheetId=1`; it must not infer/hard-code N=6.
+## 5. Why PRE1/PRE1-R1 are not yet closed
 
-### Blocker C — worksheet-local rId and media collision semantics are misstated
+Residual blockers only:
 
-`rId` values inside different worksheet/drawing `.rels` parts are local namespaces. Part A `sheet1.xml.rels:rId2` and future Part B `sheet2.xml.rels:rId2` may coexist; the collision is the shared target part path `xl/drawings/drawing1.xml`, not the local rId value itself.
+1. R1 hard-coded wrong/fixed Print_Area values instead of preserving the exact already-rendered Part A/Part B values.
+2. Both source packages use `xl/printerSettings/printerSettings1.bin` with different payloads; R1 did not include this actual same-path OPC collision in the future graph.
+3. R1 incorrectly treated equal local rIds across different `.rels` namespaces as collisions and described `image1.jpeg` vs `image1.png` as a mandatory media collision despite different full OPC paths.
+4. Current next-free `rId5`, `sheet2.xml`, `drawing2.xml` may be evidence candidates, but production must derive/check free IDs/paths and fail closed rather than blindly hard-code them.
+5. Part B cells without explicit `s` use default style 0; style-0 parity/remap must be deterministic.
+6. `docProps/app.xml` impact from changing workbook sheet inventory must be classified deterministically.
 
-Likewise `xl/media/image1.jpeg` and `xl/media/image1.png` are different OPC part names and do not collide merely because their base stem or local drawing `rId1` matches. A composer may rename the Part B image defensively, but evidence must not classify this as a mandatory path collision unless the exact path is identical.
-
-R2 must correct the dependency model so implementation remaps only actual global/part-path conflicts.
-
-### Blocker D — omitted printerSettings package-part collision
-
-R1's own exact inventory proves:
-```text
-Part A main sheet rId1 -> ../printerSettings/printerSettings1.bin
-Part B main sheet rId1 -> ../printerSettings/printerSettings1.bin
-```
-
-and the two `printerSettings1.bin` payloads have different size/SHA.
-
-A combined package cannot preserve both payloads under the same OPC part path. The future strategy must allocate a unique Part B printer-settings part path (for example a derived free `printerSettingsN.bin`), copy the exact Part B payload, retarget Part B sheet relationship, and make any required `[Content_Types].xml` handling explicit.
-
-### Blocker E — derived IDs/part names and default style 0 must be exact
-
-R1 states future composer MUST use `rId5`, `sheet2.xml`, and `drawing2.xml`. Those are valid expected next-free values for the inspected exact Part A package, but the implementation contract must require derivation/uniqueness checks and fail closed on occupation rather than blindly hard-code them.
-
-R1 style-set evidence starts at style 1. Cells without an explicit `s` attribute use style 0. R2 must prove Part A and Part B style-0/default semantics are identical, or require the composer to preserve Part B default-style semantics explicitly. Without this proof, exact visual parity is not closed.
-
-### Blocker F — workbook extended properties must be classified
-
-R1 inventories different `docProps/app.xml` payloads but does not state whether adding the second business sheet requires updating workbook extended properties such as worksheet count / TitlesOfParts. R2 must deterministically classify this as `UPDATE_REQUIRED` or `PRESERVE_BASE_SAFE_WITH_PROOF`; do not leave it implicit.
-
-## 5. Exact next proposal — D2-WP004-R2-D-PRE1-R2
+## 6. Authorized work package — D2-WP004-R2-D-PRE1-R2
 
 ```text
 WORK_PACKAGE = D2-WP004-R2-D-PRE1-R2
 NAME = COMBINED XLSX DYNAMIC PRINT-AREA + RESIDUAL OPC PART-GRAPH CORRECTIVE EVIDENCE
-STATE = PROPOSED / NOT AUTHORIZED
+STATE = AUTHORIZED / ACTIVE
 MODE = EVIDENCE-ONLY / TARGETED READ-ONLY OWNER+RENDERED AUTHORITY CHECK / ULTRA-LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
 WRITABLE_FILE = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md
 ```
 
-No source/test/Profile/template binary/control-doc changes are authorized for executor.
+Writable scope is ONLY the existing evidence Markdown file above.
 
-## 6. PRE1-R2 exact corrective contract
+No source, tests, Profile, template binaries, package files, UI, dist or control docs are writable by executor.
 
-R2 is targeted only. Do NOT redo the accepted full package inventory.
+## 7. R2 exact corrective contract
 
-### R2-A — dynamic Print_Area preservation contract
+R2 is targeted only. Do NOT redo the accepted R1 package inventory.
 
-Using frozen Part A 4..10 and Part B 6/7/8 authorities, correct the strategy so the future composer:
-- reads the exact `_xlnm.Print_Area` value from already-rendered Part A and Part B packages;
+### R2-A — dynamic Print_Area preservation
+
+Correct the future strategy so the composer:
+- reads the exact `_xlnm.Print_Area` from the already-rendered Part A package;
+- reads the exact `_xlnm.Print_Area` from the already-rendered Part B package;
 - requires exactly one valid source Print_Area per business workbook;
-- preserves the Part A value byte/semantic-equivalent and binds it to final `localSheetId=0`;
-- preserves the Part B value byte/semantic-equivalent and binds it to final `localSheetId=1`;
-- never hard-codes `X52`, `BJ52`, `X35`, or any fixed variant in production composition logic;
-- fails closed on missing/duplicate/malformed/unexpected sheet-binding authority.
+- preserves Part A's exact value and binds it to final `localSheetId=0`;
+- preserves Part B's exact value and binds it to final `localSheetId=1`;
+- never hard-codes any fixed Part A or Part B variant in production composition logic;
+- fails closed on missing, duplicate, malformed, wrong-sheet or otherwise unexpected Print_Area authority.
 
-Evidence must explicitly list the frozen matrices `BJ52..BJ58` and `X35/X39/X43` only as acceptance authorities, not as composer-calculation logic.
+Evidence must list the frozen Part A `BJ52..BJ58` and Part B `X35/X39/X43` matrices only as acceptance authorities, not as production calculation logic.
 
-### R2-B — exact printerSettings collision/remap
+### R2-B — printerSettings actual part-path collision
 
-Record the exact Part A and Part B printerSettings SHA/relationship tuples already inventoried and correct the future part graph:
-- Part A printer settings remain unchanged in base package;
-- Part B printer settings receive a derived unique OPC part path;
-- Part B sheet relationship retains any local rId that is valid in its own `.rels` namespace or derives a unique local rId only when required;
-- relationship target and content-type declarations are updated exactly;
-- no Part A payload is overwritten.
+Correct the package graph using the already-inventoried exact Part A/Part B printer settings payloads and relationships:
+- preserve Part A `xl/printerSettings/printerSettings1.bin` unchanged;
+- allocate a derived free Part B printer-settings OPC path;
+- copy the exact Part B payload to that unique path;
+- retarget the Part B worksheet relationship to the unique path;
+- preserve/derive a valid worksheet-local rId as appropriate;
+- update content-type handling if required;
+- never overwrite the Part A payload.
 
-### R2-C — correct local/global relationship and media semantics
+### R2-C — relationship namespace and media semantics
 
-Correct the evidence wording:
-- workbook relationship IDs are unique within `workbook.xml.rels`;
-- worksheet relationship IDs are unique only within each worksheet `.rels` file;
-- drawing relationship IDs are unique only within each drawing `.rels` file;
-- same local rId across different `.rels` files is not a collision;
-- only identical OPC part paths collide globally;
-- explicitly state whether Part B `image1.png` truly collides with any Part A media part by exact full path.
+Evidence must state correctly:
+- workbook rIds are unique within `xl/_rels/workbook.xml.rels`;
+- worksheet rIds are unique only within that worksheet's `.rels` file;
+- drawing rIds are unique only within that drawing's `.rels` file;
+- same local rId in different `.rels` parts is not itself a collision;
+- identical full OPC part paths are global collisions;
+- explicitly determine whether Part B `xl/media/image1.png` has any exact full-path collision with Part A media. Do not classify `.jpeg` vs `.png` as the same OPC path.
 
-### R2-D — derived free ID/part-path contract
+### R2-D — derive and verify free IDs / part paths
 
-For workbook rId, worksheet path, drawing path, printerSettings path and any renamed media path:
-- record the current expected next-free candidate from exact owner package;
-- require production implementation to derive/check availability and fail closed on collision;
-- do not encode the evidence candidate as an unconditional production constant.
+For the future Part B workbook relationship ID and new worksheet/drawing/printerSettings/media part paths:
+- record the expected next-free candidate for the exact inspected base package;
+- require implementation to derive/check availability from the actual rendered base package;
+- fail closed if an intended candidate is already occupied or package authority differs;
+- do not make the evidence candidate an unconditional production constant.
 
-### R2-E — default style-0 parity
+### R2-E — default style 0 parity
 
-Compare exact Part A vs Part B `cellXfs[0]` / applicable default-style dependency and choose exactly one:
+Compare exact Part A vs Part B `cellXfs[0]` and its applicable dependencies for cells without explicit `s`.
+
+Choose exactly one:
 - `DEFAULT_STYLE0_PARITY = IDENTICAL_WITH_PROOF`
 - `DEFAULT_STYLE0_PARITY = REMAP_REQUIRED`
 - `DEFAULT_STYLE0_PARITY = UNRESOLVED`
 
-If not identical, future strategy must define how cells without explicit `s` preserve Part B style semantics.
+If not identical, document the required future preservation/remap behavior. Do not implement.
 
 ### R2-F — docProps/app.xml classification
 
-Determine whether the combined two-sheet workbook must update `docProps/app.xml` worksheet count / sheet title vectors or whether preserving Part A app properties is safe and standards-valid. Choose exactly one:
+Determine whether a final two-sheet workbook requires updating `docProps/app.xml` worksheet count / TitlesOfParts or related extended-property structures, or whether retaining Part A app properties is standards-valid and parity-safe.
+
+Choose exactly one:
 - `APP_PROPERTIES = UPDATE_REQUIRED`
 - `APP_PROPERTIES = PRESERVE_BASE_SAFE_WITH_PROOF`
 - `APP_PROPERTIES = UNRESOLVED`
 
-If update is required, identify the exact fields/structures only; do not implement.
+If update is required, identify only the exact structures/fields that future implementation must update.
 
-## 7. PRE1/PRE1-R2 closure rule
+## 8. Required final evidence result
 
-PRE1 may close after independent review only if:
+Update ONLY:
+`project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md`
+
+Final machine-readable summary must include:
+
 ```text
-OWNER_COMBINED_TEMPLATE = NOT_FOUND / accepted
-PART_B_AUXILIARY = AUXILIARY_NOT_REQUIRED_FOR_COMBINED / accepted
-DIRECT_COPY = DIRECT_COPY_UNSAFE_REMAP_REQUIRED / accepted
+PRE1_R2_RESULT = PASS | BLOCKED
+OWNER_COMBINED_TEMPLATE = NOT_FOUND | FOUND | UNRESOLVED
+PART_B_AUXILIARY = AUXILIARY_NOT_REQUIRED_FOR_COMBINED | AUXILIARY_REQUIRED_FOR_MAIN_SHEET | AUXILIARY_DEPENDENCY_UNRESOLVED
+DIRECT_COPY = DIRECT_COPY_SAFE_WITH_PROOF | DIRECT_COPY_UNSAFE_REMAP_REQUIRED | DIRECT_COPY_BLOCKED_UNRESOLVED
+DYNAMIC_PRINT_AREA_PRESERVATION = EXACT | UNRESOLVED
+PRINTER_SETTINGS_PART_GRAPH = EXACT | UNRESOLVED
+RELATIONSHIP_NAMESPACE_MODEL = EXACT | UNRESOLVED
+DEFAULT_STYLE0_PARITY = IDENTICAL_WITH_PROOF | REMAP_REQUIRED | UNRESOLVED
+APP_PROPERTIES = UPDATE_REQUIRED | PRESERVE_BASE_SAFE_WITH_PROOF | UNRESOLVED
+GLOBAL_REMAP_DEPENDENCIES = EXACT | UNRESOLVED
+NEXT_STRATEGY = REUSE_EXISTING_OWNER_COMBINED_TEMPLATE | POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP | COMPOSITION_BLOCKED_PENDING_NEW_OWNER_AUTHORITY
+SOURCE_CHANGE = 0
+TEST_CHANGE = 0
+TEMPLATE_CHANGE = 0
+XLSX_BINARY_COMMITTED = 0
+KINTONE_WRITE = 0
+DEPLOY = 0
+```
+
+## 9. Mandatory non-goals
+
+PRE1-R2 must NOT:
+- modify any `src/` file;
+- modify any existing/new test;
+- modify Profile/preparer/renderer/export service;
+- modify any owner XLSX/template binary;
+- generate or commit a combined XLSX;
+- modify `project-docs/AI_ACTIVE_TASK.md`, `D2_REVIEW_FAST_START.md` or any other control document;
+- modify package.json/package-lock;
+- perform Kintone writes/deploy/Live UAT;
+- build UI/dist;
+- start PDF;
+- start D3;
+- self-authorize implementation or a next gate.
+
+If a conclusion requires broader scope, STOP and report it rather than expanding scope.
+
+## 10. Verification before commit/push
+
+Before commit:
+
+```text
+git diff --name-only
+  = project-docs/phase-3/evidence/XLSX_COMBINED_WORKBOOK_COMPOSITION_EVIDENCE.md only
+
+git diff --check
+  = PASS
+
+XLSX_BINARY_ADDED_OR_MODIFIED = NONE
+SOURCE_CHANGED = NONE
+TEST_CHANGED = NONE
+PROFILE_CHANGED = NONE
+CONTROL_DOC_CHANGED = NONE
+KINTONE_WRITE = 0
+DEPLOY = 0
+```
+
+Create exactly one evidence commit, push canonical branch, then STOP.
+
+Suggested message:
+`docs: close residual combined xlsx evidence gaps (R2-D-PRE1-R2)`
+
+## 11. Closure rule
+
+PRE1/PRE1-R2 may close only after independent ChatGPT review proves:
+
+```text
+OWNER_COMBINED_TEMPLATE = deterministic
+PART_B_AUXILIARY = deterministic
+DIRECT_COPY = deterministic
 DYNAMIC_PRINT_AREA_PRESERVATION = EXACT
 PRINTER_SETTINGS_PART_GRAPH = EXACT
 RELATIONSHIP_NAMESPACE_MODEL = EXACT
 DEFAULT_STYLE0_PARITY = deterministic
 APP_PROPERTIES = deterministic
 GLOBAL_REMAP_DEPENDENCIES = EXACT
-NEXT_STRATEGY = POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP / internally consistent
+NEXT_STRATEGY = exactly one and internally consistent
 ```
 
 Closure still does NOT authorize production Combined XLSX implementation.
 
-## 8. Stop boundary
+## 12. Stop boundary
 
-Antigravity is stopped. PRE1-R2 is NOT authorized until Owner explicitly approves it.
-
-Combined XLSX implementation, Kintone writes, deploy, Live UAT, PDF and D3 remain forbidden.
-
-Recommended approval phrase:
-
-`อนุมัติ D2-WP004-R2-D-PRE1-R2 EVIDENCE-ONLY ตามขอบเขตที่เสนอ`
+Combined XLSX implementation, Kintone writes, deploy, Live UAT, PDF and D3 remain forbidden until separately authorized.
