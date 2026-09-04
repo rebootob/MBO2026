@@ -5,7 +5,7 @@ Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate source/test only. Do not reopen R2-B1/R2-B2 without proven regression. Do not broad-scan or auto-start Antigravity.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact current-gate source/test only. Do not reopen R2-B1/R2-B2 or accepted R5 behavior without proven regression. Do not broad-scan or auto-start Antigravity.
 
 ## Project truth
 
@@ -25,9 +25,11 @@ R2_A = PASS / CLOSED AFTER R1
 R2_B1 = PASS / CLOSED AFTER R10
 R2_B2 = PASS / CLOSED AFTER R4 RUNTIME PROOF
 R2_C = REVIEWED / NOT CLOSED
-R2_C_R4_IMPLEMENTATION = 721413335a7fba56dedd1cc4bcf2265e9ee0d849
-R2_C_R4 = REVIEWED / PARTIAL PASS / NOT CLOSED
-R2_C_R5 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
+R2_C_R5_IMPLEMENTATION = 383104b69b096ca9f8b12d5e2410feeaf8864b45
+R2_C_R5 = REVIEWED / PARTIAL PASS / NOT CLOSED
+R2_C_R5_MUTATION = PASS / FROZEN
+R2_C_R5_PART_B_PROOF = PASS / FROZEN
+R2_C_R6 = EXACT CORRECTIVE PROPOSAL READY / NOT AUTHORIZED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP / WAIT OWNER
 CLAUDE = STOP
@@ -35,46 +37,42 @@ COMBINED_EXCEL_PARITY = NOT AUTHORIZED / LATER D2 GATE
 D3 = HOLD
 ```
 
-## Durable closed gates
-R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. No regression was found.
+## Durable closed / accepted gates
+R2-B1 and R2-B2 remain PASS/CLOSED/FROZEN. R5 exact `t`-token mutation and R5 Part B complete nonwritten/Rating Scale parity are accepted and must not be reopened without proven regression.
 
-## R2-C-R4 independent review
+## R2-C-R5 independent review
 
 Authorization:
-`4f379c84cb953e1dcd5448001cbec42bdee4bb3d`
+`d8b49b26b37de5e01465a59859b051f71c38aab7`
 
 Implementation:
-`721413335a7fba56dedd1cc4bcf2265e9ee0d849`
+`383104b69b096ca9f8b12d5e2410feeaf8864b45`
 
 Scope PASS:
 - exactly one corrective commit;
 - only `src/services/mbo-xlsx-semantic-renderer.js` and `tests/mbo-xlsx-semantic-renderer.test.js` changed;
 - no frozen-file changes.
 
-Accepted R4 improvements:
-- Part A N4..N10 exact path proof now uses strict scalar type + exact value;
-- Part B N6/N7/N8 exact path proof now uses strict scalar type + exact value;
-- Part B summary-omitted variants now prove both summary cells blank;
-- all twelve known b1..b6 static title/description start cells are checked;
-- protected padding exact row XML parity remains;
-- complete sorted merge-ref inventory equality is added;
-- auxiliary `sheet2.xml` byte parity remains;
-- deliberate custom:r/custom:t/data-r/data-t + spaces/tab/newline sentinels are added;
-- prior privacy/canonical/XML/formula/caller-immutability protections remain.
+Accepted R5 improvements:
+- production exact unprefixed `t` removal now deletes only the token; trailing separator whitespace is no longer consumed by the mutation;
+- post-`t` whitespace sentinel survives representative rendering;
+- Part A typed exact truth/omission proof retained;
+- Part B typed truth/summary omission retained;
+- complete `effectiveSanitizationRanges` nonwritten blank proof is added for full + omitted variants;
+- Rating Scale cells now prove raw cell-node XML parity plus typed value parity;
+- static/padding/sorted-merge/sheet2/privacy/canonical/XML/formula/caller-immutability proof retained.
 
 Remaining blockers:
-- production removal of exact `t` still uses trailing `\s*`, consuming unauthorized separator whitespace;
-- production complete-sheet normalizer repeats that trailing `\s*` and also canonicalizes closing-delimiter whitespace, so it can hide the same defect;
-- test oracle repeats the same normalization strategy and therefore is not independent;
-- Part B explicit nonwritten proof still covers Chief R:X rather than every effective sanitization address outside the written set for both full/omitted variants;
-- Rating Scale explicit parity iterates the full ranges but compares decoded values rather than exact prepared-before raw cell-node XML/payload parity.
+- production `normalizeTargetNodesForPreservation()` still removes `t` with trailing `\s*`, uses `.trim()`, and reconstructs canonical `<c .../>` nodes, so complete-sheet preservation can hide unauthorized whitespace differences;
+- the purported independent test oracle repeats the same essential `t="..."\s*` + `.trim()` + node-reconstruction normalization and is therefore not independent/byte-sensitive enough;
+- no negative-control proves the oracle fails if exactly one unauthorized separator whitespace byte is changed.
 
-GitHub has no CI/status/workflow signal for the R4 implementation. Static blockers already prevent closure.
+GitHub has no CI/status/workflow signal for the R5 implementation. Static proof blockers prevent closure.
 
-## Exact next proposal — D2-WP004-R2-C-R5 / NOT AUTHORIZED
+## Exact next proposal — D2-WP004-R2-C-R6 / NOT AUTHORIZED
 
 ```text
-NAME = SECURED SEMANTIC RENDERER EXACT T-TOKEN + INDEPENDENT BYTE-ORACLE CLOSURE
+NAME = SECURED SEMANTIC RENDERER SOURCE-AWARE BYTE-COMPARATOR + INDEPENDENT ORACLE CLOSURE
 MODE = SOURCE+TEST CORRECTIVE / BOUNDED / ONE-SHOT / LOW-CREDIT
 MAX_EXECUTOR_COMMITS = 1
 
@@ -89,17 +87,16 @@ FROZEN:
   existing Profile/Preparer/Feasibility/export tests
 ```
 
-R5 closes only:
-- delete/replace the exact unprefixed `t` token without consuming surrounding bytes;
-- source-aware production full `sheet1.xml` preservation with no whitespace canonicalization;
-- truly independent post-`t` whitespace-sensitive byte oracle;
-- complete Part B all-effective-sanitization nonwritten proof for full + omitted variants;
-- complete Rating Scale raw cell-node XML parity.
+R6 closes only:
+- production source-aware complete-sheet comparator with no trim, no trailing-whitespace consumption and no opening-tag reconstruction;
+- truly independent byte oracle using a different boundary/splice strategy;
+- negative-control proving one unauthorized whitespace-byte change is detected;
+- all accepted R5 matrices/security proof must remain passing without reopening.
 
-Full authoritative R5 proposal is in `AI_ACTIVE_TASK.md`.
+Full authoritative R6 proposal is in `AI_ACTIVE_TASK.md`.
 
 Recommended owner approval phrase:
 
-`อนุมัติ D2-WP004-R2-C-R5 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-C-R6 SOURCE+TEST CORRECTIVE ตามขอบเขตที่เสนอ`
 
 Combined Excel remains later. Kintone/deploy/Live UAT remain forbidden. `D3 = HOLD` until D2 is fully PASS/CLOSED.
