@@ -589,7 +589,7 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
       }
     }
 
-    // 2. SUMMARY OMITTED PROJECTION VARIANT
+    // 2. SUMMARY OMITTED PROJECTION VARIANT & COMPLETE NONWRITTEN PROOF
     const projOmitted = buildSyntheticPartBProjection(n, { includeSummary: false });
     const renderedOmittedBytes = await renderSecuredSemanticValues(preparedBytes, {
       partKey: 'B',
@@ -604,15 +604,39 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
     assert.equal(sheetOmitted.cell(rawBScoreRole.address).value() == null || sheetOmitted.cell(rawBScoreRole.address).value() === '', true, `Omitted Part B raw score at ${rawBScoreRole.address} must remain blank`);
     assert.equal(sheetOmitted.cell(wtdBScoreRole.address).value() == null || sheetOmitted.cell(wtdBScoreRole.address).value() === '', true, `Omitted Part B weighted score at ${wtdBScoreRole.address} must remain blank`);
 
-    // Verify FULL Chief R:X effective sanitization ranges remain blank
+    // Verify COMPLETE nonwritten addresses across effectiveSanitizationRanges for BOTH projFull and projOmitted
     const layout = profile.getPartBLayoutTopology(n);
     const sanAddrs = layout.effectiveSanitizationRanges.flatMap(r => expandRangeToAddresses(r));
+
+    // Derive written addresses for projOmitted (no summary scores)
+    const writtenAddrsOmitted = new Set();
+    for (const rName of roleNames) {
+      if (rName !== 'SUMMARY_PART_B_RAW_SCORE' && rName !== 'SUMMARY_PART_B_WEIGHTED_SCORE') {
+        const roleInfo = profile.resolveSemanticRole(rName, { partKey: 'B', competencyCount: n });
+        writtenAddrsOmitted.add(roleInfo.address);
+      }
+    }
+
     for (const addr of sanAddrs) {
-      if (addr.startsWith('R') || addr.startsWith('S') || addr.startsWith('T') || addr.startsWith('U') || addr.startsWith('V') || addr.startsWith('W') || addr.startsWith('X')) {
-        if (!writtenAddrs.has(addr)) {
-          const val = sheetFull.cell(addr).value();
-          assert.equal(val == null || val === '', true, `Chief authority cell ${addr} must remain blank for N=${n}`);
-        }
+      // Check full summary variant nonwritten addresses
+      if (!writtenAddrs.has(addr)) {
+        const valFull = sheetFull.cell(addr).value();
+        assert.equal(valFull == null || valFull === '', true, `Nonwritten cell ${addr} in full summary must remain blank for N=${n}`);
+      }
+      // Check summary omitted variant nonwritten addresses
+      if (!writtenAddrsOmitted.has(addr)) {
+        const valOmitted = sheetOmitted.cell(addr).value();
+        assert.equal(valOmitted == null || valOmitted === '', true, `Nonwritten cell ${addr} in summary omitted must remain blank for N=${n}`);
+      }
+    }
+
+    // Retain FULL Chief rating columns blank proof explicitly
+    for (const addr of sanAddrs) {
+      if (/^(?:AG|AM|AQ|AT|BD)\d+$/.test(addr)) {
+        const valFull = sheetFull.cell(addr).value();
+        const valOmitted = sheetOmitted.cell(addr).value();
+        assert.equal(valFull == null || valFull === '', true, `Chief authority cell ${addr} in full summary must remain blank for N=${n}`);
+        assert.equal(valOmitted == null || valOmitted === '', true, `Chief authority cell ${addr} in summary omitted must remain blank for N=${n}`);
       }
     }
 
@@ -622,24 +646,29 @@ test('RENDERER_TEST_D: Full Part B exact Profile/projection truth & static matri
       assert.equal(String(sheetFull.cell(staticAddr).value()), String(sheetPrepBefore.cell(staticAddr).value()), `Static presentation text at ${staticAddr} must have exact prepared-before parity for N=${n}`);
     }
 
-    // Complete Rating Scale static ranges parity across full range
+    // Complete Rating Scale static ranges raw XML parity & typed value parity
+    const zipRend = await JSZip.loadAsync(renderedBytes);
+    const sheetXmlRend = await zipRend.files['xl/worksheets/sheet1.xml'].async('string');
+
     for (const staticRange of layout.ratingScaleStaticRanges) {
       const rangeAddrs = expandRangeToAddresses(staticRange);
       for (const cellAddr of rangeAddrs) {
+        // Raw cell-node XML parity
+        const rawNodeBeforeMatch = xmlPrepBefore.match(new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${cellAddr}"(?=[\\s\\/>])(?:[^>]*?\\/>|[^>]*?>[\\s\\S]*?<\\/c>)`));
+        const rawNodeAfterMatch = sheetXmlRend.match(new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${cellAddr}"(?=[\\s\\/>])(?:[^>]*?\\/>|[^>]*?>[\\s\\S]*?<\\/c>)`));
+        assert.notEqual(rawNodeBeforeMatch, null, `Rating Scale cell ${cellAddr} node missing before for N=${n}`);
+        assert.notEqual(rawNodeAfterMatch, null, `Rating Scale cell ${cellAddr} node missing after for N=${n}`);
+        assert.equal(rawNodeAfterMatch[0], rawNodeBeforeMatch[0], `Rating Scale raw cell XML at ${cellAddr} must be byte/tag equal for N=${n}`);
+
+        // Typed value & type parity without String(...) coercion
         const valAfter = sheetFull.cell(cellAddr).value();
         const valBefore = sheetPrepBefore.cell(cellAddr).value();
-        if (typeof valBefore === 'object' && valBefore !== null) {
-          assert.equal(String(valAfter), String(valBefore), `Rating Scale range cell ${cellAddr} text must match prepared-before for N=${n}`);
-        } else {
-          assert.equal(valAfter, valBefore, `Rating Scale range cell ${cellAddr} value must match prepared-before for N=${n}`);
-        }
+        assert.equal(typeof valAfter, typeof valBefore, `Rating Scale cell ${cellAddr} type match for N=${n}`);
+        assert.equal(valAfter, valBefore, `Rating Scale cell ${cellAddr} exact value match for N=${n}`);
       }
     }
 
     // Complete protected padding row exact XML parity
-    const zipRend = await JSZip.loadAsync(renderedBytes);
-    const sheetXmlRend = await zipRend.files['xl/worksheets/sheet1.xml'].async('string');
-
     for (const padRow of layout.protectedPaddingRows) {
       const rowMatchBefore = xmlPrepBefore.match(new RegExp(`<row[^>]*r="${padRow}"[^>]*>[\\s\\S]*?<\\/row>|<row[^>]*r="${padRow}"[^>]*\\/>`));
       const rowMatchAfter = sheetXmlRend.match(new RegExp(`<row[^>]*r="${padRow}"[^>]*>[\\s\\S]*?<\\/row>|<row[^>]*r="${padRow}"[^>]*\\/>`));
@@ -678,9 +707,10 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   let xmlPrepA = await zipPrepA.files['xl/worksheets/sheet1.xml'].async('string');
 
   // Inject custom:r, custom:t, data-r, data-t sentinels and noncanonical spacing (\t, \n) into T26 opening tag
+  // Include explicit whitespace immediately AFTER real unprefixed t token before closing />
   xmlPrepA = xmlPrepA.replace(
     /<c\b[^>]*?(?<=\s|^)r="T26"(?=[\s/>])(?:[^>]*?\/>|[^>]*?>[\s\S]*?<\/c>)/,
-    '<c  r="T26" \t  s="385"   custom:r="KEEP_CUSTOM_R" custom:t="KEEP_CUSTOM_T" data-r="KEEP_DATA_R" data-t="KEEP_DATA_T" \n\tt="s"/>'
+    '<c  r="T26" \t  s="385"   custom:r="KEEP_CUSTOM_R" custom:t="KEEP_CUSTOM_T" data-r="KEEP_DATA_R" data-t="KEEP_DATA_T" \n\tt="s" \t />'
   );
   zipPrepA.file('xl/worksheets/sheet1.xml', xmlPrepA);
   const prepAWithSentinels = await zipPrepA.generateAsync({ type: 'uint8array' });
@@ -711,7 +741,7 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   const addrsAfterA = [...xmlAfterA.matchAll(/<c\b[^>]*?(?<=[\s<])r="([A-Z0-9]+)"(?=[\s/>])/g)].map(m => m[1]);
   assert.deepEqual(addrsAfterA, addrsBeforeA, 'Cell address inventory must be 100% identical before vs after');
 
-  // 3. Prove ALL FOUR collision sentinels AND deliberate whitespace survived byte-for-byte in rendered output
+  // 3. Prove ALL FOUR collision sentinels AND deliberate whitespace (pre AND post t) survived byte-for-byte in rendered output
   const matchT26Rendered = xmlAfterA.match(/<c\b[^>]*?(?<=[\s<])r="T26"(?=[\s/>])[^>]*?>/);
   assert.notEqual(matchT26Rendered, null, 'Rendered T26 opening tag must exist');
   assert.equal(matchT26Rendered[0].includes('custom:r="KEEP_CUSTOM_R"'), true, 'custom:r sentinel must survive');
@@ -719,9 +749,9 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   assert.equal(matchT26Rendered[0].includes('data-r="KEEP_DATA_R"'), true, 'data-r sentinel must survive');
   assert.equal(matchT26Rendered[0].includes('data-t="KEEP_DATA_T"'), true, 'data-t sentinel must survive');
   assert.equal(matchT26Rendered[0].includes('  r="T26" \t  s="385"'), true, 'Deliberate spaces/tabs before attributes must survive byte-for-byte');
-  assert.equal(/\r?\n\tt="inlineStr"/.test(matchT26Rendered[0]), true, 'Deliberate newline/tab before t attribute must survive byte-for-byte');
+  assert.equal(/\r?\n\tt="inlineStr" \t /.test(matchT26Rendered[0]), true, 'Deliberate newline/tab before and post-t whitespace after t attribute must survive byte-for-byte');
 
-  // 4. Independent test oracle normalization (no .trim() or .trimEnd() on opening tags)
+  // 4. Truly independent test oracle (does NOT reuse production normalizer or regex strategy)
   const roleNamesA = [
     'HEADER_FISCAL_YEAR', 'HEADER_EMPLOYEE_NAME', 'HEADER_DEPARTMENT',
     'HEADER_SECTION', 'HEADER_POSITION', 'HEADER_EMPLOYEE_CODE',
@@ -734,30 +764,52 @@ test('RENDERER_TEST_E: Independent collision-proof authorized-diff exact-attribu
   ];
   const targetAddrsA = roleNamesA.map(r => profile.resolveSemanticRole(r, { partKey: 'A', objectiveCount: 4 }).address);
 
-  const normalizeTargetNodesInXmlTest = (xmlStr, targetAddrs) => {
-    let norm = xmlStr;
-    for (const addr of targetAddrs) {
-      norm = norm.replace(
-        new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`, 'g'),
-        (match, openTag) => {
-          const cleanOpen = openTag.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
-          return cleanOpen.replace(/\s*\/?>$/, '/>');
+  const oracleNormalizeXml = (xmlText, targetAddresses) => {
+    let result = xmlText;
+    for (const address of targetAddresses) {
+      const tagPrefix = `r="${address}"`;
+      let searchIdx = 0;
+      while (searchIdx < result.length) {
+        const foundPos = result.indexOf(tagPrefix, searchIdx);
+        if (foundPos === -1) break;
+
+        const openStart = result.lastIndexOf('<c', foundPos);
+        if (openStart !== -1 && openStart < foundPos) {
+          let openEnd = result.indexOf('>', foundPos);
+          if (openEnd !== -1) {
+            let nodeEnd = openEnd + 1;
+            const isOpenSelfClosing = result.substring(openStart, openEnd + 1).endsWith('/>');
+            if (!isOpenSelfClosing) {
+              const closeTagPos = result.indexOf('</c>', openEnd);
+              if (closeTagPos !== -1) {
+                nodeEnd = closeTagPos + 4;
+              }
+            }
+
+            const rawNode = result.substring(openStart, nodeEnd);
+            const openTagOnly = rawNode.match(/^<c\b[^>]*?>/)[0];
+            const cleanAttrs = openTagOnly
+              .replace(/^<c\s*/, '')
+              .replace(/\/?>$/, '')
+              .replace(/(?<=\s|^)t="[^"]*"\s*/, '')
+              .trim();
+
+            const normalizedNode = cleanAttrs ? `<c ${cleanAttrs}/>` : '<c/>';
+
+            result = result.substring(0, openStart) + normalizedNode + result.substring(nodeEnd);
+            searchIdx = openStart + normalizedNode.length;
+            continue;
+          }
         }
-      );
-      norm = norm.replace(
-        new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>]*?\\/>`, 'g'),
-        (match) => {
-          const cleanSelf = match.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
-          return cleanSelf.replace(/\s*\/?>$/, '/>');
-        }
-      );
+        searchIdx = foundPos + tagPrefix.length;
+      }
     }
-    return norm;
+    return result;
   };
 
-  const normBeforeA = normalizeTargetNodesInXmlTest(xmlBeforeA, targetAddrsA);
-  const normAfterA = normalizeTargetNodesInXmlTest(xmlAfterA, targetAddrsA);
-  assert.equal(normAfterA, normBeforeA, 'Part A sheet1.xml must be 100% string-equal outside normalized target nodes');
+  const normBeforeA = oracleNormalizeXml(xmlBeforeA, targetAddrsA);
+  const normAfterA = oracleNormalizeXml(xmlAfterA, targetAddrsA);
+  assert.equal(normAfterA, normBeforeA, 'Part A sheet1.xml must be 100% string-equal outside normalized target nodes according to independent oracle');
 });
 
 test('RENDERER_TEST_F: Real privacy & N7 + N8 canonical presentation / alias resistance proof', async () => {

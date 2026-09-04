@@ -78,7 +78,7 @@ function mutateOpeningTag(fullOpenTag, targetTVal) {
     }
   } else if (targetTVal === null) {
     if (hasUnprefixedT) {
-      newTag = newTag.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
+      newTag = newTag.replace(/(?<=\s|^)t="[^"]*"/, '');
     }
   }
   return newTag;
@@ -129,7 +129,7 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
     } else if (typeof val === 'number') {
       const mutatedOpen = mutateOpeningTag(fullOpenTag, null);
       const newPairedTag = `${mutatedOpen}<v>${val}</v></c>`;
-      return sheetXml.replace(oldMatchStr, () => mutatedOpen + `<v>${val}</v></c>`);
+      return sheetXml.replace(oldMatchStr, () => newPairedTag);
     } else if (typeof val === 'string') {
       const mutatedOpen = mutateOpeningTag(fullOpenTag, 'inlineStr');
       const escaped = escapeXmlText(val);
@@ -144,25 +144,49 @@ function mutateCellInSheetXml(sheetXml, addr, val) {
   throw new Error(`EXPORT_TEMPLATE_RENDERER_UNRESOLVED: Target cell ${addr} node missing in sheet XML`);
 }
 
-function normalizeTargetNodesForPreservation(xmlStr, targetAddrs) {
-  let norm = xmlStr;
+function normalizeTargetNodesForPreservation(srcSheetXml, renderedSheetXml, targetAddrs) {
+  let normSrc = srcSheetXml;
+  let normRendered = renderedSheetXml;
+
   for (const addr of targetAddrs) {
-    norm = norm.replace(
-      new RegExp(`(<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>/]*>)((?:(?!<c\\b)[\\s\\S])*?)(<\\/c>)`, 'g'),
-      (match, openTag) => {
-        const cleanOpen = openTag.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
-        return cleanOpen.replace(/\s*\/?>$/, '/>');
-      }
-    );
-    norm = norm.replace(
-      new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])[^>]*?\\/>`, 'g'),
-      (match) => {
-        const cleanSelf = match.replace(/(?<=\s|^)t="[^"]*"\s*/, '');
-        return cleanSelf.replace(/\s*\/?>$/, '/>');
-      }
-    );
+    const nodeRegex = new RegExp(`<c\\b[^>]*?(?<=[\\s<])r="${addr}"(?=[\\s/>])(?:[^>]*?\\/>|[^>]*?>[\\s\\S]*?<\\/c>)`);
+    const srcMatch = normSrc.match(nodeRegex);
+    const renderedMatch = normRendered.match(nodeRegex);
+
+    if (!srcMatch || !renderedMatch) {
+      continue;
+    }
+
+    const srcFullNode = srcMatch[0];
+    const renderedFullNode = renderedMatch[0];
+
+    const srcOpenMatch = srcFullNode.match(/^<c\b[^>]*?>/);
+    const renderedOpenMatch = renderedFullNode.match(/^<c\b[^>]*?>/);
+    if (!srcOpenMatch || !renderedOpenMatch) continue;
+
+    const srcOpenTag = srcOpenMatch[0];
+    const renderedOpenTag = renderedOpenMatch[0];
+
+    const srcCleanAttrs = srcOpenTag
+      .replace(/^<c\s*/, '')
+      .replace(/\/?>$/, '')
+      .replace(/(?<=\s|^)t="[^"]*"\s*/, '')
+      .trim();
+
+    const renderedCleanAttrs = renderedOpenTag
+      .replace(/^<c\s*/, '')
+      .replace(/\/?>$/, '')
+      .replace(/(?<=\s|^)t="[^"]*"\s*/, '')
+      .trim();
+
+    const normSrcNode = srcCleanAttrs ? `<c ${srcCleanAttrs}/>` : '<c/>';
+    const normRenderedNode = renderedCleanAttrs ? `<c ${renderedCleanAttrs}/>` : '<c/>';
+
+    normSrc = normSrc.replace(srcFullNode, () => normSrcNode);
+    normRendered = normRendered.replace(renderedFullNode, () => normRenderedNode);
   }
-  return norm;
+
+  return { normSrc, normRendered };
 }
 
 export async function renderSecuredSemanticValues(
@@ -549,10 +573,9 @@ export async function renderSecuredSemanticValues(
     }
   }
 
-  // 5. Complete sheet1.xml prepared-before preservation check (R4-B)
+  // 5. Complete sheet1.xml prepared-before preservation check (R5-B)
   const targetAddrs = concreteTargets.map(t => t.address);
-  const normSrcSheet1 = normalizeTargetNodesForPreservation(srcSheet1Xml, targetAddrs);
-  const normRenderedSheet1 = normalizeTargetNodesForPreservation(sheetXml, targetAddrs);
+  const { normSrc: normSrcSheet1, normRendered: normRenderedSheet1 } = normalizeTargetNodesForPreservation(srcSheet1Xml, sheetXml, targetAddrs);
   if (normRenderedSheet1 !== normSrcSheet1) {
     console.log("PRESERVATION FAIL: normSrc len=", normSrcSheet1.length, "normRend len=", normRenderedSheet1.length);
     for (let i = 0; i < Math.max(normSrcSheet1.length, normRenderedSheet1.length); i++) {
