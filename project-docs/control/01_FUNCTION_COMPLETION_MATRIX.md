@@ -12,6 +12,7 @@ Overall project progress is calculated dynamically from this canonical inventory
 - `SANDBOX_VERIFIED` = 80%
 - `UAT_PASS` = 95%
 - `CLOSED` = 100%
+- `DEFERRED` = Excluded from active-release progress calculation
 
 ### Definition of CLOSED
 A function is marked `CLOSED` if and only if:
@@ -26,6 +27,7 @@ A function is marked `CLOSED` if and only if:
 
 > [!NOTE]
 > **EXCLUSIONS & ARCHITECTURAL BOUNDARIES**:
+> - **PDF Export (`XLSX-007`)**: `DEFERRED`. Owner-accepted as optional roadmap item outside current release target (`PROD_BLOCKING = NO`). Current production release requires XLSX, not PDF. Excluded from active-release progress denominator.
 > - **Auth Bridge (`src/services/mbo-auth-bridge`)**: CANCELLED / SUPERSEDED. D1 is strictly KINTONE-ONLY. Auth Bridge is excluded from active production scope and MUST NOT become a production dependency.
 > - **Activation Service (`src/services/mbo-activation-service.js`)**: Excluded from active production release inventory pending explicit Owner / Control Plane architectural authority review.
 > - **Calculation & Grade Cutoffs (`SCORE-005`, `SCORE-006`)**: Separated from configuration authority and classified as `DEFINED` due to absence of dedicated isolated automated unit test suites.
@@ -94,7 +96,7 @@ A function is marked `CLOSED` if and only if:
 | `ROUTE-001` | Employee Master Routing Matrix & Scenario Resolver | D1 | YES | YES | PASS | PASS | PASS | `src/services/routing-service.js`, `tests/routing-service.test.js` | NONE | **CLOSED** |
 | `ROUTE-002` | App795 Team Routing Resolver | D1 | YES | YES | PASS | PASS | PASS | `src/services/app795-team-routing.js`, `tests/app795-team-routing.test.js`, `tests/requester-mapping-audit.test.js` | NONE | **CLOSED** |
 | `ROUTE-003` | MBO Approval Task & Assignee Verification Service | D1 | YES | YES | PASS | PASS | PASS | `src/services/mbo-approval-task-service.js`, `tests/mbo-approval-task-service.test.js` | NONE | **CLOSED** |
-| `ROUTE-004` | App794 Workflow Action Executions & State Transitions | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | D3 Hold | **DEFINED** |
+| `ROUTE-004` | App794 Workflow Action Executions & State Transitions | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | D3 Ready / Owner Authorization Required | **DEFINED** |
 | `ROUTE-005` | Workflow Payload Security Validator | D1 | YES | YES | PASS | PASS | N/A (Core guard) | `src/core/workflow-validator.js`, `tests/workflow-validator.test.js` | NONE | **CLOSED** |
 | `ROUTE-006` | Approver Task Index UI Presentation | D1 | YES | YES | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `src/ui/approver-task-index-ui.js` | Dedicated automated test suite required | **IMPLEMENTED** |
 
@@ -141,7 +143,7 @@ A function is marked `CLOSED` if and only if:
 | `XLSX-004` | Production Semantic Value Renderer | D2 | YES | YES | PASS | PASS | PASS | `src/services/mbo-xlsx-semantic-renderer.js`, `tests/mbo-xlsx-semantic-renderer.test.js` | NONE | **CLOSED** |
 | `XLSX-005` | Combined Workbook Composer | D2 | YES | YES | PASS | PASS | PASS | `src/services/mbo-xlsx-combined-composer.js`, `tests/mbo-xlsx-combined-composer.test.js` | NONE | **CLOSED** |
 | `XLSX-006` | MBO Export Service Authorization & Generation | D2 | YES | YES | PASS | PASS | PASS | `src/services/mbo-export-service.js`, `tests/mbo-export-service.test.js` | NONE | **CLOSED** |
-| `XLSX-007` | PDF Document Generator / Export Conversion | D2 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/EXCEL_EXPORT.md` | Scope Review Required (PROD_BLOCKING = NO) | **DEFINED** |
+| `XLSX-007` | PDF Document Generator / Export Conversion | D2 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/EXCEL_EXPORT.md` (DEFERRED_REASON: Optional PDF roadmap item; current production release requires XLSX, not PDF. PROD_BLOCKING: NO) | NONE — OWNER ACCEPTED OUTSIDE CURRENT RELEASE TARGET | **DEFERRED** |
 
 ---
 
@@ -169,8 +171,8 @@ A function is marked `CLOSED` if and only if:
 
 | FUNCTION_ID | FUNCTION_NAME | D_STAGE | REQ_DEF | SRC_IMP | TEST_STATUS | SANDBOX_STATUS | UAT_STATUS | EVIDENCE | BLOCKER | STATUS |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- | :--- | :--- |
-| `REOPEN-001` | Post-Approval Reopen Request Handler | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/BUSINESS_RULES.md` | D3 Hold | **DEFINED** |
-| `REOPEN-002` | Evaluation Revision Versioning Guard | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/BUSINESS_RULES.md` | D3 Hold | **DEFINED** |
+| `REOPEN-001` | Post-Approval Reopen Request Handler | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/BUSINESS_RULES.md` | D3 Ready / Owner Authorization Required | **DEFINED** |
+| `REOPEN-002` | Evaluation Revision Versioning Guard | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/BUSINESS_RULES.md` | D3 Ready / Owner Authorization Required | **DEFINED** |
 
 ---
 
@@ -235,15 +237,17 @@ A function is marked `CLOSED` if and only if:
 ## Matrix Summary & Progress Tally
 
 - **Total Inventoried Functions**: `65`
+- **Deferred Outside Current Release Target**: `1` (`XLSX-007`)
+- **Active Release Scope Functions**: `64`
 - **CLOSED (100% weight)**: `45` (4,500 pts)
 - **UAT_PASS (95% weight)**: `0` (0 pts)
 - **SANDBOX_VERIFIED (80% weight)**: `0` (0 pts)
 - **TESTED (65% weight)**: `5` (325 pts)
 - **IMPLEMENTED (40% weight)**: `1` (40 pts)
-- **DEFINED (10% weight)**: `12` (120 pts)
+- **DEFINED (10% weight)**: `11` (110 pts)
 - **NOT_DEFINED (0% weight)**: `2` (0 pts)
+- **DEFERRED (excluded from active denominator)**: `1` (0 pts)
 - **BLOCKED**: `18` (retains technical level, flagged above)
-- **DEFERRED**: `0`
 
-**Total Score**: 4,985 / 6,500
-**Candidate Calculated Progress**: **76.69%**
+**Total Active Points**: 4,975 / 6,400
+**Active Release Progress**: **77.73%**

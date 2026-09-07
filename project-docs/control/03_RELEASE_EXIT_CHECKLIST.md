@@ -6,7 +6,8 @@
 - **TOTAL_RELEASE_GATES**: 27
 - **GATES_PASS**: 13
 - **GATES_IN_PROGRESS**: 6
-- **GATES_NOT_STARTED**: 8
+- **GATES_NOT_STARTED**: 7
+- **GATES_DEFERRED**: 1 (`GATE-XLSX-02`)
 - **PRODUCTION_BLOCKING_GATES_OPEN**: 13
 
 > [!CAUTION]
@@ -25,7 +26,7 @@
 | `GATE-OBJ-01` | Objective Planning & Save Validation Engine | `OBJ-001`–`002` | **PASS** | `tests/validation-engine.test.js`, `tests/objective-save-validation.test.js` | NONE | YES |
 | `GATE-OBJ-02` | Copy Previous Year Objectives Utility | `OBJ-003` | **IN_PROGRESS** | `tests/copy-previous.test.js` | Pending UAT / Sandbox | YES |
 | `GATE-ROUTE-01` | Employee Master Routing & Assignee Verification | `ROUTE-001`–`003`, `ROUTE-005` | **PASS** | `tests/routing-service.test.js`, `tests/app795-team-routing.test.js`, `tests/mbo-approval-task-service.test.js`, `tests/workflow-validator.test.js` | NONE | YES |
-| `GATE-ROUTE-02` | Manager & GM Approval Action Transitions | `ROUTE-004` | **NOT_STARTED** | `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | D3 Hold | YES |
+| `GATE-ROUTE-02` | Manager & GM Approval Action Transitions | `ROUTE-004` | **NOT_STARTED** | `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | D3 READY / OWNER AUTHORIZATION REQUIRED | YES |
 | `GATE-ROUTE-03` | Approver Task Index UI Presentation | `ROUTE-006` | **IN_PROGRESS** | `src/ui/approver-task-index-ui.js` | Dedicated automated test suite required | YES |
 | `GATE-SCORE-01` | Scoring Configuration Master & Position Mapping Authority | `SCORE-001`–`004` | **PASS** | `tests/scoring-config-master.test.js`, `tests/scoring-config-master-service.test.js`, `tests/scoring-config-kintone-repository.test.js`, `tests/profile-scoring-resolver.test.js`, `tests/position-profile-mapping-closure.test.js` | NONE | YES |
 | `GATE-SCORE-02` | Dynamic Evaluation Calculation & Rating Cutoff Engines | `SCORE-005`–`006` | **NOT_STARTED** | App 794 CALC fields / Business Rules; dedicated unit test suites absent | Dedicated calculation & cutoff test suites required | YES |
@@ -35,10 +36,10 @@
 | `GATE-ATTACH-01` | Attachment File Upload & REST Binding Service | `ATTACH-001`–`002` | **PASS** | `tests/timeline-truthfulness-and-attachment.test.js` | NONE | YES |
 | `GATE-DIAG-01` | Core Safety Guards, Host Resolver & Schema Bridges | `DIAG-001`–`004` | **PASS** | `tests/safety-guard.test.js`, `tests/sandbox-write-guard.test.js`, `tests/host-resolver.test.js`, `tests/lookup-atomicity-stale-state.test.js` | NONE | YES |
 | `GATE-XLSX-01` | Combined 2-Sheet XLSX Export Generation Engine | `XLSX-001`–`006` | **PASS** | `tests/mbo-export-service.test.js` (16 PASS), 5-file regression suite (44 PASS) | NONE | YES |
-| `GATE-XLSX-02` | PDF Document Export Conversion Engine | `XLSX-007` | **NOT_STARTED** | `project-docs/EXCEL_EXPORT.md` | Scope Review Required | NO |
+| `GATE-XLSX-02` | PDF Document Export Conversion Engine | `XLSX-007` | **DEFERRED / OUTSIDE CURRENT RELEASE** | `project-docs/EXCEL_EXPORT.md` | NONE | NO |
 | `GATE-HRCC-01` | HR Dashboard, Control Center & Admin Diagnostics | `HRCC-001`–`003` | **IN_PROGRESS** | `tests/hr-dashboard-service.test.js` (3 PASS), `tests/hr-control-center-reset-ui.test.js`, `tests/admin-support-center.test.js` | D4 Hold | YES |
 | `GATE-LIFE-01` | Employee Lookup & Lifecycle Transition Policies | `LIFE-001`–`003` | **IN_PROGRESS** | `tests/employee-lookup-service.test.js` (LIFE-001 PASS) | D5 Hold | YES |
-| `GATE-REOPEN-01` | Post-Approval Reopen & Revision Versioning Guard | `REOPEN-001`–`002` | **NOT_STARTED** | `project-docs/BUSINESS_RULES.md` | D3 Hold | YES |
+| `GATE-REOPEN-01` | Post-Approval Reopen & Revision Versioning Guard | `REOPEN-001`–`002` | **NOT_STARTED** | `project-docs/BUSINESS_RULES.md` | D3 READY / OWNER AUTHORIZATION REQUIRED | YES |
 | `GATE-CARRY-01` | Annual Carry-Forward & Fiscal Year Transition | `CARRY-001` | **NOT_STARTED** | `project-docs/BUSINESS_RULES.md` | D5 Hold | YES |
 | `GATE-MIG-01` | Legacy PMS Record Normalization & Reconciliation | `MIG-001`–`002` | **IN_PROGRESS** | `tests/legacy-migration-service.test.js` (MIG-001 TESTED) | D5 Hold | YES |
 | `GATE-REG-01` | Full Suite Automated Regression Verification | All Core Functions | **IN_PROGRESS** | EVIDENCE REQUIRED / NOT YET ACCEPTED | Full Test Suite Execution Required | YES |
