@@ -1,51 +1,21 @@
 # Domain Docs
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+How engineering skills must consume domain documentation in MBO2026.
 
-## Before exploring, read these
+## Startup & Exploration Routing
 
-- **`CONTEXT.md`** at the repo root, or
-- **`CONTEXT-MAP.md`** at the repo root if it exists: it points at one `CONTEXT.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`**: read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
+Before Matt Skills explore MBO2026, they must follow the authoritative MBO project-docs routing order:
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
+1. `project-docs/AI_START_HERE.md`
+2. The startup and control-document order routed from there (e.g. `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`)
+3. `project-docs/AI_DOCUMENT_INDEX.md`
+4. Relevant `project-docs/CONFIRMED_BASELINE/` documents only as routed by control documents
 
-## File structure
+## Governance Invariants
 
-Single-context repo (most repos):
-
-```
-/
-├── CONTEXT.md
-├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-└── src/
-```
-
-Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
-
-```
-/
-├── CONTEXT-MAP.md
-├── docs/adr/                          ← system-wide decisions
-└── src/
-    ├── ordering/
-    │   ├── CONTEXT.md
-    │   └── docs/adr/                  ← context-specific decisions
-    └── billing/
-        ├── CONTEXT.md
-        └── docs/adr/
-```
-
-## Use the glossary's vocabulary
-
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal: either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
-
-## Flag ADR conflicts
-
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders), but worth reopening because…_
+- **`project-docs/*` is strictly authoritative**: All domain definitions, architecture decisions, task statuses, and baseline specifications reside in `project-docs/*`.
+- **Repository/live evidence beats Matt compatibility docs**: Codebase truth, test suites, and `project-docs/` take precedence over any generic or supplemental markdown files.
+- **Supplemental docs status**: `CONTEXT.md`, `CONTEXT-MAP.md`, and `docs/adr/*` are optional, supplemental Matt-compatibility documents only if explicitly introduced later.
+- **Absence is normal**: If `CONTEXT.md` or `docs/adr/` do not exist, proceed silently. Their absence is standard and normal for MBO2026.
+- **No autonomous creation**: Matt Skills MUST NOT autonomously create `CONTEXT.md`, `CONTEXT-MAP.md`, or `docs/adr/*` without explicit Owner or work-package authorization.
+- **No competing sources of truth**: No Matt domain document may become a competing source of project status or specification truth.
