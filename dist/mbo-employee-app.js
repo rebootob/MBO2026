@@ -5887,6 +5887,87 @@ Requester_User is empty for action "${actionName}".`
   }
 
   // src/core/fiscal-year-engine.js
+  function isLeapYear(year) {
+    return year % 4 === 0 && year % 100 !== 0 || year % 400 === 0;
+  }
+  function getDaysInMonth(year, month) {
+    const days = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    return days[month - 1];
+  }
+  function parseAndValidateDate(dateInput) {
+    if (dateInput === null || dateInput === void 0) {
+      throw new Error("Date input cannot be null or undefined.");
+    }
+    let year, month, day;
+    if (typeof dateInput === "string") {
+      const trimmed = dateInput.trim();
+      const dateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(Z|([+-])(\d{2}):(\d{2}))?)?$/);
+      if (!dateMatch) {
+        throw new Error(`Invalid date format (must be YYYY-MM-DD or ISO-8601): "${dateInput}"`);
+      }
+      year = parseInt(dateMatch[1], 10);
+      month = parseInt(dateMatch[2], 10);
+      day = parseInt(dateMatch[3], 10);
+      if (dateMatch[4] !== void 0) {
+        const hour = parseInt(dateMatch[4], 10);
+        const minute = parseInt(dateMatch[5], 10);
+        const second = parseInt(dateMatch[6], 10);
+        if (hour < 0 || hour > 23) {
+          throw new Error(`Invalid hour: ${hour} in date "${dateInput}". Hour must be between 00 and 23.`);
+        }
+        if (minute < 0 || minute > 59) {
+          throw new Error(`Invalid minute: ${minute} in date "${dateInput}". Minute must be between 00 and 59.`);
+        }
+        if (second < 0 || second > 59) {
+          throw new Error(`Invalid second: ${second} in date "${dateInput}". Second must be between 00 and 59.`);
+        }
+        if (dateMatch[8] !== void 0) {
+          const offsetHour = parseInt(dateMatch[9], 10);
+          const offsetMinute = parseInt(dateMatch[10], 10);
+          if (offsetHour < 0 || offsetHour > 14) {
+            throw new Error(`Invalid timezone offset hour: ${offsetHour} in date "${dateInput}".`);
+          }
+          if (offsetMinute < 0 || offsetMinute > 59) {
+            throw new Error(`Invalid timezone offset minute: ${offsetMinute} in date "${dateInput}".`);
+          }
+        }
+      }
+      if (dateMatch[7] === "Z") {
+        const d = new Date(trimmed);
+        if (isNaN(d.getTime())) {
+          throw new Error(`Invalid date input: "${dateInput}"`);
+        }
+        year = d.getUTCFullYear();
+        month = d.getUTCMonth() + 1;
+        day = d.getUTCDate();
+      }
+    } else if (dateInput instanceof Date) {
+      if (isNaN(dateInput.getTime())) {
+        throw new Error("Invalid Date object instance.");
+      }
+      year = dateInput.getFullYear();
+      month = dateInput.getMonth() + 1;
+      day = dateInput.getDate();
+    } else {
+      throw new Error(`Unsupported date input type: ${typeof dateInput}`);
+    }
+    if (year < 1900 || year > 2100) {
+      throw new Error(`Year ${year} is out of supported range (1900-2100).`);
+    }
+    if (month < 1 || month > 12) {
+      throw new Error(`Invalid month: ${month} in date "${dateInput}". Month must be between 01 and 12.`);
+    }
+    const maxDays = getDaysInMonth(year, month);
+    if (day < 1 || day > maxDays) {
+      throw new Error(`Invalid day: ${day} for month ${month}/${year} in date "${dateInput}". Maximum valid day is ${maxDays}.`);
+    }
+    return { year, month, day };
+  }
+  function getJapaneseFiscalYear(dateInput = /* @__PURE__ */ new Date()) {
+    const { year, month } = parseAndValidateDate(dateInput);
+    const fiscalYearNumber = month >= 4 ? year : year - 1;
+    return `FY${fiscalYearNumber}`;
+  }
   function isValidEmployeeCode(code) {
     if (typeof code !== "string") {
       return false;
@@ -6124,6 +6205,152 @@ Employee ID ${cleanCode} already has an MBO record for ${cleanFY}. Duplicate cre
         );
       }
       return resp.records;
+    }
+    /**
+     * Check if an employee is eligible to log in via Shared mode.
+     * If App 53 MBO_Kintone_User has a dedicated Kintone user mapping,
+     * the employee MUST NOT use shared login (DEDICATED_ACCOUNT_REQUIRED).
+     * @param {string} empCode - Employee code
+     * @param {Object} kintoneApi - Kintone API client
+     * @returns {Promise<{ eligible: boolean, status: string, reason?: string, employeeCode?: string, message?: string, userMessageTH?: string, userMessageEN?: string, dedicatedUserCode?: string }>}
+     */
+    static async checkSharedLoginEligibility(empCode, kintoneApi) {
+      if (empCode === null || empCode === void 0 || typeof empCode !== "string") {
+        return {
+          eligible: false,
+          status: "EMPLOYEE_CODE_INVALID",
+          reason: "EMPLOYEE_CODE_INVALID",
+          message: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E23\u0E2B\u0E31\u0E2A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\nPlease enter Employee Code"
+        };
+      }
+      const cleanCode = empCode.trim();
+      if (cleanCode.length === 0 || !isValidEmployeeCode(cleanCode)) {
+        return {
+          eligible: false,
+          status: "EMPLOYEE_CODE_INVALID",
+          reason: "EMPLOYEE_CODE_INVALID",
+          message: `\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E23\u0E2B\u0E31\u0E2A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 (${empCode})
+Invalid Employee Code format (${empCode})`
+        };
+      }
+      if (!kintoneApi || typeof kintoneApi.getRecords !== "function") {
+        return {
+          eligible: false,
+          status: "SOURCE_ACCESS_ERROR",
+          reason: "KINTONE_API_UNAVAILABLE",
+          message: "\u0E23\u0E30\u0E1A\u0E1A\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D Kintone API \u0E44\u0E14\u0E49\nKintone API service is unavailable"
+        };
+      }
+      const isDigitOnly = /^\d+$/.test(cleanCode);
+      let query;
+      if (isDigitOnly) {
+        const numericRep = parseInt(cleanCode, 10);
+        query = `(emp_text = "${cleanCode}" or Number = ${numericRep}) and Number_0 = 1 limit 2`;
+      } else {
+        query = `emp_text = "${cleanCode}" and Number_0 = 1 limit 2`;
+      }
+      let resp;
+      try {
+        resp = await kintoneApi.getRecords(53, query);
+      } catch (err) {
+        return {
+          eligible: false,
+          status: "SOURCE_ACCESS_ERROR",
+          reason: "SOURCE_ACCESS_ERROR",
+          message: "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E44\u0E14\u0E49\u0E43\u0E19\u0E02\u0E13\u0E30\u0E19\u0E35\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07 \u0E2B\u0E23\u0E37\u0E2D\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator\nUnable to verify employee information at this time. Please try again or contact HR / Administrator."
+        };
+      }
+      if (!resp || typeof resp !== "object" || !Array.isArray(resp.records)) {
+        return {
+          eligible: false,
+          status: "SOURCE_RESPONSE_INVALID",
+          reason: "SOURCE_RESPONSE_INVALID",
+          message: "\u0E42\u0E04\u0E23\u0E07\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E15\u0E2D\u0E1A\u0E01\u0E25\u0E31\u0E1A\u0E08\u0E32\u0E01\u0E23\u0E30\u0E1A\u0E1A Employee Master \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator\nInvalid response structure received from Employee Master. Please contact HR / Administrator."
+        };
+      }
+      const records = resp.records;
+      if (records.length === 0) {
+        return {
+          eligible: false,
+          status: "EMPLOYEE_NOT_FOUND",
+          reason: "EMPLOYEE_NOT_FOUND",
+          message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E23\u0E2B\u0E31\u0E2A ${cleanCode} \u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A Employee Master
+Employee code ${cleanCode} was not found in Employee Master (App 53)`
+        };
+      }
+      if (records.length > 1) {
+        return {
+          eligible: false,
+          status: "EMPLOYEE_SOURCE_AMBIGUOUS",
+          reason: "EMPLOYEE_SOURCE_AMBIGUOUS",
+          message: `\u0E1E\u0E1A\u0E23\u0E2B\u0E31\u0E2A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19 ${cleanCode} \u0E0B\u0E49\u0E33\u0E0B\u0E49\u0E2D\u0E19\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A Employee Master \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator
+Duplicate employee records found for code ${cleanCode}. Please contact HR / Administrator.`
+        };
+      }
+      const emp = records[0];
+      const rawEmpText = emp.emp_text?.value;
+      if (!rawEmpText || typeof rawEmpText !== "string" || !isValidEmployeeCode(rawEmpText.trim())) {
+        return {
+          eligible: false,
+          status: "EMPLOYEE_SOURCE_INCOMPLETE",
+          reason: "EMPLOYEE_SOURCE_INCOMPLETE",
+          message: `\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E23\u0E2B\u0E31\u0E2A ${cleanCode} \u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A Employee Master \u0E44\u0E21\u0E48\u0E2A\u0E21\u0E1A\u0E39\u0E23\u0E13\u0E4C (\u0E02\u0E32\u0E14\u0E23\u0E2B\u0E31\u0E2A Canonical emp_text) \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR
+Employee Master record for code ${cleanCode} is incomplete (missing or invalid emp_text). Please contact HR.`
+        };
+      }
+      const canonicalCode = rawEmpText.trim();
+      let isConsistent = false;
+      if (canonicalCode === cleanCode) {
+        isConsistent = true;
+      } else if (isDigitOnly && /^\d+$/.test(canonicalCode)) {
+        isConsistent = parseInt(canonicalCode, 10) === parseInt(cleanCode, 10);
+      }
+      if (!isConsistent) {
+        return {
+          eligible: false,
+          status: "EMPLOYEE_SOURCE_MISMATCH",
+          reason: "EMPLOYEE_SOURCE_MISMATCH",
+          message: `\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E23\u0E2B\u0E31\u0E2A\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A Employee Master \u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E23\u0E2B\u0E31\u0E2A\u0E17\u0E35\u0E48\u0E23\u0E49\u0E2D\u0E07\u0E02\u0E2D (${cleanCode}) \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR
+Employee Master canonical identity does not match requested code (${cleanCode}). Please contact HR.`
+        };
+      }
+      const fieldObj = emp.MBO_Kintone_User;
+      if (!fieldObj || typeof fieldObj !== "object" || !Object.prototype.hasOwnProperty.call(fieldObj, "value") || !Array.isArray(fieldObj.value)) {
+        return {
+          eligible: false,
+          status: "MALFORMED_DEDICATED_MAPPING",
+          reason: "MALFORMED_DEDICATED_MAPPING",
+          message: "\u0E42\u0E04\u0E23\u0E07\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator\nMalformed dedicated user mapping found in Employee Master. Please contact HR / Administrator."
+        };
+      }
+      const userList = fieldObj.value;
+      if (userList.length === 0) {
+        return {
+          eligible: true,
+          status: "SHARED_ELIGIBLE",
+          employeeCode: canonicalCode
+        };
+      }
+      if (userList.length === 1) {
+        const userObj = userList[0];
+        if (userObj && typeof userObj === "object" && typeof userObj.code === "string" && userObj.code.trim() !== "") {
+          return {
+            eligible: false,
+            status: "DEDICATED_ACCOUNT_REQUIRED",
+            reason: "DEDICATED_ACCOUNT_REQUIRED",
+            userMessageTH: "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07",
+            userMessageEN: "This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.",
+            message: "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.",
+            dedicatedUserCode: userObj.code.trim()
+          };
+        }
+      }
+      return {
+        eligible: false,
+        status: "MALFORMED_DEDICATED_MAPPING",
+        reason: "MALFORMED_DEDICATED_MAPPING",
+        message: "\u0E42\u0E04\u0E23\u0E07\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator\nMalformed dedicated user mapping found in Employee Master. Please contact HR / Administrator."
+      };
     }
   };
 
@@ -6802,10 +7029,12 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
      * @param {object} [options]
      * @param {import('./mbo-session-manager.js').MboSessionManager|null} [options.sessionManager=null]
      * @param {function} [options.onReload] - injectable for tests; defaults to location.reload
+     * @param {function} [options.checkSharedEligibility=null] - async (employeeCode) => eligibilityResult
      */
-    constructor(adapter, { sessionManager = null, onReload = null } = {}) {
+    constructor(adapter, { sessionManager = null, onReload = null, checkSharedEligibility = null } = {}) {
       this.adapter = adapter;
       this.sessionManager = sessionManager;
+      this.checkSharedEligibility = checkSharedEligibility;
       this._principal = null;
       this._pendingForceChange = false;
       this._onReload = onReload || (() => {
@@ -6856,6 +7085,29 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         try {
           const restored = await this.sessionManager.restoreSession();
           if (restored?.employeeCode) {
+            if (typeof this.checkSharedEligibility === "function") {
+              let eligibility;
+              try {
+                eligibility = await this.checkSharedEligibility(restored.employeeCode);
+              } catch {
+                eligibility = { eligible: false };
+              }
+              if (!eligibility || eligibility.eligible !== true) {
+                try {
+                  await this.sessionManager.revokeSession();
+                } catch {
+                }
+                if (typeof this.sessionManager.clearLocalToken === "function") {
+                  this.sessionManager.clearLocalToken();
+                }
+                this._principal = null;
+                this._pendingForceChange = false;
+                const errorMsg = eligibility?.message || "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.";
+                return new Promise((resolve) => {
+                  this._renderLoginOverlay(host, resolve, errorMsg);
+                });
+              }
+            }
             this._principal = { employeeCode: restored.employeeCode };
             this._pendingForceChange = false;
             return restored.employeeCode;
@@ -6918,6 +7170,21 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         return { status: "CREDENTIAL_DENIED", reason: err.message || "Login error" };
       }
       if (result.status === "AUTHENTICATED") {
+        if (typeof this.checkSharedEligibility === "function") {
+          let eligibility;
+          try {
+            eligibility = await this.checkSharedEligibility(result.employeeCode);
+          } catch (err) {
+            return { status: "SHARED_ELIGIBILITY_ERROR", reason: err.message || "Error checking eligibility" };
+          }
+          if (!eligibility || eligibility.eligible !== true) {
+            return {
+              status: eligibility?.status || "DEDICATED_ACCOUNT_REQUIRED",
+              reason: eligibility?.reason || "DEDICATED_ACCOUNT_REQUIRED",
+              message: eligibility?.message || "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account."
+            };
+          }
+        }
         if (this.sessionManager) {
           try {
             await this.sessionManager.issueSession(result.employeeCode);
@@ -6932,6 +7199,21 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         return { status: "AUTHENTICATED", employeeCode: result.employeeCode };
       }
       if (result.status === "PASSWORD_CHANGE_REQUIRED") {
+        if (typeof this.checkSharedEligibility === "function") {
+          let eligibility;
+          try {
+            eligibility = await this.checkSharedEligibility(result.employeeCode);
+          } catch (err) {
+            return { status: "SHARED_ELIGIBILITY_ERROR", reason: err.message || "Error checking eligibility" };
+          }
+          if (!eligibility || eligibility.eligible !== true) {
+            return {
+              status: eligibility?.status || "DEDICATED_ACCOUNT_REQUIRED",
+              reason: eligibility?.reason || "DEDICATED_ACCOUNT_REQUIRED",
+              message: eligibility?.message || "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account."
+            };
+          }
+        }
         this._principal = { employeeCode: result.employeeCode };
         this._pendingForceChange = true;
         return { status: "PASSWORD_CHANGE_REQUIRED", employeeCode: result.employeeCode };
@@ -6944,6 +7226,21 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       }
       if (newPassword !== confirmPassword) {
         return { status: "INVALID_PASSWORD", reason: "Passwords do not match." };
+      }
+      if (typeof this.checkSharedEligibility === "function") {
+        let eligibility;
+        try {
+          eligibility = await this.checkSharedEligibility(this._principal.employeeCode);
+        } catch (err) {
+          return { status: "SHARED_ELIGIBILITY_ERROR", reason: err.message || "Error checking eligibility" };
+        }
+        if (!eligibility || eligibility.eligible !== true) {
+          return {
+            status: eligibility?.status || "DEDICATED_ACCOUNT_REQUIRED",
+            reason: eligibility?.reason || "DEDICATED_ACCOUNT_REQUIRED",
+            message: eligibility?.message || "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account."
+          };
+        }
       }
       let result;
       try {
@@ -7009,7 +7306,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       const el = host.querySelector(`[${attr}]`);
       if (el) el.remove();
     }
-    _renderLoginOverlay(host, resolve) {
+    _renderLoginOverlay(host, resolve, initialError = null) {
       if (!host) return;
       this._removeOverlay(host, "data-mbo-login-overlay");
       const overlay = ce("div");
@@ -7031,7 +7328,10 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       const errorEl = ce("p");
       errorEl.setAttribute("data-mbo-error", "");
       errorEl.setAttribute("role", "alert");
-      styled(errorEl, "color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;");
+      styled(errorEl, "color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;white-space:pre-wrap;");
+      if (initialError) {
+        errorEl.textContent = initialError;
+      }
       const submitBtn = ce("button");
       submitBtn.type = "submit";
       submitBtn.textContent = "Login";
@@ -7052,6 +7352,10 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         } else if (actionRes.status === "PASSWORD_CHANGE_REQUIRED") {
           card.innerHTML = "";
           this._renderForceChangeCard(card, overlay, resolve);
+        } else if (actionRes.status === "DEDICATED_ACCOUNT_REQUIRED") {
+          errorEl.textContent = actionRes.message || "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E23\u0E32\u0E22\u0E19\u0E35\u0E49\u0E21\u0E35\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E2A\u0E48\u0E27\u0E19\u0E15\u0E31\u0E27 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A\u0E14\u0E49\u0E27\u0E22\u0E1A\u0E31\u0E0D\u0E0A\u0E35 Kintone \u0E02\u0E2D\u0E07\u0E15\u0E19\u0E40\u0E2D\u0E07\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.";
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Login";
         } else if (actionRes.status === "INVALID_CREDENTIALS") {
           errorEl.textContent = "Invalid Employee Code or password.";
           submitBtn.disabled = false;
@@ -7061,7 +7365,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
           submitBtn.disabled = false;
           submitBtn.textContent = "Login";
         } else {
-          errorEl.textContent = "Account is locked or disabled. Please contact HR.";
+          errorEl.textContent = actionRes.message || actionRes.reason || "Account is locked or disabled. Please contact HR.";
           submitBtn.disabled = false;
           submitBtn.textContent = "Login";
         }
@@ -7885,6 +8189,8 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       this.getMboAppId = options.getMboAppId;
       this.mboLoginGate = options.mboLoginGate;
       this.renderBlockedNotice = options.renderBlockedNotice;
+      this.now = options.now;
+      this.getCurrentFiscalYear = options.getCurrentFiscalYear;
     }
     async render(event, host, authenticatedEmployeeCode) {
       const duplicateIndexControls = [
@@ -7935,14 +8241,42 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       title.setAttribute("data-mbo-title", "");
       title.style.cssText = "margin:0;font-size:18px;font-weight:600;color:#1e293b;";
       title.textContent = "MBO \u0E02\u0E2D\u0E07\u0E09\u0E31\u0E19 / My MBO";
-      const createBtn = document.createElement("a");
-      createBtn.setAttribute("data-mbo-create-btn", "");
-      createBtn.textContent = "+ \u0E2A\u0E23\u0E49\u0E32\u0E07 MBO \u0E43\u0E2B\u0E21\u0E48 / Create New MBO";
-      createBtn.href = `/k/${appId}/edit`;
-      createBtn.className = "mbo-btn-create";
-      createBtn.style.cssText = "display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);";
       headerRow.appendChild(title);
-      headerRow.appendChild(createBtn);
+      const currentFY = typeof this.getCurrentFiscalYear === "function" ? this.getCurrentFiscalYear() : getJapaneseFiscalYear(this.now || /* @__PURE__ */ new Date());
+      const currentFyRecords = records.filter((rec) => {
+        const recFy = rec.Fiscal_Year?.value;
+        if (!recFy) return false;
+        const cleanRec = String(recFy).trim();
+        const cleanCurrent = String(currentFY).trim();
+        if (cleanRec === cleanCurrent) return true;
+        const numRec = cleanRec.replace(/^FY/i, "");
+        const numCurrent = cleanCurrent.replace(/^FY/i, "");
+        return numRec.length === 4 && numRec === numCurrent;
+      });
+      if (currentFyRecords.length === 1) {
+        const currentRec = currentFyRecords[0];
+        const openCurrentBtn = document.createElement("a");
+        openCurrentBtn.setAttribute("data-mbo-open-current-btn", "");
+        openCurrentBtn.textContent = "\u0E40\u0E1B\u0E34\u0E14 MBO \u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19 / Open Current MBO";
+        openCurrentBtn.href = `/k/${appId}/show#record=${currentRec.$id?.value}`;
+        openCurrentBtn.className = "mbo-btn-open-current";
+        openCurrentBtn.style.cssText = "display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);";
+        headerRow.appendChild(openCurrentBtn);
+      } else if (currentFyRecords.length === 0) {
+        const createBtn = document.createElement("a");
+        createBtn.setAttribute("data-mbo-create-btn", "");
+        createBtn.textContent = "+ \u0E2A\u0E23\u0E49\u0E32\u0E07 MBO \u0E43\u0E2B\u0E21\u0E48 / Create New MBO";
+        createBtn.href = `/k/${appId}/edit`;
+        createBtn.className = "mbo-btn-create";
+        createBtn.style.cssText = "display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);";
+        headerRow.appendChild(createBtn);
+      } else {
+        const warningNotice = document.createElement("span");
+        warningNotice.setAttribute("data-mbo-integrity-warning", "");
+        warningNotice.textContent = "\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 MBO \u0E0B\u0E49\u0E33\u0E0B\u0E49\u0E2D\u0E19\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E23\u0E2D\u0E1A\u0E1B\u0E35\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR / Administrator (Duplicate MBO records detected for current fiscal year)";
+        warningNotice.style.cssText = "display:inline-flex;align-items:center;color:#b91c1c;font-size:13px;font-weight:500;padding:6px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;";
+        headerRow.appendChild(warningNotice);
+      }
       contentBox.appendChild(headerRow);
       if (records.length === 0) {
         const emptyCard = document.createElement("div");
@@ -8920,7 +9254,10 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
           adapter: authAdapter,
           getKintoneUser: () => typeof kintone !== "undefined" && kintone.getLoginUser ? kintone.getLoginUser() : null
         });
-        mboLoginGate = new MboKintoneLoginGate(authAdapter, { sessionManager });
+        mboLoginGate = new MboKintoneLoginGate(authAdapter, {
+          sessionManager,
+          checkSharedEligibility: (empCode) => EmployeeService.checkSharedLoginEligibility(empCode, kintoneApiWrapper)
+        });
       } catch (initErr) {
         console.error("[MBO V2] FATAL: Failed to initialize MBO Login Gate.", initErr);
       }
