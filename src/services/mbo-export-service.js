@@ -2,6 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { readString, readNumber, projectApp794Objectives } from '../core/kintone-normalizer.js';
 import { MboApprovalTaskService } from './mbo-approval-task-service.js';
+import { preparePartATemplate, preparePartBTemplate } from './mbo-xlsx-template-preparer.js';
+import { renderSecuredSemanticValues } from './mbo-xlsx-semantic-renderer.js';
+import { composeCombinedWorkbook } from './mbo-xlsx-combined-composer.js';
 
 export const PROFILE_WEIGHT_MAP = {
   PROF_STAFF_CHIEF: { profileFamily: 'STAFF_CHIEF', partAWeight: 70, partBWeight: 30 },
@@ -275,5 +278,75 @@ export class MboExportService {
     }
 
     return projection;
+  }
+
+  /**
+   * Main Production Entry Point: Generates combined Part A + Part B XLSX workbook bytes.
+   *
+   * Mandatory execution order:
+   * 1. Authorization/privacy projection via projectCombinedExport (fails closed before template work).
+   * 2. Derive objectiveCount from projection.partA.objectivesCount.
+   * 3. Derive competencyCount from projection.partB.competencyItems.length.
+   * 4. Prepare Part A template via preparePartATemplate.
+   * 5. Prepare Part B template via preparePartBTemplate.
+   * 6. Render Part A via renderSecuredSemanticValues.
+   * 7. Render Part B via renderSecuredSemanticValues.
+   * 8. Compose combined workbook via composeCombinedWorkbook.
+   * 9. Return Uint8Array.
+   *
+   * @param {Object} params
+   * @param {Object} params.mboRecord - App794 MBO record object
+   * @param {Array} [params.competencyItems=[]] - List of competency items
+   * @param {Object} params.exportContext - Trusted export authorization context
+   * @param {string} [params.profileCode] - Optional Profile_Code override
+   * @param {Uint8Array|Buffer|ArrayBuffer} params.partATemplateBytes - Part A owner-template bytes
+   * @param {Uint8Array|Buffer|ArrayBuffer} params.partBTemplateBytes - Part B owner-template bytes
+   * @returns {Promise<Uint8Array>} Final combined XLSX workbook Uint8Array
+   */
+  static async generateCombinedXlsx({
+    mboRecord,
+    competencyItems = [],
+    exportContext,
+    profileCode,
+    partATemplateBytes,
+    partBTemplateBytes
+  } = {}) {
+    // 1. FIRST: Authorization and privacy projection (must fail before template parsing)
+    const projection = this.projectCombinedExport({
+      mboRecord,
+      competencyItems,
+      exportContext,
+      profileCode
+    });
+
+    // 2. Derive objectiveCount from secured projection
+    const objectiveCount = projection.partA.objectivesCount;
+
+    // 3. Derive competencyCount from secured projection
+    const competencyCount = projection.partB.competencyItems.length;
+
+    // 4. Prepare Part A template
+    const preparedA = await preparePartATemplate(partATemplateBytes, { objectiveCount });
+
+    // 5. Prepare Part B template
+    const preparedB = await preparePartBTemplate(partBTemplateBytes, { competencyCount });
+
+    // 6. Render Part A using secured combined projection
+    const renderedA = await renderSecuredSemanticValues(preparedA, {
+      partKey: 'A',
+      projection
+    });
+
+    // 7. Render Part B using secured combined projection
+    const renderedB = await renderSecuredSemanticValues(preparedB, {
+      partKey: 'B',
+      projection
+    });
+
+    // 8. Compose combined workbook
+    const combinedBytes = await composeCombinedWorkbook(renderedA, renderedB);
+
+    // 9. Return resulting Uint8Array
+    return combinedBytes;
   }
 }

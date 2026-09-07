@@ -1,6 +1,68 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import JSZip from 'jszip';
+import XlsxPopulate from 'xlsx-populate';
 import { MboExportService } from '../src/services/mbo-export-service.js';
+import {
+  PART_A_TEMPLATE_SHA256,
+  PART_B_TEMPLATE_SHA256
+} from '../src/profiles/mbo-xlsx-template-profile.js';
+
+const LOCAL_PART_A_PATH = path.join(process.cwd(), 'app info', 'data', 'PMS_Staff & Chief_PART_A.xlsx');
+const LOCAL_PART_B_PATH = path.join(process.cwd(), 'app info', 'data', 'PMS_Staff & Chief_PART_B.xlsx');
+
+function loadLocalPartA() {
+  if (!fs.existsSync(LOCAL_PART_A_PATH)) {
+    assert.fail(`Local Part A owner template missing at ${LOCAL_PART_A_PATH}`);
+  }
+  const buf = fs.readFileSync(LOCAL_PART_A_PATH);
+  const sha = crypto.createHash('sha256').update(buf).digest('hex');
+  assert.equal(sha, PART_A_TEMPLATE_SHA256, 'Part A owner template SHA mismatch');
+  return new Uint8Array(buf);
+}
+
+function loadLocalPartB() {
+  if (!fs.existsSync(LOCAL_PART_B_PATH)) {
+    assert.fail(`Local Part B owner template missing at ${LOCAL_PART_B_PATH}`);
+  }
+  const buf = fs.readFileSync(LOCAL_PART_B_PATH);
+  const sha = crypto.createHash('sha256').update(buf).digest('hex');
+  assert.equal(sha, PART_B_TEMPLATE_SHA256, 'Part B owner template SHA mismatch');
+  return new Uint8Array(buf);
+}
+
+async function countFormulaTagsInZip(zipBuffer) {
+  const zip = await JSZip.loadAsync(zipBuffer);
+  let count = 0;
+  for (const relativePath of Object.keys(zip.files)) {
+    if (relativePath.startsWith('xl/worksheets/') && relativePath.endsWith('.xml')) {
+      const xmlStr = await zip.files[relativePath].async('string');
+      const matches = xmlStr.match(/<f[\s>]/g);
+      if (matches) {
+        count += matches.length;
+      }
+    }
+  }
+  return count;
+}
+
+async function assertNoConfidentialStringsInZip(zipBuffer, confidentialStrings) {
+  const zip = await JSZip.loadAsync(zipBuffer);
+  for (const relativePath of Object.keys(zip.files)) {
+    if (relativePath.startsWith('xl/worksheets/') || relativePath === 'xl/sharedStrings.xml') {
+      const xmlStr = await zip.files[relativePath].async('string');
+      for (const str of confidentialStrings) {
+        assert.ok(
+          !xmlStr.includes(str),
+          `Confidential string "${str}" leaked in zip entry ${relativePath}`
+        );
+      }
+    }
+  }
+}
 
 test('EXPORT_PROFILE_FAIL_CLOSED: resolves exact weighting per Profile_Code and fails closed on unmapped profile', () => {
   assert.equal(MboExportService.resolveProfileWeighting('PROF_STAFF_CHIEF').partAWeight, 70);
@@ -389,4 +451,226 @@ test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION_CORRECTIVE: strict b7/b8 e
     () => MboExportService.projectCombinedExport({ mboRecord: mboRec, competencyItems: [...items6, { code: 'COMP_LEAD', description: 'Desc 7' }, { code: 'COMP_STRAT', description: '' }], exportContext: approverContext }),
     /EXPORT_COMPETENCY_PRESENTATION_UNRESOLVED/
   );
+});
+
+// =============================================================================
+// TEST SUITE: Combined XLSX Integration Service (R2-D2)
+// =============================================================================
+
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet combined workbook omitting confidential ratings/comments & 0 formulas', async () => {
+  const partATemplateBytes = loadLocalPartA();
+  const partBTemplateBytes = loadLocalPartB();
+
+  const confidentialStrings = [
+    'Secret Manager Comment 123',
+    'Secret GM Comment 456',
+    'Secret Manager Remark 789',
+    'Secret GM Remark 012'
+  ];
+
+  const mboRecord = {
+    Employee_Code: { value: 'EMP001' },
+    Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+    Objective_Count: { value: '4' },
+    Objective_1: { value: 'Obj 1' }, Weight_1: { value: '25' },
+    Objective_2: { value: 'Obj 2' }, Weight_2: { value: '25' },
+    Objective_3: { value: 'Obj 3' }, Weight_3: { value: '25' },
+    Objective_4: { value: 'Obj 4' }, Weight_4: { value: '25' },
+    Manager_Achievement_1: { value: '5 - Exceeds' },
+    Manager_Objective_Score_1: { value: '100' },
+    Manager_Comment_1: { value: confidentialStrings[0] },
+    GM_Achievement_1: { value: '5 - Exceeds' },
+    GM_Objective_Score_1: { value: '100' },
+    GM_Comment_1: { value: confidentialStrings[1] },
+    PartA_Raw_Score: { value: '100' },
+    PartA_Weighted_Score: { value: '70' },
+    PartB_Raw_Score: { value: '90' },
+    PartB_Weighted_Score: { value: '27' },
+    Final_Score: { value: '97' },
+    Final_Grade: { value: 'A' }
+  };
+
+  const competencyItems = [
+    { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4', managerComment: confidentialStrings[2], gmComment: confidentialStrings[3] },
+    { code: 'COMP_PROB', description: 'Desc 2', selfRating: '4' },
+    { code: 'COMP_CUST', description: 'Desc 3', selfRating: '4' },
+    { code: 'COMP_VALUE', description: 'Desc 4', selfRating: '4' },
+    { code: 'COMP_SAFETY', description: 'Desc 5', selfRating: '4' },
+    { code: 'COMP_COCE', description: 'Desc 6', selfRating: '4' }
+  ];
+
+  const exportContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
+
+  const combinedBytes = await MboExportService.generateCombinedXlsx({
+    mboRecord,
+    competencyItems,
+    exportContext,
+    profileCode: 'PROF_STAFF_CHIEF',
+    partATemplateBytes,
+    partBTemplateBytes
+  });
+
+  assert.ok(combinedBytes instanceof Uint8Array, 'Result must be Uint8Array');
+
+  const wbCombined = await XlsxPopulate.fromDataAsync(combinedBytes);
+  const sheets = wbCombined.sheets();
+  const sheetNames = sheets.map(s => s.name());
+
+  assert.equal(sheets.length, 2, 'Final workbook must contain exactly 2 sheets');
+  assert.equal(sheetNames[0], 'MBO Staff & Chief', 'Sheet 1 name must be "MBO Staff & Chief"');
+  assert.equal(sheetNames[1], '(Part B) Competency', 'Sheet 2 name must be "(Part B) Competency"');
+  assert.ok(!sheetNames.includes('Sheet1'), 'Auxiliary Sheet1 must be excluded');
+
+  // Formula inventory zero
+  const formulaCount = await countFormulaTagsInZip(combinedBytes);
+  assert.equal(formulaCount, 0, 'All final worksheet formula tags (<f ...>) must be 0');
+
+  // Verify no confidential manager/GM strings leaked into XML
+  await assertNoConfidentialStringsInZip(combinedBytes, confidentialStrings);
+});
+
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combined workbook with 10 objectives, 8 competencies & full evaluation data', async () => {
+  const partATemplateBytes = loadLocalPartA();
+  const partBTemplateBytes = loadLocalPartB();
+
+  const mboRecord = {
+    Employee_Code: { value: 'EMP001' },
+    Profile_Code: { value: 'PROF_SECTION_MGR' },
+    Objective_Count: { value: '10' },
+    Assignee: { type: 'STATUS_ASSIGNEE', value: [{ code: 'mgr1' }] },
+    PartA_Raw_Score: { value: '100' },
+    PartA_Weighted_Score: { value: '50' },
+    PartB_Raw_Score: { value: '90' },
+    PartB_Weighted_Score: { value: '45' },
+    Final_Score: { value: '95' },
+    Final_Grade: { value: 'A' }
+  };
+  for (let i = 1; i <= 10; i++) {
+    mboRecord[`Objective_${i}`] = { value: `Obj ${i}` };
+    mboRecord[`Weight_${i}`] = { value: '10' };
+    mboRecord[`Manager_Achievement_${i}`] = { value: '5 - Exceeds' };
+    mboRecord[`Manager_Objective_Score_${i}`] = { value: '100' };
+  }
+
+  const baseItems = [
+    { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4', managerRating: '5' },
+    { code: 'COMP_PROB', description: 'Desc 2', selfRating: '4', managerRating: '5' },
+    { code: 'COMP_CUST', description: 'Desc 3', selfRating: '4', managerRating: '5' },
+    { code: 'COMP_VALUE', description: 'Desc 4', selfRating: '4', managerRating: '5' },
+    { code: 'COMP_SAFETY', description: 'Desc 5', selfRating: '4', managerRating: '5' },
+    { code: 'COMP_COCE', description: 'Desc 6', selfRating: '4', managerRating: '5' }
+  ];
+
+  const competencyItems = [
+    ...baseItems,
+    { code: 'COMP_LEAD', description: 'Leadership description text', selfRating: '5', managerRating: '5' },
+    { code: 'COMP_STRAT', description: 'Strategy description text', selfRating: '5', managerRating: '5' }
+  ];
+
+  const exportContext = { type: 'APPROVER', context: { mode: 'DEDICATED', kintoneUserCode: 'mgr1' } };
+
+  const combinedBytes = await MboExportService.generateCombinedXlsx({
+    mboRecord,
+    competencyItems,
+    exportContext,
+    profileCode: 'PROF_SECTION_MGR',
+    partATemplateBytes,
+    partBTemplateBytes
+  });
+
+  assert.ok(combinedBytes instanceof Uint8Array, 'Result must be Uint8Array');
+
+  const wbCombined = await XlsxPopulate.fromDataAsync(combinedBytes);
+  const sheets = wbCombined.sheets();
+  const sheetNames = sheets.map(s => s.name());
+
+  assert.equal(sheets.length, 2);
+  assert.equal(sheetNames[0], 'MBO Staff & Chief');
+  assert.equal(sheetNames[1], '(Part B) Competency');
+  assert.ok(!sheetNames.includes('Sheet1'));
+
+  // Formula inventory zero
+  const formulaCount = await countFormulaTagsInZip(combinedBytes);
+  assert.equal(formulaCount, 0, 'Formula count in XML must be 0');
+});
+
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_SECURITY_ORDER: fails closed before template parsing on unauthorized exportContext or cross-employee request', async () => {
+  const invalidTemplateA = new Uint8Array([1, 2, 3, 4]);
+  const invalidTemplateB = new Uint8Array([5, 6, 7, 8]);
+
+  const mboRecord = { Employee_Code: { value: 'EMP001' }, Profile_Code: { value: 'PROF_STAFF_CHIEF' } };
+
+  // 1. Unauthorized exportContext + invalid templates -> EXPORT_AUTHORIZATION_DENIED before template error
+  await assert.rejects(
+    async () => MboExportService.generateCombinedXlsx({
+      mboRecord,
+      exportContext: { mode: 'SHARED', kintoneUserCode: 'user1' },
+      partATemplateBytes: invalidTemplateA,
+      partBTemplateBytes: invalidTemplateB
+    }),
+    /EXPORT_AUTHORIZATION_DENIED/
+  );
+
+  // 2. Cross-employee request + invalid templates -> EXPORT_CROSS_EMPLOYEE_DENIED before template error
+  await assert.rejects(
+    async () => MboExportService.generateCombinedXlsx({
+      mboRecord,
+      exportContext: { type: 'EMPLOYEE_SELF', employeeCode: 'EMP002' },
+      partATemplateBytes: invalidTemplateA,
+      partBTemplateBytes: invalidTemplateB
+    }),
+    /EXPORT_CROSS_EMPLOYEE_DENIED/
+  );
+});
+
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: authorized context with invalid template bytes throws error', async () => {
+  const invalidTemplateA = new Uint8Array([1, 2, 3, 4]);
+  const partBTemplateBytes = loadLocalPartB();
+
+  const mboRecord = { Employee_Code: { value: 'EMP001' }, Profile_Code: { value: 'PROF_STAFF_CHIEF' } };
+  const exportContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
+
+  await assert.rejects(
+    async () => MboExportService.generateCombinedXlsx({
+      mboRecord,
+      exportContext,
+      partATemplateBytes: invalidTemplateA,
+      partBTemplateBytes
+    })
+  );
+});
+
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INPUT_IMMUTABILITY: caller template buffers are not mutated during export generation', async () => {
+  const partATemplateBytes = loadLocalPartA();
+  const partBTemplateBytes = loadLocalPartB();
+
+  const copyA = new Uint8Array(partATemplateBytes);
+  const copyB = new Uint8Array(partBTemplateBytes);
+
+  const mboRecord = {
+    Employee_Code: { value: 'EMP001' },
+    Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+    Objective_Count: { value: '4' }
+  };
+  const competencyItems = [
+    { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4' },
+    { code: 'COMP_PROB', description: 'Desc 2', selfRating: '4' },
+    { code: 'COMP_CUST', description: 'Desc 3', selfRating: '4' },
+    { code: 'COMP_VALUE', description: 'Desc 4', selfRating: '4' },
+    { code: 'COMP_SAFETY', description: 'Desc 5', selfRating: '4' },
+    { code: 'COMP_COCE', description: 'Desc 6', selfRating: '4' }
+  ];
+  const exportContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
+
+  await MboExportService.generateCombinedXlsx({
+    mboRecord,
+    competencyItems,
+    exportContext,
+    profileCode: 'PROF_STAFF_CHIEF',
+    partATemplateBytes,
+    partBTemplateBytes
+  });
+
+  assert.deepEqual(partATemplateBytes, copyA, 'partATemplateBytes must be unchanged after generation');
+  assert.deepEqual(partBTemplateBytes, copyB, 'partBTemplateBytes must be unchanged after generation');
 });
