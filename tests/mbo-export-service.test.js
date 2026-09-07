@@ -554,7 +554,7 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet com
   assert.equal(sheetA.cell(empCodeRoleA.address).value(), 'EMP001', 'HEADER_EMPLOYEE_CODE must match EMP001');
   assert.equal(sheetA.cell(obj1MeasRole.address).value(), 'Obj 1 Measurement', 'OBJECTIVE_1_MEASUREMENT must match Obj 1 Measurement');
   assert.equal(sheetA.cell(obj1WeightRole.address).value(), 25, 'OBJECTIVE_1_WEIGHT must match 25');
-  assert.equal(sheetB.cell(comp1SelfRatingRole.address).value(), '4', 'COMPETENCY_1_SELF_RATING must match string "4"');
+  assert.equal(sheetB.cell(comp1SelfRatingRole.address).value(), 4, 'COMPETENCY_1_SELF_RATING must match 4');
 });
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combined workbook with 10 objectives, 8 competencies, b7/b8 presentation & secured summary values actually rendered', async () => {

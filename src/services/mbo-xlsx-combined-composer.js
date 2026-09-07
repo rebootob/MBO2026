@@ -748,7 +748,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   });
 
   // Remap shared string indices <v>INDEX</v> for cells with t="s"
-  sheetXmlB = sheetXmlB.replace(/(<c\b[^>]*?\bt="s"[^>]*?>[\s\S]*?<v>)(\d+)(<\/v>)/g, (match, open, p1, close) => {
+  sheetXmlB = sheetXmlB.replace(/(<c\b[^>]*?\bt="s"[^>]*?>(?:(?!<\/c>|<c\b)[\s\S])*?<v>)(\d+)(<\/v>)/g, (match, open, p1, close) => {
     const oldSstIdx = parseInt(p1, 10);
     if (!sstMap.has(oldSstIdx)) {
       throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B shared string index ${oldSstIdx} missing in sst map`);
