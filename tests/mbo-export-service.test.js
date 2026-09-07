@@ -554,7 +554,19 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet com
   assert.equal(sheetA.cell(empCodeRoleA.address).value(), 'EMP001', 'HEADER_EMPLOYEE_CODE must match EMP001');
   assert.equal(sheetA.cell(obj1MeasRole.address).value(), 'Obj 1 Measurement', 'OBJECTIVE_1_MEASUREMENT must match Obj 1 Measurement');
   assert.equal(sheetA.cell(obj1WeightRole.address).value(), 25, 'OBJECTIVE_1_WEIGHT must match 25');
-  assert.equal(sheetB.cell(comp1SelfRatingRole.address).value(), 4, 'COMPETENCY_1_SELF_RATING must match 4');
+
+  // Primary OOXML Type-Fidelity Proof: RAW OOXML cell node must be string/inlineStr "4"
+  const zipCombined = await JSZip.loadAsync(combinedBytes);
+  const sheet2Xml = await zipCombined.file('xl/worksheets/sheet2.xml').async('string');
+  const comp1CellMatch = sheet2Xml.match(new RegExp(`<c\\b[^>]*?\\br="${comp1SelfRatingRole.address}"[^>]*?>[\\s\\S]*?<\\/c>`));
+  assert.ok(comp1CellMatch, `Cell node for ${comp1SelfRatingRole.address} must exist in raw OOXML`);
+  const rawComp1CellXml = comp1CellMatch[0];
+  assert.ok(rawComp1CellXml.includes('t="inlineStr"'), 'RAW OOXML cell for COMPETENCY_1_SELF_RATING must be t="inlineStr" string type');
+  assert.ok(rawComp1CellXml.includes('<is><t>4</t></is>'), 'RAW OOXML cell for COMPETENCY_1_SELF_RATING must contain exact string payload "4"');
+  assert.ok(!rawComp1CellXml.includes('<v>'), 'RAW OOXML cell for COMPETENCY_1_SELF_RATING must not contain numeric <v> payload');
+
+  // Reader Library Coercion: XlsxPopulate.fromDataAsync XmlParser coerces inlineStr "4" to numeric 4
+  assert.equal(sheetB.cell(comp1SelfRatingRole.address).value(), 4, 'XlsxPopulate reader library coerces inlineStr "4" to numeric 4');
 });
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combined workbook with 10 objectives, 8 competencies, b7/b8 presentation & secured summary values actually rendered', async () => {
@@ -649,6 +661,14 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combine
   // Cell-level verification on sheet (Part B) Competency for Part B summary values (8 competencies)
   assert.equal(sheetB.cell(summaryPartBRawRole.address).value(), 90, 'SUMMARY_PART_B_RAW_SCORE must be 90');
   assert.equal(sheetB.cell(summaryPartBWeightedRole.address).value(), 45, 'SUMMARY_PART_B_WEIGHTED_SCORE must be 45');
+
+  // Primary OOXML Score Proof: RAW OOXML cell node for SUMMARY_PART_B_WEIGHTED_SCORE must be numeric <v>45</v>
+  const zipApprover = await JSZip.loadAsync(combinedBytes);
+  const sheet2XmlApprover = await zipApprover.file('xl/worksheets/sheet2.xml').async('string');
+  const summaryPartBCellMatch = sheet2XmlApprover.match(new RegExp(`<c\\b[^>]*?\\br="${summaryPartBWeightedRole.address}"[^>]*?>[\\s\\S]*?<\\/c>`));
+  assert.ok(summaryPartBCellMatch, `Cell node for ${summaryPartBWeightedRole.address} must exist in raw OOXML`);
+  const rawSummaryPartBCellXml = summaryPartBCellMatch[0];
+  assert.ok(rawSummaryPartBCellXml.includes('<v>45</v>'), 'RAW OOXML cell for SUMMARY_PART_B_WEIGHTED_SCORE must contain exact numeric payload 45');
 });
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_SECURITY_ORDER: fails closed before template parsing on unauthorized exportContext or cross-employee request', async () => {
