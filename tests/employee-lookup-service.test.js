@@ -451,3 +451,155 @@ test('SHARED_ELIGIBILITY-006: Malformed dedicated user mapping array fails close
   assert.equal(res.eligible, false);
   assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
 });
+
+test('SHARED_ELIGIBILITY-007: MBO_Kintone_User property completely missing fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' }
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-008: MBO_Kintone_User = undefined fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: undefined
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-009: MBO_Kintone_User = null fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: null
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-010: Field object missing .value property fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: {}
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-011: .value = null fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: null }
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-012: .value = "" fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: '' }
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-013: .value = {} fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: {} }
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-014: .value = [{ code: "" }] fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: [{ code: '' }] }
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-015: .value = [{ name: "Papatchaya" }] without .code fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const record = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: [{ name: 'Papatchaya' }] }
+  };
+  const api = createMockKintoneApi([record]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});
+
+test('SHARED_ELIGIBILITY-016: Leading zero contract: valid Shared employee "0113" preserves canonical "0113"', async () => {
+  const sharedRecord0113 = {
+    emp_text: { value: '0113' },
+    Number: { value: '113' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: [] }
+  };
+  const api = createMockKintoneApi([sharedRecord0113]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0113', api);
+
+  assert.equal(res.eligible, true);
+  assert.equal(res.status, 'SHARED_ELIGIBLE');
+  assert.equal(res.employeeCode, '0113');
+  assert.notEqual(res.employeeCode, '113');
+  assert.notEqual(res.employeeCode, 113);
+});

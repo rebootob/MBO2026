@@ -370,33 +370,15 @@ export class EmployeeService {
       };
     }
 
-    const rawUsers = emp.MBO_Kintone_User?.value ?? emp.MBO_Kintone_User;
-
-    // If empty or null or empty array -> Eligible for shared login
-    if (!rawUsers || (Array.isArray(rawUsers) && rawUsers.length === 0)) {
-      return {
-        eligible: true,
-        status: 'SHARED_ELIGIBLE',
-        employeeCode: canonicalCode
-      };
-    }
-
-    // If populated with user selection
-    if (Array.isArray(rawUsers)) {
-      if (rawUsers.length === 1) {
-        const userObj = rawUsers[0];
-        if (userObj && typeof userObj === 'object' && typeof userObj.code === 'string' && userObj.code.trim() !== '') {
-          return {
-            eligible: false,
-            status: 'DEDICATED_ACCOUNT_REQUIRED',
-            reason: 'DEDICATED_ACCOUNT_REQUIRED',
-            userMessageTH: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง',
-            userMessageEN: 'This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
-            message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
-            dedicatedUserCode: userObj.code.trim()
-          };
-        }
-      }
+    // Strict Kintone USER_SELECT shape contract:
+    // emp.MBO_Kintone_User must exist, be a non-null object, have an own property 'value', and 'value' must be an Array.
+    const fieldObj = emp.MBO_Kintone_User;
+    if (
+      !fieldObj ||
+      typeof fieldObj !== 'object' ||
+      !Object.prototype.hasOwnProperty.call(fieldObj, 'value') ||
+      !Array.isArray(fieldObj.value)
+    ) {
       return {
         eligible: false,
         status: 'MALFORMED_DEDICATED_MAPPING',
@@ -405,18 +387,39 @@ export class EmployeeService {
       };
     }
 
-    if (typeof rawUsers === 'object' && typeof rawUsers.code === 'string' && rawUsers.code.trim() !== '') {
+    const userList = fieldObj.value;
+
+    // Case A: Valid Empty USER_SELECT -> SHARED_ELIGIBLE
+    if (userList.length === 0) {
       return {
-        eligible: false,
-        status: 'DEDICATED_ACCOUNT_REQUIRED',
-        reason: 'DEDICATED_ACCOUNT_REQUIRED',
-        userMessageTH: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง',
-        userMessageEN: 'This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
-        message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
-        dedicatedUserCode: rawUsers.code.trim()
+        eligible: true,
+        status: 'SHARED_ELIGIBLE',
+        employeeCode: canonicalCode
       };
     }
 
+    // Case B: Valid Single Dedicated User -> DEDICATED_ACCOUNT_REQUIRED
+    if (userList.length === 1) {
+      const userObj = userList[0];
+      if (
+        userObj &&
+        typeof userObj === 'object' &&
+        typeof userObj.code === 'string' &&
+        userObj.code.trim() !== ''
+      ) {
+        return {
+          eligible: false,
+          status: 'DEDICATED_ACCOUNT_REQUIRED',
+          reason: 'DEDICATED_ACCOUNT_REQUIRED',
+          userMessageTH: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง',
+          userMessageEN: 'This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
+          message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
+          dedicatedUserCode: userObj.code.trim()
+        };
+      }
+    }
+
+    // Everything else (length > 1, invalid entry, missing or empty code, etc.) -> FAIL CLOSED
     return {
       eligible: false,
       status: 'MALFORMED_DEDICATED_MAPPING',
