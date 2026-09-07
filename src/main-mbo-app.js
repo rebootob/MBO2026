@@ -317,7 +317,10 @@ if (typeof kintone !== 'undefined') {
         adapter: authAdapter,
         getKintoneUser: () => (typeof kintone !== 'undefined' && kintone.getLoginUser ? kintone.getLoginUser() : null)
       });
-      mboLoginGate = new MboKintoneLoginGate(authAdapter, { sessionManager });
+      mboLoginGate = new MboKintoneLoginGate(authAdapter, {
+        sessionManager,
+        checkSharedEligibility: (empCode) => EmployeeService.checkSharedLoginEligibility(empCode, kintoneApiWrapper)
+      });
     } catch (initErr) {
       console.error('[MBO V2] FATAL: Failed to initialize MBO Login Gate.', initErr);
       // mboLoginGate remains null → all record handlers will fail closed

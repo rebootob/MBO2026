@@ -255,4 +255,173 @@ export class EmployeeService {
 
     return resp.records;
   }
+
+  /**
+   * Check if an employee is eligible to log in via Shared mode.
+   * If App 53 MBO_Kintone_User has a dedicated Kintone user mapping,
+   * the employee MUST NOT use shared login (DEDICATED_ACCOUNT_REQUIRED).
+   * @param {string} empCode - Employee code
+   * @param {Object} kintoneApi - Kintone API client
+   * @returns {Promise<{ eligible: boolean, status: string, reason?: string, employeeCode?: string, message?: string, userMessageTH?: string, userMessageEN?: string, dedicatedUserCode?: string }>}
+   */
+  static async checkSharedLoginEligibility(empCode, kintoneApi) {
+    if (empCode === null || empCode === undefined || typeof empCode !== 'string') {
+      return {
+        eligible: false,
+        status: 'EMPLOYEE_CODE_INVALID',
+        reason: 'EMPLOYEE_CODE_INVALID',
+        message: 'กรุณาระบุรหัสพนักงาน\nPlease enter Employee Code'
+      };
+    }
+
+    const cleanCode = empCode.trim();
+    if (cleanCode.length === 0 || !isValidEmployeeCode(cleanCode)) {
+      return {
+        eligible: false,
+        status: 'EMPLOYEE_CODE_INVALID',
+        reason: 'EMPLOYEE_CODE_INVALID',
+        message: `รูปแบบรหัสพนักงานไม่ถูกต้อง (${empCode})\nInvalid Employee Code format (${empCode})`
+      };
+    }
+
+    if (!kintoneApi || typeof kintoneApi.getRecords !== 'function') {
+      return {
+        eligible: false,
+        status: 'SOURCE_ACCESS_ERROR',
+        reason: 'KINTONE_API_UNAVAILABLE',
+        message: 'ระบบไม่สามารถเชื่อมต่อ Kintone API ได้\nKintone API service is unavailable'
+      };
+    }
+
+    const isDigitOnly = /^\d+$/.test(cleanCode);
+    let query;
+    if (isDigitOnly) {
+      const numericRep = parseInt(cleanCode, 10);
+      query = `(emp_text = "${cleanCode}" or Number = ${numericRep}) and Number_0 = 1 limit 2`;
+    } else {
+      query = `emp_text = "${cleanCode}" and Number_0 = 1 limit 2`;
+    }
+
+    let resp;
+    try {
+      resp = await kintoneApi.getRecords(53, query);
+    } catch (err) {
+      return {
+        eligible: false,
+        status: 'SOURCE_ACCESS_ERROR',
+        reason: 'SOURCE_ACCESS_ERROR',
+        message: 'ไม่สามารถตรวจสอบข้อมูลพนักงานได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง หรือติดต่อ HR / Administrator\nUnable to verify employee information at this time. Please try again or contact HR / Administrator.'
+      };
+    }
+
+    if (!resp || typeof resp !== 'object' || !Array.isArray(resp.records)) {
+      return {
+        eligible: false,
+        status: 'SOURCE_RESPONSE_INVALID',
+        reason: 'SOURCE_RESPONSE_INVALID',
+        message: 'โครงสร้างข้อมูลตอบกลับจากระบบ Employee Master ไม่ถูกต้อง กรุณาติดต่อ HR / Administrator\nInvalid response structure received from Employee Master. Please contact HR / Administrator.'
+      };
+    }
+
+    const records = resp.records;
+    if (records.length === 0) {
+      return {
+        eligible: false,
+        status: 'EMPLOYEE_NOT_FOUND',
+        reason: 'EMPLOYEE_NOT_FOUND',
+        message: `ไม่พบข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master\nEmployee code ${cleanCode} was not found in Employee Master (App 53)`
+      };
+    }
+
+    if (records.length > 1) {
+      return {
+        eligible: false,
+        status: 'EMPLOYEE_SOURCE_AMBIGUOUS',
+        reason: 'EMPLOYEE_SOURCE_AMBIGUOUS',
+        message: `พบรหัสพนักงาน ${cleanCode} ซ้ำซ้อนในระบบ Employee Master กรุณาติดต่อ HR / Administrator\nDuplicate employee records found for code ${cleanCode}. Please contact HR / Administrator.`
+      };
+    }
+
+    const emp = records[0];
+    const rawEmpText = emp.emp_text?.value;
+    if (!rawEmpText || typeof rawEmpText !== 'string' || !isValidEmployeeCode(rawEmpText.trim())) {
+      return {
+        eligible: false,
+        status: 'EMPLOYEE_SOURCE_INCOMPLETE',
+        reason: 'EMPLOYEE_SOURCE_INCOMPLETE',
+        message: `ข้อมูลพนักงานสำหรับรหัส ${cleanCode} ในระบบ Employee Master ไม่สมบูรณ์ (ขาดรหัส Canonical emp_text) กรุณาติดต่อ HR\nEmployee Master record for code ${cleanCode} is incomplete (missing or invalid emp_text). Please contact HR.`
+      };
+    }
+
+    const canonicalCode = rawEmpText.trim();
+    let isConsistent = false;
+    if (canonicalCode === cleanCode) {
+      isConsistent = true;
+    } else if (isDigitOnly && /^\d+$/.test(canonicalCode)) {
+      isConsistent = parseInt(canonicalCode, 10) === parseInt(cleanCode, 10);
+    }
+
+    if (!isConsistent) {
+      return {
+        eligible: false,
+        status: 'EMPLOYEE_SOURCE_MISMATCH',
+        reason: 'EMPLOYEE_SOURCE_MISMATCH',
+        message: `ข้อมูลรหัสพนักงานในระบบ Employee Master ไม่ตรงกับรหัสที่ร้องขอ (${cleanCode}) กรุณาติดต่อ HR\nEmployee Master canonical identity does not match requested code (${cleanCode}). Please contact HR.`
+      };
+    }
+
+    const rawUsers = emp.MBO_Kintone_User?.value ?? emp.MBO_Kintone_User;
+
+    // If empty or null or empty array -> Eligible for shared login
+    if (!rawUsers || (Array.isArray(rawUsers) && rawUsers.length === 0)) {
+      return {
+        eligible: true,
+        status: 'SHARED_ELIGIBLE',
+        employeeCode: canonicalCode
+      };
+    }
+
+    // If populated with user selection
+    if (Array.isArray(rawUsers)) {
+      if (rawUsers.length === 1) {
+        const userObj = rawUsers[0];
+        if (userObj && typeof userObj === 'object' && typeof userObj.code === 'string' && userObj.code.trim() !== '') {
+          return {
+            eligible: false,
+            status: 'DEDICATED_ACCOUNT_REQUIRED',
+            reason: 'DEDICATED_ACCOUNT_REQUIRED',
+            userMessageTH: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง',
+            userMessageEN: 'This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
+            message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
+            dedicatedUserCode: userObj.code.trim()
+          };
+        }
+      }
+      return {
+        eligible: false,
+        status: 'MALFORMED_DEDICATED_MAPPING',
+        reason: 'MALFORMED_DEDICATED_MAPPING',
+        message: 'โครงสร้างข้อมูลผู้ใช้งาน Kintone ส่วนตัวไม่ถูกต้อง กรุณาติดต่อ HR / Administrator\nMalformed dedicated user mapping found in Employee Master. Please contact HR / Administrator.'
+      };
+    }
+
+    if (typeof rawUsers === 'object' && typeof rawUsers.code === 'string' && rawUsers.code.trim() !== '') {
+      return {
+        eligible: false,
+        status: 'DEDICATED_ACCOUNT_REQUIRED',
+        reason: 'DEDICATED_ACCOUNT_REQUIRED',
+        userMessageTH: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง',
+        userMessageEN: 'This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
+        message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.',
+        dedicatedUserCode: rawUsers.code.trim()
+      };
+    }
+
+    return {
+      eligible: false,
+      status: 'MALFORMED_DEDICATED_MAPPING',
+      reason: 'MALFORMED_DEDICATED_MAPPING',
+      message: 'โครงสร้างข้อมูลผู้ใช้งาน Kintone ส่วนตัวไม่ถูกต้อง กรุณาติดต่อ HR / Administrator\nMalformed dedicated user mapping found in Employee Master. Please contact HR / Administrator.'
+    };
+  }
 }

@@ -27,10 +27,12 @@ export class MboKintoneLoginGate {
    * @param {object} [options]
    * @param {import('./mbo-session-manager.js').MboSessionManager|null} [options.sessionManager=null]
    * @param {function} [options.onReload] - injectable for tests; defaults to location.reload
+   * @param {function} [options.checkSharedEligibility=null] - async (employeeCode) => eligibilityResult
    */
-  constructor(adapter, { sessionManager = null, onReload = null } = {}) {
+  constructor(adapter, { sessionManager = null, onReload = null, checkSharedEligibility = null } = {}) {
     this.adapter = adapter;
     this.sessionManager = sessionManager;
+    this.checkSharedEligibility = checkSharedEligibility;
     this._principal = null;       // { employeeCode: string } — page memory
     this._pendingForceChange = false;
     this._onReload = onReload || (() => {
@@ -87,6 +89,28 @@ export class MboKintoneLoginGate {
       try {
         const restored = await this.sessionManager.restoreSession();
         if (restored?.employeeCode) {
+          if (typeof this.checkSharedEligibility === 'function') {
+            let eligibility;
+            try {
+              eligibility = await this.checkSharedEligibility(restored.employeeCode);
+            } catch {
+              eligibility = { eligible: false };
+            }
+            if (!eligibility || eligibility.eligible !== true) {
+              try {
+                await this.sessionManager.revokeSession();
+              } catch {}
+              if (typeof this.sessionManager.clearLocalToken === 'function') {
+                this.sessionManager.clearLocalToken();
+              }
+              this._principal = null;
+              this._pendingForceChange = false;
+              const errorMsg = eligibility?.message || 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.';
+              return new Promise((resolve) => {
+                this._renderLoginOverlay(host, resolve, errorMsg);
+              });
+            }
+          }
           this._principal = { employeeCode: restored.employeeCode };
           this._pendingForceChange = false;
           return restored.employeeCode;
@@ -163,6 +187,21 @@ export class MboKintoneLoginGate {
     }
 
     if (result.status === 'AUTHENTICATED') {
+      if (typeof this.checkSharedEligibility === 'function') {
+        let eligibility;
+        try {
+          eligibility = await this.checkSharedEligibility(result.employeeCode);
+        } catch (err) {
+          return { status: 'SHARED_ELIGIBILITY_ERROR', reason: err.message || 'Error checking eligibility' };
+        }
+        if (!eligibility || eligibility.eligible !== true) {
+          return {
+            status: eligibility?.status || 'DEDICATED_ACCOUNT_REQUIRED',
+            reason: eligibility?.reason || 'DEDICATED_ACCOUNT_REQUIRED',
+            message: eligibility?.message || 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.'
+          };
+        }
+      }
       if (this.sessionManager) {
         try {
           await this.sessionManager.issueSession(result.employeeCode);
@@ -178,6 +217,21 @@ export class MboKintoneLoginGate {
     }
 
     if (result.status === 'PASSWORD_CHANGE_REQUIRED') {
+      if (typeof this.checkSharedEligibility === 'function') {
+        let eligibility;
+        try {
+          eligibility = await this.checkSharedEligibility(result.employeeCode);
+        } catch (err) {
+          return { status: 'SHARED_ELIGIBILITY_ERROR', reason: err.message || 'Error checking eligibility' };
+        }
+        if (!eligibility || eligibility.eligible !== true) {
+          return {
+            status: eligibility?.status || 'DEDICATED_ACCOUNT_REQUIRED',
+            reason: eligibility?.reason || 'DEDICATED_ACCOUNT_REQUIRED',
+            message: eligibility?.message || 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.'
+          };
+        }
+      }
       this._principal = { employeeCode: result.employeeCode };
       this._pendingForceChange = true;
       return { status: 'PASSWORD_CHANGE_REQUIRED', employeeCode: result.employeeCode };
@@ -192,6 +246,21 @@ export class MboKintoneLoginGate {
     }
     if (newPassword !== confirmPassword) {
       return { status: 'INVALID_PASSWORD', reason: 'Passwords do not match.' };
+    }
+    if (typeof this.checkSharedEligibility === 'function') {
+      let eligibility;
+      try {
+        eligibility = await this.checkSharedEligibility(this._principal.employeeCode);
+      } catch (err) {
+        return { status: 'SHARED_ELIGIBILITY_ERROR', reason: err.message || 'Error checking eligibility' };
+      }
+      if (!eligibility || eligibility.eligible !== true) {
+        return {
+          status: eligibility?.status || 'DEDICATED_ACCOUNT_REQUIRED',
+          reason: eligibility?.reason || 'DEDICATED_ACCOUNT_REQUIRED',
+          message: eligibility?.message || 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.'
+        };
+      }
     }
     let result;
     try {
@@ -266,7 +335,7 @@ export class MboKintoneLoginGate {
     if (el) el.remove();
   }
 
-  _renderLoginOverlay(host, resolve) {
+  _renderLoginOverlay(host, resolve, initialError = null) {
     if (!host) return;
     this._removeOverlay(host, 'data-mbo-login-overlay');
 
@@ -296,7 +365,10 @@ export class MboKintoneLoginGate {
     const errorEl = ce('p');
     errorEl.setAttribute('data-mbo-error', '');
     errorEl.setAttribute('role', 'alert');
-    styled(errorEl, 'color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;');
+    styled(errorEl, 'color:#c00;min-height:20px;margin:0 0 12px;font-size:13px;white-space:pre-wrap;');
+    if (initialError) {
+      errorEl.textContent = initialError;
+    }
 
     const submitBtn = ce('button');
     submitBtn.type = 'submit';
@@ -324,6 +396,10 @@ export class MboKintoneLoginGate {
       } else if (actionRes.status === 'PASSWORD_CHANGE_REQUIRED') {
         card.innerHTML = '';
         this._renderForceChangeCard(card, overlay, resolve);
+      } else if (actionRes.status === 'DEDICATED_ACCOUNT_REQUIRED') {
+        errorEl.textContent = actionRes.message || 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Login';
       } else if (actionRes.status === 'INVALID_CREDENTIALS') {
         errorEl.textContent = 'Invalid Employee Code or password.';
         submitBtn.disabled = false;
@@ -333,7 +409,7 @@ export class MboKintoneLoginGate {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Login';
       } else {
-        errorEl.textContent = 'Account is locked or disabled. Please contact HR.';
+        errorEl.textContent = actionRes.message || actionRes.reason || 'Account is locked or disabled. Please contact HR.';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Login';
       }

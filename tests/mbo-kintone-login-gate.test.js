@@ -293,6 +293,107 @@ describe('D1 MboKintoneLoginGate — requireLogin with mock adapter', () => {
     assert.equal(gate.getEmployeeCode(), '0118');
   });
 
+  it('DEFECT-001: login denied when employee has dedicated account', async () => {
+    const mockAdapter = {
+      login: async () => ({ status: 'AUTHENTICATED', employeeCode: '0113' })
+    };
+    const mockEligibility = async (empCode) => {
+      if (empCode === '0113') {
+        return {
+          eligible: false,
+          status: 'DEDICATED_ACCOUNT_REQUIRED',
+          reason: 'DEDICATED_ACCOUNT_REQUIRED',
+          message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.'
+        };
+      }
+      return { eligible: true };
+    };
+    const gate = new MboKintoneLoginGate(mockAdapter, {
+      checkSharedEligibility: mockEligibility,
+      onReload: () => {}
+    });
+
+    const res = await gate._handleLoginAction({ username: '0113', password: 'secret' });
+    assert.equal(res.status, 'DEDICATED_ACCOUNT_REQUIRED');
+    assert.ok(res.message.includes('พนักงานรายนี้มีบัญชี Kintone ส่วนตัว'));
+    assert.equal(gate.getEmployeeCode(), null);
+  });
+
+  it('DEFECT-001: force change denied when employee has dedicated account', async () => {
+    const mockAdapter = {
+      login: async () => ({ status: 'PASSWORD_CHANGE_REQUIRED', employeeCode: '0113' }),
+      forceChangePassword: async () => ({ status: 'PASSWORD_CHANGED', employeeCode: '0113' })
+    };
+    const mockEligibility = async (empCode) => {
+      if (empCode === '0113') {
+        return {
+          eligible: false,
+          status: 'DEDICATED_ACCOUNT_REQUIRED',
+          reason: 'DEDICATED_ACCOUNT_REQUIRED',
+          message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง'
+        };
+      }
+      return { eligible: true };
+    };
+    const gate = new MboKintoneLoginGate(mockAdapter, {
+      checkSharedEligibility: mockEligibility,
+      onReload: () => {}
+    });
+    gate._principal = { employeeCode: '0113' };
+    gate._pendingForceChange = true;
+
+    const res = await gate._handleForceChangeAction({ newPassword: 'New1', confirmPassword: 'New1' });
+    assert.equal(res.status, 'DEDICATED_ACCOUNT_REQUIRED');
+    assert.equal(gate.getEmployeeCode(), null);
+  });
+
+  it('DEFECT-001: restored session denied when employee has dedicated account (clears token, revokes session, renders overlay with error)', async () => {
+    let revoked = false;
+    let cleared = false;
+    const mockSessionManager = {
+      restoreSession: async () => ({ employeeCode: '0113' }),
+      revokeSession: async () => { revoked = true; },
+      clearLocalToken: () => { cleared = true; }
+    };
+    const mockEligibility = async (empCode) => {
+      if (empCode === '0113') {
+        return {
+          eligible: false,
+          status: 'DEDICATED_ACCOUNT_REQUIRED',
+          reason: 'DEDICATED_ACCOUNT_REQUIRED',
+          message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง'
+        };
+      }
+      return { eligible: true };
+    };
+
+    const gate = new MboKintoneLoginGate({}, {
+      sessionManager: mockSessionManager,
+      checkSharedEligibility: mockEligibility,
+      onReload: () => {}
+    });
+
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      assert.equal(revoked, true, 'Must revoke session');
+      assert.equal(cleared, true, 'Must clear local token');
+      assert.equal(gate.getEmployeeCode(), null, 'Must not authenticate principal');
+
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      assert.ok(overlay, 'Overlay must be rendered');
+      const errorEl = overlay.querySelector('[data-mbo-error]');
+      assert.ok(errorEl, 'Error element must be present');
+      assert.ok(errorEl.textContent.includes('พนักงานรายนี้มีบัญชี Kintone ส่วนตัว'), 'Must display dedicated account error');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
 });
 
 // ---------------------------------------------------------------------------

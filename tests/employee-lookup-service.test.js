@@ -367,3 +367,87 @@ test('DEDICATED_LOOKUP-004: API error throws EMPLOYEE_LOOKUP_FAILED and fails cl
     }
   );
 });
+
+// --- SHARED LOGIN ELIGIBILITY TESTS (DEFECT-001) ---
+
+test('SHARED_ELIGIBILITY-001: Employee with dedicated Kintone account mapping is blocked with DEDICATED_ACCOUNT_REQUIRED and bilingual message', async () => {
+  const dedicatedRecord = {
+    emp_text: { value: '0113' },
+    Number: { value: '113' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: [{ code: 'papatchaya', name: 'Ms. Papatchaya' }] }
+  };
+  const api = createMockKintoneApi([dedicatedRecord]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0113', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'DEDICATED_ACCOUNT_REQUIRED');
+  assert.equal(res.reason, 'DEDICATED_ACCOUNT_REQUIRED');
+  assert.equal(res.dedicatedUserCode, 'papatchaya');
+  assert.equal(res.userMessageTH, 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง');
+  assert.equal(res.userMessageEN, 'This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.');
+  assert.ok(res.message.includes('พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง'));
+  assert.ok(res.message.includes('This employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.'));
+});
+
+test('SHARED_ELIGIBILITY-002: Employee without dedicated Kintone user mapping is SHARED_ELIGIBLE', async () => {
+  const sharedRecord = {
+    emp_text: { value: '0149' },
+    Number: { value: '149' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: [] }
+  };
+  const api = createMockKintoneApi([sharedRecord]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0149', api);
+
+  assert.equal(res.eligible, true);
+  assert.equal(res.status, 'SHARED_ELIGIBLE');
+  assert.equal(res.employeeCode, '0149');
+});
+
+test('SHARED_ELIGIBILITY-003: App53 API error fails closed with SOURCE_ACCESS_ERROR', async () => {
+  const api = createMockKintoneApi([], true); // throws error
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0113', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'SOURCE_ACCESS_ERROR');
+});
+
+test('SHARED_ELIGIBILITY-004: Non-existent employee code in App53 fails closed with EMPLOYEE_NOT_FOUND', async () => {
+  const api = createMockKintoneApi([]); // 0 records
+
+  const res = await EmployeeService.checkSharedLoginEligibility('9999', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'EMPLOYEE_NOT_FOUND');
+});
+
+test('SHARED_ELIGIBILITY-005: Duplicate active employee records in App53 fails closed with EMPLOYEE_SOURCE_AMBIGUOUS', async () => {
+  const dupRecords = [
+    { emp_text: { value: '0113' }, Number_0: { value: '1' } },
+    { emp_text: { value: '0113' }, Number_0: { value: '1' } }
+  ];
+  const api = createMockKintoneApi(dupRecords);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0113', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'EMPLOYEE_SOURCE_AMBIGUOUS');
+});
+
+test('SHARED_ELIGIBILITY-006: Malformed dedicated user mapping array fails closed with MALFORMED_DEDICATED_MAPPING', async () => {
+  const malformedRecord = {
+    emp_text: { value: '0113' },
+    Number_0: { value: '1' },
+    MBO_Kintone_User: { value: [{ code: 'user1' }, { code: 'user2' }] }
+  };
+  const api = createMockKintoneApi([malformedRecord]);
+
+  const res = await EmployeeService.checkSharedLoginEligibility('0113', api);
+
+  assert.equal(res.eligible, false);
+  assert.equal(res.status, 'MALFORMED_DEDICATED_MAPPING');
+});

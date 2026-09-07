@@ -4,6 +4,8 @@
  * Only hides duplicate native index list controls while preserving global Kintone navigation/breadcrumbs.
  */
 
+import { getJapaneseFiscalYear } from '../core/fiscal-year-engine.js';
+
 export function formatDisplayStatus(rawStatus) {
   if (!rawStatus) return '-';
   const str = String(rawStatus).trim();
@@ -19,6 +21,8 @@ export class EmployeeSelfIndexUI {
     this.getMboAppId = options.getMboAppId;
     this.mboLoginGate = options.mboLoginGate;
     this.renderBlockedNotice = options.renderBlockedNotice;
+    this.now = options.now;
+    this.getCurrentFiscalYear = options.getCurrentFiscalYear;
   }
 
   async render(event, host, authenticatedEmployeeCode) {
@@ -76,7 +80,7 @@ export class EmployeeSelfIndexUI {
       return event;
     }
 
-    // Header row with Title and Create Button
+    // Header row with Title and Action Button (Create New MBO vs Open Current MBO)
     const headerRow = document.createElement('div');
     headerRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f1f5f9;';
 
@@ -84,16 +88,48 @@ export class EmployeeSelfIndexUI {
     title.setAttribute('data-mbo-title', '');
     title.style.cssText = 'margin:0;font-size:18px;font-weight:600;color:#1e293b;';
     title.textContent = 'MBO ของฉัน / My MBO';
-
-    const createBtn = document.createElement('a');
-    createBtn.setAttribute('data-mbo-create-btn', '');
-    createBtn.textContent = '+ สร้าง MBO ใหม่ / Create New MBO';
-    createBtn.href = `/k/${appId}/edit`;
-    createBtn.className = 'mbo-btn-create';
-    createBtn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
-
     headerRow.appendChild(title);
-    headerRow.appendChild(createBtn);
+
+    const currentFY = (typeof this.getCurrentFiscalYear === 'function')
+      ? this.getCurrentFiscalYear()
+      : getJapaneseFiscalYear(this.now || new Date());
+
+    const currentFyRecords = records.filter(rec => {
+      const recFy = rec.Fiscal_Year?.value;
+      if (!recFy) return false;
+      const cleanRec = String(recFy).trim();
+      const cleanCurrent = String(currentFY).trim();
+      if (cleanRec === cleanCurrent) return true;
+      const numRec = cleanRec.replace(/^FY/i, '');
+      const numCurrent = cleanCurrent.replace(/^FY/i, '');
+      return numRec.length === 4 && numRec === numCurrent;
+    });
+
+    if (currentFyRecords.length === 1) {
+      const currentRec = currentFyRecords[0];
+      const openCurrentBtn = document.createElement('a');
+      openCurrentBtn.setAttribute('data-mbo-open-current-btn', '');
+      openCurrentBtn.textContent = 'เปิด MBO ปัจจุบัน / Open Current MBO';
+      openCurrentBtn.href = `/k/${appId}/show#record=${currentRec.$id?.value}`;
+      openCurrentBtn.className = 'mbo-btn-open-current';
+      openCurrentBtn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
+      headerRow.appendChild(openCurrentBtn);
+    } else if (currentFyRecords.length === 0) {
+      const createBtn = document.createElement('a');
+      createBtn.setAttribute('data-mbo-create-btn', '');
+      createBtn.textContent = '+ สร้าง MBO ใหม่ / Create New MBO';
+      createBtn.href = `/k/${appId}/edit`;
+      createBtn.className = 'mbo-btn-create';
+      createBtn.style.cssText = 'display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#2563eb;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,0.05);';
+      headerRow.appendChild(createBtn);
+    } else {
+      const warningNotice = document.createElement('span');
+      warningNotice.setAttribute('data-mbo-integrity-warning', '');
+      warningNotice.textContent = 'พบข้อมูล MBO ซ้ำซ้อนสำหรับรอบปีปัจจุบัน กรุณาติดต่อ HR / Administrator (Duplicate MBO records detected for current fiscal year)';
+      warningNotice.style.cssText = 'display:inline-flex;align-items:center;color:#b91c1c;font-size:13px;font-weight:500;padding:6px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;';
+      headerRow.appendChild(warningNotice);
+    }
+
     contentBox.appendChild(headerRow);
 
     if (records.length === 0) {

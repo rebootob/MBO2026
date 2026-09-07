@@ -1354,4 +1354,171 @@ test('COMMENTS_CREATE_PERFORMS_ZERO_COMMENT_GET & COMMENTS_EMPTY_STATE_BILINGUAL
   }
 });
 
+// --- DEFECT-002 TESTS ---
 
+test('DEFECT-002: Exactly 1 current-FY record renders Open Current MBO button and suppresses Create button', async () => {
+  const headerSpaceEl = createMockElement('div');
+  const origDoc = globalThis.document;
+  const origKintone = globalThis.kintone;
+
+  try {
+    globalThis.document = {
+      querySelector: () => null,
+      body: createMockElement('body'),
+      createElement: (tag) => createMockElement(tag)
+    };
+    globalThis.kintone = {
+      app: {
+        getHeaderSpaceElement: () => headerSpaceEl
+      }
+    };
+
+    const mockApi = {
+      getRecords: async () => ({
+        records: [
+          { $id: { value: '777' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113' }, Status: { value: '01 Draft Objective' } },
+          { $id: { value: '666' }, Fiscal_Year: { value: 'FY2025' }, Record_Key: { value: 'FY2025-0113' }, Status: { value: '16 Completed' } }
+        ]
+      })
+    };
+
+    const ui = new EmployeeSelfIndexUI({
+      kintoneApiWrapper: mockApi,
+      getMboAppId: () => 794,
+      getCurrentFiscalYear: () => 'FY2026'
+    });
+
+    await ui.render({ type: 'app.record.index.show' }, null, '0113');
+
+    const customIndex = headerSpaceEl.querySelector('[data-mbo-custom-index]');
+    assert.ok(customIndex);
+
+    // Open Current MBO button must be present
+    const openCurrentBtn = customIndex.querySelector('[data-mbo-open-current-btn]');
+    assert.ok(openCurrentBtn, 'Must render Open Current MBO button when exactly 1 current FY record exists');
+    assert.equal(openCurrentBtn.textContent, 'เปิด MBO ปัจจุบัน / Open Current MBO');
+    assert.equal(openCurrentBtn.href, '/k/794/show#record=777');
+
+    // Create button must NOT be present
+    const createBtn = customIndex.querySelector('[data-mbo-create-btn]');
+    assert.equal(createBtn, null, 'Must NOT render Create New MBO button when current FY record exists');
+
+    // Integrity warning must NOT be present
+    const warning = customIndex.querySelector('[data-mbo-integrity-warning]');
+    assert.equal(warning, null);
+  } finally {
+    globalThis.document = origDoc;
+    globalThis.kintone = origKintone;
+  }
+});
+
+test('DEFECT-002: 0 current-FY records (past FY only) renders Create New MBO button and suppresses Open Current MBO button', async () => {
+  const headerSpaceEl = createMockElement('div');
+  const origDoc = globalThis.document;
+  const origKintone = globalThis.kintone;
+
+  try {
+    globalThis.document = {
+      querySelector: () => null,
+      body: createMockElement('body'),
+      createElement: (tag) => createMockElement(tag)
+    };
+    globalThis.kintone = {
+      app: {
+        getHeaderSpaceElement: () => headerSpaceEl
+      }
+    };
+
+    const mockApi = {
+      getRecords: async () => ({
+        records: [
+          { $id: { value: '666' }, Fiscal_Year: { value: 'FY2025' }, Record_Key: { value: 'FY2025-0113' }, Status: { value: '16 Completed' } },
+          { $id: { value: '555' }, Fiscal_Year: { value: 'FY2024' }, Record_Key: { value: 'FY2024-0113' }, Status: { value: '16 Completed' } }
+        ]
+      })
+    };
+
+    const ui = new EmployeeSelfIndexUI({
+      kintoneApiWrapper: mockApi,
+      getMboAppId: () => 794,
+      getCurrentFiscalYear: () => 'FY2026'
+    });
+
+    await ui.render({ type: 'app.record.index.show' }, null, '0113');
+
+    const customIndex = headerSpaceEl.querySelector('[data-mbo-custom-index]');
+    assert.ok(customIndex);
+
+    // Create New MBO button must be present
+    const createBtn = customIndex.querySelector('[data-mbo-create-btn]');
+    assert.ok(createBtn, 'Must render Create New MBO button when 0 current FY records exist');
+    assert.equal(createBtn.textContent, '+ สร้าง MBO ใหม่ / Create New MBO');
+    assert.equal(createBtn.href, '/k/794/edit');
+
+    // Open Current MBO button must NOT be present
+    const openCurrentBtn = customIndex.querySelector('[data-mbo-open-current-btn]');
+    assert.equal(openCurrentBtn, null, 'Must NOT render Open Current MBO button when 0 current FY records exist');
+
+    // Integrity warning must NOT be present
+    const warning = customIndex.querySelector('[data-mbo-integrity-warning]');
+    assert.equal(warning, null);
+  } finally {
+    globalThis.document = origDoc;
+    globalThis.kintone = origKintone;
+  }
+});
+
+test('DEFECT-002: >1 current-FY records renders data integrity warning and suppresses create button', async () => {
+  const headerSpaceEl = createMockElement('div');
+  const origDoc = globalThis.document;
+  const origKintone = globalThis.kintone;
+
+  try {
+    globalThis.document = {
+      querySelector: () => null,
+      body: createMockElement('body'),
+      createElement: (tag) => createMockElement(tag)
+    };
+    globalThis.kintone = {
+      app: {
+        getHeaderSpaceElement: () => headerSpaceEl
+      }
+    };
+
+    const mockApi = {
+      getRecords: async () => ({
+        records: [
+          { $id: { value: '778' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113-B' }, Status: { value: '01 Draft Objective' } },
+          { $id: { value: '777' }, Fiscal_Year: { value: 'FY2026' }, Record_Key: { value: 'FY2026-0113-A' }, Status: { value: '01 Draft Objective' } }
+        ]
+      })
+    };
+
+    const ui = new EmployeeSelfIndexUI({
+      kintoneApiWrapper: mockApi,
+      getMboAppId: () => 794,
+      getCurrentFiscalYear: () => 'FY2026'
+    });
+
+    await ui.render({ type: 'app.record.index.show' }, null, '0113');
+
+    const customIndex = headerSpaceEl.querySelector('[data-mbo-custom-index]');
+    assert.ok(customIndex);
+
+    // Integrity warning must be present
+    const warning = customIndex.querySelector('[data-mbo-integrity-warning]');
+    assert.ok(warning, 'Must render data integrity warning when >1 current FY records exist');
+    assert.ok(warning.textContent.includes('พบข้อมูล MBO ซ้ำซ้อนสำหรับรอบปีปัจจุบัน'));
+
+    // Create button must NOT be present
+    const createBtn = customIndex.querySelector('[data-mbo-create-btn]');
+    assert.equal(createBtn, null, 'Must NOT render Create New MBO button when >1 current FY records exist');
+
+    // Open Current MBO button must NOT be present
+    const openCurrentBtn = customIndex.querySelector('[data-mbo-open-current-btn]');
+    assert.equal(openCurrentBtn, null, 'Must NOT render Open Current MBO button when duplicate records exist');
+  } finally {
+    globalThis.document = origDoc;
+    globalThis.kintone = origKintone;
+  }
+});
