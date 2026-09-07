@@ -8,7 +8,8 @@ import XlsxPopulate from 'xlsx-populate';
 import { MboExportService } from '../src/services/mbo-export-service.js';
 import {
   PART_A_TEMPLATE_SHA256,
-  PART_B_TEMPLATE_SHA256
+  PART_B_TEMPLATE_SHA256,
+  MboXlsxTemplateProfile
 } from '../src/profiles/mbo-xlsx-template-profile.js';
 
 const LOCAL_PART_A_PATH = path.join(process.cwd(), 'app info', 'data', 'PMS_Staff & Chief_PART_A.xlsx');
@@ -540,14 +541,20 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet com
   // Verify no confidential manager/GM strings leaked into XML
   await assertNoConfidentialStringsInZip(combinedBytes, confidentialStrings);
 
-  // Evidence Gap 2 Closure: Verify safe semantic values are actually rendered into workbook cells
+  // Evidence Gap 2 Closure: Verify safe semantic values are actually rendered into workbook cells using Profile authority
+  const profile = new MboXlsxTemplateProfile();
   const sheetA = wbCombined.sheet('MBO Staff & Chief');
   const sheetB = wbCombined.sheet('(Part B) Competency');
 
-  assert.equal(sheetA.cell('AQ7').value(), 'EMP001', 'Employee Code cell AQ7 must match EMP001');
-  assert.equal(sheetA.cell('T25').value(), 'Obj 1 Measurement', 'Objective 1 Measurement cell T25 must match Obj 1 Measurement');
-  assert.equal(sheetA.cell('Y25').value(), 25, 'Objective 1 Weight cell Y25 must match 25');
-  assert.equal(sheetB.cell('K9').value(), 4, 'Part B Competency 1 self rating cell K9 must match 4');
+  const empCodeRoleA = profile.resolveSemanticRole('HEADER_EMPLOYEE_CODE', { partKey: 'A', objectiveCount: 4 });
+  const obj1MeasRole = profile.resolveSemanticRole('OBJECTIVE_1_MEASUREMENT', { partKey: 'A', objectiveCount: 4 });
+  const obj1WeightRole = profile.resolveSemanticRole('OBJECTIVE_1_WEIGHT', { partKey: 'A', objectiveCount: 4 });
+  const comp1SelfRatingRole = profile.resolveSemanticRole('COMPETENCY_1_SELF_RATING', { partKey: 'B', competencyCount: 6 });
+
+  assert.equal(sheetA.cell(empCodeRoleA.address).value(), 'EMP001', 'HEADER_EMPLOYEE_CODE must match EMP001');
+  assert.equal(sheetA.cell(obj1MeasRole.address).value(), 'Obj 1 Measurement', 'OBJECTIVE_1_MEASUREMENT must match Obj 1 Measurement');
+  assert.equal(sheetA.cell(obj1WeightRole.address).value(), 25, 'OBJECTIVE_1_WEIGHT must match 25');
+  assert.equal(sheetB.cell(comp1SelfRatingRole.address).value(), 4, 'COMPETENCY_1_SELF_RATING must match 4');
 });
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combined workbook with 10 objectives, 8 competencies, b7/b8 presentation & secured summary values actually rendered', async () => {
@@ -614,26 +621,35 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combine
   const formulaCount = await countFormulaTagsInZip(combinedBytes);
   assert.equal(formulaCount, 0, 'Formula count in XML must be 0');
 
-  // Evidence Gap 3 Closure: Verify Approver b7/b8 presentation & secured summary values are actually rendered in cells
+  // Evidence Gap 3 Closure: Verify Approver b7/b8 presentation & secured summary values are actually rendered in cells using Profile authority
+  const profile = new MboXlsxTemplateProfile();
   const sheetA = wbCombined.sheet('MBO Staff & Chief');
   const sheetB = wbCombined.sheet('(Part B) Competency');
 
+  const comp7TitleRole = profile.resolveSemanticRole('COMPETENCY_7_TITLE', { partKey: 'B', competencyCount: 8 });
+  const comp7DescRole = profile.resolveSemanticRole('COMPETENCY_7_DESCRIPTION', { partKey: 'B', competencyCount: 8 });
+  const comp8TitleRole = profile.resolveSemanticRole('COMPETENCY_8_TITLE', { partKey: 'B', competencyCount: 8 });
+  const comp8DescRole = profile.resolveSemanticRole('COMPETENCY_8_DESCRIPTION', { partKey: 'B', competencyCount: 8 });
+
+  const summaryPartARawRole = profile.resolveSemanticRole('SUMMARY_PART_A_RAW_SCORE', { partKey: 'A', objectiveCount: 10 });
+  const summaryPartAWeightedRole = profile.resolveSemanticRole('SUMMARY_PART_A_WEIGHTED_SCORE', { partKey: 'A', objectiveCount: 10 });
+  const summaryPartBRawRole = profile.resolveSemanticRole('SUMMARY_PART_B_RAW_SCORE', { partKey: 'B', competencyCount: 8 });
+  const summaryPartBWeightedRole = profile.resolveSemanticRole('SUMMARY_PART_B_WEIGHTED_SCORE', { partKey: 'B', competencyCount: 8 });
+
   // Cell-level verification on sheet (Part B) Competency for b7/b8 presentation title & description
-  assert.equal(sheetB.cell('B31').value(), '7. Leadership & People Management', 'b7 presentation title cell B31 must match canonical title');
-  assert.equal(sheetB.cell('B32').value(), 'Leadership description text', 'b7 presentation description cell B32 must match');
-  assert.equal(sheetB.cell('B35').value(), '8. Strategy & Coaching', 'b8 presentation title cell B35 must match canonical title');
-  assert.equal(sheetB.cell('B36').value(), 'Strategy description text', 'b8 presentation description cell B36 must match');
+  assert.equal(sheetB.cell(comp7TitleRole.address).value(), '7. Leadership & People Management', 'COMPETENCY_7_TITLE must match canonical title');
+  assert.equal(sheetB.cell(comp7DescRole.address).value(), 'Leadership description text', 'COMPETENCY_7_DESCRIPTION must match text');
+  assert.equal(sheetB.cell(comp8TitleRole.address).value(), '8. Strategy & Coaching', 'COMPETENCY_8_TITLE must match canonical title');
+  assert.equal(sheetB.cell(comp8DescRole.address).value(), 'Strategy description text', 'COMPETENCY_8_DESCRIPTION must match text');
 
-  // Cell-level verification on sheet MBO Staff & Chief for Part A summary values (10 objectives -> Part A summary at BC35 and BC39)
-  assert.equal(sheetA.cell('BC35').value(), 100, 'Part A Raw Score cell BC35 must be 100');
-  assert.equal(sheetA.cell('BC39').value(), 50, 'Part A Weighted Score cell BC39 must be 50');
+  // Cell-level verification on sheet MBO Staff & Chief for Part A summary values (10 objectives)
+  assert.equal(sheetA.cell(summaryPartARawRole.address).value(), 100, 'SUMMARY_PART_A_RAW_SCORE must be 100');
+  assert.equal(sheetA.cell(summaryPartAWeightedRole.address).value(), 50, 'SUMMARY_PART_A_WEIGHTED_SCORE must be 50');
 
-  // Cell-level verification on sheet (Part B) Competency for Part B summary values (8 competencies -> summary at B39 and I39)
-  assert.equal(sheetB.cell('B39').value(), 90, 'Part B Raw Score cell B39 must be 90');
-  assert.equal(sheetB.cell('I39').value(), 37, 'Part B Weighted Score cell I39 must match profile rendered value');
+  // Cell-level verification on sheet (Part B) Competency for Part B summary values (8 competencies)
+  assert.equal(sheetB.cell(summaryPartBRawRole.address).value(), 90, 'SUMMARY_PART_B_RAW_SCORE must be 90');
+  assert.equal(sheetB.cell(summaryPartBWeightedRole.address).value(), 37, 'SUMMARY_PART_B_WEIGHTED_SCORE must be 37');
 });
-
-
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_SECURITY_ORDER: fails closed before template parsing on unauthorized exportContext or cross-employee request', async () => {
   const invalidTemplateA = new Uint8Array([1, 2, 3, 4]);
@@ -664,7 +680,7 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_SECURITY_ORDER: fails closed before 
   );
 });
 
-test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: authorized context with invalid Part A or Part B template bytes throws error', async () => {
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: authorized context with invalid Part A or Part B template bytes throws EXPORT_TEMPLATE_PREPARER_UNRESOLVED', async () => {
   const invalidTemplateA = new Uint8Array([1, 2, 3, 4]);
   const invalidTemplateB = new Uint8Array([5, 6, 7, 8]);
   const partATemplateBytes = loadLocalPartA();
@@ -681,7 +697,7 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: author
   ];
   const exportContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
 
-  // 1. Authorized context with invalid Part A template bytes throws error
+  // 1. Authorized context with invalid Part A template bytes throws EXPORT_TEMPLATE_PREPARER_UNRESOLVED
   await assert.rejects(
     async () => MboExportService.generateCombinedXlsx({
       mboRecord,
@@ -690,10 +706,11 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: author
       profileCode: 'PROF_STAFF_CHIEF',
       partATemplateBytes: invalidTemplateA,
       partBTemplateBytes
-    })
+    }),
+    /EXPORT_TEMPLATE_PREPARER_UNRESOLVED/
   );
 
-  // 2. Authorized context with invalid Part B template bytes throws error (Evidence Gap 1 Closure)
+  // 2. Authorized context with invalid Part B template bytes throws EXPORT_TEMPLATE_PREPARER_UNRESOLVED
   await assert.rejects(
     async () => MboExportService.generateCombinedXlsx({
       mboRecord,
@@ -702,9 +719,11 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: author
       profileCode: 'PROF_STAFF_CHIEF',
       partATemplateBytes,
       partBTemplateBytes: invalidTemplateB
-    })
+    }),
+    /EXPORT_TEMPLATE_PREPARER_UNRESOLVED/
   );
 });
+
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INPUT_IMMUTABILITY: caller template buffers are not mutated during export generation', async () => {
   const partATemplateBytes = loadLocalPartA();
