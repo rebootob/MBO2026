@@ -471,15 +471,91 @@ test('R2-D1: Fail-Closed Negative Controls & Relationship Graph Boundary', async
     /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
   );
 
-  // 13. Optional relationship absent (Part B worksheet has no .rels file)
-  const wbNoRelsB = await XlsxPopulate.fromDataAsync(validB);
-  wbNoRelsB._zip.remove('xl/worksheets/_rels/sheet1.xml.rels');
-  const noRelsBytesB = await wbNoRelsB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+  // 13. Optional relationship absent - CASE 1: XML has refs but .rels missing -> REJECT (Corrective E)
+  const wbNoRelsB_Case1 = await XlsxPopulate.fromDataAsync(validB);
+  wbNoRelsB_Case1._zip.remove('xl/worksheets/_rels/sheet1.xml.rels');
+  const noRelsBytesB_Case1 = await wbNoRelsB_Case1._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
 
-  const combinedNoRels = await composeCombinedWorkbook(validA, noRelsBytesB);
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, noRelsBytesB_Case1),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 14. Optional relationship absent - CASE 2: XML has NO refs & .rels missing -> SUCCEED cleanly (Corrective E)
+  const wbNoRelsB_Case2 = await XlsxPopulate.fromDataAsync(validB);
+  wbNoRelsB_Case2._zip.remove('xl/worksheets/_rels/sheet1.xml.rels');
+  let sheet1XmlNoRefs = await wbNoRelsB_Case2._zip.file('xl/worksheets/sheet1.xml').async('text');
+  sheet1XmlNoRefs = sheet1XmlNoRefs
+    .replace(/<drawing\b[^>]*\/>/g, '')
+    .replace(/\br:(?:id|embed|link)="[^"]*"/g, '')
+    .replace(/<legacyDrawing\b[^>]*\/>/g, '');
+  wbNoRelsB_Case2._zip.file('xl/worksheets/sheet1.xml', sheet1XmlNoRefs);
+  const noRelsBytesB_Case2 = await wbNoRelsB_Case2._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  const combinedNoRels = await composeCombinedWorkbook(validA, noRelsBytesB_Case2);
   const wbCombNoRels = await XlsxPopulate.fromDataAsync(combinedNoRels);
-  assert.equal(wbCombNoRels.sheets().length, 2, 'Workbook without Part B worksheet .rels must compose cleanly');
+  assert.equal(wbCombNoRels.sheets().length, 2, 'Workbook without Part B worksheet .rels and without XML refs must compose cleanly');
   assert.ok(!wbCombNoRels._zip.file('xl/worksheets/_rels/sheet2.xml.rels'), 'No sheet2.xml.rels should be fabricated if input had none');
+
+  // 15. Dangling reference in XML (XML references rId99, missing in .rels) -> REJECT (Corrective A)
+  const wbDanglingXmlB = await XlsxPopulate.fromDataAsync(validB);
+  let sheet1XmlDangling = await wbDanglingXmlB._zip.file('xl/worksheets/sheet1.xml').async('text');
+  sheet1XmlDangling = sheet1XmlDangling.replace('<sheetData>', '<sheetData><hyperlink r:id="rId99" ref="A1"/>');
+  wbDanglingXmlB._zip.file('xl/worksheets/sheet1.xml', sheet1XmlDangling);
+  const danglingXmlBytesB = await wbDanglingXmlB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, danglingXmlBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 16. Orphan relationship in .rels (.rels has rId99, unreferenced in XML) -> REJECT (Corrective B)
+  const wbOrphanRelB = await XlsxPopulate.fromDataAsync(validB);
+  let relsOrphan = await wbOrphanRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('text');
+  relsOrphan = relsOrphan.replace('</Relationships>', '<Relationship Id="rId99" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings" Target="../printerSettings/printerSettings1.bin"/></Relationships>');
+  wbOrphanRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels', relsOrphan);
+  const orphanRelBytesB = await wbOrphanRelB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, orphanRelBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 17. Drawing XML -> Drawing .rels dangling reference -> REJECT (Corrective C)
+  const wbDrawingDanglingB = await XlsxPopulate.fromDataAsync(validB);
+  let drawingXmlDangling = await wbDrawingDanglingB._zip.file('xl/drawings/drawing1.xml').async('text');
+  drawingXmlDangling = drawingXmlDangling.replace('r:embed="rId1"', 'r:embed="rId99"');
+  wbDrawingDanglingB._zip.file('xl/drawings/drawing1.xml', drawingXmlDangling);
+  const drawingDanglingBytesB = await wbDrawingDanglingB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, drawingDanglingBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 18. Drawing .rels -> Drawing XML orphan relationship -> REJECT (Corrective C)
+  const wbDrawingOrphanB = await XlsxPopulate.fromDataAsync(validB);
+  let drawingRelsOrphan = await wbDrawingOrphanB._zip.file('xl/drawings/_rels/drawing1.xml.rels').async('text');
+  drawingRelsOrphan = drawingRelsOrphan.replace('</Relationships>', '<Relationship Id="rId99" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/></Relationships>');
+  wbDrawingOrphanB._zip.file('xl/drawings/_rels/drawing1.xml.rels', drawingRelsOrphan);
+  const drawingOrphanBytesB = await wbDrawingOrphanB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, drawingOrphanBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 19. Malformed / Unparsed .rels tag count mismatch -> REJECT (Corrective D)
+  const wbMalformedRelsB = await XlsxPopulate.fromDataAsync(validB);
+  let relsMalformed = await wbMalformedRelsB._zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('text');
+  relsMalformed = relsMalformed.replace('</Relationships>', '<Relationship Id="rIdBroken" Type="foo"/></Relationships>');
+  wbMalformedRelsB._zip.file('xl/worksheets/_rels/sheet1.xml.rels', relsMalformed);
+  const malformedRelsBytesB = await wbMalformedRelsB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, malformedRelsBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
 });
 
 test('R2-D1: Source-Derived Sheet Path Resolution & Non-Standard Zip Path', async () => {
@@ -631,4 +707,94 @@ test('R2-D1: Privacy & Referenced-Only Shared Strings Proof (Corrective G)', asy
 
   // 2. Legitimate referenced Part B strings must remain present in final combined SST
   assert.ok(combSstXml.includes('Leadership') || combSstXml.includes('Strategy') || combSstXml.includes('Senior Engineer') || combSstXml.includes('Staff 4'), 'Legitimate referenced Part B strings must remain present in final SST');
+});
+
+test('R3: Altered Local Relationship IDs (Corrective F)', async () => {
+  const renderedA = await prepareAndRenderPartA(4);
+  const wbB = await XlsxPopulate.fromDataAsync(await prepareAndRenderPartB(6));
+
+  // Alter Part B worksheet .rels IDs: change rId1 -> rId41 and rId2 -> rId42
+  let sheet1Rels = await wbB._zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('text');
+  sheet1Rels = sheet1Rels.replace('Id="rId1"', 'Id="rId41"').replace('Id="rId2"', 'Id="rId42"');
+  wbB._zip.file('xl/worksheets/_rels/sheet1.xml.rels', sheet1Rels);
+
+  // Update Part B sheet1.xml r:id references to match rId41 and rId42
+  let sheet1Xml = await wbB._zip.file('xl/worksheets/sheet1.xml').async('text');
+  sheet1Xml = sheet1Xml.replace('r:id="rId1"', 'r:id="rId41"').replace('r:id="rId2"', 'r:id="rId42"');
+  wbB._zip.file('xl/worksheets/sheet1.xml', sheet1Xml);
+
+  // Alter Part B drawing .rels ID: change rId1 -> rId55
+  if (wbB._zip.file('xl/drawings/_rels/drawing1.xml.rels')) {
+    let drawingRels = await wbB._zip.file('xl/drawings/_rels/drawing1.xml.rels').async('text');
+    drawingRels = drawingRels.replace('Id="rId1"', 'Id="rId55"');
+    wbB._zip.file('xl/drawings/_rels/drawing1.xml.rels', drawingRels);
+
+    let drawingXml = await wbB._zip.file('xl/drawings/drawing1.xml').async('text');
+    drawingXml = drawingXml.replace('r:embed="rId1"', 'r:embed="rId55"');
+    wbB._zip.file('xl/drawings/drawing1.xml', drawingXml);
+  }
+
+  const modRenderedB = await wbB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+  const combinedBytes = await composeCombinedWorkbook(renderedA, modRenderedB);
+
+  const wbComb = await XlsxPopulate.fromDataAsync(combinedBytes);
+  assert.equal(wbComb.sheets().length, 2, 'Workbook with altered rel IDs must compose cleanly');
+});
+
+test('R3: Multiple Media Distinctness Control (Corrective G)', async () => {
+  const renderedA = await prepareAndRenderPartA(4);
+  const wbB = await XlsxPopulate.fromDataAsync(await prepareAndRenderPartB(6));
+
+  // Add a second media file to Part B
+  const img2Bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 2]);
+  wbB._zip.file('xl/media/image2.png', img2Bytes);
+
+  // Add a second Relationship to Part B drawing1.xml.rels pointing to image2.png with Id="rId2"
+  let drawingRels = await wbB._zip.file('xl/drawings/_rels/drawing1.xml.rels').async('text');
+  drawingRels = drawingRels.replace(
+    '</Relationships>',
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image2.png"/></Relationships>'
+  );
+  wbB._zip.file('xl/drawings/_rels/drawing1.xml.rels', drawingRels);
+
+  // Update Part B drawing1.xml to reference both rId1 and rId2
+  let drawingXml = await wbB._zip.file('xl/drawings/drawing1.xml').async('text');
+  drawingXml = drawingXml.replace(
+    '</xdr:wsDr>',
+    '<xdr:oneCellAnchor><xdr:pic><xdr:blipFill><a:blip r:embed="rId2"/></xdr:blipFill></xdr:pic></xdr:oneCellAnchor></xdr:wsDr>'
+  );
+  wbB._zip.file('xl/drawings/drawing1.xml', drawingXml);
+
+  const modRenderedB = await wbB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+  const combinedBytes = await composeCombinedWorkbook(renderedA, modRenderedB);
+
+  const wbComb = await XlsxPopulate.fromDataAsync(combinedBytes);
+  const zipComb = wbComb._zip;
+
+  // Both image files must exist in combined package and be distinct
+  const mediaFiles = Object.keys(zipComb.files).filter(f => f.startsWith('xl/media/'));
+  assert.ok(mediaFiles.length >= 2, 'Combined package must contain at least 2 distinct media files');
+
+  // Verify drawing2.xml.rels references both media files
+  const drawing2Rels = await zipComb.file('xl/drawings/_rels/drawing2.xml.rels').async('text');
+  assert.ok(drawing2Rels.includes('rId1') && drawing2Rels.includes('rId2'), 'Drawing 2 rels must maintain distinct relationship IDs for both media files');
+});
+
+test('R3: Sanitized / Non-Written Cells Remain Blank Proof (Corrective H)', async () => {
+  const renderedA = await prepareAndRenderPartA(4);
+  const renderedB = await prepareAndRenderPartB(6);
+
+  const combinedBytes = await composeCombinedWorkbook(renderedA, renderedB);
+  const wbComb = await XlsxPopulate.fromDataAsync(combinedBytes);
+
+  const sheet1Xml = await wbComb._zip.file('xl/worksheets/sheet1.xml').async('text');
+  const sheet2Xml = await wbComb._zip.file('xl/worksheets/sheet2.xml').async('text');
+
+  // Objective 5..10 non-written cells must not contain fake text or residual placeholder data
+  assert.equal(sheet1Xml.includes('Measurement Objective 5'), false, 'Non-written objective 5 must not be present in Sheet 1');
+  assert.equal(sheet1Xml.includes('Actual Result 5'), false, 'Non-written actual result 5 must not be present in Sheet 1');
+
+  // Competency 7..8 non-written presentation title/desc must not be present when compCount=6
+  assert.equal(sheet2Xml.includes('Competency 7 Description'), false, 'Unrendered Competency 7 description must not be present in Sheet 2');
+  assert.equal(sheet2Xml.includes('Competency 8 Description'), false, 'Unrendered Competency 8 description must not be present in Sheet 2');
 });

@@ -49,6 +49,79 @@ function toUint8Array(data, paramName) {
 }
 
 /**
+ * Helper: Extract all relationship IDs referenced in XML (e.g. r:id="rId1", r:embed="rId2", r:link="rId3")
+ */
+function extractXmlRelReferences(xmlStr) {
+  const relIds = new Set();
+  if (!xmlStr) return relIds;
+  const matches = xmlStr.matchAll(/\br:(?:id|embed|link)="([^"]+)"/g);
+  for (const m of matches) {
+    relIds.add(m[1]);
+  }
+  return relIds;
+}
+
+/**
+ * Helper: Attribute-independent relationship tag parser (Corrective D)
+ */
+function parseRelationshipTag(tagStr) {
+  const idMatch = tagStr.match(/\bId="([^"]+)"/);
+  const typeMatch = tagStr.match(/\bType="([^"]+)"/);
+  const targetMatch = tagStr.match(/\bTarget="([^"]+)"/);
+  const targetModeMatch = tagStr.match(/\bTargetMode="([^"]+)"/);
+
+  if (!idMatch || !typeMatch || !targetMatch) {
+    return null;
+  }
+
+  // Reject duplicate attributes within same tag
+  const idCount = (tagStr.match(/\bId=/g) || []).length;
+  const typeCount = (tagStr.match(/\bType=/g) || []).length;
+  const targetCount = (tagStr.match(/\bTarget=/g) || []).length;
+
+  if (idCount !== 1 || typeCount !== 1 || targetCount !== 1) {
+    return null;
+  }
+
+  return {
+    rawTag: tagStr,
+    id: idMatch[1],
+    type: typeMatch[1],
+    target: targetMatch[1],
+    targetMode: targetModeMatch ? targetModeMatch[1] : null
+  };
+}
+
+/**
+ * Helper: Parse all <Relationship .../> elements in a .rels document with strict completeness validation (Corrective D)
+ */
+function parseRelsDocument(relsXml, label) {
+  const rawElementCount = (relsXml.match(/<Relationship\b/g) || []).length;
+  const relMatches = [...relsXml.matchAll(/<Relationship\b[^>]*?\/>/g)];
+
+  if (relMatches.length !== rawElementCount) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unparsed or malformed Relationship element in ${label}`);
+  }
+
+  const parsedRels = [];
+  const seenIds = new Set();
+
+  for (const m of relMatches) {
+    const parsed = parseRelationshipTag(m[0]);
+    if (!parsed) {
+      throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Malformed Relationship tag in ${label}`);
+    }
+    if (seenIds.has(parsed.id)) {
+      throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${parsed.id}" in ${label}`);
+    }
+    seenIds.add(parsed.id);
+    parsedRels.push(parsed);
+  }
+
+  return parsedRels;
+}
+
+/**
  * Helper: Resolve business sheet from workbook.xml -> r:id -> workbook.xml.rels -> zipPath
  */
 async function resolveBusinessSheet(zip, expectedSheetName, label) {
@@ -677,50 +750,53 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   });
 
   // ---------------------------------------------------------------------------
-  // ---------------------------------------------------------------------------
   // 7. Retarget & Copy Worksheet Relationship Graph (.rels) & Dependencies
   // ---------------------------------------------------------------------------
+  const worksheetXmlRefIds = extractXmlRelReferences(sheetXmlContentB);
+
   const sheetBRelZipPath = sheetB.zipPath.replace(/worksheets\/([^\/]+)$/, 'worksheets/_rels/$1.rels');
   const sheetBRelFile = zipB.file(sheetBRelZipPath);
+
+  // Corrective A & E: XML relationship references without .rels file => FAIL CLOSED
+  if (worksheetXmlRefIds.size > 0 && !sheetBRelFile) {
+    throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Worksheet XML contains relationship references but .rels file is missing');
+  }
 
   const copiedSheetRels = [];
   const addedContentTypesOverrides = [];
 
   if (sheetBRelFile) {
     const sheetBRelsXml = await sheetBRelFile.async('text');
-    const relMatchesB = [...sheetBRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>|<Relationship\b[^>]*?\bTarget="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bId="([^"]+)"[^>]*?\/>/g)];
+    const parsedSheetRels = parseRelsDocument(sheetBRelsXml, 'Part B worksheet .rels');
 
-    const seenSheetRelIds = new Set();
+    const parsedSheetRelIds = new Set(parsedSheetRels.map(r => r.id));
 
-    for (const m of relMatchesB) {
-      const tag = m[0];
-      const rId = m[1] || m[6];
-      const type = m[2] || m[5];
-      const rawTarget = m[3] || m[4];
-      const targetModeMatch = tag.match(/\bTargetMode="([^"]+)"/);
+    // Corrective A: Bidirectional check - every XML ref MUST exist in .rels
+    for (const xmlRefId of worksheetXmlRefIds) {
+      if (!parsedSheetRelIds.has(xmlRefId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Dangling worksheet XML relationship reference "${xmlRefId}" missing in .rels file`);
+      }
+    }
 
-      if (!rId || !type || !rawTarget) {
-        throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Malformed relationship tag in Part B worksheet .rels');
+    // Corrective B: Bidirectional check - every .rels relationship MUST be referenced in worksheet XML (no orphans)
+    for (const rel of parsedSheetRels) {
+      if (!worksheetXmlRefIds.has(rel.id)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unreferenced orphan relationship Id "${rel.id}" in worksheet .rels`);
       }
 
-      if (seenSheetRelIds.has(rId)) {
-        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${rId}" in Part B worksheet .rels`);
-      }
-      seenSheetRelIds.add(rId);
-
-      if (targetModeMatch && targetModeMatch[1] === 'External') {
+      if (rel.targetMode === 'External') {
         throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: External relationship TargetMode not supported');
       }
 
-      if (rawTarget.includes('://') || rawTarget.includes('..\\')) {
-        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsafe relationship target "${rawTarget}"`);
+      if (rel.target.includes('://') || rel.target.includes('..\\')) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsafe relationship target "${rel.target}"`);
       }
 
-      const targetModeAttr = targetModeMatch ? ` TargetMode="${targetModeMatch[1]}"` : '';
+      const targetModeAttr = rel.targetMode ? ` TargetMode="${rel.targetMode}"` : '';
 
-      if (type.endsWith('/printerSettings')) {
+      if (rel.type.endsWith('/printerSettings')) {
         // PrinterSettings dependency
-        let srcPrinterPath = rawTarget.replace(/^\.\.\//, 'xl/');
+        let srcPrinterPath = rel.target.replace(/^\.\.\//, 'xl/');
         const printerBufB = zipB.file(srcPrinterPath);
         if (!printerBufB) {
           throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B printerSettings file "${srcPrinterPath}" missing`);
@@ -736,10 +812,10 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
         const psData = await printerBufB.async('nodebuffer');
         zipA.file(destPrinterZipPath, psData);
 
-        copiedSheetRels.push(`<Relationship Id="${rId}" Type="${type}" Target="${destPrinterTarget}"${targetModeAttr}/>`);
-      } else if (type.endsWith('/drawing')) {
+        copiedSheetRels.push(`<Relationship Id="${rel.id}" Type="${rel.type}" Target="${destPrinterTarget}"${targetModeAttr}/>`);
+      } else if (rel.type.endsWith('/drawing')) {
         // Drawing dependency
-        let srcDrawingPath = rawTarget.replace(/^\.\.\//, 'xl/');
+        let srcDrawingPath = rel.target.replace(/^\.\.\//, 'xl/');
         const drawingFileB = zipB.file(srcDrawingPath);
         if (!drawingFileB) {
           throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B drawing file "${srcDrawingPath}" missing`);
@@ -757,39 +833,39 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
         zipA.file(destDrawingZipPath, drawingXmlStrB);
         addedContentTypesOverrides.push(`<Override PartName="/${destDrawingZipPath}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
 
-        // Process drawing's own .rels file if present
+        // Process drawing's own .rels file if present (Corrective C)
         const srcDrawingRelsPath = srcDrawingPath.replace(/drawings\/([^\/]+)$/, 'drawings/_rels/$1.rels');
         const drawingRelsFileB = zipB.file(srcDrawingRelsPath);
+        const drwXmlRefIds = extractXmlRelReferences(drawingXmlStrB);
+
+        if (drwXmlRefIds.size > 0 && !drawingRelsFileB) {
+          throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Drawing XML contains relationship references but drawing .rels file is missing');
+        }
 
         if (drawingRelsFileB) {
           let drawingRelsXmlB = await drawingRelsFileB.async('text');
-          const drwRelMatches = [...drawingRelsXmlB.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>|<Relationship\b[^>]*?\bTarget="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bId="([^"]+)"[^>]*?\/>/g)];
+          const parsedDrwRels = parseRelsDocument(drawingRelsXmlB, 'Part B drawing .rels');
+          const parsedDrwRelIds = new Set(parsedDrwRels.map(r => r.id));
 
-          let updatedDrawingRelsXmlB = drawingRelsXmlB;
-          const seenDrwRelIds = new Set();
+          // Corrective C: Bidirectional check - drawing XML -> drawing .rels
+          for (const xmlRefId of drwXmlRefIds) {
+            if (!parsedDrwRelIds.has(xmlRefId)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Dangling drawing XML relationship reference "${xmlRefId}" missing in drawing .rels file`);
+            }
+          }
 
-          for (const dm of drwRelMatches) {
-            const dTag = dm[0];
-            const dId = dm[1] || dm[6];
-            const dType = dm[2] || dm[5];
-            const dTarget = dm[3] || dm[4];
-            const dTargetModeMatch = dTag.match(/\bTargetMode="([^"]+)"/);
-
-            if (!dId || !dType || !dTarget) {
-              throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Malformed relationship tag in Part B drawing .rels');
+          // Corrective C: Bidirectional check - drawing .rels -> drawing XML (no orphan drawing rels)
+          for (const drwRel of parsedDrwRels) {
+            if (!drwXmlRefIds.has(drwRel.id)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unreferenced orphan relationship Id "${drwRel.id}" in drawing .rels`);
             }
 
-            if (seenDrwRelIds.has(dId)) {
-              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${dId}" in Part B drawing .rels`);
-            }
-            seenDrwRelIds.add(dId);
-
-            if (dTargetModeMatch && dTargetModeMatch[1] === 'External') {
+            if (drwRel.targetMode === 'External') {
               throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: External drawing relationship TargetMode not supported');
             }
 
-            if (dType.endsWith('/image')) {
-              let srcMediaPath = dTarget.replace(/^\.\.\//, 'xl/');
+            if (drwRel.type.endsWith('/image')) {
+              let srcMediaPath = drwRel.target.replace(/^\.\.\//, 'xl/');
               const mediaFileB = zipB.file(srcMediaPath);
               if (!mediaFileB) {
                 throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B media file "${srcMediaPath}" missing`);
@@ -799,11 +875,10 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
               const mediaFilenameB = srcMediaPath.replace(/^xl\/media\//, '');
 
               let destMediaZipPath = `xl/media/${mediaFilenameB}`;
-              let destMediaRelTarget = dTarget;
+              let destMediaRelTarget = drwRel.target;
 
               // Collision check with zipA
               if (zipA.file(destMediaZipPath)) {
-                // If collision exists, derive free path
                 const extMatch = mediaFilenameB.match(/(\.[^.]+)$/);
                 const ext = extMatch ? extMatch[1] : '.png';
                 const baseName = mediaFilenameB.replace(/\.[^.]+$/, '');
@@ -818,9 +893,9 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
               zipA.file(destMediaZipPath, mediaBufB);
 
               // Retarget exact relationship by Id
-              updatedDrawingRelsXmlB = updatedDrawingRelsXmlB.replace(
-                new RegExp(`<Relationship\\b[^>]*?\\bId="${dId}"[^>]*?>`),
-                `<Relationship Id="${dId}" Type="${dType}" Target="${destMediaRelTarget}"/>`
+              drawingRelsXmlB = drawingRelsXmlB.replace(
+                new RegExp(`<Relationship\\b[^>]*?\\bId="${drwRel.id}"[^>]*?>`),
+                `<Relationship Id="${drwRel.id}" Type="${drwRel.type}" Target="${destMediaRelTarget}"/>`
               );
 
               const ext = destMediaZipPath.split('.').pop().toLowerCase();
@@ -830,16 +905,16 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
                 addedContentTypesOverrides.push(`<Default Extension="jpeg" ContentType="image/jpeg"/>`);
               }
             } else {
-              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsupported drawing relationship type "${dType}"`);
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsupported drawing relationship type "${drwRel.type}"`);
             }
           }
 
-          zipA.file(destDrawingRelsZipPath, updatedDrawingRelsXmlB);
+          zipA.file(destDrawingRelsZipPath, drawingRelsXmlB);
         }
 
-        copiedSheetRels.push(`<Relationship Id="${rId}" Type="${type}" Target="${destDrawingTarget}"${targetModeAttr}/>`);
+        copiedSheetRels.push(`<Relationship Id="${rel.id}" Type="${rel.type}" Target="${destDrawingTarget}"${targetModeAttr}/>`);
       } else {
-        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsupported worksheet relationship type "${type}"`);
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsupported worksheet relationship type "${rel.type}"`);
       }
     }
 
@@ -910,44 +985,58 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   zipA.file('docProps/app.xml', appPropsXmlA);
 
   // ---------------------------------------------------------------------------
-  // 9. Production Target Graph Resolution Validation
+  // 9. Production Target Graph Resolution Validation (Bidirectional Final Check)
   // ---------------------------------------------------------------------------
+  const finalSheetXml = await zipA.file(partBWorksheetPath).async('text');
+  const finalSheetXmlRefIds = extractXmlRelReferences(finalSheetXml);
+
   if (zipA.file(partBWorksheetRelsPath)) {
     const finalSheetRelsXml = await zipA.file(partBWorksheetRelsPath).async('text');
-    const finalSheetRels = [...finalSheetRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>/g)];
-    const finalSheetRelIds = new Set();
+    const parsedFinalSheetRels = parseRelsDocument(finalSheetRelsXml, 'final worksheet .rels');
+    const finalSheetRelIds = new Set(parsedFinalSheetRels.map(r => r.id));
 
-    for (const rel of finalSheetRels) {
-      const relId = rel[1];
-      const relTarget = rel[2];
-
-      if (finalSheetRelIds.has(relId)) {
-        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${relId}" in final worksheet .rels`);
+    // Verify XML -> .rels
+    for (const xmlRefId of finalSheetXmlRefIds) {
+      if (!finalSheetRelIds.has(xmlRefId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Final worksheet XML relationship reference "${xmlRefId}" missing in final .rels file`);
       }
-      finalSheetRelIds.add(relId);
+    }
 
-      const targetZipPath = relTarget.replace(/^\.\.\//, 'xl/');
+    // Verify .rels -> XML
+    for (const rel of parsedFinalSheetRels) {
+      if (!finalSheetXmlRefIds.has(rel.id)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Final worksheet .rels contains orphan relationship Id "${rel.id}"`);
+      }
+
+      const targetZipPath = rel.target.replace(/^\.\.\//, 'xl/');
       if (!zipA.file(targetZipPath)) {
         throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Destination target "${targetZipPath}" missing in final package`);
       }
 
       if (targetZipPath.startsWith('xl/drawings/') && targetZipPath.endsWith('.xml')) {
+        const finalDrwXml = await zipA.file(targetZipPath).async('text');
+        const finalDrwXmlRefIds = extractXmlRelReferences(finalDrwXml);
+
         const drawingRelsZipPath = targetZipPath.replace(/drawings\/([^\/]+)$/, 'drawings/_rels/$1.rels');
         if (zipA.file(drawingRelsZipPath)) {
           const finalDrwRelsXml = await zipA.file(drawingRelsZipPath).async('text');
-          const finalDrwRels = [...finalDrwRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>/g)];
-          const finalDrwRelIds = new Set();
+          const parsedFinalDrwRels = parseRelsDocument(finalDrwRelsXml, 'final drawing .rels');
+          const finalDrwRelIds = new Set(parsedFinalDrwRels.map(r => r.id));
 
-          for (const dRel of finalDrwRels) {
-            const drwRelId = dRel[1];
-            const drwRelTarget = dRel[2];
-
-            if (finalDrwRelIds.has(drwRelId)) {
-              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${drwRelId}" in final drawing .rels`);
+          // Verify drawing XML -> drawing .rels
+          for (const dXmlRefId of finalDrwXmlRefIds) {
+            if (!finalDrwRelIds.has(dXmlRefId)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Final drawing XML relationship reference "${dXmlRefId}" missing in final drawing .rels file`);
             }
-            finalDrwRelIds.add(drwRelId);
+          }
 
-            const mediaZipPath = drwRelTarget.replace(/^\.\.\//, 'xl/');
+          // Verify drawing .rels -> drawing XML
+          for (const dRel of parsedFinalDrwRels) {
+            if (!finalDrwXmlRefIds.has(dRel.id)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Final drawing .rels contains orphan relationship Id "${dRel.id}"`);
+            }
+
+            const mediaZipPath = dRel.target.replace(/^\.\.\//, 'xl/');
             if (!zipA.file(mediaZipPath)) {
               throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Destination media target "${mediaZipPath}" missing in final package`);
             }
@@ -955,6 +1044,8 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
         }
       }
     }
+  } else if (finalSheetXmlRefIds.size > 0) {
+    throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Final worksheet XML contains relationship references but .rels file is missing');
   }
 
   // ---------------------------------------------------------------------------
