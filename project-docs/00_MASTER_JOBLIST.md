@@ -31,10 +31,10 @@ D2 closed/frozen authority:
 
 R2-D2 final closure:
 ```text
-IMPLEMENTATION = da47c816150cea33a4ccbb5bd58fd0727943837a
-STATIC_REVIEW = PASS
-FOCUSED_RUNTIME = 16/16 PASS / FAIL 0 / SKIP 0
-FROZEN_REGRESSION = 60/60 PASS / FAIL 0 / SKIP 0
+R2_D2_IMPLEMENTATION_HEAD = f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25
+R2_D2_FINAL_EVIDENCE_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
+FOCUSED_SUITE = 14 PASS / 2 FAIL / 0 SKIP (16 total)
+R2_D2_FROZEN_5_FILE_REGRESSION = 44 PASS / 0 FAIL / 0 SKIP (44 total)
 NODE_CHECK = PASS
 GIT_DIFF_CHECK = PASS
 VERDICT = PASS / CLOSED / FROZEN
@@ -44,12 +44,14 @@ Control status:
 ```text
 R2_D1 = PASS / CLOSED
 R2_D2 = PASS / CLOSED
+D2 = IN PROGRESS
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
+NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
 ```
 
 Do not reopen closed R2-A/R2-B1/R2-B2/R2-C/R2-D1/R2-D2 without proven regression. Do not auto-start D3 or new work packages. Control Plane must define the smallest exact contract from current repository truth, then obtain explicit owner authorization before any bounded Antigravity work.

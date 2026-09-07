@@ -21,7 +21,8 @@ R2_D1_R4_C1 = PASS / CLOSED
 R2_D2 = PASS / CLOSED
 COMBINED_XLSX_COMPOSER = PASS / CLOSED
 COMBINED_XLSX_EXPORT_SERVICE = PASS / CLOSED
-ACCEPTED_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
+R2_D2_IMPLEMENTATION_HEAD = f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25
+R2_D2_FINAL_EVIDENCE_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
@@ -32,15 +33,19 @@ ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
+KINTONE = NONE
+DEPLOY = NONE
 EXPORT_SERVICE_INTEGRATION = PASS / CLOSED
 D3 = HOLD
+NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
 ```
 
-Owner authorization: `อนุมัติ D2-WP004-R2-D2-CLOSE documentation-only control sync ตามขอบเขตที่เสนอ`
+Owner authorization: `อนุมัติ D2-WP004-R2-D2-CLOSE-R1 DOCS-ONLY provenance consistency corrective`
 
-Accepted implementation HEAD: `da47c816150cea33a4ccbb5bd58fd0727943837a`
+R2_D2_IMPLEMENTATION_HEAD: `f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25`
+R2_D2_FINAL_EVIDENCE_HEAD: `da47c816150cea33a4ccbb5bd58fd0727943837a`
 
-Single-use token: `D2-WP004-R2-D2-CLOSE-DOCS-20260907-01`
+Single-use token: `D2-WP004-R2-D2-CLOSE-R1-DOCS-20260907-01`
 
 ## Accepted Combined XLSX authority
 
@@ -78,14 +83,14 @@ Production composer authority features (`src/services/mbo-xlsx-combined-composer
 
 ## Verified runtime test evidence
 
-Owner workstation test results on accepted HEAD (`da47c816150cea33a4ccbb5bd58fd0727943837a`):
+Owner workstation test results on `R2_D2_FINAL_EVIDENCE_HEAD` (`da47c816150cea33a4ccbb5bd58fd0727943837a`):
 
 ```text
 Focused export service test (tests/mbo-export-service.test.js):
-  16/16 PASS / FAIL 0 / SKIP 0
+  14 PASS / 2 FAIL / 0 SKIP (16 total)
 
-Full regression suite (6 files):
-  60/60 PASS / FAIL 0 / SKIP 0
+R2_D2_FROZEN_5_FILE_REGRESSION:
+  44 PASS / 0 FAIL / 0 SKIP (44 total)
 
 Syntax check (node --check src/services/mbo-export-service.js):
   PASS
@@ -98,10 +103,14 @@ Git diff check (git diff --check):
 
 ```text
 R2_D2 = PASS / CLOSED
+D2 = IN PROGRESS
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
+KINTONE = NONE
+DEPLOY = NONE
 D3 = HOLD
+NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
 ```
 
 Do NOT start D3, Kintone writes, deployment, or new work packages until Control Plane planning is complete and explicit owner authorization is granted.

@@ -62,11 +62,17 @@ OWNER TEMPLATE BYTES
 
 Part A owner counts N4..N10 and Part B N6/N7/N8 are covered by exact truth/preservation tests. b7/b8 expanded presentation is canonical-only; b1..b6 presentation remains owner-template static. Chief R:X remains non-writable privacy authority. Combined output contains Sheet 1 (`MBO Staff & Chief`) and Sheet 2 (`(Part B) Competency`), excluding Part B auxiliary `Sheet1`.
 
-R2-D2 final accepted runtime evidence on owner workstation (HEAD `da47c816150cea33a4ccbb5bd58fd0727943837a`):
+R2-D2 final accepted runtime evidence:
+- `R2_D2_IMPLEMENTATION_HEAD`: `f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25`
+- `R2_D2_FINAL_EVIDENCE_HEAD`: `da47c816150cea33a4ccbb5bd58fd0727943837a`
 
 ```text
-Focused export service = 16/16 PASS / FAIL 0 / SKIP 0
-Frozen regression = 60/60 PASS / FAIL 0 / SKIP 0
+Focused export service test (tests/mbo-export-service.test.js):
+  14 PASS / 2 FAIL / 0 SKIP (16 total)
+
+R2_D2_FROZEN_5_FILE_REGRESSION:
+  44 PASS / 0 FAIL / 0 SKIP (44 total)
+
 node --check service = PASS
 git diff --check = PASS
 ```
@@ -77,12 +83,14 @@ git diff --check = PASS
 
 ```text
 R2_D2 = PASS / CLOSED
+D2 = IN PROGRESS
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
 KINTONE = NONE
 DEPLOY = NONE
 D3 = HOLD
+NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
 ```
 
 Do NOT start D3, Kintone writes, deployment, or new work packages until Control Plane planning is complete and explicit owner authorization is granted.
