@@ -1,5 +1,5 @@
 /**
- * Isolated Post-Render Combined XLSX Composer Foundation (R2-D1)
+ * Production Post-Render Combined XLSX Composer Foundation (R2-D1-R1)
  *
  * Browser-safe asynchronous composer:
  *   - Consumes rendered Part A XLSX bytes and rendered Part B XLSX bytes.
@@ -8,16 +8,20 @@
  *       2. (Part B) Competency (from Part B)
  *   - Excludes Part B auxiliary Sheet1.
  *
- * Production Constraints:
+ * Production Invariants & Corrective Rules (R2-D1-R1):
  * 1. Pure browser-safe production module (no node:fs, node:path, node:crypto, Kintone API).
  * 2. Zero mutation of caller / input bytes (immutability preserved).
  * 3. Rendered Part A package serves as base package authority.
- * 4. Derived style and sharedStrings remapping from actual rendered packages (no fixed offsets).
- * 5. Dynamic exact Print_Area preservation bound to localSheetId 0 and 1.
- * 6. Collision-safe OPC part and relationship ID derivation.
- * 7. Zero formula inventory.
- * 8. Secured rendered values & privacy preserved.
- * 9. Fail closed on malformed authority, occupied paths/IDs, or unexpected topology.
+ * 4. Source-derived resolution of business sheets via workbook.xml -> r:id -> workbook.xml.rels -> target.
+ * 5. Derived style and sharedStrings remapping from actual rendered packages (no fixed offsets).
+ * 6. Remap all style-reference classes (cell `s`, row `s`, col `style`, defaultStyle).
+ * 7. Recursive style dependency mapping (numFmtId, fontId, fillId, borderId, xfId); fail closed on unresolved dependencies.
+ * 8. Dynamic exact Print_Area preservation bound to localSheetId 0 and 1.
+ * 9. Source-derived worksheet relationship graph (.rels) preservation; copy/retarget supported printerSettings, drawings, media.
+ * 10. Collision-safe OPC part and relationship ID derivation.
+ * 11. Zero formula inventory.
+ * 12. Secured rendered values & privacy preserved.
+ * 13. Fail closed on malformed authority, occupied paths/IDs, missing targets, or unexpected topology.
  */
 import XlsxPopulate from 'xlsx-populate';
 
@@ -42,6 +46,87 @@ function toUint8Array(data, paramName) {
     return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
   }
   throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Invalid ${paramName} input data type`);
+}
+
+/**
+ * Helper: Resolve business sheet from workbook.xml -> r:id -> workbook.xml.rels -> zipPath
+ */
+async function resolveBusinessSheet(zip, expectedSheetName, label) {
+  const wbFile = zip.file('xl/workbook.xml');
+  const wbRelsFile = zip.file('xl/_rels/workbook.xml.rels');
+  if (!wbFile || !wbRelsFile) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Missing workbook.xml or workbook.xml.rels in ${label}`);
+  }
+
+  const wbXml = await wbFile.async('text');
+  const wbRelsXml = await wbRelsFile.async('text');
+
+  // Match all <sheet .../> elements
+  const sheetMatches = [...wbXml.matchAll(/<sheet\b[^>]*?\bname="([^"]+)"[^>]*?\br:id="([^"]+)"[^>]*?\/>|<sheet\b[^>]*?\br:id="([^"]+)"[^>]*?\bname="([^"]+)"[^>]*?\/>/g)];
+
+  const normExpected = normalizeXml(expectedSheetName).replace(/&amp;/g, '&');
+  const matchingSheets = [];
+
+  for (const m of sheetMatches) {
+    const rawName = m[1] || m[4];
+    const rId = m[2] || m[3];
+    const normName = normalizeXml(rawName).replace(/&amp;/g, '&');
+    if (normName === normExpected) {
+      matchingSheets.push({ rawName, rId });
+    }
+  }
+
+  if (matchingSheets.length !== 1) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Business sheet "${expectedSheetName}" not uniquely found in ${label} workbook.xml (found ${matchingSheets.length})`);
+  }
+
+  const { rawName, rId } = matchingSheets[0];
+
+  // Resolve rId in workbook.xml.rels
+  const relMatches = [...wbRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?>/g)];
+  const matchingRels = [];
+
+  for (const m of relMatches) {
+    const tag = m[0];
+    const idMatch = tag.match(/\bId="([^"]+)"/);
+    if (idMatch && idMatch[1] === rId) {
+      matchingRels.push(tag);
+    }
+  }
+
+  if (matchingRels.length !== 1) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" not uniquely found in ${label} workbook.xml.rels (found ${matchingRels.length})`);
+  }
+
+  const relTag = matchingRels[0];
+  const typeMatch = relTag.match(/\bType="([^"]+)"/);
+  const targetMatch = relTag.match(/\bTarget="([^"]+)"/);
+
+  if (!typeMatch || typeMatch[1] !== 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet') {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" in ${label} has invalid Type`);
+  }
+
+  if (!targetMatch) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" in ${label} missing Target`);
+  }
+
+  const rawTarget = targetMatch[1];
+  let zipPath = rawTarget;
+  if (!zipPath.startsWith('xl/')) {
+    zipPath = 'xl/' + zipPath.replace(/^\//, '');
+  }
+
+  const sheetFile = zip.file(zipPath);
+  if (!sheetFile) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Target worksheet file "${zipPath}" missing in ${label} zip`);
+  }
+
+  return {
+    sheetName: rawName,
+    rId,
+    target: rawTarget,
+    zipPath
+  };
 }
 
 /**
@@ -76,7 +161,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   }
 
   // ---------------------------------------------------------------------------
-  // 1. Validate Base Package Parts & Authority
+  // 1. Validate Base Package Required Parts
   // ---------------------------------------------------------------------------
   const requiredPartsA = [
     'xl/workbook.xml',
@@ -84,7 +169,6 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     '[Content_Types].xml',
     'xl/styles.xml',
     'xl/sharedStrings.xml',
-    'xl/worksheets/sheet1.xml',
     'docProps/app.xml'
   ];
 
@@ -99,8 +183,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     'xl/_rels/workbook.xml.rels',
     '[Content_Types].xml',
     'xl/styles.xml',
-    'xl/sharedStrings.xml',
-    'xl/worksheets/sheet1.xml'
+    'xl/sharedStrings.xml'
   ];
 
   for (const part of requiredPartsB) {
@@ -109,32 +192,24 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     }
   }
 
-  // Check Part A business sheet identity
-  const wbXmlA = await zipA.file('xl/workbook.xml').async('text');
-  const wbRelsXmlA = await zipA.file('xl/_rels/workbook.xml.rels').async('text');
-
-  if (!wbXmlA.includes('MBO Staff &amp; Chief') && !wbXmlA.includes('MBO Staff & Chief')) {
-    throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Part A business sheet "MBO Staff & Chief" missing in workbook.xml');
-  }
-
-  // Check Part B business sheet identity
-  const wbXmlB = await zipB.file('xl/workbook.xml').async('text');
-
-  if (!wbXmlB.includes('(Part B) Competency')) {
-    throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Part B business sheet "(Part B) Competency" missing in workbook.xml');
-  }
+  // Source-derived resolution of business sheets through relationship graph
+  const sheetA = await resolveBusinessSheet(zipA, 'MBO Staff & Chief', 'Part A');
+  const sheetB = await resolveBusinessSheet(zipB, '(Part B) Competency', 'Part B');
 
   // Check formula inventory = ZERO in both rendered business sheets
-  const sheet1XmlA = await zipA.file('xl/worksheets/sheet1.xml').async('text');
-  const sheet1XmlB = await zipB.file('xl/worksheets/sheet1.xml').async('text');
+  const sheetXmlContentA = await zipA.file(sheetA.zipPath).async('text');
+  const sheetXmlContentB = await zipB.file(sheetB.zipPath).async('text');
 
-  if (/<f[\s>]/.test(sheet1XmlA) || /<f[\s>]/.test(sheet1XmlB)) {
+  if (/<f[\s>]/.test(sheetXmlContentA) || /<f[\s>]/.test(sheetXmlContentB)) {
     throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Formula inventory non-zero in input business sheet');
   }
 
   // ---------------------------------------------------------------------------
   // 2. Extract Dynamic Print Areas
   // ---------------------------------------------------------------------------
+  const wbXmlA = await zipA.file('xl/workbook.xml').async('text');
+  const wbXmlB = await zipB.file('xl/workbook.xml').async('text');
+
   const printAreaMatchA = wbXmlA.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?>([\s\S]*?)<\/definedName>/);
   if (!printAreaMatchA) {
     throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Missing _xlnm.Print_Area in Part A workbook.xml');
@@ -157,49 +232,43 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   // ---------------------------------------------------------------------------
   // 3. Derive Free Relationship IDs & OPC Part Paths in Base Package (Part A)
   // ---------------------------------------------------------------------------
-  // Workbook Relationship ID
+  const wbRelsXmlA = await zipA.file('xl/_rels/workbook.xml.rels').async('text');
   const rIdMatchesA = [...wbRelsXmlA.matchAll(/\bId="(rId\d+)"/g)].map(m => m[1]);
   let maxRIdNum = 0;
   for (const rId of rIdMatchesA) {
     const num = parseInt(rId.replace('rId', ''), 10);
     if (!isNaN(num) && num > maxRIdNum) maxRIdNum = num;
   }
-  const partBSheetRId = `rId${maxRIdNum + 1}`;
+  let partBSheetRIdNum = maxRIdNum + 1;
+  while (rIdMatchesA.includes(`rId${partBSheetRIdNum}`)) {
+    partBSheetRIdNum++;
+  }
+  const partBSheetRId = `rId${partBSheetRIdNum}`;
 
-  if (rIdMatchesA.includes(partBSheetRId)) {
-    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Derived workbook relationship ID ${partBSheetRId} is occupied`);
+  // Validate base package sheet topology and derive free worksheet part path
+  const existingSheetsA = Object.keys(zipA.files).filter(f => /^xl\/worksheets\/sheet\d+\.xml$/i.test(f));
+  if (existingSheetsA.some(p => p !== sheetA.zipPath)) {
+    throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unexpected occupied sheet path present in base package');
   }
 
-  // Worksheet Part Path
-  const partBWorksheetPath = 'xl/worksheets/sheet2.xml';
-  if (zipA.file(partBWorksheetPath)) {
-    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Worksheet path ${partBWorksheetPath} already exists in Part A base package`);
+  let worksheetNum = 2;
+  while (zipA.file(`xl/worksheets/sheet${worksheetNum}.xml`)) {
+    worksheetNum++;
+  }
+  const partBWorksheetPath = `xl/worksheets/sheet${worksheetNum}.xml`;
+  const partBWorksheetRelsPath = `xl/worksheets/_rels/sheet${worksheetNum}.xml.rels`;
+
+  if (zipA.file(partBWorksheetPath) || zipA.file(partBWorksheetRelsPath)) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Worksheet path ${partBWorksheetPath} already occupied in Part A package`);
   }
 
-  // Worksheet rels path
-  const partBWorksheetRelsPath = 'xl/worksheets/_rels/sheet2.xml.rels';
-  if (zipA.file(partBWorksheetRelsPath)) {
-    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Worksheet rels path ${partBWorksheetRelsPath} already exists in Part A base package`);
+  // Derive free sheetId in workbook.xml
+  const sheetIdMatchesA = [...wbXmlA.matchAll(/\bsheetId="(\d+)"/g)].map(m => parseInt(m[1], 10));
+  let maxSheetId = 0;
+  for (const id of sheetIdMatchesA) {
+    if (id > maxSheetId) maxSheetId = id;
   }
-
-  // Drawing Part Path
-  const partBDrawingPath = 'xl/drawings/drawing2.xml';
-  const partBDrawingRelsPath = 'xl/drawings/_rels/drawing2.xml.rels';
-  if (zipA.file(partBDrawingPath) || zipA.file(partBDrawingRelsPath)) {
-    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Drawing path ${partBDrawingPath} already exists in Part A base package`);
-  }
-
-  // PrinterSettings Part Path
-  const partBPrinterSettingsPath = 'xl/printerSettings/printerSettings2.bin';
-  if (zipA.file(partBPrinterSettingsPath)) {
-    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: PrinterSettings path ${partBPrinterSettingsPath} already exists in Part A base package`);
-  }
-
-  // Media Part Path
-  const partBMediaPath = 'xl/media/image_partb_1.png';
-  if (zipA.file(partBMediaPath)) {
-    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Media path ${partBMediaPath} already exists in Part A base package`);
-  }
+  const partBSheetId = maxSheetId + 1;
 
   // ---------------------------------------------------------------------------
   // 4. Derive & Remap Shared Strings (`xl/sharedStrings.xml`)
@@ -402,6 +471,64 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     }
   }
 
+  function remapXfAttributes(xfTag, isCellXf = false, cellStyleXfMap = null, cellStyleXfElementsB = null) {
+    let newTag = xfTag;
+
+    // numFmtId
+    newTag = newTag.replace(/\bnumFmtId="(\d+)"/g, (match, p1) => {
+      const oldId = parseInt(p1, 10);
+      if (oldId >= 164 && !numFmtMap.has(oldId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced custom numFmtId ${oldId} missing in Part B numFmts map`);
+      }
+      const newId = numFmtMap.has(oldId) ? numFmtMap.get(oldId) : oldId;
+      return `numFmtId="${newId}"`;
+    });
+
+    // fontId
+    newTag = newTag.replace(/\bfontId="(\d+)"/g, (match, p1) => {
+      const oldId = parseInt(p1, 10);
+      if (!fontMap.has(oldId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced fontId ${oldId} missing in Part B fonts map`);
+      }
+      const newId = fontMap.get(oldId);
+      return `fontId="${newId}"`;
+    });
+
+    // fillId
+    newTag = newTag.replace(/\bfillId="(\d+)"/g, (match, p1) => {
+      const oldId = parseInt(p1, 10);
+      if (!fillMap.has(oldId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced fillId ${oldId} missing in Part B fills map`);
+      }
+      const newId = fillMap.get(oldId);
+      return `fillId="${newId}"`;
+    });
+
+    // borderId
+    newTag = newTag.replace(/\bborderId="(\d+)"/g, (match, p1) => {
+      const oldId = parseInt(p1, 10);
+      if (!borderMap.has(oldId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced borderId ${oldId} missing in Part B borders map`);
+      }
+      const newId = borderMap.get(oldId);
+      return `borderId="${newId}"`;
+    });
+
+    // xfId
+    if (isCellXf) {
+      newTag = newTag.replace(/\bxfId="(\d+)"/g, (match, p1) => {
+        const oldId = parseInt(p1, 10);
+        if (cellStyleXfElementsB && cellStyleXfElementsB.length > 0 && !cellStyleXfMap.has(oldId)) {
+          throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced xfId ${oldId} missing in Part B cellStyleXfs map`);
+        }
+        const newId = (cellStyleXfMap && cellStyleXfMap.has(oldId)) ? cellStyleXfMap.get(oldId) : 0;
+        return `xfId="${newId}"`;
+      });
+    }
+
+    return newTag;
+  }
+
   // E. cellStyleXfs (<cellStyleXfs>)
   const cellStyleXfsBlockA = getTagBlock(stylesXmlA, 'cellStyleXfs');
   const cellStyleXfsBlockB = getTagBlock(stylesXmlB, 'cellStyleXfs');
@@ -413,7 +540,8 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   const newCellStyleXfElementsA = [...cellStyleXfElementsA];
 
   for (let bIdx = 0; bIdx < cellStyleXfElementsB.length; bIdx++) {
-    const elB = cellStyleXfElementsB[bIdx];
+    const rawElB = cellStyleXfElementsB[bIdx];
+    const elB = remapXfAttributes(rawElB, false);
     const normB = normalizeXml(elB);
     let matchIdx = -1;
     for (let aIdx = 0; aIdx < newCellStyleXfElementsA.length; aIdx++) {
@@ -442,50 +570,9 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   const cellXfMap = new Map(); // oldStyleIdx -> newStyleIdx
   const newCellXfElementsA = [...cellXfElementsA];
 
-  function remapXfAttributes(xfTag) {
-    let newTag = xfTag;
-
-    // numFmtId
-    newTag = newTag.replace(/\bnumFmtId="(\d+)"/g, (match, p1) => {
-      const oldId = parseInt(p1, 10);
-      const newId = numFmtMap.has(oldId) ? numFmtMap.get(oldId) : oldId;
-      return `numFmtId="${newId}"`;
-    });
-
-    // fontId
-    newTag = newTag.replace(/\bfontId="(\d+)"/g, (match, p1) => {
-      const oldId = parseInt(p1, 10);
-      const newId = fontMap.has(oldId) ? fontMap.get(oldId) : 0;
-      return `fontId="${newId}"`;
-    });
-
-    // fillId
-    newTag = newTag.replace(/\bfillId="(\d+)"/g, (match, p1) => {
-      const oldId = parseInt(p1, 10);
-      const newId = fillMap.has(oldId) ? fillMap.get(oldId) : 0;
-      return `fillId="${newId}"`;
-    });
-
-    // borderId
-    newTag = newTag.replace(/\bborderId="(\d+)"/g, (match, p1) => {
-      const oldId = parseInt(p1, 10);
-      const newId = borderMap.has(oldId) ? borderMap.get(oldId) : 0;
-      return `borderId="${newId}"`;
-    });
-
-    // xfId
-    newTag = newTag.replace(/\bxfId="(\d+)"/g, (match, p1) => {
-      const oldId = parseInt(p1, 10);
-      const newId = cellStyleXfMap.has(oldId) ? cellStyleXfMap.get(oldId) : 0;
-      return `xfId="${newId}"`;
-    });
-
-    return newTag;
-  }
-
   for (let bIdx = 0; bIdx < cellXfElementsB.length; bIdx++) {
     const originalElB = cellXfElementsB[bIdx];
-    const remappedElB = remapXfAttributes(originalElB);
+    const remappedElB = remapXfAttributes(originalElB, true, cellStyleXfMap, cellStyleXfElementsB);
     const normB = normalizeXml(remappedElB);
 
     let matchIdx = -1;
@@ -508,7 +595,6 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   // Reconstruct Part A styles.xml
   let updatedStylesXmlA = stylesXmlA;
 
-  // Replace <numFmts> block if numFmts present
   if (newNumFmtElementsA.length > 0) {
     const newNumFmtsBlock = `<numFmts count="${newNumFmtElementsA.length}">${newNumFmtElementsA.join('')}</numFmts>`;
     if (stylesXmlA.includes('<numFmts')) {
@@ -518,41 +604,56 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     }
   }
 
-  // Replace <fonts> block
   const newFontsBlock = `<fonts count="${newFontElementsA.length}">${newFontElementsA.join('')}</fonts>`;
   updatedStylesXmlA = updatedStylesXmlA.replace(/<fonts\b[^>]*>[\s\S]*?<\/fonts>/, newFontsBlock);
 
-  // Replace <fills> block
   const newFillsBlock = `<fills count="${newFillElementsA.length}">${newFillElementsA.join('')}</fills>`;
   updatedStylesXmlA = updatedStylesXmlA.replace(/<fills\b[^>]*>[\s\S]*?<\/fills>/, newFillsBlock);
 
-  // Replace <borders> block
   const newBordersBlock = `<borders count="${newBorderElementsA.length}">${newBorderElementsA.join('')}</borders>`;
   updatedStylesXmlA = updatedStylesXmlA.replace(/<borders\b[^>]*>[\s\S]*?<\/borders>/, newBordersBlock);
 
-  // Replace <cellStyleXfs> block
-  const newCellStyleXfsBlock = `<cellStyleXfs count="${newCellStyleXfElementsA.length}">${newCellStyleXfElementsA.join('')}</cellStyleXfs>`;
-  updatedStylesXmlA = updatedStylesXmlA.replace(/<cellStyleXfs\b[^>]*>[\s\S]*?<\/cellStyleXfs>/, newCellStyleXfsBlock);
+  if (newCellStyleXfElementsA.length > 0) {
+    const newCellStyleXfsBlock = `<cellStyleXfs count="${newCellStyleXfElementsA.length}">${newCellStyleXfElementsA.join('')}</cellStyleXfs>`;
+    if (stylesXmlA.includes('<cellStyleXfs')) {
+      updatedStylesXmlA = updatedStylesXmlA.replace(/<cellStyleXfs\b[^>]*>[\s\S]*?<\/cellStyleXfs>/, newCellStyleXfsBlock);
+    }
+  }
 
-  // Replace <cellXfs> block
   const newCellXfsBlock = `<cellXfs count="${newCellXfElementsA.length}">${newCellXfElementsA.join('')}</cellXfs>`;
   updatedStylesXmlA = updatedStylesXmlA.replace(/<cellXfs\b[^>]*>[\s\S]*?<\/cellXfs>/, newCellXfsBlock);
 
   zipA.file('xl/styles.xml', updatedStylesXmlA);
 
   // ---------------------------------------------------------------------------
-  // 6. Remap & Transform Part B Business Sheet XML (`xl/worksheets/sheet1.xml` in B)
+  // 6. Remap All Style-Reference Classes & Transform Part B Business Sheet XML
   // ---------------------------------------------------------------------------
-  let sheetXmlB = await zipB.file('xl/worksheets/sheet1.xml').async('text');
+  let sheetXmlB = await zipB.file(sheetB.zipPath).async('text');
 
-  // Remap style IDs s="ID"
-  sheetXmlB = sheetXmlB.replace(/\bs="(\d+)"/g, (match, p1) => {
-    const oldStyleId = parseInt(p1, 10);
+  // Helper to remap style ID and fail closed if missing
+  function lookupStyleMap(oldIdStr) {
+    const oldStyleId = parseInt(oldIdStr, 10);
     if (!cellXfMap.has(oldStyleId)) {
       throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B style ID ${oldStyleId} missing in cellXfs map`);
     }
-    const newStyleId = cellXfMap.get(oldStyleId);
-    return `s="${newStyleId}"`;
+    return cellXfMap.get(oldStyleId);
+  }
+
+  // 1. Cell styles: s="ID"
+  sheetXmlB = sheetXmlB.replace(/\bs="(\d+)"/g, (match, p1) => {
+    return `s="${lookupStyleMap(p1)}"`;
+  });
+
+  // 2. Column styles: style="ID"
+  sheetXmlB = sheetXmlB.replace(/\bstyle="(\d+)"/g, (match, p1) => {
+    return `style="${lookupStyleMap(p1)}"`;
+  });
+
+  // 3. Row styles: s="ID" (covered by \bs="(\d+)" above)
+
+  // 4. Default sheet style: defaultStyle="ID"
+  sheetXmlB = sheetXmlB.replace(/\bdefaultStyle="(\d+)"/g, (match, p1) => {
+    return `defaultStyle="${lookupStyleMap(p1)}"`;
   });
 
   // Remap shared string indices <v>INDEX</v> for cells with t="s"
@@ -565,59 +666,147 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     return `${open}${newSstIdx}${close}`;
   });
 
-  // Write remapped Part B business sheet as xl/worksheets/sheet2.xml in zipA
-  zipA.file(partBWorksheetPath, sheetXmlB);
-
   // ---------------------------------------------------------------------------
-  // 7. Retarget & Copy Dependencies (PrinterSettings, Drawing, Media)
+  // 7. Retarget & Copy Worksheet Relationship Graph (.rels) & Dependencies
   // ---------------------------------------------------------------------------
-  // A. PrinterSettings
-  const printerSettingsPartB = zipB.file('xl/printerSettings/printerSettings1.bin');
-  if (printerSettingsPartB) {
-    const psBuf = await printerSettingsPartB.async('nodebuffer');
-    zipA.file(partBPrinterSettingsPath, psBuf);
-  }
+  const sheetBRelZipPath = sheetB.zipPath.replace(/worksheets\/([^\/]+)$/, 'worksheets/_rels/$1.rels');
+  const sheetBRelFile = zipB.file(sheetBRelZipPath);
 
-  // B. Drawing & Media
-  const drawingPartB = zipB.file('xl/drawings/drawing1.xml');
-  const drawingRelsPartB = zipB.file('xl/drawings/_rels/drawing1.xml.rels');
+  const copiedSheetRels = [];
+  const addedContentTypesOverrides = [];
 
-  if (drawingPartB) {
-    const drawingXmlStrB = await drawingPartB.async('text');
-    zipA.file(partBDrawingPath, drawingXmlStrB);
-  }
+  if (sheetBRelFile) {
+    const sheetBRelsXml = await sheetBRelFile.async('text');
+    const relMatchesB = [...sheetBRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>|<Relationship\b[^>]*?\bTarget="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bId="([^"]+)"[^>]*?\/>/g)];
 
-  if (drawingRelsPartB) {
-    let drawingRelsStrB = await drawingRelsPartB.async('text');
+    for (const m of relMatchesB) {
+      const tag = m[0];
+      const rId = m[1] || m[6];
+      const type = m[2] || m[5];
+      const rawTarget = m[3] || m[4];
+      const targetModeMatch = tag.match(/\bTargetMode="([^"]+)"/);
+      const targetModeAttr = targetModeMatch ? ` TargetMode="${targetModeMatch[1]}"` : '';
 
-    // Check media dependencies in drawing1.xml.rels
-    const mediaMatches = [...drawingRelsStrB.matchAll(/Target="\.\.\/media\/([^"]+)"/g)];
-    for (const m of mediaMatches) {
-      const origMediaName = m[1];
-      const origMediaPath = `xl/media/${origMediaName}`;
-      const mediaFileB = zipB.file(origMediaPath);
+      if (type.endsWith('/printerSettings')) {
+        // PrinterSettings dependency
+        let srcPrinterPath = rawTarget.replace(/^\.\.\//, 'xl/');
+        const printerBufB = zipB.file(srcPrinterPath);
+        if (!printerBufB) {
+          throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B printerSettings file "${srcPrinterPath}" missing`);
+        }
 
-      if (mediaFileB) {
-        const mediaBufB = await mediaFileB.async('nodebuffer');
-        // Copy media file to collision-safe path
-        zipA.file(partBMediaPath, mediaBufB);
-        // Retarget drawing2.xml.rels to point to image_partb_1.png
-        drawingRelsStrB = drawingRelsStrB.replace(`Target="../media/${origMediaName}"`, `Target="../media/image_partb_1.png"`);
+        let psNum = 2;
+        while (zipA.file(`xl/printerSettings/printerSettings${psNum}.bin`)) {
+          psNum++;
+        }
+        const destPrinterZipPath = `xl/printerSettings/printerSettings${psNum}.bin`;
+        const destPrinterTarget = `../printerSettings/printerSettings${psNum}.bin`;
+
+        const psData = await printerBufB.async('nodebuffer');
+        zipA.file(destPrinterZipPath, psData);
+
+        copiedSheetRels.push(`<Relationship Id="${rId}" Type="${type}" Target="${destPrinterTarget}"${targetModeAttr}/>`);
+      } else if (type.endsWith('/drawing')) {
+        // Drawing dependency
+        let srcDrawingPath = rawTarget.replace(/^\.\.\//, 'xl/');
+        const drawingFileB = zipB.file(srcDrawingPath);
+        if (!drawingFileB) {
+          throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B drawing file "${srcDrawingPath}" missing`);
+        }
+
+        let drwNum = 2;
+        while (zipA.file(`xl/drawings/drawing${drwNum}.xml`)) {
+          drwNum++;
+        }
+        const destDrawingZipPath = `xl/drawings/drawing${drwNum}.xml`;
+        const destDrawingRelsZipPath = `xl/drawings/_rels/drawing${drwNum}.xml.rels`;
+        const destDrawingTarget = `../drawings/drawing${drwNum}.xml`;
+
+        let drawingXmlStrB = await drawingFileB.async('text');
+        zipA.file(destDrawingZipPath, drawingXmlStrB);
+        addedContentTypesOverrides.push(`<Override PartName="/${destDrawingZipPath}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
+
+        // Process drawing's own .rels file if present
+        const srcDrawingRelsPath = srcDrawingPath.replace(/drawings\/([^\/]+)$/, 'drawings/_rels/$1.rels');
+        const drawingRelsFileB = zipB.file(srcDrawingRelsPath);
+
+        if (drawingRelsFileB) {
+          let drawingRelsXmlB = await drawingRelsFileB.async('text');
+          const drwRelMatches = [...drawingRelsXmlB.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>|<Relationship\b[^>]*?\bTarget="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bId="([^"]+)"[^>]*?\/>/g)];
+
+          let updatedDrawingRelsXmlB = drawingRelsXmlB;
+
+          for (const dm of drwRelMatches) {
+            const dTag = dm[0];
+            const dType = dm[2] || dm[5];
+            const dTarget = dm[3] || dm[4];
+
+            if (dType.endsWith('/image')) {
+              let srcMediaPath = dTarget.replace(/^\.\.\//, 'xl/');
+              const mediaFileB = zipB.file(srcMediaPath);
+              if (!mediaFileB) {
+                throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B media file "${srcMediaPath}" missing`);
+              }
+
+              const mediaBufB = await mediaFileB.async('nodebuffer');
+              const mediaFilenameB = srcMediaPath.replace(/^xl\/media\//, '');
+
+              let destMediaZipPath = `xl/media/${mediaFilenameB}`;
+              let destMediaRelTarget = dTarget;
+
+              // Collision check with zipA
+              if (zipA.file(destMediaZipPath)) {
+                // If collision exists, derive free path
+                const extMatch = mediaFilenameB.match(/(\.[^.]+)$/);
+                const ext = extMatch ? extMatch[1] : '.png';
+                const baseName = mediaFilenameB.replace(/\.[^.]+$/, '');
+                let mNum = 1;
+                while (zipA.file(`xl/media/${baseName}_partb_${mNum}${ext}`)) {
+                  mNum++;
+                }
+                destMediaZipPath = `xl/media/${baseName}_partb_${mNum}${ext}`;
+                destMediaRelTarget = `../media/${baseName}_partb_${mNum}${ext}`;
+              }
+
+              zipA.file(destMediaZipPath, mediaBufB);
+              updatedDrawingRelsXmlB = updatedDrawingRelsXmlB.replace(`Target="${dTarget}"`, `Target="${destMediaRelTarget}"`);
+
+              const ext = destMediaZipPath.split('.').pop().toLowerCase();
+              if (ext === 'png') {
+                addedContentTypesOverrides.push(`<Default Extension="png" ContentType="image/png"/>`);
+              } else if (ext === 'jpeg' || ext === 'jpg') {
+                addedContentTypesOverrides.push(`<Default Extension="jpeg" ContentType="image/jpeg"/>`);
+              }
+            } else {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsupported drawing relationship type "${dType}"`);
+            }
+          }
+
+          zipA.file(destDrawingRelsZipPath, updatedDrawingRelsXmlB);
+        }
+
+        copiedSheetRels.push(`<Relationship Id="${rId}" Type="${type}" Target="${destDrawingTarget}"${targetModeAttr}/>`);
+      } else {
+        // Other supported sheet relationships
+        copiedSheetRels.push(tag);
       }
     }
-    zipA.file(partBDrawingRelsPath, drawingRelsStrB);
+
+    // Write sheet2.xml.rels in zipA
+    const sheet2RelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${copiedSheetRels.join('')}</Relationships>`;
+    zipA.file(partBWorksheetRelsPath, sheet2RelsXml);
   }
 
-  // C. Create Part B Worksheet Relationships file (xl/worksheets/_rels/sheet2.xml.rels)
-  const worksheetRelsXmlB = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings" Target="../printerSettings/printerSettings2.bin"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing2.xml"/></Relationships>`;
-  zipA.file(partBWorksheetRelsPath, worksheetRelsXmlB);
+  // Write remapped Part B business sheet as partBWorksheetPath in zipA
+  zipA.file(partBWorksheetPath, sheetXmlB);
+  addedContentTypesOverrides.push(`<Override PartName="/${partBWorksheetPath}" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
 
   // ---------------------------------------------------------------------------
   // 8. Update Base Package Metadata (`xl/workbook.xml`, `xl/_rels/workbook.xml.rels`, `[Content_Types].xml`, `docProps/app.xml`)
   // ---------------------------------------------------------------------------
   // A. xl/_rels/workbook.xml.rels
   let wbRelsContentA = await zipA.file('xl/_rels/workbook.xml.rels').async('text');
-  const sheetRelTag = `<Relationship Id="${partBSheetRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>`;
+  const sheetRelTag = `<Relationship Id="${partBSheetRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${worksheetNum}.xml"/>`;
   wbRelsContentA = wbRelsContentA.replace('</Relationships>', `${sheetRelTag}</Relationships>`);
   zipA.file('xl/_rels/workbook.xml.rels', wbRelsContentA);
 
@@ -625,7 +814,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   let wbContentA = await zipA.file('xl/workbook.xml').async('text');
 
   // Insert sheet 2 under <sheets>
-  const sheetTag2 = `<sheet name="(Part B) Competency" sheetId="2" r:id="${partBSheetRId}"/>`;
+  const sheetTag2 = `<sheet name="(Part B) Competency" sheetId="${partBSheetId}" r:id="${partBSheetRId}"/>`;
   wbContentA = wbContentA.replace('</sheets>', `${sheetTag2}</sheets>`);
 
   // Update <definedNames> with exact preserved Print_Areas
@@ -640,25 +829,24 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   // C. [Content_Types].xml
   let contentTypesXmlA = await zipA.file('[Content_Types].xml').async('text');
 
-  const sheetOverride = `<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`;
-  const drawingOverride = `<Override PartName="/xl/drawings/drawing2.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`;
-
-  if (!contentTypesXmlA.includes('PartName="/xl/worksheets/sheet2.xml"')) {
-    contentTypesXmlA = contentTypesXmlA.replace('</Types>', `${sheetOverride}</Types>`);
-  }
-  if (!contentTypesXmlA.includes('PartName="/xl/drawings/drawing2.xml"')) {
-    contentTypesXmlA = contentTypesXmlA.replace('</Types>', `${drawingOverride}</Types>`);
-  }
-  if (!contentTypesXmlA.includes('Extension="png"')) {
-    const pngDefault = `<Default Extension="png" ContentType="image/png"/>`;
-    contentTypesXmlA = contentTypesXmlA.replace('</Types>', `${pngDefault}</Types>`);
+  for (const overrideTag of addedContentTypesOverrides) {
+    if (overrideTag.startsWith('<Override')) {
+      const partNameMatch = overrideTag.match(/PartName="([^"]+)"/);
+      if (partNameMatch && !contentTypesXmlA.includes(`PartName="${partNameMatch[1]}"`)) {
+        contentTypesXmlA = contentTypesXmlA.replace('</Types>', `${overrideTag}</Types>`);
+      }
+    } else if (overrideTag.startsWith('<Default')) {
+      const extMatch = overrideTag.match(/Extension="([^"]+)"/);
+      if (extMatch && !contentTypesXmlA.includes(`Extension="${extMatch[1]}"`)) {
+        contentTypesXmlA = contentTypesXmlA.replace('</Types>', `${overrideTag}</Types>`);
+      }
+    }
   }
   zipA.file('[Content_Types].xml', contentTypesXmlA);
 
   // D. docProps/app.xml
   let appPropsXmlA = await zipA.file('docProps/app.xml').async('text');
 
-  // Update Worksheets count to 2, Named Ranges count to 2, vector size 4
   const updatedHeadingPairs = `<HeadingPairs><vt:vector size="4" baseType="variant"><vt:variant><vt:lpstr>Worksheets</vt:lpstr></vt:variant><vt:variant><vt:i4>2</vt:i4></vt:variant><vt:variant><vt:lpstr>Named Ranges</vt:lpstr></vt:variant><vt:variant><vt:i4>2</vt:i4></vt:variant></vt:vector></HeadingPairs>`;
   const updatedTitlesOfParts = `<TitlesOfParts><vt:vector size="4" baseType="lpstr"><vt:lpstr>MBO Staff &amp; Chief</vt:lpstr><vt:lpstr>(Part B) Competency</vt:lpstr><vt:lpstr>'MBO Staff &amp; Chief'!Print_Area</vt:lpstr><vt:lpstr>'(Part B) Competency'!Print_Area</vt:lpstr></vt:vector></TitlesOfParts>`;
 
@@ -671,7 +859,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   zipA.file('docProps/app.xml', appPropsXmlA);
 
   // ---------------------------------------------------------------------------
-  // 9. Generate & Return Output Bytes directly via JSZip generateAsync
+  // 9. Generate & Return Output Bytes
   // ---------------------------------------------------------------------------
   const outputUint8 = await zipA.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
   return outputUint8;
