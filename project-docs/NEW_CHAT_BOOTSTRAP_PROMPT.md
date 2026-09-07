@@ -1,18 +1,22 @@
 # MBO2026 — CANONICAL NEW-CHAT BOOTSTRAP PROMPT
 
-> Copy only the text block below into a new ChatGPT conversation.  
-> Updated: 2026-09-01 ICT.  
+> Copy only the text block below into a new ChatGPT conversation.
+> Updated: 2026-09-08 ICT.
 > Repository evidence always wins over this embedded checkpoint.
 
 ```text
 Continue MBO2026 from repository truth.
 
+RESPOND TO OWNER IN THAI.
+
 Repository: rebootob/MBO2026
 Canonical branch: ai/antigravity-wp002c
 
 ROLE
+- Owner = final human authority
 - ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
-- Antigravity = LOW-CREDIT / BOUNDED Execution Plane only for important/necessary implementation
+- Antigravity = LOW-CREDIT / BOUNDED Execution Plane only when genuinely necessary
+- Claude = specialist / second opinion / STOP by default
 - Repository truth + accepted newer Live evidence are authoritative
 
 STARTUP — BEFORE STATUS OR WORK
@@ -20,154 +24,149 @@ STARTUP — BEFORE STATUS OR WORK
 2. Read project-docs/CHAT_HANDOFF.md first.
 3. Read project-docs/AI_CONTROL_CENTER.md.
 4. Read project-docs/AI_ACTIVE_TASK.md.
-5. Read project-docs/AI_DOCUMENT_INDEX.md.
-6. Read project-docs/00_MASTER_JOBLIST.md when whole-project completeness is needed.
-7. Read project-docs/EXCEL_EXPORT.md for current D2 work.
-8. Read project-docs/CONFIRMED_BASELINE/README.md and only relevant Baselines routed by the Document Index.
-9. Inspect exact current source/tests/diff only when needed for the current decision.
+5. Read project-docs/control/00_MASTER_DELIVERY_CONTROL.md.
+6. Read project-docs/control/02_ACTIVE_WORK_PACKAGE.md.
+7. Read project-docs/AI_DOCUMENT_INDEX.md.
+8. Inspect exact current source/tests/diff/evidence only when needed.
 
 Do NOT broad-scan the repository.
-Do NOT ask me to repeat history already in Git.
-Do NOT reissue accepted work.
-Do NOT auto-start a proposed Work Package.
+Do NOT ask Owner to repeat history already in Git.
+Do NOT auto-start D3.
+Do NOT confuse source/test closure with Owner UAT PASS.
 
 GOVERNANCE
 - No false PASS.
 - Executor cannot self-certify independent PASS.
-- No Live Kintone POST/PUT/DELETE/deploy/ACL/group/schema/record/session/password mutation without exact explicit Owner authorization.
-- Never widen/reuse consumed one-shot authorization.
-- No automatic rollback.
-- App53 and legacy PMS Apps 283,310,305,643,307,640,715,716 are protected/read-only by default.
-- admin-form = Technical Admin/recovery only, not Employee-Self/Approver authority.
-- Complete D2 fully before D3.
+- No Kintone write/deploy without exact explicit Owner authorization.
+- Never widen/reuse a consumed one-shot authorization.
+- Closed functions reopen only for PROVEN_REGRESSION or OWNER_CHANGE_REQUEST.
+- App53 and legacy protected apps remain read-only unless explicitly authorized.
+- Production readiness remains NO until required release gates and Owner UAT are satisfied.
 
-D1 — CLOSED / DO NOT REOPEN WITHOUT PROVEN REGRESSION
-D1 = PASS / CLOSED
-FINAL_D1_SECURITY_REVIEW = PASS
-APP794_LIVE_REVISION = 67
-RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
-HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-CURRENT_APPROVAL_AUTHORITY = native current App794 Assignee
-SHARED_APPROVER_AUTHORITY = DENIED
+CURRENT CHECKPOINT BEFORE DOC SYNC
+03b531383e86c643a5258a2baf6fdbd15bc9099e
+message: fix: correct App794 CSS customization target name
 
-D1 accepted ceilings:
-SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
-DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+IMPORTANT: the docs-sync commit itself may advance HEAD. Fresh-fetch and use repository truth, not the checkpoint above.
 
-Do not claim stronger hard guarantees or reset another person's native Kintone password solely for UAT.
+CURRENT STAGE STATE
+D1_BASE_ARCHITECTURE = PASS / CLOSED / DURABLE
+D1 = NARROWLY REOPENED BY PROVEN OWNER-UAT REGRESSION
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D2_OWNER_UAT = IN PROGRESS / PAUSED ON D1 ENTRY DEFECTS
+D3 = HOLD
+D4 = IN PROGRESS / NOT ACTIVE
+D5 = IN PROGRESS / NOT ACTIVE
+D6 = UAT NOT CLOSED
+D7 = SOURCE FUNCTIONALITY CLOSED / CUTOVER NOT AUTHORIZED
+PRODUCTION_READY = NO
 
-EMPLOYEE LIFECYCLE POLICY — CONFIRMED
-Employee_Code = stable person identity
-App53 = current employee/org/position truth
-App795 = current routing configuration for fresh resolution
-App794 = annual historical snapshot + current workflow truth
-App53/App795 change != automatic retroactive App794 rewrite
-MID_CYCLE_CHANGE = explicit HR-controlled lifecycle amendment + audit
-D4 owns lifecycle operations; D5 resolves fresh target-year identity/routing; D6 includes lifecycle/security regression.
+ACTIVE DEFECTS
+D1-UAT-DEFECT-001 = CRITICAL / SHARED PRINCIPAL CAN ENTER DEDICATED EMPLOYEE SELF
+D1-UAT-DEFECT-002 = MATERIAL / EXISTING CURRENT-FY MBO OFFERS CREATE-NEW PATH
 
-D2 — CURRENT PRIORITY
-D2 = IN PROGRESS
-D2-WP001 = PASS / CLOSED
-D2-WP002 = PASS / CLOSED
-D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R16 = PASS / CLOSED
-D2-WP003-R3-R17 = PASS / CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
-PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
-TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
-TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
-HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
-DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
+HYBRID IDENTITY — LOCKED CONTRACT
+1) Dedicated / 1:1
+personal Kintone user
+-> active App53 MBO_Kintone_User exact mapping
+-> canonical emp_text
+-> auto-bind employee
+-> no Shared App801 login
 
-Accepted owner-template SHA-256:
-PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
+2) Shared
+shared Kintone principal such as tmh
+-> Employee ID + App801 password
+-> allowed ONLY if active exact App53 row has valid USER_SELECT shape MBO_Kintone_User.value = []
 
-LATEST REVIEW — R3-R23
-IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
-R3-R23_SCOPE_REVIEW = PASS
-R3-R23_SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-R3-R23_PROOF_REVIEW = FAIL / INCOMPLETE
-R3-R23_STATUS = NOT PASS / NOT CLOSED
-PRIVACY_PURGE_REQUIRED = NO
+Dedicated mapping populated -> DEDICATED_ACCOUNT_REQUIRED
+Missing/malformed/ambiguous mapping or App53 lookup failure -> FAIL CLOSED
 
-Accepted R3-R22 foundation retained:
-- getNoOpParityBuffers() returns direct raw xlsx-populate outputAsync() buffers; no source-to-output dimension repair.
-- validateWorkbookParity() preserves BLOCKER_TEMPLATE_SOURCE_NOT_AVAILABLE and normalizes all other parity-path failures to BLOCKER_WORKBOOK_PARITY_UNRESOLVED.
-- getWorkbookFingerprint() uses actual <dimension .../> tag/absence only.
-- print area binds by exact localSheetId and actual zero-based worksheet index with no cross-sheet fallback.
-- Part B Sheet1.colsHash negative proof is present.
-- mutation negatives use exact-source fpOrigB/origBufB baselines.
-- exact source Part A/Part B validates TRUE.
-- raw Part A, Part B main and Part B Sheet1 lose dimension tags.
-- raw Part A/Part B fail closed with BLOCKER_WORKBOOK_PARITY_UNRESOLVED.
-- tests pass 8/8 and npm audit reports 0 vulnerabilities.
+OWNER-PROVEN CASE
+Employee 0113 / Ms.Papatchaya
+App53 MBO_Kintone_User = Ms.Papatchaya
+Therefore:
+tmh + 0113 -> DENY
+Ms.Papatchaya native Kintone -> auto-bind 0113 -> ALLOW
 
-REMAINING BLOCKER
-R3-R23 accepts actual worksheet relationship-target swaps, inserts dimension before sheetPr, permits source SHA bypass through sourceBufOverride and lacks mandatory fail-closed negatives.
+tmh + employee with MBO_Kintone_User.value = [] + valid App801 credential -> ALLOW Shared mode
 
-CURRENT GATE
-D2-WP003 = CORRECTIVE REQUIRED / NOT CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
-D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP / WAIT OWNER
-D3 = HOLD UNTIL D2 PASS / CLOSED
+CORRECTIVE CHAIN
+R1_HEAD = 8c3fda998fe8bd0b627d62a5beb10455bde8f725
+R1 = PARTIAL PASS
+R2_HEAD = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb
+R2 = PASS / CLOSED
+BUILD_ARTIFACT_HEAD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
+DEPLOY_TOOL_HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e
+DEPLOY_TOOL_REVIEW = PASS / CLOSED
+CANONICAL_JS = mbo-employee-app.js
+CANONICAL_CSS = mbo-employee.css
+HISTORICAL_WRONG_CSS = mbo-employee .css -> MUST FAIL CLOSED
 
-NEXT PROPOSED WP — NOT AUTHORIZED
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
-PROPOSED_WORK_PACKAGE_NAME = STRICT RELATIONSHIP-TARGET + SCHEMA-ORDER + SOURCE-IDENTITY CORRECTIVE
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
-PROPOSED_STATUS = WAIT OWNER AUTHORIZATION
+DEFECT-002 REQUIRED NAVIGATION
+1 current-FY MBO -> Open Current MBO
+0 current-FY MBO -> Create New MBO
+>1 current-FY MBO -> fail safe / no Create path
+Backend duplicate guard stays unchanged.
 
-R3-R24 intended direction:
-- exact source SHA and exact A/B part key on every source path;
-- unique exact relationship ID/type/target equality and real swapped/cross-sheet negatives;
-- exact dimension inserted after optional sheetPr at a schema-valid slot;
-- keep getNoOpParityBuffers() frozen;
-- do not start evidence/image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
+CURRENT OWNER AUTHORIZATION
+Owner explicitly approved:
+อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target
 
-D1-D7 SCOREBOARD
-D1 = PASS / CLOSED
-D2 = IN PROGRESS
-D3 = HOLD / WRITE NOT AUTHORIZED UNTIL D2 PASS/CLOSED
-D4 = IN PROGRESS / NOT ACTIVE / LIFECYCLE OPERATIONS MANDATORY
-D5 = IN PROGRESS / NOT ACTIVE / FRESH CURRENT ROUTE + IDENTITY REQUIRED
-D6 = PENDING / LIFECYCLE REGRESSION REQUIRED
-D7 = SOURCE FUNCTIONALITY CLOSED
+WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
+AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
+TARGET = App794 customization ONLY
+MAX_ATTEMPTS = 1
+AUTO_RETRY = NO
+AUTO_ROLLBACK = NO
+RECORD_WRITES = NONE
+SCHEMA/ACL/PROCESS_WRITES = NONE
+D2_CHANGE = NONE
+D3 = HOLD
 
-CURRENT AUTHORIZATION
-Kintone write = NONE
-App794 deploy = NONE
-Record ACL write = NONE
-Group write = NONE
-App53 schema/record/bulk = NONE
-App795 write = NONE
-App801 write = NONE
-Lifecycle write = NONE
-D2 source change = NONE
-Rollback = NONE
+DOCS-ONLY REBASE RULE
+If fresh HEAD is a docs-only successor of 03b531383e86c643a5258a2baf6fdbd15bc9099e and independent compare proves zero src/tests/scripts/config/dist changes, Control Plane MAY rebase this already-approved one-shot deployment basis to the fresh docs-only HEAD without asking Owner to approve again. The release manifest must use the fresh exact 40-char HEAD and current committed artifact blob SHAs.
 
-USER SHORTHAND
-review -> fresh-fetch current HEAD; read CHAT_HANDOFF + AI_CONTROL_CENTER + authorizing AI_ACTIVE_TASK; compare exact authorization baseline to implementation; inspect exact diff/tests/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
-ต่อ / ต่อไป -> fresh-fetch current HEAD + current gate; choose smallest safe next action; do not spend Antigravity unnecessarily.
-อนุมัติ ... -> create exact narrow one-shot authorization only; never widen/reuse consumed authorization.
+DEPLOY PRECONDITIONS
+- focused identity/index/deploy-preservation tests 0 FAIL
+- clean worktree
+- deterministic build reproduces committed dist exactly
+- GET-only App794 Live + Preview preflight
+- exact target names mbo-employee-app.js and mbo-employee.css
+- topology Desktop JS=1 / Desktop CSS=1 / Mobile=0/0
+- exact source/artifact release manifest
+- one deploy attempt only
 
-FIRST RESPONSE IN THIS NEW CHAT
-Answer in Thai with:
-1. current HEAD;
-2. D1-D7 scoreboard;
-3. D1 frozen closure + ceilings;
-4. current D2 accepted foundations;
-5. R3-R23 corrective review and proven preservation defects;
-6. current authorization ledger;
-7. R3-R24 proposed corrective status plus standing Control Plane round `1/20`;
-8. exact owner decision without auto-starting Antigravity or D3.
+ALLOWED DEPLOY WRITES ONLY
+- POST candidate JS file
+- POST candidate CSS file
+- PUT App794 preview customization
+- POST App794 deploy request
+
+FORBIDDEN
+- record writes
+- App53/App795/App796/App797/App798/App800/App801 writes
+- schema/layout/ACL/process changes
+- D2 changes
+- D3 work
+
+AFTER ANTIGRAVITY DEPLOY REPORT
+Do NOT trust executor self-certification.
+Fresh-fetch repository truth and independently review deployment evidence, pre/post App794 revisions, exact JS/CSS byte identities and forbidden-write audit.
+
+ONLY AFTER INDEPENDENT DEPLOY PASS -> OWNER UAT
+1. Ms.Papatchaya native Kintone -> auto-bind 0113 -> own MBO opens.
+2. tmh + 0113 -> DENY with dedicated-account guidance.
+3. tmh + employee with no dedicated Kintone mapping -> Shared App801 login still works.
+4. Existing current-FY MBO -> Open Current MBO, no Create New.
+
+Do not claim Owner UAT PASS until Owner performs these checks.
+Do not start D3 automatically after UAT.
+
+FIRST RESPONSE IN NEW CHAT
+- report fresh current HEAD;
+- state whether current HEAD is the docs-only successor checkpoint or newer;
+- summarize D1 defect status, D2 engineering/UAT status, D3 HOLD;
+- state current deploy authorization status;
+- if deployment has not executed, provide/confirm the bounded deploy next action;
+- if deployment has executed, independently review it before Owner UAT.
 ```
-
-Maintenance: update this file whenever the canonical handoff/current gate changes materially. It is a bootstrap convenience, not execution evidence.

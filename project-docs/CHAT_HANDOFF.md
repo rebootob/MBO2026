@@ -1,70 +1,120 @@
 # MBO2026 — CHAT HANDOFF
 
-Updated: 2026-09-02 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
+Updated: 2026-09-08 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
 
-Fast continuation: `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant Baseline/design/evidence -> exact diff.
+## Current canonical checkpoint
 
 ```text
-OWNER_OBJECTIVE = COMPLETE D2 TO PASS / CLOSED BEFORE D3
-D1 = PASS / CLOSED
-D2 = IN PROGRESS
-D2_PRESERVATION = PASS / CLOSED
-D2_REFERENCE_IMAGE = PASS / CLOSED
-D2_PART_A_STRUCTURAL = PASS / CLOSED
-D2_PART_B_STRUCTURAL = PASS / CLOSED
-D2_FORMULA_AUTHORITY = PASS / CLOSED
-D2_PART_B_EXPANDED_PRIVACY = PASS / CLOSED
-D2_XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
-D2_XLSX_TEMPLATE_PROFILE = PASS / CLOSED
+CHECKPOINT_HEAD_BEFORE_DOC_SYNC = 03b531383e86c643a5258a2baf6fdbd15bc9099e
+D1_BASE_ARCHITECTURE = CLOSED, BUT REOPENED NARROWLY BY PROVEN UAT REGRESSION
+D1-UAT-DEFECT-001 = IMPLEMENTED / SOURCE REVIEW PASS / PENDING SANDBOX DEPLOY + OWNER UAT
+D1-UAT-DEFECT-002 = IMPLEMENTED / SOURCE REVIEW PASS / PENDING SANDBOX DEPLOY + OWNER UAT
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D2_OWNER_UAT = IN PROGRESS / PAUSED ON D1 ENTRY DEFECTS
 D3 = HOLD
+PRODUCTION_READY = NO
 ```
 
-Durable semantic/profile authority:
+## Proven Hybrid Identity contract
+
+Two user modes are mandatory:
+
+1. **Dedicated / 1:1 Kintone user**
+   - Current Kintone user must resolve through active App53 `MBO_Kintone_User` exact mapping.
+   - Employee is auto-bound from canonical App53 `emp_text`.
+   - Dedicated employees must NOT use Shared App801 login.
+
+2. **Shared Kintone user** such as `tmh`
+   - User enters Employee ID + App801 password.
+   - Allowed only when active App53 row has a valid USER_SELECT shape with `MBO_Kintone_User.value = []`.
+   - If App53 has one dedicated user mapping, Shared login must fail with `DEDICATED_ACCOUNT_REQUIRED`.
+   - Missing/malformed/ambiguous App53 mapping fails closed.
+
+Owner UAT evidence proved Employee `0113` / Ms.Papatchaya has dedicated App53 mapping to `Ms.Papatchaya`.
+
+Required behavior:
 ```text
-SAFE_TO_MAP = 18 EXACT
-UNRESOLVED = 22 EXACT
-NO_SECURED_PROJECTION_SOURCE = 5 EXACT
-CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
+tmh + 0113 -> DENY
+Ms.Papatchaya native Kintone login -> auto-bind 0113 -> ALLOW
+tmh + employee whose MBO_Kintone_User.value = [] -> App801 shared login -> ALLOW
 ```
 
-Latest Template Profile closure:
-```text
-R1_R3_R2_AUTHORIZATION = D2-WP004-R1-R3-R2-SOURCE-TEST-20260902-01
-R1_R3_R2_AUTHORIZATION_COMMIT = 368dcb4890621400fd9b6fabfb979599bf453a07
-R1_R3_R2_IMPLEMENTATION = b59815aa5e5bad09ad252a10cdd1914185170fc0
-TEMPLATE_PROFILE = PASS / CLOSED
-TOKEN = CONSUMED / PASS / CLOSED / DO NOT REUSE
-RUNTIME_SIGNAL = UNAVAILABLE / NO GITHUB STATUS OR WORKFLOW RUN
-```
-
-## R2 READ-ONLY design result
-Design:
-`project-docs/phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
-
-Repository truth proves the production renderer must be Buffer/bytes-in -> bytes-out, consume only secured `MboExportService` projection, reuse existing `xlsx-populate` dependency, keep all workbook geometry/sanitization authority centralized, sanitize before writing, preserve zero formulas and structural/privacy Baselines, and never import the feasibility harness wholesale or its proof-only sentinels into production.
-
-Pre-render blocker:
-- Part B owner template is N6 and N7/N8 structural expansion clones competency 6 rows 27:30;
-- current Template Profile only proves a writable `COMPETENCY_b_SELF_RATING` semantic;
-- management competency sets contain actual additional items 7/8;
-- exact workbook targets and deterministic secured paths for competency presentation content are not proven;
-- `MboExportService` currently preserves multiple presentation alias keys and does not itself establish one canonical presentation path.
-
-Therefore Production Renderer implementation remains NOT AUTHORIZED.
+## DEFECT-001 corrective chain
 
 ```text
-PROPOSED_NEXT = D2-WP004-R2-PRE1
-NAME = PART B EXPANDED COMPETENCY PRESENTATION SEMANTIC EVIDENCE
-MODE = EVIDENCE-ONLY / LOW-CREDIT / NOT AUTHORIZED
-EXPECTED_FILE = project-docs/phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_WRITE_AUTH = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
-PRODUCTION_RENDERER = NOT AUTHORIZED
-D3 = HOLD
+D1-UAT-IDENTITY-ENTRY-CORRECTIVE-R1 = PARTIAL PASS
+R1_HEAD = 8c3fda998fe8bd0b627d62a5beb10455bde8f725
+D1-UAT-IDENTITY-ENTRY-CORRECTIVE-R2 = PASS / CLOSED
+R2_HEAD = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb
 ```
+
+R2 closed the remaining fail-open condition: only explicit valid `MBO_Kintone_User.value = []` permits Shared mode; missing or malformed USER_SELECT structures deny.
+
+## DEFECT-002 corrective behavior
+
+Employee Self index must use current Japanese fiscal year authority.
+
+```text
+exactly 1 current-FY MBO -> Open Current MBO
+0 current-FY MBO -> Create New MBO
+>1 current-FY MBO -> fail safe / no Create path
+```
+
+Backend duplicate guard remains defense-in-depth and must not be weakened.
+
+## Sandbox build/deploy preparation
+
+```text
+BUILD_ARTIFACT_HEAD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
+D1-UAT-SANDBOX-DEPLOY-TOOL-R1 = PASS / CLOSED
+DEPLOY_TOOL_HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e
+CANONICAL_JS = mbo-employee-app.js
+CANONICAL_CSS = mbo-employee.css
+HISTORICAL_WRONG_CSS = "mbo-employee .css" -> MUST FAIL CLOSED
+```
+
+No accepted evidence exists yet that the new DEFECT-001/002 bundle has been deployed to App794. Do not confuse build success with deploy success.
+
+## Current Owner authorization
+
+Owner explicitly authorized:
+`อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
+
+Authorized operation: one-shot App794 customization deployment only, with focused regression, reproducible build, GET-only preflight, exact artifact manifest, post-deploy readback, max one attempt, no automatic retry.
+
+Original authorization ID:
+`D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02`
+
+Because this handoff sync creates a docs-only commit, Control Plane may rebase the already-approved deployment basis to the new docs-only HEAD after independently confirming zero runtime/source/dist changes. Do not request Owner approval again solely for that docs-only rebase.
+
+Allowed Kintone writes for that deploy only:
+- upload candidate JS/CSS files;
+- PUT App794 preview customization;
+- POST App794 deploy request.
+
+Forbidden:
+- all record writes;
+- App53/App795/App796/App797/App798/App800/App801 writes;
+- schema/layout/ACL/process changes;
+- D2 changes;
+- D3 work.
+
+## Owner UAT after successful independent deploy review
+
+1. Ms.Papatchaya native Kintone login -> auto-bind `0113` -> own MBO opens.
+2. `tmh` + Employee `0113` -> DENY with dedicated-account guidance.
+3. `tmh` + employee with no dedicated Kintone mapping -> Shared App801 login still works.
+4. Existing current-FY MBO -> `Open Current MBO`; no create-new path.
+
+Do not mark Owner UAT PASS until the Owner performs these runtime checks.
+
+## Startup order for next chat
+
+1. Fresh-fetch canonical HEAD.
+2. Read this file first.
+3. Read `AI_CONTROL_CENTER.md`.
+4. Read `AI_ACTIVE_TASK.md`.
+5. Read `control/00_MASTER_DELIVERY_CONTROL.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
+6. Inspect exact current commit/diff only as needed.
+7. If the App794 deploy has executed, independently review deployment evidence before asking Owner to UAT.
+8. Do not start D3.

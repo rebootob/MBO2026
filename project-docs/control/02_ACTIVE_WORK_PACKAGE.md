@@ -1,100 +1,114 @@
 # MBO2026 Active Work Package Contract
 
-## Current Contract State
+Updated: 2026-09-08 ICT
 
-- **LAST_WORK_PACKAGE_ID**: `D2-FINAL-CLOSURE`
-- **LAST_WORK_PACKAGE_RESULT**: `IMPLEMENTED / PENDING INDEPENDENT REVIEW`
-- **MODE**: `DOCS-ONLY / CONTROL-STATE CLOSURE / LOW-CREDIT`
-- **AUTHORIZATION_TOKEN**: `D2-FINAL-CLOSURE-DOCS-20260907-01`
-- **BASIS_HEAD**: `48d01a73bc1628a3b0ee9867f10fc0a96d7aeb5d`
-- **STATUS**: `COMPLETED / CLOSING`
+## Current contract state
 
----
-
-## Active Execution State
-
-- **ACTIVE_WORK_PACKAGE**: `NONE`
-- **NEXT_WORK_PACKAGE**: `CONTROL-PLANE D3 ENTRY REVIEW / NOT AUTHORIZED`
+- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2`
+- **OWNER_AUTHORIZATION**: `อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
+- **AUTHORIZATION_ID**: `D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02`
+- **TARGET**: `App794 customization ONLY`
+- **MODE**: `ONE-SHOT / SAFETY-GATED / NO SOURCE CHANGE`
+- **MAX_ATTEMPTS**: `1`
+- **AUTO_RETRY**: `NO`
+- **AUTO_ROLLBACK**: `NO`
 - **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
-- **ANTIGRAVITY**: `STOP`
-- **CLAUDE**: `STOP`
-- **KINTONE**: `NONE`
-- **DEPLOY**: `NONE`
 
-> [!WARNING]
-> No next engineering or documentation work package is authorized. D3 implementation is strictly NOT AUTHORIZED. All AI coding agents must remain at STOP until ChatGPT Control Plane completes D3 entry review and Owner authorizes the next work package.
+## Basis and docs-only rebase rule
 
----
+Original approved execution basis:
+`03b531383e86c643a5258a2baf6fdbd15bc9099e`
 
-## Permanent Execution Rules
+A later documentation-only synchronization commit may become the effective execution basis without duplicate Owner approval only if ChatGPT Control Plane independently proves that the intervening commit changes documentation only and leaves all runtime/build scope unchanged, including:
+- `src/`
+- `tests/`
+- `scripts/`
+- `config/`
+- `dist/`
+- package manifests
 
-> [!IMPORTANT]
-> All AI coding assistants (Antigravity, Claude, ChatGPT Control Plane) MUST enforce these 10 permanent rules without exception.
+If any non-document file changed, STOP and require a new independent review / authorization decision.
 
-- **RULE-01**: No code change without an authorized `FUNCTION_ID` or `DEFECT_ID`.
-- **RULE-02**: Exactly ONE `ACTIVE_WORK_PACKAGE` is permitted at a time.
-- **RULE-03**: Every work package contract MUST explicitly define `IN_SCOPE` and `OUT_OF_SCOPE`.
-- **RULE-04**: Execution agents MUST NOT automatically fix or modify out-of-scope findings. Out-of-scope findings must be logged for Control Plane review.
-- **RULE-05**: New features or requirement expansions require explicit Owner authorization before entering release scope.
-- **RULE-06**: A function is marked `CLOSED` only when its complete Definition of Done (code, tests, evidence, privacy, security) is satisfied.
-- **RULE-07**: Closed functions may be reopened ONLY for `PROVEN_REGRESSION` or explicit `OWNER_CHANGE_REQUEST`.
-- **RULE-08**: Minor wording, typo, or non-material documentation label issues DO NOT block engineering closure.
-- **RULE-09**: Production, security, privacy, scoring, formula, or data-integrity defects are strictly `MATERIAL` and block closure.
-- **RULE-10**: Kintone schema writes, live record mutations, and production deployment require separate, explicit, tokenized Owner authorization.
+## Objective
 
----
+Deploy the already-reviewed corrections for:
 
-## Defect Severity Classification Model
+- `D1-UAT-DEFECT-001` — Shared principal must not authenticate Employee-Self as a dedicated employee.
+- `D1-UAT-DEFECT-002` — existing current-FY MBO must lead to existing record, not a create-new path.
 
-- **CRITICAL**: Security breach, privacy leak, cross-employee data access, data loss or corruption, wrong scoring calculation, production environment corruption. (Blocks closure; requires immediate containment).
-- **MATERIAL**: Function, workflow, business-rule, or export behavior incorrect against documented specification. (Blocks closure).
-- **MINOR**: Minor formatting alignment, docstring wording, typo, cosmetic UI padding, or documentation label adjustment. (Accumulated into housekeeping batches; does not block engineering closure unless creating material ambiguity).
+## Allowed Kintone writes — exact
 
----
+Only:
+1. POST candidate `mbo-employee-app.js` file;
+2. POST candidate `mbo-employee.css` file;
+3. PUT App794 preview customization;
+4. POST App794 deploy request.
 
-## Standard Work Package Contract Template
+## Forbidden
 
-```markdown
-# Work Package Contract: [WORK_PACKAGE_ID]
+- record create/update/delete;
+- App53 write;
+- App795/App796/App797/App798/App800/App801 write;
+- schema/layout change;
+- ACL change;
+- Process Management change;
+- routing/scoring change;
+- D2 change;
+- D3 work;
+- source/test/tool edit during deployment;
+- automatic retry;
+- automatic rollback.
 
-## Work Package Metadata
-- **WORK_PACKAGE_ID**: [e.g. D2-WP005-PDF-EXPORT]
-- **ACTIVE_WORK_PACKAGE**: [WORK_PACKAGE_ID]
-- **MODE**: [e.g. BOUNDED SOURCE+TEST / LOW-CREDIT]
-- **AUTHORIZATION_TOKEN**: [TOKEN]
-- **BASIS_HEAD**: [EXACT_40_CHAR_SHA]
-- **FUNCTION_IDS**: [e.g. XLSX-007]
-- **DEFECT_IDS**: [NONE or DEFECT_ID]
+## Pre-deploy acceptance gates
 
-## Scope Boundaries
-- **OBJECTIVE**: [Concise 1-sentence goal]
-- **IN_SCOPE**:
-  - [Explicit file / task 1]
-  - [Explicit file / task 2]
-- **OUT_OF_SCOPE**:
-  - [Excluded task 1]
-  - [Excluded task 2]
+- fresh canonical HEAD and origin match exactly;
+- clean worktree;
+- focused identity/employee-self/deploy-preservation tests 0 FAIL;
+- deterministic build reproduces committed `dist/mbo-employee-app.js` and `dist/mbo-employee.css` exactly;
+- exact committed artifact Git blob SHAs captured;
+- GET-only App794 Live + Preview preflight;
+- exact names:
+  - `mbo-employee-app.js`
+  - `mbo-employee.css`
+- topology:
+  - Desktop JS = 1
+  - Desktop CSS = 1
+  - Mobile JS = 0
+  - Mobile CSS = 0
+- Live/Preview scope and topology align;
+- release manifest uses exact current 40-char HEAD and artifact blob SHAs.
 
-## File Boundaries
-- **WRITABLE_FILES**:
-  - [file path 1]
-  - [file path 2]
-- **READ_ONLY_FILES**:
-  - [file path 1]
+Historical wrong CSS target `mbo-employee .css` must fail closed.
 
-## Execution Protocol
-- **ACCEPTANCE_CRITERIA**:
-  - [Criterion 1]
-  - [Criterion 2]
-- **TEST_REQUIREMENTS**:
-  - [Test command 1]
-  - [Test command 2]
-- **STOP_CONDITIONS**:
-  - [Stop condition 1]
-  - [Stop condition 2]
+## Post-deploy acceptance gates
 
-## Authorization & Closure
-- **OWNER_AUTHORIZATION**: [Owner approval text / token]
-- **RESULT**: [PENDING / PASS / FAIL]
-- **CLOSURE_EVIDENCE**: [Result SHA, test outputs, log paths]
-```
+- deployment status `SUCCESS`;
+- exact post Live + Preview revisions captured;
+- scope/topology unchanged;
+- deployed JS/CSS file names canonical;
+- downloaded Live JS/CSS Git blob identities exactly equal committed candidate blobs;
+- App794 record writes = 0;
+- App53/App801/other app record writes = 0;
+- schema/layout/ACL/process writes = 0;
+- final repository worktree clean.
+
+## Required next state
+
+After executor stops, ChatGPT independently reviews deployment evidence.
+
+Only after independent deployment PASS may Owner perform runtime UAT:
+1. dedicated Papatchaya -> auto-bind 0113;
+2. `tmh + 0113` -> deny;
+3. `tmh + shared-only employee` -> allow;
+4. existing current-FY MBO -> Open Current MBO.
+
+D3 remains HOLD regardless of deploy completion until Control Plane explicitly changes the gate.
+
+## Permanent rules
+
+- No code change without authorized FUNCTION_ID or DEFECT_ID.
+- Exactly one active work package.
+- Out-of-scope findings are logged, not auto-fixed.
+- Closed functions reopen only for proven regression or explicit Owner change request.
+- Security/privacy/data-integrity defects are material and block closure.
+- Kintone writes/deployment require explicit Owner authority and exact bounded scope.

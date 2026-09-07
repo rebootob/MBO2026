@@ -1,117 +1,117 @@
-# AI ACTIVE TASK — R2-D2 EXPORT SERVICE INTEGRATION CLOSED
+# AI ACTIVE TASK — D1 UAT IDENTITY/ENTRY SANDBOX DEPLOY PENDING
 
-Mode: **CONTROL PLANE / CLOSED R2-D2 / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / D1 UAT CORRECTIVE / APP794 SANDBOX DEPLOY AUTHORIZED / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
-Updated: 2026-09-07 ICT
+Updated: 2026-09-08 ICT
 
 ## Current truth
 
 ```text
-D1 = PASS / CLOSED
-D2 = IN PROGRESS
-R2_A = PASS / CLOSED
-R2_B1 = PASS / CLOSED / FROZEN
-R2_B2 = PASS / CLOSED / FROZEN
-R2_C = PASS / CLOSED / FROZEN
-R2_D_PRE1 = PASS / CLOSED / FROZEN
-R2_D_PRE1_R1 = PASS / CLOSED / FROZEN
-R2_D_PRE1_R2 = PASS / CLOSED / FROZEN
-R2_D1 = PASS / CLOSED
-R2_D1_R4_C1 = PASS / CLOSED
-R2_D2 = PASS / CLOSED
-COMBINED_XLSX_COMPOSER = PASS / CLOSED
-COMBINED_XLSX_EXPORT_SERVICE = PASS / CLOSED
-R2_D2_IMPLEMENTATION_HEAD = f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25
-R2_D2_FINAL_EVIDENCE_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_D2_TEST_CHANGE_AUTH = NONE
-ACTIVE_D2_EVIDENCE_AUTH = NONE
-ACTIVE_D2_PROFILE_CHANGE_AUTH = NONE
-ACTIVE_D2_RENDERER_CHANGE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
-EXPORT_SERVICE_INTEGRATION = PASS / CLOSED
+D1_BASE_ARCHITECTURE = CLOSED / DURABLE
+D1_REOPEN_REASON = PROVEN_REGRESSION DURING OWNER UAT
+D1-UAT-DEFECT-001 = IMPLEMENTED / SOURCE REVIEW PASS / PENDING DEPLOY + OWNER UAT
+D1-UAT-DEFECT-002 = IMPLEMENTED / SOURCE REVIEW PASS / PENDING DEPLOY + OWNER UAT
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D2_OWNER_UAT = IN PROGRESS / PAUSED
 D3 = HOLD
-NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
+PRODUCTION_READY = NO
 ```
 
-Owner authorization: `อนุมัติ D2-WP004-R2-D2-CLOSE-R1 DOCS-ONLY provenance consistency corrective`
+## Active defect summary
 
-R2_D2_IMPLEMENTATION_HEAD: `f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25`
-R2_D2_FINAL_EVIDENCE_HEAD: `da47c816150cea33a4ccbb5bd58fd0727943837a`
+### D1-UAT-DEFECT-001 — CRITICAL Identity Boundary
+Shared principal such as `tmh` must not enter Employee-Self for an employee who has a dedicated App53 `MBO_Kintone_User` mapping.
 
-Single-use token: `D2-WP004-R2-D2-CLOSE-R1-DOCS-20260907-01`
-
-## Accepted Combined XLSX authority
-
-Target output is one `.xlsx` containing exactly two business sheets:
-1. `MBO Staff & Chief` (from Part A)
-2. `(Part B) Competency` (from Part B)
-
-Part B auxiliary `Sheet1` is excluded.
-
-Accepted PRE1 chain:
+Owner-proven target:
 ```text
-OWNER_COMBINED_TEMPLATE = NOT_FOUND
-DIRECT_COPY = DIRECT_COPY_UNSAFE_REMAP_REQUIRED
-DYNAMIC_PRINT_AREA_PRESERVATION = EXACT
-PRINTER_SETTINGS_PART_GRAPH = EXACT
-RELATIONSHIP_NAMESPACE_MODEL = EXACT
-DEFAULT_STYLE0_PARITY = REMAP_REQUIRED
-APP_PROPERTIES = UPDATE_REQUIRED
-GLOBAL_REMAP_DEPENDENCIES = EXACT
-NEXT_STRATEGY = POST_RENDER_OOXML_COMPOSITION_WITH_EXACT_REMAP
+Employee = 0113 / Ms.Papatchaya
+App53 MBO_Kintone_User = Ms.Papatchaya
+=> DEDICATED
+
+tmh + 0113 => DENY
+Ms.Papatchaya native Kintone => auto-bind 0113 => ALLOW
 ```
 
-Production composer authority features (`src/services/mbo-xlsx-combined-composer.js`):
-- Consumes already-rendered Part A and Part B bytes as input; caller input bytes remain 100% immutable.
-- Rendered Part A serves as base package authority.
-- Sheet 1 named `MBO Staff & Chief`, Sheet 2 named `(Part B) Competency`; Part B auxiliary `Sheet1` is excluded.
-- Source-derived style and shared-strings remapping dynamically computed from rendered packages (no fixed offsets).
-- Remaps all cell (`s`), row (`s`), column (`style`), and default (`defaultStyle`) style classes.
-- Exact dynamic Print_Area preservation bound to localSheetId 0 and 1.
-- Drawing, media, and printerSettings relationship graph remapped without collision or overwriting Part A parts.
-- Bidirectional OOXML relationship validation between worksheet/drawing XML and `.rels` files.
-- `workbook.xml.rels` strict parsing enforces attribute-order independence, element completeness, unique relationship IDs, and internal-only worksheet targets (`TargetMode="Internal"`, safe paths only).
-- Formula inventory remains exactly ZERO.
-- Privacy and sanitization authority preserved; unreferenced stale sensitive SST tokens excluded.
-
-## Verified runtime test evidence
-
-Owner workstation test results on `R2_D2_FINAL_EVIDENCE_HEAD` (`da47c816150cea33a4ccbb5bd58fd0727943837a`):
-
+Shared-only employee contract:
 ```text
-Focused export service test (tests/mbo-export-service.test.js):
-  14 PASS / 2 FAIL / 0 SKIP (16 total)
-
-R2_D2_FROZEN_5_FILE_REGRESSION:
-  44 PASS / 0 FAIL / 0 SKIP (44 total)
-
-Syntax check (node --check src/services/mbo-export-service.js):
-  PASS
-
-Git diff check (git diff --check):
-  PASS
+active App53 exact row
++ MBO_Kintone_User.value = []
++ valid App801 Employee ID/password
+=> ALLOW Shared mode
 ```
 
-## Control status
+Only an explicit valid empty USER_SELECT array means Shared eligible. Missing/malformed/ambiguous mapping fails closed.
+
+### D1-UAT-DEFECT-002 — MATERIAL Employee-Self Entry UX
+```text
+1 current-FY MBO -> Open Current MBO
+0 current-FY MBO -> Create New MBO
+>1 current-FY MBO -> fail safe / no Create path
+```
+
+Keep backend duplicate creation guard unchanged.
+
+## Accepted corrective chain
 
 ```text
-R2_D2 = PASS / CLOSED
-D2 = IN PROGRESS
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
+R1_HEAD = 8c3fda998fe8bd0b627d62a5beb10455bde8f725
+R1 = PARTIAL PASS
+R2_HEAD = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb
+R2 = PASS / CLOSED
+BUILD_ARTIFACT_HEAD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
+DEPLOY_TOOL_HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e
+DEPLOY_TOOL_CSS_TARGET = mbo-employee.css
+```
+
+## Active authorization
+
+Owner authorization:
+`อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
+
+Authorization ID:
+`D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02`
+
+```text
+ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
+TARGET = App794 customization only
+MAX_ATTEMPTS = 1
+AUTO_RETRY = NO
+AUTO_ROLLBACK = NO
+RECORD_WRITE = NONE
+SCHEMA_WRITE = NONE
+ACL_WRITE = NONE
+PROCESS_WRITE = NONE
+D2_CHANGE = NONE
 D3 = HOLD
-NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
 ```
 
-Do NOT start D3, Kintone writes, deployment, or new work packages until Control Plane planning is complete and explicit owner authorization is granted.
+This documentation sync is allowed to create a docs-only successor HEAD. After Control Plane verifies that the successor changes documentation only and leaves source/tests/scripts/dist unchanged, the already-approved deployment basis may be rebased to that docs-only HEAD without asking Owner for duplicate approval.
 
+## Mandatory deploy gates
+
+Before upload/write:
+- fresh-fetch exact HEAD;
+- clean worktree;
+- focused identity/index/deploy-preservation tests 0 FAIL;
+- deterministic build reproduces committed `dist/mbo-employee-app.js` and `dist/mbo-employee.css` exactly;
+- GET-only App794 live+preview preflight;
+- exact names `mbo-employee-app.js` and `mbo-employee.css`;
+- topology Desktop JS=1, Desktop CSS=1, Mobile=0/0;
+- exact release manifest using current HEAD and committed artifact blob SHAs.
+
+Allowed writes only:
+1. candidate JS upload;
+2. candidate CSS upload;
+3. App794 Preview customization PUT;
+4. App794 deploy POST.
+
+After SUCCESS: GET readback and exact deployed byte identity proof required.
+
+## Owner UAT after independent deploy review
+
+1. Dedicated Ms.Papatchaya -> auto-bind 0113 -> own MBO.
+2. `tmh + 0113` -> DENY.
+3. `tmh + shared-only employee` -> ALLOW via App801.
+4. Existing current-FY record -> Open Current MBO, not Create New.
+
+Do not perform or claim Owner UAT on the Owner's behalf.

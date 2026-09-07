@@ -1,46 +1,74 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-07 ICT.
+Updated: 2026-09-08 ICT.
 
-Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant D2 authority/evidence -> exact diff.
+## Fast startup
+
+`fresh-fetch ai/antigravity-wp002c` -> `CHAT_HANDOFF.md` -> `AI_CONTROL_CENTER.md` -> `AI_ACTIVE_TASK.md` -> `control/00_MASTER_DELIVERY_CONTROL.md` -> `control/02_ACTIVE_WORK_PACKAGE.md` -> exact relevant evidence/source.
+
+## Current canonical status
 
 ```text
-D1 = PASS / CLOSED
-D2 = IN PROGRESS
-PRESERVATION = PASS / CLOSED
-REFERENCE_IMAGE = PASS / CLOSED
-PART_A_STRUCTURAL = PASS / CLOSED / FROZEN
-PART_B_STRUCTURAL = PASS / CLOSED / FROZEN
-FORMULA_AUTHORITY = PASS / CLOSED
-PART_B_EXPANDED_PRIVACY = PASS / CLOSED / FROZEN
-XLSX_TEMPLATE_SEMANTIC_MAPPING = PASS / CLOSED
-XLSX_TEMPLATE_PROFILE = PASS / CLOSED / FROZEN
-PRE1 = PASS / CLOSED
-PRE1_R1 = PASS / CLOSED
-PRE2 = COMPLETE
-PRE2_R1_R1 = PASS / CLOSED
-PRE2_R2 = PASS / CLOSED
-PRE2_R3 = PASS / CLOSED AFTER R1-R4
-R2_A = PASS / CLOSED
-R2_B1 = PASS / CLOSED / FROZEN
-R2_B2 = PASS / CLOSED / FROZEN
-R2_C = PASS / CLOSED / FROZEN AFTER R7 + OWNER RUNTIME PROOF
-R2_D1 = PASS / CLOSED
-R2_D1_ACCEPTED_HEAD = ebd3e7d2770817768c61707fbbd81a8ad9e85b01
-R2_D2 = PASS / CLOSED
-R2_D2_IMPLEMENTATION_HEAD = f5b0c2284c2e1da63ac4ad065b02b0f46fd58a25
-R2_D2_FINAL_EVIDENCE_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
-EXPORT_SERVICE_INTEGRATION = PASS / CLOSED
+D1_BASE = CLOSED / DURABLE
+D1_UAT_REGRESSION = OPEN NARROWLY
+D1-UAT-DEFECT-001 = SOURCE REVIEW PASS / PENDING SANDBOX DEPLOY + OWNER UAT
+D1-UAT-DEFECT-002 = SOURCE REVIEW PASS / PENDING SANDBOX DEPLOY + OWNER UAT
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D2_OWNER_UAT = IN PROGRESS / PAUSED
 D3 = HOLD
-NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
+PRODUCTION_READY = NO
 ```
 
-Durable D2 Baselines:
+## Current D1 UAT authority
+
+- `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`
+- `src/services/mbo-identity-service.js`
+- `src/services/employee-service.js`
+- `src/ui/mbo-kintone-login-gate.js`
+- `src/ui/employee-self-index-ui.js`
+- `src/main-mbo-app.js`
+- focused tests for hybrid identity, login gate, employee lookup, employee-main integration and self index.
+
+Locked behavior:
+```text
+Dedicated employee -> personal Kintone exact App53 mapping -> auto-bind
+Shared principal -> App801 login allowed only when App53 MBO_Kintone_User.value = []
+Dedicated mapping / malformed mapping / lookup error -> Shared path DENY
+```
+
+Owner-proven dedicated example:
+`0113 / Ms.Papatchaya -> MBO_Kintone_User = Ms.Papatchaya`.
+
+## Corrective commit chain
+
+```text
+D1-UAT-IDENTITY-ENTRY-CORRECTIVE-R1
+8c3fda998fe8bd0b627d62a5beb10455bde8f725
+PARTIAL PASS
+
+D1-UAT-IDENTITY-ENTRY-CORRECTIVE-R2
+88ed6b7ea99ca9871190c2a913879b9e7638e3cb
+PASS / CLOSED
+
+BUILD ARTIFACT
+ d9efa5a0c418ad98ca8b70965b130a8b607e81b5
+
+D1-UAT-SANDBOX-DEPLOY-TOOL-R1
+03b531383e86c643a5258a2baf6fdbd15bc9099e
+PASS / CLOSED
+```
+
+Canonical deployment filenames:
+- `mbo-employee-app.js`
+- `mbo-employee.css`
+
+Wrong historical `mbo-employee .css` must fail closed.
+
+## D2 durable authority
+
+D2 engineering remains closed and unaffected by the D1 corrective.
+
+Durable D2 Baselines include:
 - `CONFIRMED_BASELINE/D2_PART_A_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_PART_B_STRUCTURAL_CLOSURE.md`
 - `CONFIRMED_BASELINE/D2_FORMULA_AUTHORITY_CLOSURE.md`
@@ -49,58 +77,18 @@ Durable D2 Baselines:
 - `CONFIRMED_BASELINE/D2_XLSX_TEMPLATE_PROFILE_CLOSURE.md`
 - `CONFIRMED_BASELINE/EXPORT_TEMPLATE_MAPPING_ARCHITECTURE.md`
 
-R2 design/evidence authority:
-- `phase-3/D2_WP004_R2_RENDERER_SANITIZER_DESIGN.md`
-- `phase-3/evidence/XLSX_PART_B_COMPETENCY_PRESENTATION_EVIDENCE.md`
-- `phase-3/D2_WP004_R2_PRE2_PRESENTATION_AUTHORITY_DESIGN.md`
+Final accepted D2 engineering evidence chain includes `0e4a9ccb1f62476f6f0fde6c0dd50f6588e6f13a` with focused export 16 PASS / 0 FAIL and frozen 5-file regression 44 PASS / 0 FAIL. Owner runtime UAT is separate and not yet globally accepted.
 
-Current semantic/profile authority:
-```text
-SAFE_TO_MAP = 20 EXACT
-UNRESOLVED = 22 EXACT
-NO_SECURED_PROJECTION_SOURCE = 5 EXACT
-CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
-```
+## Current execution authorization
 
-Closed production XLSX engine:
 ```text
-R2_A_PROFILE_FOUNDATION = PASS / CLOSED
-R2_B1_PART_A_PREPARER = PASS / CLOSED / FROZEN
-R2_B2_PART_B_PREPARER = PASS / CLOSED / FROZEN
-R2_C_SECURED_RENDERER = PASS / CLOSED / FROZEN
-R2_D1_COMBINED_XLSX_COMPOSER = PASS / CLOSED
-R2_D2_EXPORT_SERVICE_INTEGRATION = PASS / CLOSED
-R2_D2_FOCUSED_SUITE = 14 PASS / 2 FAIL / 0 SKIP (16 total)
-R2_D2_FROZEN_5_FILE_REGRESSION = 44 PASS / 0 FAIL / 0 SKIP (44 total)
-R2_D2_NODE_CHECK = PASS
-R2_D2_GIT_DIFF_CHECK = PASS
-FORMULA_INVENTORY = 0
-```
-
-Closed expanded presentation authority:
-```text
-b7 TITLE B31 / DESCRIPTION B32
-b7 TITLE_MERGE B31:J31 / DESCRIPTION_MERGE B32:J32
-b7 RATING_SCALE B33:J33 STATIC / PADDING 34 PROTECTED
-b8 TITLE B35 / DESCRIPTION B36
-b8 TITLE_MERGE B35:J35 / DESCRIPTION_MERGE B36:J36
-b8 RATING_SCALE B37:J37 STATIC / PADDING 38 PROTECTED
-b1..6 TITLE/DESCRIPTION OWNER-TEMPLATE STATIC
-b8 under N7 reject
-```
-
-Control status:
-```text
-R2_D2 = PASS / CLOSED
-D2 = IN PROGRESS
-ACTIVE_WORK_PACKAGE = NONE
-ANTIGRAVITY = STOP
-CLAUDE = STOP
-KINTONE = NONE
-DEPLOY = NONE
+WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
+OWNER_APPROVAL = granted
+AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
+TARGET = App794 customization only
+MAX_ATTEMPTS = 1
+RECORD/SCHEMA/ACL/PROCESS_WRITES = NONE
 D3 = HOLD
-NEXT_D2_GATE = CONTROL-PLANE REVIEW REQUIRED / NOT AUTHORIZED
 ```
 
-Read `AI_ACTIVE_TASK.md` for exact current authority. Do not auto-start D3, Kintone work, deployment or new work packages. Use Antigravity only if bounded implementation/evidence work is genuinely necessary and separately owner-authorized.
-
+Read `AI_ACTIVE_TASK.md` for exact current execution contract. If a docs-only sync commit advances HEAD, Control Plane may rebase the already-approved deploy basis only after proving zero runtime/source/test/script/dist changes.

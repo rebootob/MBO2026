@@ -1,7 +1,7 @@
 # AI START HERE — MBO2026
 
-> Mandatory lean entry point for every AI working on MBO2026.  
-> Updated: 2026-09-01 ICT
+> Mandatory lean entry point for every AI working on MBO2026.
+> Updated: 2026-09-08 ICT.
 
 ## 1. Startup order
 
@@ -10,168 +10,119 @@ Before planning, reviewing, coding or changing Kintone:
 2. read `project-docs/CHAT_HANDOFF.md` first;
 3. read `project-docs/AI_CONTROL_CENTER.md`;
 4. read `project-docs/AI_ACTIVE_TASK.md`;
-5. read `project-docs/AI_DOCUMENT_INDEX.md`;
-6. read `project-docs/00_MASTER_JOBLIST.md` when whole-project completeness matters;
-7. read `project-docs/EXCEL_EXPORT.md` for current D2 work;
-8. read `project-docs/CONFIRMED_BASELINE/README.md` and only relevant Baseline(s);
-9. inspect exact current diff/evidence only when required.
+5. read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md`;
+6. read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`;
+7. read `project-docs/AI_DOCUMENT_INDEX.md` and only directly relevant Baselines/evidence;
+8. inspect exact current source/tests/diff only when needed.
 
-Repository/live evidence beats chat memory and embedded checkpoints. Do not broad-read historical docs. Do not ask the Owner to repeat history already in Git.
+Repository truth + accepted newer live evidence beat chat memory and embedded checkpoints.
 
 ## 2. Permanent roles
 
 ```text
-ChatGPT = Control Plane / Architect / Independent Reviewer
+Owner = final human authority
+ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
 Antigravity = LOW-CREDIT / BOUNDED Execution Plane only when genuinely necessary
+Claude = specialist / second opinion / STOP by default
 ```
 
-No false PASS. Executor cannot self-certify independent PASS. No Live Kintone write/deploy without exact explicit authorization. Never widen/reuse consumed authorization.
+No false PASS. Executor cannot self-certify independent PASS. No Kintone write/deploy without exact explicit authorization. Never widen/reuse consumed authorization.
 
-## 3. D1 frozen closure
+## 3. Current exceptional state — D1 UAT regression
+
+D1 was previously closed, but Owner runtime UAT proved a narrow identity/entry regression. Per governance, only the affected boundary is reopened.
 
 ```text
-D1 = PASS / CLOSED
-D1 = KINTONE-ONLY
-AUTH_BRIDGE = CANCELLED
-HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-APP794_LIVE_REVISION = 67
-RUNTIME_SOURCE_COMMIT = c6864d09f59cfaf6e7c86da422452a816a5cf430
-FINAL_D1_SECURITY_REVIEW = PASS
-CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT APP794 ASSIGNEE
+D1-UAT-DEFECT-001 = CRITICAL / SHARED PRINCIPAL CAN ENTER DEDICATED EMPLOYEE SELF
+D1-UAT-DEFECT-002 = MATERIAL / EXISTING CURRENT-FY MBO OFFERS CREATE PATH
 ```
 
-Accepted ceilings:
+Locked identity architecture:
+```text
+Dedicated / 1:1:
+personal Kintone user -> App53 MBO_Kintone_User exact active mapping -> auto-bind Employee
+
+Shared:
+shared Kintone principal -> Employee ID + App801 password
+allowed only for employee with valid App53 MBO_Kintone_User.value = []
+```
+
+Owner-proven case:
+`0113 / Ms.Papatchaya` has dedicated App53 mapping `Ms.Papatchaya`.
+
+Required:
+```text
+tmh + 0113 => DENY
+Ms.Papatchaya native Kintone => auto-bind 0113 => ALLOW
+tmh + employee with no dedicated mapping => Shared App801 path still ALLOW
+```
+
+## 4. Current accepted corrective chain
 
 ```text
-SHARED_DIRECT_URL_REST_HARD_ISOLATION = NOT GUARANTEED
-DEDICATED_DIRECT_REST_CREATE_FIELD_INTEGRITY = LIMITED BY NATIVE APP794 ADD PERMISSION
+R1 = 8c3fda998fe8bd0b627d62a5beb10455bde8f725 / PARTIAL PASS
+R2 = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb / PASS
+BUILD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
+DEPLOY_TOOL_CSS_FIX = 03b531383e86c643a5258a2baf6fdbd15bc9099e / PASS
 ```
 
-Do not reopen D1 without proven regression or explicit architecture change.
+Canonical customization names:
+```text
+mbo-employee-app.js
+mbo-employee.css
+```
+Historical wrong CSS name `mbo-employee .css` must fail closed.
 
-## 4. Employee lifecycle policy — confirmed
-
-Canonical Baseline: `project-docs/CONFIRMED_BASELINE/EMPLOYEE_LIFECYCLE_CHANGE_POLICY.md`.
+## 5. Current stage scoreboard
 
 ```text
-EMPLOYEE_CODE = STABLE PERSON ID
-APP53 = CURRENT EMPLOYEE / ORG / POSITION TRUTH
-APP795 = CURRENT ROUTING FOR FRESH RESOLUTION
-APP794 = HISTORICAL ANNUAL SNAPSHOT + CURRENT WORKFLOW TRUTH
-CURRENT_APPROVAL_AUTHORITY = NATIVE CURRENT ASSIGNEE
-MASTER CHANGE != AUTOMATIC EXISTING APP794 REWRITE
-MID_CYCLE CHANGE = HR-CONTROLLED EXPLICIT OPERATION + AUDIT
+D1 = BASE CLOSED / NARROW UAT REGRESSION OPEN
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D2_OWNER_UAT = IN PROGRESS / PAUSED
+D3 = HOLD
+D4 = IN PROGRESS / NOT ACTIVE
+D5 = IN PROGRESS / NOT ACTIVE
+D6 = UAT NOT CLOSED
+D7 = SOURCE FUNCTIONALITY CLOSED / CUTOVER NOT AUTHORIZED
+PRODUCTION_READY = NO
 ```
 
-D4 owns lifecycle operations. D5 resolves fresh target-year route/identity. D6 includes lifecycle/security regression.
+Do not interpret automated/source closure as Owner UAT PASS.
 
-## 5. Current gate — D2 ACTIVE PRIORITY
+## 6. Current authorization
+
+Owner authorized one-shot App794 Sandbox customization deploy after CSS target correction.
 
 ```text
-D1 = PASS / CLOSED
-D2 = IN PROGRESS
-D2-WP003-R3-R22 = PASS / CLOSED
-D2-WP003-R3-R23 = REVIEWED / NOT PASS / NOT CLOSED
-CONTROL_PLANE_REVIEW_CORRECTIVE_ROUND = 1 OF 20
-ACTIVE_WORK_PACKAGE = NONE
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
-ACTIVE_KINTONE_WRITE_AUTH = NONE
-ACTIVE_DEPLOY_AUTH = NONE
-PRIVACY_PURGE_REQUIRED = NO
-ANTIGRAVITY = STOP / WAIT OWNER
-D3 = HOLD UNTIL D2 PASS / CLOSED
+WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
+AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
+TARGET = App794 customization ONLY
+MAX_ATTEMPTS = 1
+AUTO_RETRY = NO
+AUTO_ROLLBACK = NO
+RECORD_WRITE = NONE
+SCHEMA/ACL/PROCESS_WRITE = NONE
+D2_CHANGE = NONE
+D3 = HOLD
 ```
 
-Owner priority: `COMPLETE D2 FULLY BEFORE D3.`
+A docs-only successor commit may rebase this already-approved execution basis after independent verification that only docs changed.
 
-## 6. D2 accepted foundations
+## 7. Owner UAT after deploy review
 
-```text
-D2-WP001 = PASS / CLOSED
-D2-WP002 = PASS / CLOSED
-D2-WP003-R3-R13 = PASS / CLOSED
-D2-WP003-R3-R16 = PASS / CLOSED
-D2-WP003-R3-R17 = PASS / CLOSED
-D2-WP003-R3-R22 = PASS / CLOSED
-PART_B_PRIVACY_CLASSIFICATION_EVIDENCE_PARITY = PASS / CLOSED
-TYPED_PRIVACY_METADATA_COMPLETENESS = PASS / CLOSED
-TYPED_METADATA_VALIDATOR_SHAPE = PASS / CLOSED
-HEADER_FINGERPRINT_SANITIZED_EXPORT_PARITY = PASS / CLOSED
-DIFFICULTY_LEVEL_EXPORT = BLANK TEMPORARILY
-```
+1. Papatchaya personal Kintone -> 0113 auto-bind -> own MBO.
+2. `tmh + 0113` -> DENY.
+3. `tmh + shared-only employee` -> ALLOW via App801.
+4. Existing current-FY MBO -> Open Current MBO, not Create New.
 
-Exact template SHA-256:
+## 8. User shorthand
 
-```text
-PART_A = 03d1e8c32bacea9277a8725010237eb46b46dd5f3b7799db7b8b89c3f6e28ef3
-PART_B = c210c049ccc1daa83449f08c41276d4a668d1518864c7780a72e611ae15ed5b3
-```
+`review` -> fresh-fetch current HEAD; inspect exact authorization baseline, diff, tests/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
 
-## 7. Latest reviewed work — R3-R23
+`ต่อ` / `ต่อไป` -> fresh-fetch current gate; choose smallest safe next action.
 
-```text
-IMPLEMENTATION_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
-SCOPE_REVIEW = PASS
-SOURCE_REVIEW = FAIL / CORRECTIVE REQUIRED
-PROOF_REVIEW = FAIL / INCOMPLETE
-STATUS = NOT PASS / NOT CLOSED
-```
+`อนุมัติ ...` -> exact narrow one-shot authorization only; never widen/reuse.
 
-Review result: scope passes, but actual relationship-target swaps are accepted, dimension insertion precedes `sheetPr`, source override bypasses exact SHA and mandatory negatives are incomplete.
+## 9. New chat
 
-## 8. Proposed R3-R24 — NOT AUTHORIZED
-
-```text
-PROPOSED_WORK_PACKAGE = D2-WP003-R3-R24
-PROPOSED_WORK_PACKAGE_NAME = STRICT RELATIONSHIP-TARGET + SCHEMA-ORDER + SOURCE-IDENTITY CORRECTIVE
-PROPOSED_SCOPE = EXISTING FEASIBILITY SOURCE + TEST ONLY
-CORRECTIVE_BASELINE_COMMIT = 0ca299d9b40e2152d998cd36a23bd8186cd1a5c0
-```
-
-Expected direction:
-- enforce exact source identity and part key;
-- require unique exact source/observed relationship target binding;
-- insert dimensions after optional `sheetPr` at a schema-valid position;
-- add real swapped/cross-sheet/duplicate mapping and wrong-source negatives;
-- no image/insertion/formula/renderer/PDF/Kintone/deploy/D3 work.
-
-## 9. D1–D7 no-drop
-
-```text
-D1 = PASS / CLOSED
-D2 = IN PROGRESS
-D3 = HOLD / WRITE NOT AUTHORIZED UNTIL D2 PASS/CLOSED
-D4 = IN PROGRESS / NOT ACTIVE / LIFECYCLE OPERATIONS MANDATORY
-D5 = IN PROGRESS / NOT ACTIVE / FRESH CURRENT ROUTE + IDENTITY REQUIRED
-D6 = PENDING / LIFECYCLE REGRESSION REQUIRED
-D7 = SOURCE FUNCTIONALITY CLOSED
-```
-
-## 10. Current authorization
-
-```text
-KINTONE WRITE = NONE
-APP794 DEPLOY = NONE
-RECORD ACL WRITE = NONE
-GROUP WRITE = NONE
-APP53 SCHEMA/RECORD/BULK = NONE
-APP795 WRITE = NONE
-APP801 WRITE = NONE
-LIFECYCLE WRITE = NONE
-D2 SOURCE CHANGE = NONE
-ROLLBACK = NONE
-```
-
-## 11. User shorthand
-
-`review` → fresh-fetch HEAD; read Handoff + Control Center + authorizing Active Task; inspect exact baseline → implementation diff/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
-
-`ต่อ` / `ต่อไป` → fresh-fetch HEAD + current gate; choose smallest safe next action.
-
-`อนุมัติ ...` → exact narrow one-shot authorization only; never widen/reuse.
-
-## 12. New chat
-
-Copy `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` into the new conversation. The new chat must fresh-fetch HEAD and read `CHAT_HANDOFF.md` first.
+Copy the text block in `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`. New chat must fresh-fetch current HEAD and read `CHAT_HANDOFF.md` first.
