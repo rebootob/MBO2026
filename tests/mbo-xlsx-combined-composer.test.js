@@ -798,3 +798,133 @@ test('R3: Sanitized / Non-Written Cells Remain Blank Proof (Corrective H)', asyn
   assert.equal(sheet2Xml.includes('Competency 7 Description'), false, 'Unrendered Competency 7 description must not be present in Sheet 2');
   assert.equal(sheet2Xml.includes('Competency 8 Description'), false, 'Unrendered Competency 8 description must not be present in Sheet 2');
 });
+
+test('R4: Strict workbook.xml.rels Authority & Negative Controls (Corrective B)', async () => {
+  const validA = await prepareAndRenderPartA(4);
+  const validB = await prepareAndRenderPartB(6);
+
+  // 1. Malformed Relationship element in Part B workbook.xml.rels => REJECT
+  const wbB_MalformedWbRels = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXml1 = await wbB_MalformedWbRels._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXml1 = wbRelsXml1.replace('</Relationships>', '<Relationship Id="rIdBroken" Target="foo"/></Relationships>');
+  wbB_MalformedWbRels._zip.file('xl/_rels/workbook.xml.rels', wbRelsXml1);
+  const badWbRelsBytes1 = await wbB_MalformedWbRels._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badWbRelsBytes1),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 2. Duplicate relationship Id in Part B workbook.xml.rels => REJECT
+  const wbB_DupWbRels = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXml2 = await wbB_DupWbRels._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  const firstRelIdMatch = wbRelsXml2.match(/<Relationship\b[^>]*?\bId="([^"]+)"/);
+  assert.ok(firstRelIdMatch, 'Part B workbook.xml.rels must have at least one relationship');
+  const dupId = firstRelIdMatch[1];
+  wbRelsXml2 = wbRelsXml2.replace('</Relationships>', `<Relationship Id="${dupId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`);
+  wbB_DupWbRels._zip.file('xl/_rels/workbook.xml.rels', wbRelsXml2);
+  const badWbRelsBytes2 = await wbB_DupWbRels._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badWbRelsBytes2),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 3. Malformed/unparseable unrelated Relationship element in workbook.xml.rels => REJECT even if business sheet rel is valid
+  const wbB_UnrelatedMalformed = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXml3 = await wbB_UnrelatedMalformed._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXml3 = wbRelsXml3.replace('</Relationships>', '<Relationship Target="styles.xml"/></Relationships>');
+  wbB_UnrelatedMalformed._zip.file('xl/_rels/workbook.xml.rels', wbRelsXml3);
+  const badWbRelsBytes3 = await wbB_UnrelatedMalformed._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badWbRelsBytes3),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 4. Business-sheet r:id resolves zero relationships in workbook.xml.rels => REJECT
+  const wbB_ZeroRels = await XlsxPopulate.fromDataAsync(validB);
+  let wbXml4 = await wbB_ZeroRels._zip.file('xl/workbook.xml').async('text');
+  wbXml4 = wbXml4.replace(/(<sheet\b[^>]*?\bname="\(Part B\) Competency"[^>]*?\br:id=")[^"]+(")/, '$1rIdNonExistent999$2');
+  wbB_ZeroRels._zip.file('xl/workbook.xml', wbXml4);
+  const badWbRelsBytes4 = await wbB_ZeroRels._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badWbRelsBytes4),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 5. Business-sheet relationship has wrong Type => REJECT
+  const wbB_WrongType = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXml6 = await wbB_WrongType._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXml6 = wbRelsXml6.replaceAll('http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet', 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles');
+  wbB_WrongType._zip.file('xl/_rels/workbook.xml.rels', wbRelsXml6);
+  const badWbRelsBytes6 = await wbB_WrongType._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badWbRelsBytes6),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 6. Valid attribute reordering in Relationship element => composer succeeds
+  const wbB_Reordered = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXml7 = await wbB_Reordered._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXml7 = wbRelsXml7.replace(
+    /<Relationship\b([^>]*?)\bId="([^"]+)"([^>]*?)\bType="([^"]+)"([^>]*?)\bTarget="([^"]+)"([^>]*?)\/>/g,
+    '<Relationship Target="$6" Id="$2" Type="$4"$1$3$5$7/>'
+  );
+  wbB_Reordered._zip.file('xl/_rels/workbook.xml.rels', wbRelsXml7);
+  const reorderedBytes = await wbB_Reordered._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  const combinedReordered = await composeCombinedWorkbook(validA, reorderedBytes);
+  const wbComb = await XlsxPopulate.fromDataAsync(combinedReordered);
+  assert.equal(wbComb.sheets().length, 2, 'Workbook with reordered workbook.xml.rels attributes must compose cleanly');
+});
+
+test('R4: Exact Sanitized Cell Authority Proof (Corrective C)', async () => {
+  const renderedA = await prepareAndRenderPartA(4);
+  const renderedB = await prepareAndRenderPartB(6);
+
+  // 1. Inspect rendered input workbooks BEFORE composition
+  const wbA = await XlsxPopulate.fromDataAsync(renderedA);
+  const wbB = await XlsxPopulate.fromDataAsync(renderedB);
+
+  const sheetA = wbA.sheet('MBO Staff & Chief');
+  const sheetB = wbB.sheet('(Part B) Competency');
+
+  function isBlankValue(val) {
+    return val === undefined || val === null || val === '';
+  }
+
+  // Representative Part A sanitized / non-written cells (objectiveCount=4)
+  const partACellsToTest = ['AM25', 'AQ25', 'AM26'];
+  for (const addr of partACellsToTest) {
+    const val = sheetA.cell(addr).value();
+    assert.ok(isBlankValue(val), `Rendered Part A input cell ${addr} must be blank before composition`);
+  }
+
+  // Representative Part B sanitized / non-written cells (competencyCount=6)
+  const partBCellsToTest = ['L9', 'L13', 'R9', 'K31'];
+  for (const addr of partBCellsToTest) {
+    const val = sheetB.cell(addr).value();
+    assert.ok(isBlankValue(val), `Rendered Part B input cell ${addr} must be blank before composition`);
+  }
+
+  // 2. Compose workbook
+  const combinedBytes = await composeCombinedWorkbook(renderedA, renderedB);
+
+  // 3. Inspect corresponding final sheet/cells AFTER composition
+  const wbComb = await XlsxPopulate.fromDataAsync(combinedBytes);
+  const finalSheet1 = wbComb.sheet('MBO Staff & Chief');
+  const finalSheet2 = wbComb.sheet('(Part B) Competency');
+
+  for (const addr of partACellsToTest) {
+    const val = finalSheet1.cell(addr).value();
+    assert.ok(isBlankValue(val), `Final combined Sheet 1 cell ${addr} must remain blank after composition`);
+  }
+
+  for (const addr of partBCellsToTest) {
+    const val = finalSheet2.cell(addr).value();
+    assert.ok(isBlankValue(val), `Final combined Sheet 2 cell ${addr} must remain blank after composition`);
+  }
+});

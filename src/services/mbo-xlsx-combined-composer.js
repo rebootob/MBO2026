@@ -155,35 +155,26 @@ async function resolveBusinessSheet(zip, expectedSheetName, label) {
 
   const { rawName, rId } = matchingSheets[0];
 
-  // Resolve rId in workbook.xml.rels
-  const relMatches = [...wbRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?>/g)];
-  const matchingRels = [];
+  // Parse workbook.xml.rels strictly using parseRelsDocument (Corrective A)
+  const parsedWbRels = parseRelsDocument(wbRelsXml, `${label} workbook.xml.rels`);
 
-  for (const m of relMatches) {
-    const tag = m[0];
-    const idMatch = tag.match(/\bId="([^"]+)"/);
-    if (idMatch && idMatch[1] === rId) {
-      matchingRels.push(tag);
-    }
-  }
+  const matchingRels = parsedWbRels.filter(rel => rel.id === rId);
 
   if (matchingRels.length !== 1) {
     throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" not uniquely found in ${label} workbook.xml.rels (found ${matchingRels.length})`);
   }
 
-  const relTag = matchingRels[0];
-  const typeMatch = relTag.match(/\bType="([^"]+)"/);
-  const targetMatch = relTag.match(/\bTarget="([^"]+)"/);
+  const rel = matchingRels[0];
 
-  if (!typeMatch || typeMatch[1] !== 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet') {
+  if (rel.type !== 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet') {
     throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" in ${label} has invalid Type`);
   }
 
-  if (!targetMatch) {
+  if (!rel.target) {
     throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" in ${label} missing Target`);
   }
 
-  const rawTarget = targetMatch[1];
+  const rawTarget = rel.target;
   let zipPath = rawTarget;
   if (!zipPath.startsWith('xl/')) {
     zipPath = 'xl/' + zipPath.replace(/^\//, '');
