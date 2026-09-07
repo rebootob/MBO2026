@@ -1,11 +1,11 @@
 # D2 REVIEW FAST-START — MBO2026
 
-Updated: 2026-09-04 ICT
+Updated: 2026-09-07 ICT
 Repository: `rebootob/MBO2026`
 Branch: `ai/antigravity-wp002c`
 
 ## Fast path
-Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact R2-D1 files only. Do not reopen frozen gates without proven regression.
+Fresh-fetch HEAD -> this file -> `AI_ACTIVE_TASK.md` -> exact diff only. Do not reopen frozen gates without proven regression.
 
 ## Project truth
 
@@ -20,34 +20,39 @@ R2_C = PASS / CLOSED / FROZEN
 R2_D_PRE1 = PASS / CLOSED / FROZEN
 R2_D_PRE1_R1 = PASS / CLOSED / FROZEN
 R2_D_PRE1_R2 = PASS / CLOSED / FROZEN
-R2_D1 = AUTHORIZED / ACTIVE
-ACTIVE_WORK_PACKAGE = D2-WP004-R2-D1
-ANTIGRAVITY = AUTHORIZED / BOUNDED SOURCE+TEST ONLY / MAX 1 COMMIT
+R2_D1 = PASS / CLOSED
+R2_D1_R4_C1 = PASS / CLOSED
+ACCEPTED_HEAD = ebd3e7d2770817768c61707fbbd81a8ad9e85b01
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
 CLAUDE = STOP
-EXPORT_SERVICE_INTEGRATION = NOT AUTHORIZED
+EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
 D3 = HOLD
 ```
 
-## R2-D1 authority
+## R2-D1 closed authority
 
-Owner authorization:
+Accepted implementation HEAD:
+`ebd3e7d2770817768c61707fbbd81a8ad9e85b01`
+
+Historical authorization:
 `อนุมัติ D2-WP004-R2-D1 SOURCE+TEST ตามขอบเขตที่เสนอ`
 
-Token:
-`D2-WP004-R2-D1-SOURCE-TEST-20260904-01`
-
-Writable scope is exactly two NEW files:
+Implemented files:
 ```text
 src/services/mbo-xlsx-combined-composer.js
 tests/mbo-xlsx-combined-composer.test.js
 ```
 
-Composer inputs are already-rendered Part A/Part B bytes. Mapping for styles/shared strings must be derived from actual rendered packages; no fixed owner-template offsets. Final workbook must contain exactly `MBO Staff & Chief` then `(Part B) Competency`, excluding Part B auxiliary `Sheet1`.
+Composer inputs are already-rendered Part A/Part B bytes. Mapping for styles/shared strings is dynamically derived from actual rendered packages (no fixed owner-template offsets). Final workbook contains exactly `MBO Staff & Chief` then `(Part B) Competency`, excluding Part B auxiliary `Sheet1`.
 
-The composer must preserve rendered Print_Areas, privacy, secured values, formula inventory zero, Part A package authority, and remap Part B styles/SST/drawing/printerSettings/workbook metadata using source-derived collision-safe paths/IDs.
+The composer preserves rendered Print_Areas, privacy, secured values, formula inventory zero, Part A package authority, and remaps Part B styles/SST/drawing/printerSettings/workbook metadata using source-derived collision-safe paths/IDs, with strict bidirectional OOXML relationship validation and internal-only worksheet target authority (`TargetMode="Internal"`).
 
-No existing source/test/Profile/export-service/control/template/package/UI file may be changed by executor.
+## Next D2 Gate
 
-Required focused + frozen tests and full contract are in `AI_ACTIVE_TASK.md`.
+```text
+EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
+CONTROL-PLANE PLANNING REQUIRED BEFORE IMPLEMENTATION
+```
 
-After exactly one implementation commit is pushed, Antigravity must STOP for independent ChatGPT review.
+Do NOT start export service integration (`mbo-export-service.js`), new tests, Kintone writes, deployment, Live UAT, PDF, or D3 until Control Plane planning is complete and explicit owner authorization is granted.

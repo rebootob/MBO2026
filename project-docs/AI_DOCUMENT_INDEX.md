@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-04 ICT.
+Updated: 2026-09-07 ICT.
 
 Fast startup: fresh-fetch `ai/antigravity-wp002c` -> `D2_REVIEW_FAST_START.md` -> `AI_ACTIVE_TASK.md` -> directly relevant D2 authority/evidence -> exact diff.
 
@@ -25,10 +25,12 @@ R2_A = PASS / CLOSED
 R2_B1 = PASS / CLOSED / FROZEN
 R2_B2 = PASS / CLOSED / FROZEN
 R2_C = PASS / CLOSED / FROZEN AFTER R7 + OWNER RUNTIME PROOF
+R2_D1 = PASS / CLOSED
+R2_D1_ACCEPTED_HEAD = ebd3e7d2770817768c61707fbbd81a8ad9e85b01
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
-COMBINED_EXCEL_PARITY = NOT AUTHORIZED / NEXT LATER D2 GATE
+EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
 D3 = HOLD
 ```
 
@@ -54,16 +56,17 @@ NO_SECURED_PROJECTION_SOURCE = 5 EXACT
 CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 ```
 
-Closed production XLSX chain:
+Closed production XLSX engine:
 ```text
 R2_A_PROFILE_FOUNDATION = PASS / CLOSED
 R2_B1_PART_A_PREPARER = PASS / CLOSED / FROZEN
 R2_B2_PART_B_PREPARER = PASS / CLOSED / FROZEN
 R2_C_SECURED_RENDERER = PASS / CLOSED / FROZEN
-R2_C_FOCUSED_RUNTIME = 7/7 PASS / FAIL 0 / SKIP 0
-R2_C_FROZEN_REGRESSION = 30/30 PASS / FAIL 0 / SKIP 0
-R2_C_NODE_CHECK = PASS
-R2_C_GIT_DIFF_CHECK = PASS
+R2_D1_COMBINED_XLSX_COMPOSER = PASS / CLOSED
+R2_D1_FOCUSED_RUNTIME = 18/18 PASS / FAIL 0 / SKIP 0
+R2_D1_FROZEN_REGRESSION = 37/37 PASS / FAIL 0 / SKIP 0
+R2_D1_NODE_CHECK = PASS
+R2_D1_GIT_DIFF_CHECK = PASS
 FORMULA_INVENTORY = 0
 ```
 
@@ -81,8 +84,8 @@ b8 under N7 reject
 
 Exact next gate:
 ```text
-CONTROL-PLANE PLANNING REQUIRED
-COMBINED_EXCEL_PARITY = NEXT LATER D2 GATE / NOT AUTHORIZED
+EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
+CONTROL-PLANE PLANNING REQUIRED BEFORE IMPLEMENTATION
 ```
 
-Read `AI_ACTIVE_TASK.md` for exact current authority. Do not auto-start Combined Excel, Kintone work, deployment or D3. Use Antigravity only if bounded implementation/evidence work is genuinely necessary and separately owner-authorized.
+Read `AI_ACTIVE_TASK.md` for exact current authority. Do not auto-start export service integration, Kintone work, deployment or D3. Use Antigravity only if bounded implementation/evidence work is genuinely necessary and separately owner-authorized.
