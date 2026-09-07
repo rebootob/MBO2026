@@ -928,3 +928,48 @@ test('R4: Exact Sanitized Cell Authority Proof (Corrective C)', async () => {
     assert.ok(isBlankValue(val), `Final combined Sheet 2 cell ${addr} must remain blank after composition`);
   }
 });
+
+test('R4-C1: Strict Business-Sheet Relationship TargetMode & Safety Authority', async () => {
+  const validA = await prepareAndRenderPartA(4);
+  const validB = await prepareAndRenderPartB(6);
+
+  // A. Business-sheet relationship TargetMode="External" => REJECT
+  const wbB_ExternalTargetMode = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXmlA = await wbB_ExternalTargetMode._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXmlA = wbRelsXmlA.replace(/(<Relationship\b[^>]*?\bId="rId1"[^>]*?)\/?>/, '$1 TargetMode="External"/>');
+  wbB_ExternalTargetMode._zip.file('xl/_rels/workbook.xml.rels', wbRelsXmlA);
+  const badTargetModeBytes = await wbB_ExternalTargetMode._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badTargetModeBytes),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // B. Unsafe / external worksheet target URL or path escape => REJECT
+  const wbB_UnsafeTarget = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXmlB = await wbB_UnsafeTarget._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXmlB = wbRelsXmlB.replace('Target="worksheets/sheet1.xml"', 'Target="http://example.com/sheet1.xml"');
+  wbB_UnsafeTarget._zip.file('xl/_rels/workbook.xml.rels', wbRelsXmlB);
+  const badTargetBytes = await wbB_UnsafeTarget._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, badTargetBytes),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // C. Explicit TargetMode="Internal" with valid worksheet target => SUCCEED
+  const wbB_InternalTargetMode = await XlsxPopulate.fromDataAsync(validB);
+  let wbRelsXmlC = await wbB_InternalTargetMode._zip.file('xl/_rels/workbook.xml.rels').async('text');
+  wbRelsXmlC = wbRelsXmlC.replace(/(<Relationship\b[^>]*?\bId="rId1"[^>]*?)\/?>/, '$1 TargetMode="Internal"/>');
+  wbB_InternalTargetMode._zip.file('xl/_rels/workbook.xml.rels', wbRelsXmlC);
+  const internalTargetModeBytes = await wbB_InternalTargetMode._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  const combinedInternal = await composeCombinedWorkbook(validA, internalTargetModeBytes);
+  const wbCombInternal = await XlsxPopulate.fromDataAsync(combinedInternal);
+  assert.equal(wbCombInternal.sheets().length, 2, 'Workbook with explicit TargetMode="Internal" on business sheet rel must compose cleanly');
+
+  // D. Existing normal relationship with no TargetMode => SUCCEED
+  const combinedNormal = await composeCombinedWorkbook(validA, validB);
+  const wbCombNormal = await XlsxPopulate.fromDataAsync(combinedNormal);
+  assert.equal(wbCombNormal.sheets().length, 2, 'Workbook with absent TargetMode on business sheet rel must compose cleanly');
+});

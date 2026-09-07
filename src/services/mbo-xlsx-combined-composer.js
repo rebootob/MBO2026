@@ -174,10 +174,27 @@ async function resolveBusinessSheet(zip, expectedSheetName, label) {
     throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Relationship ID "${rId}" for sheet "${rawName}" in ${label} missing Target`);
   }
 
+  if (rel.targetMode && rel.targetMode !== 'Internal') {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Worksheet relationship ID "${rId}" in ${label} has invalid TargetMode "${rel.targetMode}"`);
+  }
+
   const rawTarget = rel.target;
+  if (
+    rawTarget.includes('://') ||
+    rawTarget.includes(':') ||
+    rawTarget.includes('\\') ||
+    rawTarget.includes('..')
+  ) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsafe worksheet relationship target "${rawTarget}" in ${label}`);
+  }
+
   let zipPath = rawTarget;
   if (!zipPath.startsWith('xl/')) {
     zipPath = 'xl/' + zipPath.replace(/^\//, '');
+  }
+
+  if (!zipPath.startsWith('xl/worksheets/')) {
+    throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Worksheet target "${zipPath}" outside expected xl/worksheets/ directory in ${label}`);
   }
 
   const sheetFile = zip.file(zipPath);
