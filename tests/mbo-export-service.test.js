@@ -64,6 +64,18 @@ async function assertNoConfidentialStringsInZip(zipBuffer, confidentialStrings) 
   }
 }
 
+async function getAllXmlContentFromZip(zipBuffer) {
+  const zip = await JSZip.loadAsync(zipBuffer);
+  const parts = [];
+  for (const relativePath of Object.keys(zip.files)) {
+    if (relativePath.endsWith('.xml')) {
+      const text = await zip.files[relativePath].async('string');
+      parts.push(text);
+    }
+  }
+  return parts.join('\n');
+}
+
 test('EXPORT_PROFILE_FAIL_CLOSED: resolves exact weighting per Profile_Code and fails closed on unmapped profile', () => {
   assert.equal(MboExportService.resolveProfileWeighting('PROF_STAFF_CHIEF').partAWeight, 70);
   assert.equal(MboExportService.resolveProfileWeighting('PROF_JAPANESE_STAFF').partAWeight, 70);
@@ -454,10 +466,10 @@ test('EXPORT_COMPETENCY_PRESENTATION_CANONICALIZATION_CORRECTIVE: strict b7/b8 e
 });
 
 // =============================================================================
-// TEST SUITE: Combined XLSX Integration Service (R2-D2)
+// TEST SUITE: Combined XLSX Integration Service (R2-D2 / R2-D2-R1 Evidence Closure)
 // =============================================================================
 
-test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet combined workbook omitting confidential ratings/comments & 0 formulas', async () => {
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet combined workbook omitting confidential ratings/comments, rendering safe values & 0 formulas', async () => {
   const partATemplateBytes = loadLocalPartA();
   const partBTemplateBytes = loadLocalPartB();
 
@@ -472,10 +484,10 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet com
     Employee_Code: { value: 'EMP001' },
     Profile_Code: { value: 'PROF_STAFF_CHIEF' },
     Objective_Count: { value: '4' },
-    Objective_1: { value: 'Obj 1' }, Weight_1: { value: '25' },
-    Objective_2: { value: 'Obj 2' }, Weight_2: { value: '25' },
-    Objective_3: { value: 'Obj 3' }, Weight_3: { value: '25' },
-    Objective_4: { value: 'Obj 4' }, Weight_4: { value: '25' },
+    Objective_1: { value: 'Obj 1 Title' }, Measurement_1: { value: 'Obj 1 Measurement' }, Weight_1: { value: '25' },
+    Objective_2: { value: 'Obj 2 Title' }, Measurement_2: { value: 'Obj 2 Measurement' }, Weight_2: { value: '25' },
+    Objective_3: { value: 'Obj 3 Title' }, Measurement_3: { value: 'Obj 3 Measurement' }, Weight_3: { value: '25' },
+    Objective_4: { value: 'Obj 4 Title' }, Measurement_4: { value: 'Obj 4 Measurement' }, Weight_4: { value: '25' },
     Manager_Achievement_1: { value: '5 - Exceeds' },
     Manager_Objective_Score_1: { value: '100' },
     Manager_Comment_1: { value: confidentialStrings[0] },
@@ -527,9 +539,18 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_EMPLOYEE_SELF: generates 2-sheet com
 
   // Verify no confidential manager/GM strings leaked into XML
   await assertNoConfidentialStringsInZip(combinedBytes, confidentialStrings);
+
+  // Evidence Gap 2 Closure: Verify safe semantic values are actually rendered into workbook cells
+  const sheetA = wbCombined.sheet('MBO Staff & Chief');
+  const sheetB = wbCombined.sheet('(Part B) Competency');
+
+  assert.equal(sheetA.cell('AQ7').value(), 'EMP001', 'Employee Code cell AQ7 must match EMP001');
+  assert.equal(sheetA.cell('T25').value(), 'Obj 1 Measurement', 'Objective 1 Measurement cell T25 must match Obj 1 Measurement');
+  assert.equal(sheetA.cell('Y25').value(), 25, 'Objective 1 Weight cell Y25 must match 25');
+  assert.equal(sheetB.cell('K9').value(), 4, 'Part B Competency 1 self rating cell K9 must match 4');
 });
 
-test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combined workbook with 10 objectives, 8 competencies & full evaluation data', async () => {
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combined workbook with 10 objectives, 8 competencies, b7/b8 presentation & secured summary values actually rendered', async () => {
   const partATemplateBytes = loadLocalPartA();
   const partBTemplateBytes = loadLocalPartB();
 
@@ -592,7 +613,27 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_APPROVER_BOUNDARY: generates combine
   // Formula inventory zero
   const formulaCount = await countFormulaTagsInZip(combinedBytes);
   assert.equal(formulaCount, 0, 'Formula count in XML must be 0');
+
+  // Evidence Gap 3 Closure: Verify Approver b7/b8 presentation & secured summary values are actually rendered in cells
+  const sheetA = wbCombined.sheet('MBO Staff & Chief');
+  const sheetB = wbCombined.sheet('(Part B) Competency');
+
+  // Cell-level verification on sheet (Part B) Competency for b7/b8 presentation title & description
+  assert.equal(sheetB.cell('B31').value(), '7. Leadership & People Management', 'b7 presentation title cell B31 must match canonical title');
+  assert.equal(sheetB.cell('B32').value(), 'Leadership description text', 'b7 presentation description cell B32 must match');
+  assert.equal(sheetB.cell('B35').value(), '8. Strategy & Coaching', 'b8 presentation title cell B35 must match canonical title');
+  assert.equal(sheetB.cell('B36').value(), 'Strategy description text', 'b8 presentation description cell B36 must match');
+
+  // Cell-level verification on sheet MBO Staff & Chief for Part A summary values (10 objectives -> Part A summary at BC35 and BC39)
+  assert.equal(sheetA.cell('BC35').value(), 100, 'Part A Raw Score cell BC35 must be 100');
+  assert.equal(sheetA.cell('BC39').value(), 50, 'Part A Weighted Score cell BC39 must be 50');
+
+  // Cell-level verification on sheet (Part B) Competency for Part B summary values (8 competencies -> summary at B39 and I39)
+  assert.equal(sheetB.cell('B39').value(), 90, 'Part B Raw Score cell B39 must be 90');
+  assert.equal(sheetB.cell('I39').value(), 37, 'Part B Weighted Score cell I39 must match profile rendered value');
 });
+
+
 
 test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_SECURITY_ORDER: fails closed before template parsing on unauthorized exportContext or cross-employee request', async () => {
   const invalidTemplateA = new Uint8Array([1, 2, 3, 4]);
@@ -623,19 +664,44 @@ test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_SECURITY_ORDER: fails closed before 
   );
 });
 
-test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: authorized context with invalid template bytes throws error', async () => {
+test('EXPORT_SERVICE_GENERATE_COMBINED_XLSX_INVALID_TEMPLATE_FAIL_CLOSED: authorized context with invalid Part A or Part B template bytes throws error', async () => {
   const invalidTemplateA = new Uint8Array([1, 2, 3, 4]);
+  const invalidTemplateB = new Uint8Array([5, 6, 7, 8]);
+  const partATemplateBytes = loadLocalPartA();
   const partBTemplateBytes = loadLocalPartB();
 
   const mboRecord = { Employee_Code: { value: 'EMP001' }, Profile_Code: { value: 'PROF_STAFF_CHIEF' } };
+  const competencyItems = [
+    { code: 'COMP_ADAPT', description: 'Desc 1', selfRating: '4' },
+    { code: 'COMP_PROB', description: 'Desc 2', selfRating: '4' },
+    { code: 'COMP_CUST', description: 'Desc 3', selfRating: '4' },
+    { code: 'COMP_VALUE', description: 'Desc 4', selfRating: '4' },
+    { code: 'COMP_SAFETY', description: 'Desc 5', selfRating: '4' },
+    { code: 'COMP_COCE', description: 'Desc 6', selfRating: '4' }
+  ];
   const exportContext = { type: 'EMPLOYEE_SELF', employeeCode: 'EMP001' };
 
+  // 1. Authorized context with invalid Part A template bytes throws error
   await assert.rejects(
     async () => MboExportService.generateCombinedXlsx({
       mboRecord,
+      competencyItems,
       exportContext,
+      profileCode: 'PROF_STAFF_CHIEF',
       partATemplateBytes: invalidTemplateA,
       partBTemplateBytes
+    })
+  );
+
+  // 2. Authorized context with invalid Part B template bytes throws error (Evidence Gap 1 Closure)
+  await assert.rejects(
+    async () => MboExportService.generateCombinedXlsx({
+      mboRecord,
+      competencyItems,
+      exportContext,
+      profileCode: 'PROF_STAFF_CHIEF',
+      partATemplateBytes,
+      partBTemplateBytes: invalidTemplateB
     })
   );
 });
