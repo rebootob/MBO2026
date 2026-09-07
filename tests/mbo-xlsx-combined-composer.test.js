@@ -230,10 +230,12 @@ test('R2-D1: Negative Control against Fixed Offsets', async () => {
   }
   wbB._zip.file('xl/sharedStrings.xml', sstB);
 
-  // Reference the custom string in Part B sheet1.xml
+  // Reference the custom string in Part B business sheet (xl/worksheets/sheet1.xml)
   let sheet1B = await wbB._zip.file('xl/worksheets/sheet1.xml').async('text');
   const customIdx = (sstB.match(/<si>/g) || []).length - 1;
-  sheet1B = sheet1B.replace('r="A1"', `r="A1" t="s"`).replace('</c>', `<v>${customIdx}</v></c>`);
+  const a1CellMatch = sheet1B.match(/<c\b[^>]*?\br="A1"[^>]*?>[\s\S]*?<\/c>|<c\b[^>]*?\br="A1"[^>]*?\/>/);
+  assert.ok(a1CellMatch, 'Cell A1 must exist in Part B sheet1.xml');
+  sheet1B = sheet1B.replace(a1CellMatch[0], `<c r="A1" t="s"><v>${customIdx}</v></c>`);
   wbB._zip.file('xl/worksheets/sheet1.xml', sheet1B);
 
   const modRenderedB = await wbB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
@@ -332,7 +334,7 @@ test('R2-D1: Secured Scalar Values & Privacy Preservation', async () => {
   assert.ok(sheet2Xml.includes('Competency 7 Description'), 'Competency 7 description must be rendered in Sheet 2');
 });
 
-test('R2-D1: Fail-Closed Negative Controls', async () => {
+test('R2-D1: Fail-Closed Negative Controls & Relationship Graph Boundary', async () => {
   const validA = await prepareAndRenderPartA(4);
   const validB = await prepareAndRenderPartB(6);
 
@@ -422,6 +424,62 @@ test('R2-D1: Fail-Closed Negative Controls', async () => {
     async () => await composeCombinedWorkbook(validA, badFontBytesB),
     /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
   );
+
+  // 9. Duplicate relationship ID in Part B worksheet .rels
+  const wbDupRelB = await XlsxPopulate.fromDataAsync(validB);
+  let relsB = await wbDupRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('text');
+  relsB = relsB.replace('<Relationships', '<Relationships><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/printerSettings" Target="../printerSettings/printerSettings1.bin"/>');
+  wbDupRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels', relsB);
+  const dupRelBytesB = await wbDupRelB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, dupRelBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 10. Missing dependency target (e.g. printerSettings target missing)
+  const wbMissingTargetB = await XlsxPopulate.fromDataAsync(validB);
+  wbMissingTargetB._zip.remove('xl/printerSettings/printerSettings1.bin');
+  const missingTargetBytesB = await wbMissingTargetB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, missingTargetBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 11. Unsupported worksheet relationship type
+  const wbUnsuppRelB = await XlsxPopulate.fromDataAsync(validB);
+  let unsuppRelsB = await wbUnsuppRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('text');
+  unsuppRelsB = unsuppRelsB.replace('</Relationships>', '<Relationship Id="rId99" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="http://example.com"/></Relationships>');
+  wbUnsuppRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels', unsuppRelsB);
+  const unsuppRelBytesB = await wbUnsuppRelB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, unsuppRelBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 12. External relationship TargetMode
+  const wbExtRelB = await XlsxPopulate.fromDataAsync(validB);
+  let extRelsB = await wbExtRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels').async('text');
+  extRelsB = extRelsB.replace('TargetMode="Internal"', 'TargetMode="External"').replace('<Relationship ', '<Relationship TargetMode="External" ');
+  wbExtRelB._zip.file('xl/worksheets/_rels/sheet1.xml.rels', extRelsB);
+  const extRelBytesB = await wbExtRelB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  await assert.rejects(
+    async () => await composeCombinedWorkbook(validA, extRelBytesB),
+    /EXPORT_COMBINED_COMPOSER_UNRESOLVED/
+  );
+
+  // 13. Optional relationship absent (Part B worksheet has no .rels file)
+  const wbNoRelsB = await XlsxPopulate.fromDataAsync(validB);
+  wbNoRelsB._zip.remove('xl/worksheets/_rels/sheet1.xml.rels');
+  const noRelsBytesB = await wbNoRelsB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  const combinedNoRels = await composeCombinedWorkbook(validA, noRelsBytesB);
+  const wbCombNoRels = await XlsxPopulate.fromDataAsync(combinedNoRels);
+  assert.equal(wbCombNoRels.sheets().length, 2, 'Workbook without Part B worksheet .rels must compose cleanly');
+  assert.ok(!wbCombNoRels._zip.file('xl/worksheets/_rels/sheet2.xml.rels'), 'No sheet2.xml.rels should be fabricated if input had none');
 });
 
 test('R2-D1: Source-Derived Sheet Path Resolution & Non-Standard Zip Path', async () => {
@@ -454,29 +512,123 @@ test('R2-D1: Source-Derived Sheet Path Resolution & Non-Standard Zip Path', asyn
   assert.equal(wbCombined.sheets()[1].name(), '(Part B) Competency');
 });
 
-test('R2-D1: Exact Dynamic Print Area Text & Merge Cell Preservation', async () => {
+test('R2-D1: Exact Dynamic Print Area Equality Proof (Corrective D)', async () => {
   const renderedA = await prepareAndRenderPartA(5);
   const renderedB = await prepareAndRenderPartB(7);
 
+  const zipAInput = await JSZip.loadAsync(renderedA);
+  const zipBInput = await JSZip.loadAsync(renderedB);
+
+  const wbXmlAInput = await zipAInput.file('xl/workbook.xml').async('text');
+  const wbXmlBInput = await zipBInput.file('xl/workbook.xml').async('text');
+
+  const partAPrintAreaText = wbXmlAInput.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?>([\s\S]*?)<\/definedName>/)[1].trim();
+  const partBPrintAreaText = wbXmlBInput.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?>([\s\S]*?)<\/definedName>/)[1].trim();
+
   const combinedBytes = await composeCombinedWorkbook(renderedA, renderedB);
   const wbCombined = await XlsxPopulate.fromDataAsync(combinedBytes);
-  const zip = wbCombined._zip;
+  const zipComb = wbCombined._zip;
 
-  const wbXml = await zip.file('xl/workbook.xml').async('text');
+  const wbXmlComb = await zipComb.file('xl/workbook.xml').async('text');
 
-  // Verify Print_Area text for localSheetId="0"
-  const paMatch0 = wbXml.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?\blocalSheetId="0"[^>]*?>([\s\S]*?)<\/definedName>/);
-  assert.ok(paMatch0, 'Print_Area for localSheetId="0" must exist');
-  assert.ok(paMatch0[1].includes('MBO Staff & Chief') || paMatch0[1].includes('MBO Staff &amp; Chief'), 'Print_Area 0 text must match Part A');
+  const finalPa0Match = wbXmlComb.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?\blocalSheetId="0"[^>]*?>([\s\S]*?)<\/definedName>/);
+  const finalPa1Match = wbXmlComb.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?\blocalSheetId="1"[^>]*?>([\s\S]*?)<\/definedName>/);
 
-  // Verify Print_Area text for localSheetId="1"
-  const paMatch1 = wbXml.match(/<definedName\b[^>]*?\bname="_xlnm\.Print_Area"[^>]*?\blocalSheetId="1"[^>]*?>([\s\S]*?)<\/definedName>/);
-  assert.ok(paMatch1, 'Print_Area for localSheetId="1" must exist');
-  assert.ok(paMatch1[1].includes('(Part B) Competency'), 'Print_Area 1 text must match Part B');
+  assert.ok(finalPa0Match, 'localSheetId="0" Print_Area must exist');
+  assert.ok(finalPa1Match, 'localSheetId="1" Print_Area must exist');
 
-  // Verify layout mergeCells in Sheet 1 and Sheet 2
-  const sheet1Xml = await zip.file('xl/worksheets/sheet1.xml').async('text');
-  const sheet2Xml = await zip.file('xl/worksheets/sheet2.xml').async('text');
-  assert.ok(sheet1Xml.includes('<mergeCells'), 'Sheet 1 must preserve mergeCells');
-  assert.ok(sheet2Xml.includes('<mergeCells'), 'Sheet 2 must preserve mergeCells');
+  assert.equal(finalPa0Match[1].trim(), partAPrintAreaText, 'Final localSheetId="0" Print_Area text must EXACTLY equal rendered Part A Print_Area text');
+  assert.equal(finalPa1Match[1].trim(), partBPrintAreaText, 'Final localSheetId="1" Print_Area text must EXACTLY equal rendered Part B Print_Area text');
+});
+
+test('R2-D1: Exact Frozen Layout, Page Setup, Protection, and Merge Preservation (Corrective E)', async () => {
+  const renderedA = await prepareAndRenderPartA(6);
+  const renderedB = await prepareAndRenderPartB(8);
+
+  const zipAInput = await JSZip.loadAsync(renderedA);
+  const zipBInput = await JSZip.loadAsync(renderedB);
+
+  const sheet1XmlAInput = await zipAInput.file('xl/worksheets/sheet1.xml').async('text');
+  const sheet1XmlBInput = await zipBInput.file('xl/worksheets/sheet1.xml').async('text');
+
+  const combinedBytes = await composeCombinedWorkbook(renderedA, renderedB);
+  const wbCombined = await XlsxPopulate.fromDataAsync(combinedBytes);
+  const zipComb = wbCombined._zip;
+
+  const sheet1XmlComb = await zipComb.file('xl/worksheets/sheet1.xml').async('text');
+  const sheet2XmlComb = await zipComb.file('xl/worksheets/sheet2.xml').async('text');
+
+  function getTag(xmlStr, tagName) {
+    const match = xmlStr.match(new RegExp(`<${tagName}\\b[^>]*>(?:[\\s\\S]*?</${tagName}>)?|<${tagName}\\b[^>]*/>`));
+    return match ? match[0] : null;
+  }
+
+  // 1. mergeCells
+  assert.equal(getTag(sheet1XmlComb, 'mergeCells'), getTag(sheet1XmlAInput, 'mergeCells'), 'Sheet 1 mergeCells must match Part A exactly');
+  assert.equal(getTag(sheet2XmlComb, 'mergeCells'), getTag(sheet1XmlBInput, 'mergeCells'), 'Sheet 2 mergeCells must match Part B exactly');
+
+  // 2. pageMargins
+  assert.equal(getTag(sheet1XmlComb, 'pageMargins'), getTag(sheet1XmlAInput, 'pageMargins'), 'Sheet 1 pageMargins must match Part A exactly');
+  assert.equal(getTag(sheet2XmlComb, 'pageMargins'), getTag(sheet1XmlBInput, 'pageMargins'), 'Sheet 2 pageMargins must match Part B exactly');
+
+  // 3. pageSetup
+  assert.equal(getTag(sheet1XmlComb, 'pageSetup'), getTag(sheet1XmlAInput, 'pageSetup'), 'Sheet 1 pageSetup must match Part A exactly');
+  assert.equal(getTag(sheet2XmlComb, 'pageSetup'), getTag(sheet1XmlBInput, 'pageSetup'), 'Sheet 2 pageSetup must match Part B exactly');
+
+  // 4. printOptions (if present)
+  assert.equal(getTag(sheet1XmlComb, 'printOptions'), getTag(sheet1XmlAInput, 'printOptions'), 'Sheet 1 printOptions must match Part A exactly');
+  assert.equal(getTag(sheet2XmlComb, 'printOptions'), getTag(sheet1XmlBInput, 'printOptions'), 'Sheet 2 printOptions must match Part B exactly');
+
+  // 5. sheetProtection (if present)
+  assert.equal(getTag(sheet1XmlComb, 'sheetProtection'), getTag(sheet1XmlAInput, 'sheetProtection'), 'Sheet 1 sheetProtection must match Part A exactly');
+  assert.equal(getTag(sheet2XmlComb, 'sheetProtection'), getTag(sheet1XmlBInput, 'sheetProtection'), 'Sheet 2 sheetProtection must match Part B exactly');
+
+  // 6. sheetFormatPr
+  assert.equal(getTag(sheet1XmlComb, 'sheetFormatPr'), getTag(sheet1XmlAInput, 'sheetFormatPr'), 'Sheet 1 sheetFormatPr must match Part A exactly');
+  assert.equal(getTag(sheet2XmlComb, 'sheetFormatPr'), getTag(sheet1XmlBInput, 'sheetFormatPr'), 'Sheet 2 sheetFormatPr must match Part B exactly');
+});
+
+test('R2-D1: Privacy & Referenced-Only Shared Strings Proof (Corrective G)', async () => {
+  const renderedA = await prepareAndRenderPartA(4);
+  const wbB = await XlsxPopulate.fromDataAsync(await prepareAndRenderPartB(6));
+
+  const STALE_SENSITIVE_TOKEN = 'STALE_SENSITIVE_SALARY_DATA_TOKEN_99999';
+
+  // Inject an UNREFERENCED sensitive string item into Part B sharedStrings.xml
+  let sstB = await wbB._zip.file('xl/sharedStrings.xml').async('text');
+  sstB = sstB.replace('</sst>', `<si><t>${STALE_SENSITIVE_TOKEN}</t></si></sst>`);
+  const sstMatch = sstB.match(/count="(\d+)"/);
+  if (sstMatch) {
+    const cnt = parseInt(sstMatch[1], 10) + 1;
+    sstB = sstB.replace(/count="\d+"/, `count="${cnt}"`).replace(/uniqueCount="\d+"/, `uniqueCount="${cnt}"`);
+  }
+  wbB._zip.file('xl/sharedStrings.xml', sstB);
+
+  const modRenderedB = await wbB._zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+
+  // Input immutability snapshot
+  const cloneA = new Uint8Array(renderedA);
+  const cloneModB = new Uint8Array(modRenderedB);
+
+  const combinedBytes = await composeCombinedWorkbook(renderedA, modRenderedB);
+
+  assert.deepEqual(renderedA, cloneA, 'partABytes must remain immutable');
+  assert.deepEqual(modRenderedB, cloneModB, 'partBBytes must remain immutable');
+
+  const wbComb = await XlsxPopulate.fromDataAsync(combinedBytes);
+  const zipComb = wbComb._zip;
+
+  const combSstXml = await zipComb.file('xl/sharedStrings.xml').async('text');
+
+  // 1. Unreferenced sensitive string token must NOT be present anywhere in final combined SST or package
+  assert.equal(combSstXml.includes(STALE_SENSITIVE_TOKEN), false, 'Unreferenced sensitive SST token from Part B must NOT be copied into final SST');
+
+  const allFileContents = await Promise.all(
+    Object.keys(zipComb.files).map(f => zipComb.file(f) ? zipComb.file(f).async('text').catch(() => '') : Promise.resolve(''))
+  );
+  const combinedPackageText = allFileContents.join(' ');
+  assert.equal(combinedPackageText.includes(STALE_SENSITIVE_TOKEN), false, 'Unreferenced sensitive SST token must NOT exist anywhere in final package');
+
+  // 2. Legitimate referenced Part B strings must remain present in final combined SST
+  assert.ok(combSstXml.includes('Leadership') || combSstXml.includes('Strategy') || combSstXml.includes('Senior Engineer') || combSstXml.includes('Staff 4'), 'Legitimate referenced Part B strings must remain present in final SST');
 });

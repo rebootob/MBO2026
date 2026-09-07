@@ -292,10 +292,20 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   const sstItemsA = parseSstItems(sstXmlA);
   const sstItemsB = parseSstItems(sstXmlB);
 
+  // Derive shared string indices actually referenced by Part B business sheet cells (t="s")
+  const referencedSstIndicesB = new Set();
+  const cCellMatches = sheetXmlContentB.matchAll(/<c\b[^>]*?\bt="s"[^>]*?>[\s\S]*?<v>(\d+)<\/v>/g);
+  for (const m of cCellMatches) {
+    referencedSstIndicesB.add(parseInt(m[1], 10));
+  }
+
   const sstMap = new Map(); // oldIndex -> newIndex
   const newSstItemsA = [...sstItemsA];
 
-  for (let bIdx = 0; bIdx < sstItemsB.length; bIdx++) {
+  for (const bIdx of referencedSstIndicesB) {
+    if (bIdx < 0 || bIdx >= sstItemsB.length) {
+      throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Referenced Part B shared string index ${bIdx} out of bounds (SST count ${sstItemsB.length})`);
+    }
     const bItem = sstItemsB[bIdx];
     let matchIdx = -1;
     for (let aIdx = 0; aIdx < newSstItemsA.length; aIdx++) {
@@ -667,6 +677,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   });
 
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // 7. Retarget & Copy Worksheet Relationship Graph (.rels) & Dependencies
   // ---------------------------------------------------------------------------
   const sheetBRelZipPath = sheetB.zipPath.replace(/worksheets\/([^\/]+)$/, 'worksheets/_rels/$1.rels');
@@ -679,12 +690,32 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
     const sheetBRelsXml = await sheetBRelFile.async('text');
     const relMatchesB = [...sheetBRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>|<Relationship\b[^>]*?\bTarget="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bId="([^"]+)"[^>]*?\/>/g)];
 
+    const seenSheetRelIds = new Set();
+
     for (const m of relMatchesB) {
       const tag = m[0];
       const rId = m[1] || m[6];
       const type = m[2] || m[5];
       const rawTarget = m[3] || m[4];
       const targetModeMatch = tag.match(/\bTargetMode="([^"]+)"/);
+
+      if (!rId || !type || !rawTarget) {
+        throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Malformed relationship tag in Part B worksheet .rels');
+      }
+
+      if (seenSheetRelIds.has(rId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${rId}" in Part B worksheet .rels`);
+      }
+      seenSheetRelIds.add(rId);
+
+      if (targetModeMatch && targetModeMatch[1] === 'External') {
+        throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: External relationship TargetMode not supported');
+      }
+
+      if (rawTarget.includes('://') || rawTarget.includes('..\\')) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsafe relationship target "${rawTarget}"`);
+      }
+
       const targetModeAttr = targetModeMatch ? ` TargetMode="${targetModeMatch[1]}"` : '';
 
       if (type.endsWith('/printerSettings')) {
@@ -735,11 +766,27 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
           const drwRelMatches = [...drawingRelsXmlB.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>|<Relationship\b[^>]*?\bTarget="([^"]+)"[^>]*?\bType="([^"]+)"[^>]*?\bId="([^"]+)"[^>]*?\/>/g)];
 
           let updatedDrawingRelsXmlB = drawingRelsXmlB;
+          const seenDrwRelIds = new Set();
 
           for (const dm of drwRelMatches) {
             const dTag = dm[0];
+            const dId = dm[1] || dm[6];
             const dType = dm[2] || dm[5];
             const dTarget = dm[3] || dm[4];
+            const dTargetModeMatch = dTag.match(/\bTargetMode="([^"]+)"/);
+
+            if (!dId || !dType || !dTarget) {
+              throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: Malformed relationship tag in Part B drawing .rels');
+            }
+
+            if (seenDrwRelIds.has(dId)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${dId}" in Part B drawing .rels`);
+            }
+            seenDrwRelIds.add(dId);
+
+            if (dTargetModeMatch && dTargetModeMatch[1] === 'External') {
+              throw new Error('EXPORT_COMBINED_COMPOSER_UNRESOLVED: External drawing relationship TargetMode not supported');
+            }
 
             if (dType.endsWith('/image')) {
               let srcMediaPath = dTarget.replace(/^\.\.\//, 'xl/');
@@ -769,7 +816,12 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
               }
 
               zipA.file(destMediaZipPath, mediaBufB);
-              updatedDrawingRelsXmlB = updatedDrawingRelsXmlB.replace(`Target="${dTarget}"`, `Target="${destMediaRelTarget}"`);
+
+              // Retarget exact relationship by Id
+              updatedDrawingRelsXmlB = updatedDrawingRelsXmlB.replace(
+                new RegExp(`<Relationship\\b[^>]*?\\bId="${dId}"[^>]*?>`),
+                `<Relationship Id="${dId}" Type="${dType}" Target="${destMediaRelTarget}"/>`
+              );
 
               const ext = destMediaZipPath.split('.').pop().toLowerCase();
               if (ext === 'png') {
@@ -787,8 +839,7 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
 
         copiedSheetRels.push(`<Relationship Id="${rId}" Type="${type}" Target="${destDrawingTarget}"${targetModeAttr}/>`);
       } else {
-        // Other supported sheet relationships
-        copiedSheetRels.push(tag);
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Unsupported worksheet relationship type "${type}"`);
       }
     }
 
@@ -859,7 +910,55 @@ export async function composeCombinedWorkbook(partABytes, partBBytes, options = 
   zipA.file('docProps/app.xml', appPropsXmlA);
 
   // ---------------------------------------------------------------------------
-  // 9. Generate & Return Output Bytes
+  // 9. Production Target Graph Resolution Validation
+  // ---------------------------------------------------------------------------
+  if (zipA.file(partBWorksheetRelsPath)) {
+    const finalSheetRelsXml = await zipA.file(partBWorksheetRelsPath).async('text');
+    const finalSheetRels = [...finalSheetRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>/g)];
+    const finalSheetRelIds = new Set();
+
+    for (const rel of finalSheetRels) {
+      const relId = rel[1];
+      const relTarget = rel[2];
+
+      if (finalSheetRelIds.has(relId)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${relId}" in final worksheet .rels`);
+      }
+      finalSheetRelIds.add(relId);
+
+      const targetZipPath = relTarget.replace(/^\.\.\//, 'xl/');
+      if (!zipA.file(targetZipPath)) {
+        throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Destination target "${targetZipPath}" missing in final package`);
+      }
+
+      if (targetZipPath.startsWith('xl/drawings/') && targetZipPath.endsWith('.xml')) {
+        const drawingRelsZipPath = targetZipPath.replace(/drawings\/([^\/]+)$/, 'drawings/_rels/$1.rels');
+        if (zipA.file(drawingRelsZipPath)) {
+          const finalDrwRelsXml = await zipA.file(drawingRelsZipPath).async('text');
+          const finalDrwRels = [...finalDrwRelsXml.matchAll(/<Relationship\b[^>]*?\bId="([^"]+)"[^>]*?\bTarget="([^"]+)"[^>]*?\/>/g)];
+          const finalDrwRelIds = new Set();
+
+          for (const dRel of finalDrwRels) {
+            const drwRelId = dRel[1];
+            const drwRelTarget = dRel[2];
+
+            if (finalDrwRelIds.has(drwRelId)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Duplicate relationship Id "${drwRelId}" in final drawing .rels`);
+            }
+            finalDrwRelIds.add(drwRelId);
+
+            const mediaZipPath = drwRelTarget.replace(/^\.\.\//, 'xl/');
+            if (!zipA.file(mediaZipPath)) {
+              throw new Error(`EXPORT_COMBINED_COMPOSER_UNRESOLVED: Destination media target "${mediaZipPath}" missing in final package`);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 10. Generate & Return Output Bytes
   // ---------------------------------------------------------------------------
   const outputUint8 = await zipA.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
   return outputUint8;
