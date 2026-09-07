@@ -1,6 +1,6 @@
 # MBO2026 — D2 EXCEL + PDF LEGACY FORMAT
 
-Status: **IN PROGRESS / XLSX PREPARER + SECURED RENDERER + COMBINED COMPOSER CLOSED / EXPORT SERVICE INTEGRATION NOT AUTHORIZED**. Updated 2026-09-07 ICT.
+Status: **IN PROGRESS / XLSX PREPARER + SECURED RENDERER + COMBINED COMPOSER + EXPORT SERVICE INTEGRATION CLOSED**. Updated 2026-09-07 ICT.
 
 Frozen authority:
 ```text
@@ -20,6 +20,7 @@ R2_B1_PART_A_PREPARER = PASS / CLOSED / FROZEN
 R2_B2_PART_B_PREPARER = PASS / CLOSED / FROZEN
 R2_C_SECURED_SEMANTIC_RENDERER = PASS / CLOSED / FROZEN
 R2_D1_COMBINED_XLSX_COMPOSER = PASS / CLOSED / FROZEN
+R2_D2_EXPORT_SERVICE_INTEGRATION = PASS / CLOSED / FROZEN
 EXCEL_SCORE_FORMULAS = FORBIDDEN
 PRODUCTION_XLSX_FORMULA_INVENTORY = 0
 ```
@@ -44,7 +45,7 @@ CHIEF_FROZEN_AUTHORITY = R:X / NOT SECURED WRITABLE
 
 ## Closed production XLSX engine
 
-Production flow authority is now closed through R2-D1:
+Production flow authority is now closed through R2-D2:
 
 ```text
 OWNER TEMPLATE BYTES
@@ -53,6 +54,7 @@ OWNER TEMPLATE BYTES
   -> secured MboExportService projection only
   -> secured semantic renderer
   -> post-render OOXML combined composition (Part A + Part B)
+  -> MboExportService.generateCombinedXlsx high-level service integration
   -> formula inventory remains 0
   -> package/static/privacy preservation guards
   -> NEW output bytes / caller input immutable
@@ -60,22 +62,21 @@ OWNER TEMPLATE BYTES
 
 Part A owner counts N4..N10 and Part B N6/N7/N8 are covered by exact truth/preservation tests. b7/b8 expanded presentation is canonical-only; b1..b6 presentation remains owner-template static. Chief R:X remains non-writable privacy authority. Combined output contains Sheet 1 (`MBO Staff & Chief`) and Sheet 2 (`(Part B) Competency`), excluding Part B auxiliary `Sheet1`.
 
-R2-D1 final accepted runtime evidence on owner workstation (HEAD `ebd3e7d2770817768c61707fbbd81a8ad9e85b01`):
+R2-D2 final accepted runtime evidence on owner workstation (HEAD `da47c816150cea33a4ccbb5bd58fd0727943837a`):
 
 ```text
-Focused composer = 18/18 PASS / FAIL 0 / SKIP 0
-Frozen regression = 37/37 PASS / FAIL 0 / SKIP 0
-node --check composer = PASS
+Focused export service = 16/16 PASS / FAIL 0 / SKIP 0
+Frozen regression = 60/60 PASS / FAIL 0 / SKIP 0
+node --check service = PASS
 git diff --check = PASS
 ```
 
-`D2-WP004-R2-D1 = PASS / CLOSED`.
+`D2-WP004-R2-D2 = PASS / CLOSED`.
 
-## Current next D2 gate
+## Control status
 
 ```text
-EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
-CONTROL-PLANE PLANNING REQUIRED BEFORE IMPLEMENTATION
+R2_D2 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -84,4 +85,5 @@ DEPLOY = NONE
 D3 = HOLD
 ```
 
-Before export service integration is proposed, Control Plane must inspect current repository truth and define the smallest integration contract against the closed preparer + renderer + composer authority. Do not reopen R2-D1 or start implementation without a proven regression and explicit owner authorization.
+Do NOT start D3, Kintone writes, deployment, or new work packages until Control Plane planning is complete and explicit owner authorization is granted.
+

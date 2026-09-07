@@ -27,26 +27,23 @@ D2 closed/frozen authority:
 - R2-B2 Part B Preparer
 - R2-C Secured Semantic Renderer
 - R2-D1 Combined XLSX Composer Foundation
+- R2-D2 Combined Export Service Integration
 
-R2-D1 final closure:
+R2-D2 final closure:
 ```text
-IMPLEMENTATION = ebd3e7d2770817768c61707fbbd81a8ad9e85b01
+IMPLEMENTATION = da47c816150cea33a4ccbb5bd58fd0727943837a
 STATIC_REVIEW = PASS
-FOCUSED_RUNTIME = 18/18 PASS / FAIL 0 / SKIP 0
-FROZEN_REGRESSION = 37/37 PASS / FAIL 0 / SKIP 0
+FOCUSED_RUNTIME = 16/16 PASS / FAIL 0 / SKIP 0
+FROZEN_REGRESSION = 60/60 PASS / FAIL 0 / SKIP 0
 NODE_CHECK = PASS
 GIT_DIFF_CHECK = PASS
 VERDICT = PASS / CLOSED / FROZEN
 ```
 
-Current next D2 gate:
-```text
-EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
-CONTROL-PLANE PLANNING REQUIRED BEFORE IMPLEMENTATION
-```
-
+Control status:
 ```text
 R2_D1 = PASS / CLOSED
+R2_D2 = PASS / CLOSED
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
@@ -55,4 +52,5 @@ DEPLOY = NONE
 D3 = HOLD
 ```
 
-Do not reopen closed R2-A/R2-B1/R2-B2/R2-C/R2-D1 without proven regression. Do not auto-start export service integration. Control Plane must define the smallest exact contract from current repository truth, then obtain explicit owner authorization before any bounded Antigravity work.
+Do not reopen closed R2-A/R2-B1/R2-B2/R2-C/R2-D1/R2-D2 without proven regression. Do not auto-start D3 or new work packages. Control Plane must define the smallest exact contract from current repository truth, then obtain explicit owner authorization before any bounded Antigravity work.
+

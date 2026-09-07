@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — R2-D1 COMBINED XLSX COMPOSER CLOSED
+# AI ACTIVE TASK — R2-D2 EXPORT SERVICE INTEGRATION CLOSED
 
-Mode: **CONTROL PLANE / CLOSED R2-D1 / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
+Mode: **CONTROL PLANE / CLOSED R2-D2 / LOW-CREDIT / NO KINTONE / NO DEPLOY / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-07 ICT
 
@@ -18,8 +18,10 @@ R2_D_PRE1_R1 = PASS / CLOSED / FROZEN
 R2_D_PRE1_R2 = PASS / CLOSED / FROZEN
 R2_D1 = PASS / CLOSED
 R2_D1_R4_C1 = PASS / CLOSED
+R2_D2 = PASS / CLOSED
 COMBINED_XLSX_COMPOSER = PASS / CLOSED
-ACCEPTED_HEAD = ebd3e7d2770817768c61707fbbd81a8ad9e85b01
+COMBINED_XLSX_EXPORT_SERVICE = PASS / CLOSED
+ACCEPTED_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_D2_SOURCE_CHANGE_AUTH = NONE
 ACTIVE_D2_TEST_CHANGE_AUTH = NONE
@@ -30,15 +32,15 @@ ACTIVE_KINTONE_WRITE_AUTH = NONE
 ACTIVE_DEPLOY_AUTH = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
-EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
+EXPORT_SERVICE_INTEGRATION = PASS / CLOSED
 D3 = HOLD
 ```
 
-Owner authorization: `อนุมัติ D2-WP004-R2-D1-CLOSE documentation-only control sync ตามขอบเขตที่เสนอ`
+Owner authorization: `อนุมัติ D2-WP004-R2-D2-CLOSE documentation-only control sync ตามขอบเขตที่เสนอ`
 
-Accepted implementation HEAD: `ebd3e7d2770817768c61707fbbd81a8ad9e85b01`
+Accepted implementation HEAD: `da47c816150cea33a4ccbb5bd58fd0727943837a`
 
-Single-use token: `D2-WP004-R2-D1-CLOSE-DOCS-20260907-01`
+Single-use token: `D2-WP004-R2-D2-CLOSE-DOCS-20260907-01`
 
 ## Accepted Combined XLSX authority
 
@@ -76,27 +78,31 @@ Production composer authority features (`src/services/mbo-xlsx-combined-composer
 
 ## Verified runtime test evidence
 
-Owner workstation test results on accepted HEAD (`ebd3e7d2770817768c61707fbbd81a8ad9e85b01`):
+Owner workstation test results on accepted HEAD (`da47c816150cea33a4ccbb5bd58fd0727943837a`):
 
 ```text
-Focused composer test (tests/mbo-xlsx-combined-composer.test.js):
-  18/18 PASS / FAIL 0 / SKIP 0
+Focused export service test (tests/mbo-export-service.test.js):
+  16/16 PASS / FAIL 0 / SKIP 0
 
-Full regression suite (5 files):
-  37/37 PASS / FAIL 0 / SKIP 0
+Full regression suite (6 files):
+  60/60 PASS / FAIL 0 / SKIP 0
 
-Syntax check (node --check src/services/mbo-xlsx-combined-composer.js):
+Syntax check (node --check src/services/mbo-export-service.js):
   PASS
 
 Git diff check (git diff --check):
   PASS
 ```
 
-## Next D2 Gate
+## Control status
 
 ```text
-EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
-CONTROL-PLANE PLANNING REQUIRED BEFORE IMPLEMENTATION
+R2_D2 = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
+CLAUDE = STOP
+D3 = HOLD
 ```
 
-Do NOT start export service integration (`mbo-export-service.js`), new tests, Kintone writes, deployment, Live UAT, PDF, or D3 until Control Plane planning is complete and explicit owner authorization is granted.
+Do NOT start D3, Kintone writes, deployment, or new work packages until Control Plane planning is complete and explicit owner authorization is granted.
+

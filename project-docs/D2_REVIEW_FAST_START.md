@@ -22,24 +22,27 @@ R2_D_PRE1_R1 = PASS / CLOSED / FROZEN
 R2_D_PRE1_R2 = PASS / CLOSED / FROZEN
 R2_D1 = PASS / CLOSED
 R2_D1_R4_C1 = PASS / CLOSED
-ACCEPTED_HEAD = ebd3e7d2770817768c61707fbbd81a8ad9e85b01
+R2_D2 = PASS / CLOSED
+ACCEPTED_HEAD = da47c816150cea33a4ccbb5bd58fd0727943837a
 ACTIVE_WORK_PACKAGE = NONE
 ANTIGRAVITY = STOP
 CLAUDE = STOP
-EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
+EXPORT_SERVICE_INTEGRATION = PASS / CLOSED
 D3 = HOLD
 ```
 
-## R2-D1 closed authority
+## R2-D2 closed authority
 
 Accepted implementation HEAD:
-`ebd3e7d2770817768c61707fbbd81a8ad9e85b01`
+`da47c816150cea33a4ccbb5bd58fd0727943837a`
 
 Historical authorization:
-`อนุมัติ D2-WP004-R2-D1 SOURCE+TEST ตามขอบเขตที่เสนอ`
+`อนุมัติ D2-WP004-R2-D2-CLOSE documentation-only control sync ตามขอบเขตที่เสนอ`
 
 Implemented files:
 ```text
+src/services/mbo-export-service.js
+tests/mbo-export-service.test.js
 src/services/mbo-xlsx-combined-composer.js
 tests/mbo-xlsx-combined-composer.test.js
 ```
@@ -48,11 +51,15 @@ Composer inputs are already-rendered Part A/Part B bytes. Mapping for styles/sha
 
 The composer preserves rendered Print_Areas, privacy, secured values, formula inventory zero, Part A package authority, and remaps Part B styles/SST/drawing/printerSettings/workbook metadata using source-derived collision-safe paths/IDs, with strict bidirectional OOXML relationship validation and internal-only worksheet target authority (`TargetMode="Internal"`).
 
-## Next D2 Gate
+## Control status
 
 ```text
-EXPORT_SERVICE_INTEGRATION = NEXT D2 GATE / NOT AUTHORIZED
-CONTROL-PLANE PLANNING REQUIRED BEFORE IMPLEMENTATION
+R2_D2 = PASS / CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+ANTIGRAVITY = STOP
+CLAUDE = STOP
+D3 = HOLD
 ```
 
-Do NOT start export service integration (`mbo-export-service.js`), new tests, Kintone writes, deployment, Live UAT, PDF, or D3 until Control Plane planning is complete and explicit owner authorization is granted.
+Do NOT start D3 or new work packages until Control Plane planning is complete and explicit owner authorization is granted.
+
