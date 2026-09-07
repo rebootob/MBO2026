@@ -2,7 +2,7 @@
 
 ## Overview & Progress Weighting Model
 
-Overall project progress is calculated from this canonical inventory of 58 material MBO2026 functions across 18 operational domains (A–R).
+Overall project progress is calculated from this canonical inventory of 69 material MBO2026 functions across 19 operational domains (A–S).
 
 ### Weighting Scale
 - `NOT_DEFINED` = 0%
@@ -49,6 +49,7 @@ A function is marked `CLOSED` if and only if:
 | `SELF-002` | Employee Main App Classic UI Integration | D1 | YES | YES | PASS | PASS | PASS | `src/ui/mbo-employee-app-classic.js`, `tests/employee-main-mbo-app-integration.test.js` | NONE | **CLOSED** |
 | `SELF-003` | Employee Self Index Navigation | D1 | YES | YES | PASS | PASS | PASS | `src/ui/employee-self-index.js`, `tests/employee-self-index-ui.test.js` | NONE | **CLOSED** |
 | `SELF-004` | Employee Record Navigation | D1 | YES | YES | PASS | PASS | PASS | `src/ui/employee-record-nav.js`, `tests/employee-record-navigation.test.js` | NONE | **CLOSED** |
+| `SELF-005` | Employee App Custom Header & Stage Indicator UI | D1 | YES | YES | PASS | PASS | PASS | `src/ui/employee-app-ui.js`, `tests/employee-app-ui.test.js` | NONE | **CLOSED** |
 
 ---
 
@@ -60,6 +61,8 @@ A function is marked `CLOSED` if and only if:
 | `MBO-002` | Annual Record Initialization | D1 | YES | YES | PASS | PASS | PASS | `src/core/annual-record-initialization.js`, `tests/annual-record-initialization.test.js` | NONE | **CLOSED** |
 | `MBO-003` | Kintone Field Normalizer & Record Reader | D1 | YES | YES | PASS | PASS | N/A (Core parser) | `src/core/kintone-normalizer.js`, `tests/kintone-normalizer.test.js` | NONE | **CLOSED** |
 | `MBO-004` | Record Key Derivation & Uniqueness Guard | D1 | YES | YES | PASS | PASS | N/A (Guard engine) | `src/core/record-key.js`, `tests/record-key.test.js` | NONE | **CLOSED** |
+| `MBO-005` | Fiscal Year Config & Timeline Resolver | D1 | YES | YES | PASS | PASS | N/A (Timeline engine) | `src/core/fiscal-year-config.js`, `tests/fiscal-year-config.test.js` | NONE | **CLOSED** |
+| `MBO-006` | Annual App Data Store & Local Cache | D1 | YES | YES | PASS | PASS | N/A (Data store) | `src/core/annual-app-store.js`, `tests/annual-app-store.test.js` | NONE | **CLOSED** |
 
 ---
 
@@ -89,6 +92,7 @@ A function is marked `CLOSED` if and only if:
 | `ROUTE-002` | App795 Team Routing Resolver | D1 | YES | YES | PASS | PASS | PASS | `src/services/app795-team-routing.js`, `tests/app795-team-routing.test.js` | NONE | **CLOSED** |
 | `ROUTE-003` | MBO Approval Task & Assignee Verification Service | D1 | YES | YES | PASS | PASS | PASS | `src/services/mbo-approval-task-service.js`, `tests/mbo-approval-task-service.test.js` | NONE | **CLOSED** |
 | `ROUTE-004` | App794 Workflow Action Executions | D3 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` | D3 Hold | **DEFINED** |
+| `ROUTE-005` | Step Name Resolver & Route Display Mapping | D1 | YES | YES | PASS | PASS | PASS | `src/services/routing-service.js`, `tests/routing-service.test.js` | NONE | **CLOSED** |
 
 ---
 
@@ -100,6 +104,8 @@ A function is marked `CLOSED` if and only if:
 | `SCORE-002` | Position to Profile Mapping | D1 | YES | YES | PASS | PASS | PASS | `src/core/position-profile-mapping-closure.js`, `tests/position-profile-mapping-closure.test.js` | NONE | **CLOSED** |
 | `SCORE-003` | Part A Objective Scoring Engine | D1 | YES | YES | PASS | PASS | PASS | `src/core/kintone-normalizer.js`, `tests/profile-scoring-resolver.test.js` | NONE | **CLOSED** |
 | `SCORE-004` | Part B Competency Scoring Engine | D1 | YES | YES | PASS | PASS | PASS | `src/core/kintone-normalizer.js`, `tests/profile-scoring-resolver.test.js` | NONE | **CLOSED** |
+| `SCORE-005` | Combined Score Matrix Calculator | D1 | YES | YES | PASS | PASS | PASS | `src/core/scoring-calculator.js`, `tests/scoring-calculator.test.js` | NONE | **CLOSED** |
+| `SCORE-006` | Grade Cutoff & Evaluation Rating Mapper | D1 | YES | YES | PASS | PASS | PASS | `src/core/grade-cutoff.js`, `tests/grade-cutoff.test.js` | NONE | **CLOSED** |
 
 ---
 
@@ -131,7 +137,7 @@ A function is marked `CLOSED` if and only if:
 | `XLSX-004` | Production Semantic Value Renderer | D2 | YES | YES | PASS | PASS | PASS | `src/services/mbo-xlsx-semantic-renderer.js`, `tests/mbo-xlsx-semantic-renderer.test.js` | NONE | **CLOSED** |
 | `XLSX-005` | Combined Workbook Composer | D2 | YES | YES | PASS | PASS | PASS | `src/services/mbo-xlsx-combined-composer.js`, `tests/mbo-xlsx-combined-composer.test.js` | NONE | **CLOSED** |
 | `XLSX-006` | MBO Export Service Authorization & Generation | D2 | YES | YES | PASS | PASS | PASS | `src/services/mbo-export-service.js`, `tests/mbo-export-service.test.js` | NONE | **CLOSED** |
-| `XLSX-007` | PDF Document Generator / Export Conversion | D2 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/EXCEL_EXPORT.md` | D2 Completion | **DEFINED** |
+| `XLSX-007` | PDF Document Generator / Export Conversion | D2 | YES | NO | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `project-docs/EXCEL_EXPORT.md` | Pending Scope Review (PROD_BLOCKING=NO) | **DEFINED** |
 
 ---
 
@@ -139,7 +145,7 @@ A function is marked `CLOSED` if and only if:
 
 | FUNCTION_ID | FUNCTION_NAME | D_STAGE | REQ_DEF | SRC_IMP | TEST_STATUS | SANDBOX_STATUS | UAT_STATUS | EVIDENCE | BLOCKER | STATUS |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- | :--- | :--- |
-| `HRCC-001` | HR Dashboard & Monitoring Service | D4 | YES | YES | NOT_TESTED | NOT_VERIFIED | NOT_TESTED | `src/services/hr-dashboard-service.js` | D4 Hold | **IMPLEMENTED** |
+| `HRCC-001` | HR Dashboard & Monitoring Service | D4 | YES | YES | PASS | NOT_VERIFIED | NOT_TESTED | `src/services/hr-dashboard-service.js`, `tests/hr-dashboard-service.test.js` (3 PASS) | D4 Hold | **TESTED** |
 | `HRCC-002` | HR Control Center Reset UI | D4 | YES | YES | PASS | NOT_VERIFIED | NOT_TESTED | `src/ui/hr-control-center-reset-ui.js`, `tests/hr-control-center-reset-ui.test.js` | D4 Hold | **TESTED** |
 | `HRCC-003` | Admin Support Center Operations | D4 | YES | YES | PASS | NOT_VERIFIED | NOT_TESTED | `src/services/admin-support-center.js`, `tests/admin-support-center.test.js` | D4 Hold | **TESTED** |
 
@@ -179,6 +185,9 @@ A function is marked `CLOSED` if and only if:
 | `DIAG-001` | Safety Guard & Host Resolver | D1 | YES | YES | PASS | PASS | N/A (Internal guard) | `src/core/safety-guard.js`, `tests/safety-guard.test.js` | NONE | **CLOSED** |
 | `DIAG-002` | Sandbox Write Guard | D1 | YES | YES | PASS | PASS | N/A (Internal guard) | `src/core/sandbox-write-guard.js`, `tests/sandbox-write-guard.test.js` | NONE | **CLOSED** |
 | `DIAG-003` | Lookup Atomicity & Stale State Recovery | D1 | YES | YES | PASS | PASS | N/A (Internal guard) | `src/core/lookup-atomicity-stale-state.js`, `tests/lookup-atomicity-stale-state.test.js` | NONE | **CLOSED** |
+| `DIAG-004` | Browser Host Identification & Port Guard | D1 | YES | YES | PASS | PASS | N/A (Internal guard) | `src/core/browser-host-guard.js`, `tests/browser-host-guard.test.js` | NONE | **CLOSED** |
+| `DIAG-005` | Mock Environment Safety Isolator | D1 | YES | YES | PASS | PASS | N/A (Internal guard) | `src/core/mock-environment-isolator.js`, `tests/mock-environment-isolator.test.js` | NONE | **CLOSED** |
+| `DIAG-006` | Error Boundary & Logging Middleware | D4 | YES | YES | PASS | NOT_VERIFIED | NOT_TESTED | `src/middleware/error-boundary.js`, `tests/error-boundary.test.js` | D4 Hold | **TESTED** |
 
 ---
 
@@ -212,18 +221,27 @@ A function is marked `CLOSED` if and only if:
 
 ---
 
+### Domain S: Attachments (`ATTACH`)
+
+| FUNCTION_ID | FUNCTION_NAME | D_STAGE | REQ_DEF | SRC_IMP | TEST_STATUS | SANDBOX_STATUS | UAT_STATUS | EVIDENCE | BLOCKER | STATUS |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :--- | :--- | :--- |
+| `ATTACH-001` | Attachment File Upload & REST Binding Service | D1 | YES | YES | PASS | PASS | PASS | `src/services/mbo-attachment-service.js`, `tests/timeline-truthfulness-and-attachment.test.js` | NONE | **CLOSED** |
+| `ATTACH-002` | Attachment UI Preview & File Type Guard | D1 | YES | YES | PASS | PASS | PASS | `src/services/mbo-attachment-service.js`, `tests/timeline-truthfulness-and-attachment.test.js` | NONE | **CLOSED** |
+
+---
+
 ## Matrix Summary & Progress Tally
 
-- **Total Inventoried Functions**: `58`
-- **CLOSED (100% weight)**: `41` (4100 pts)
+- **Total Inventoried Functions**: `69`
+- **CLOSED (100% weight)**: `51` (5100 pts)
 - **UAT_PASS (95% weight)**: `0` (0 pts)
 - **SANDBOX_VERIFIED (80% weight)**: `0` (0 pts)
-- **TESTED (65% weight)**: `4` (260 pts)
-- **IMPLEMENTED (40% weight)**: `1` (40 pts)
+- **TESTED (65% weight)**: `6` (390 pts)
+- **IMPLEMENTED (40% weight)**: `0` (0 pts)
 - **DEFINED (10% weight)**: `10` (100 pts)
 - **NOT_DEFINED (0% weight)**: `2` (0 pts)
-- **BLOCKED**: `15` (retains technical level, flagged above)
+- **BLOCKED**: `18` (retains technical level, flagged above)
 - **DEFERRED**: `0`
 
-**Total Score**: 4500 / 5800
-**Calculated Progress**: **77.59%**
+**Total Score**: 5590 / 6900
+**Calculated Progress**: **81.01%**
