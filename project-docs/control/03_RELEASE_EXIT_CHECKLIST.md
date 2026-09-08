@@ -94,10 +94,10 @@ Owner UAT of the full user journey remains separate and incomplete.
 
 ## Exit sequence
 
-1. Execute authorized App794 Sandbox deployment only.
-2. ChatGPT independently reviews deployment evidence and deployed bytes.
-3. Owner performs the four focused runtime UAT cases.
-4. If PASS, resume broader Owner UAT.
-5. Recompute/reclose SEC/SELF/UAT release gates only from real evidence.
+1. App794 candidate deployment and CSS filename migration are already PASS / CLOSED.
+2. Owner performs the four focused runtime UAT cases.
+3. ChatGPT / Control Plane independently reviews Owner runtime evidence.
+4. If focused D1 UAT passes, resume broader Owner UAT as governed by current control documents.
+5. Recompute/reclose SEC / SELF / UAT release gates only from real Owner evidence.
 6. D3 remains HOLD until explicitly authorized.
-7. Production cutover remains forbidden.
+7. Production cutover remains forbidden until all release gates and Owner signoff are satisfied.

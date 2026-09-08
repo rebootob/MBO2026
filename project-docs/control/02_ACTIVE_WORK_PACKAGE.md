@@ -4,12 +4,6 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-# MBO2026 Active Work Package Contract
-
-Updated: 2026-09-08 ICT
-
-## Current contract state
-
 - **ACTIVE_WORK_PACKAGE**: `D1-UAT-OWNER-RUNTIME-UAT-READINESS`
 - **OWNER_AUTHORIZATION**: `Owner Runtime UAT Readiness (Post Deploy & Migration Closure)`
 - **STATUS**: `READY FOR OWNER RUNTIME UAT`
