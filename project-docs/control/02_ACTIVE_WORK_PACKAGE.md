@@ -4,25 +4,25 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003-SANDBOX-DEPLOY-R1`
-- **TITLE**: `App794 Sandbox Deployment — DEFECT-003`
-- **TYPE**: `APP794 CUSTOMIZATION DEPLOY`
+- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003-CLOSE-R1`
+- **TITLE**: `Owner UAT Evidence + D1 Final Closure Control Sync`
+- **TYPE**: `DOCS-ONLY FINAL CLOSURE`
 - **OWNER_AUTHORIZATION**: `APPROVED`
-- **AUTHORIZATION_ID**: `D1-UAT-DEFECT-003-SANDBOX-DEPLOY-20260908-01`
 - **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
-- **EXECUTION_SOURCE_HEAD**: `2a02ab2583f53c3906674713c2e09e1757449ba8`
+- **EXECUTION_SOURCE_HEAD**: `8e646c23768c7c7339185c6a92abcf0369dbe219`
 - **ORIGINAL_OWNER_UAT**: `4/4 PASS`
-- **DEFECT003_STATUS**: `SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILD PASS / SANDBOX DEPLOYED / OWNER DEFECT-003 UAT PENDING`
-- **APP794_PRE_DEPLOY_REVISION**: `69`
-- **APP794_POST_DEPLOY_REVISION**: `70`
+- **DEFECT003_OWNER_UAT**: `3/3 PASS`
+- **DEFECT003_STATUS**: `PASS / CLOSED`
+- **APP794_LIVE_REVISION**: `70`
 - **LIVE_JS_BLOB**: `204d34db9e2eab297409a6a3d5e7f29c649779d5`
 - **LIVE_CSS_BLOB**: `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`
-- **D1_FINAL_CLOSURE**: `HOLD pending DEFECT-003 Owner UAT + Control Plane review`
+- **D1_UAT_CORRECTIVE_CHAIN**: `COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW`
+- **D1_FINAL_CLOSURE**: `AWAITING CONTROL PLANE REVIEW`
 - **D2_ENGINEERING**: `PASS / CLOSED / DURABLE`
 - **D3**: `HOLD`
 - **PRODUCTION_READY**: `NO`
-- **DEPLOYMENT_AUTHORIZATION**: `CONSUMED / CLOSED`
-- **KINTONE_WRITES_AUTHORIZED**: `NONE AFTER EXECUTION`
+- **DEPLOYMENT_AUTHORIZED**: `NO`
+- **KINTONE_WRITES_AUTHORIZED**: `NONE`
 - **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
 
 ## Completed predecessor work packages
@@ -77,17 +77,16 @@ The original 4 Owner Runtime UAT cases on App794 were executed and verified by O
 
 These 4 tests are complete and MUST NOT be re-requested or repeated.
 
-### Focused Owner UAT for DEFECT-003 (Ready for Owner Execution)
-With App794 Live at revision 70, the following focused UAT checks are ready for Owner testing:
-1. **DEFECT003-UAT-1**: In MBO Login overlay, click "กลับหน้าหลัก Kintone / Back to Kintone Home" -> cleanly exits blocking overlay back to Kintone portal.
-2. **DEFECT003-UAT-2**: In MBO Login overlay, click "ลืมรหัสผ่าน / Forgot Password" -> bilingual HR/Administrator support guidance appears without password reset or session change.
-3. **DEFECT003-UAT-3**: Enter Employee 0113 under shared account -> `DEDICATED_ACCOUNT_REQUIRED` denial appears, and Back to Kintone Home button remains active and functional.
+### Focused Owner UAT for DEFECT-003: 3/3 PASS (Owner Verified)
+The focused Owner UAT checks on App 794 Live (Revision 70) were personally executed by Owner:
+1. **DEFECT003-UAT-1 (Back to Kintone Home)**: PASS (Owner confirmed clicking Back Home cleanly exits blocking overlay to Kintone home).
+2. **DEFECT003-UAT-2 (Forgot Password Guidance)**: PASS (Owner confirmed bilingual HR/Admin support guidance appears, no reset triggered).
+3. **DEFECT003-UAT-3 (Dedicated Account Deny & Back Home Usable)**: PASS (Owner confirmed dedicated denial remains active and Back Home button functions cleanly).
 
 ## Next permitted action
 
-- Owner executes the 3 DEFECT-003 runtime UAT checks above.
-- ChatGPT Control Plane independent review of `D1-UAT-DEFECT-003-SANDBOX-DEPLOY-R1` evidence and Owner UAT results.
-- D3 remains strictly on HOLD until DEFECT-003 UAT and Control Plane review are complete.
+- ChatGPT Control Plane independent review of `D1-UAT-DEFECT-003-CLOSE-R1` evidence and final D1 closure.
+- D3 remains strictly on HOLD until Control Plane completes final review and formally authorizes transition.
 
 ## Permanent rules
 

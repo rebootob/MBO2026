@@ -5,14 +5,15 @@ Updated: 2026-09-08 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp00
 ## Current canonical checkpoint
 
 ```text
-REVIEWED_SOURCE_HEAD = 2a02ab2583f53c3906674713c2e09e1757449ba8
+REVIEWED_SOURCE_HEAD = 8e646c23768c7c7339185c6a92abcf0369dbe219
 CANONICAL_HEAD = FRESH-FETCH ai/antigravity-wp002c BEFORE ACTING
 D1_BASE_ARCHITECTURE = CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
 D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
 D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILD PASS / SANDBOX DEPLOYED (REV 70) / OWNER DEFECT-003 UAT PENDING
-D1_FINAL_CLOSURE = HOLD pending DEFECT-003 Owner UAT + Control Plane review
+D1-UAT-DEFECT-003 = PASS / CLOSED (SOURCE REVIEW PASS / FOCUSED TEST PASS 113/113 / CANDIDATE BUILD PASS / SANDBOX DEPLOY PASS / OWNER RUNTIME UAT 3/3 PASS)
+D1_UAT_CORRECTIVE_CHAIN = COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
+D1_FINAL_CLOSURE = AWAITING CONTROL PLANE REVIEW
 APP794_LIVE_REVISION = 70
 APP794_CSS_TARGET = CANONICAL (mbo-employee.css)
 D2_ENGINEERING = PASS / CLOSED / DURABLE
@@ -107,14 +108,16 @@ Deployment work package `D1-UAT-DEFECT-003-SANDBOX-DEPLOY-R1` is completed (Rev 
 
 These 4 tests are complete and MUST NOT be repeated or presented as pending.
 
-### Focused Owner UAT for DEFECT-003 (Ready for Owner Execution)
-With App 794 Live at revision 70, the following focused checks are ready for Owner testing:
-1. Back to Kintone Home button exits blocking login overlay.
-2. Forgot Password reveals bilingual HR/Administrator support info.
-3. Dedicated Account Deny screen keeps Back Home button accessible.
+### Focused Owner UAT for DEFECT-003: 3/3 PASS (Owner Verified)
+The focused Owner UAT checks on App 794 Live (Revision 70) were personally executed by Owner:
+1. Back to Kintone Home button exits blocking login overlay = PASS.
+2. Forgot Password reveals bilingual HR/Administrator support info = PASS.
+3. Dedicated Account Deny screen keeps Back Home button accessible = PASS.
 
-Do not mark Owner UAT PASS until the Owner performs these runtime checks.
-D3 remains strictly on HOLD until DEFECT-003 Owner UAT is completed and reviewed.
+- **DEFECT-003 Status**: PASS / CLOSED
+- **D1 UAT Corrective Chain**: COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
+- **D1 Final Closure Status**: AWAITING CONTROL PLANE REVIEW (Antigravity must not self-certify PASS)
+- **D3 Status**: STRICT HOLD (Pending Control Plane review and explicit D3 work package authorization)
 
 ## Startup order for next chat
 
@@ -123,7 +126,6 @@ D3 remains strictly on HOLD until DEFECT-003 Owner UAT is completed and reviewed
 3. Read `AI_CONTROL_CENTER.md`.
 4. Read `AI_ACTIVE_TASK.md`.
 5. Read `control/00_MASTER_DELIVERY_CONTROL.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
-6. Inspect `project-docs/D1_UAT_DEFECT_003_R1_TEST_CONTROL_EVIDENCE.md`, `project-docs/D1_UAT_DEFECT_003_BUILD_R1_EVIDENCE.md`, and `project-docs/D1_UAT_DEFECT_003_SANDBOX_DEPLOY_R1_EVIDENCE.md`.
-7. Assist Owner with runtime execution of the 3 DEFECT-003 UAT checks.
-8. Wait for Control Plane (ChatGPT) review.
-9. Do not start D3.
+6. Inspect `project-docs/D1_UAT_DEFECT_003_OWNER_UAT_CLOSE_R1_EVIDENCE.md` and related evidence files.
+7. Wait for Control Plane (ChatGPT) final D1 closure review.
+8. Do not start D3 without explicit Owner authorization.

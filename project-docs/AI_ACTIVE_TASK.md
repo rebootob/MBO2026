@@ -11,8 +11,9 @@ D1_BASE_ARCHITECTURE = CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
 D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
 D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILD PASS / SANDBOX DEPLOYED / OWNER DEFECT-003 UAT PENDING
-D1_FINAL_CLOSURE = HOLD pending DEFECT-003 Owner UAT + Control Plane review
+D1-UAT-DEFECT-003 = PASS / CLOSED (SOURCE REVIEW PASS / FOCUSED TEST PASS 113/113 / CANDIDATE BUILD PASS / SANDBOX DEPLOY PASS / OWNER RUNTIME UAT 3/3 PASS)
+D1_UAT_CORRECTIVE_CHAIN = COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
+D1_FINAL_CLOSURE = AWAITING CONTROL PLANE REVIEW
 APP794_LIVE_REVISION = 70
 APP794_LIVE_JS = mbo-employee-app.js (blob 204d34db9e2eab297409a6a3d5e7f29c649779d5)
 APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
@@ -20,7 +21,7 @@ D2_ENGINEERING = PASS / CLOSED / DURABLE
 D3 = HOLD
 PRODUCTION_READY = NO
 DEPLOYMENT_AUTHORIZATION = CONSUMED / CLOSED
-KINTONE_WRITE_AUTHORIZATION = NONE AFTER EXECUTION
+KINTONE_WRITE_AUTHORIZATION = NONE
 ```
 
 ## Active defect summary
@@ -83,14 +84,17 @@ App 794 Sandbox deployment for DEFECT-003 is completely executed and verified:
 3. Zero records, schemas, layouts, ACLs, or workflows modified across all apps.
 4. Deployment authorization is now CONSUMED and CLOSED. Zero further Kintone writes or deploys authorized.
 
-## Active stage: Ready for DEFECT-003 Focused Owner Runtime UAT
+## Active stage: DEFECT-003 Owner UAT Completed / Awaiting Control Plane Final Closure Review
 
-App 794 (Live revision 70) is ready for Owner runtime testing of DEFECT-003.
+DEFECT-003 focused Owner runtime UAT is completed and verified (3/3 PASS).
+- `D1-UAT-DEFECT-003` is PASS / CLOSED across its full lifecycle.
+- D1 corrective chain is COMPLETE and ready for independent Control Plane (ChatGPT) final closure review.
+- D1 Final Closure status: AWAITING CONTROL PLANE REVIEW.
 
 ## Owner Runtime UAT Status
 
 ### Original Focused UAT: 4/4 PASS (Locked Truth)
-The original 4 Owner Runtime UAT cases on App794 were executed and verified by Owner:
+The original 4 Owner Runtime UAT cases on App794 remain locked and accepted:
 1. **Dedicated Account Test (Ms.Papatchaya auto-bind 0113)**: PASS
 2. **Shared Login Boundary Test (tmh + 0113 DENY)**: PASS
 3. **Shared Login Boundary Test (tmh + shared employee ALLOW)**: PASS
@@ -98,11 +102,12 @@ The original 4 Owner Runtime UAT cases on App794 were executed and verified by O
 
 DO NOT re-request or repeat these 4 tests.
 
-### Focused Owner UAT for DEFECT-003 (Now Ready for Owner Execution)
-With App 794 Live at revision 70, the following focused Owner UAT checks are ready to run:
-1. **DEFECT003-UAT-1**: In MBO Login overlay, click "กลับหน้าหลัก Kintone / Back to Kintone Home" -> cleanly exits blocking overlay back to Kintone portal.
-2. **DEFECT003-UAT-2**: In MBO Login overlay, click "ลืมรหัสผ่าน / Forgot Password" -> bilingual HR/Administrator support text appears without password reset or session change.
-3. **DEFECT003-UAT-3**: Enter Employee 0113 under shared account -> `DEDICATED_ACCOUNT_REQUIRED` denial appears, and Back to Kintone Home button remains active and functional.
+### Focused Owner UAT for DEFECT-003: 3/3 PASS (Owner Verified)
+The focused Owner UAT checks on App 794 Live (Revision 70) were personally executed by Owner:
+1. **DEFECT003-UAT-1 (Back to Kintone Home)**: PASS (Owner confirmed clicking Back Home cleanly exits blocking overlay to Kintone home).
+2. **DEFECT003-UAT-2 (Forgot Password Guidance)**: PASS (Owner confirmed bilingual HR/Admin support guidance appears, no reset triggered).
+3. **DEFECT003-UAT-3 (Dedicated Account Deny & Back Home Usable)**: PASS (Owner confirmed dedicated denial remains active and Back Home button functions cleanly).
 
-Do not self-certify DEFECT-003 Owner UAT PASS.
-D3 remains strictly on HOLD until DEFECT-003 focused UAT is completed and reviewed.
+- **DEFECT-003 Owner UAT Total**: 3/3 PASS.
+- Antigravity does NOT self-certify independent Control Plane final PASS.
+- D3 remains strictly on HOLD awaiting Control Plane final review and stage authorization.
