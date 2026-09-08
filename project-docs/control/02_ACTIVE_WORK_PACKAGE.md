@@ -4,14 +4,16 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003-R1`
-- **TITLE**: `TEST + CONTROL-DOC Corrective`
-- **TYPE**: `TEST + CONTROL-DOC CORRECTIVE`
+- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003-BUILD-R1`
+- **TITLE**: `App794 Candidate Build & Artifact Verification`
+- **TYPE**: `BUILD + ARTIFACT VERIFICATION`
 - **OWNER_AUTHORIZATION**: `APPROVED`
 - **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
-- **SOURCE_IMPLEMENTATION_HEAD**: `e5ec45f98eaf28cca0dd959ce24bfe3e4fc055c9`
+- **SOURCE_HEAD**: `2a286acf35dfef969cfa41b0f0bfd93a8d0f66b3`
 - **ORIGINAL_OWNER_UAT**: `4/4 PASS`
-- **DEFECT003_STATUS**: `SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING`
+- **DEFECT003_STATUS**: `SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILT / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING`
+- **CANDIDATE_JS_BLOB**: `204d34db9e2eab297409a6a3d5e7f29c649779d5`
+- **CANDIDATE_CSS_BLOB**: `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`
 - **D1_FINAL_CLOSURE**: `HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review`
 - **D2_ENGINEERING**: `PASS / CLOSED / DURABLE`
 - **D3**: `HOLD`
@@ -82,8 +84,8 @@ The following focused UAT applies **only** after a future separately authorized 
 
 ## Next permitted action
 
-- ChatGPT Control Plane independent review of `D1-UAT-DEFECT-003-R1`.
-- If Control Plane accepts R1, next separate step may be build/release candidate -> separately authorized App794 deploy -> DEFECT-003 focused Owner UAT only.
+- ChatGPT Control Plane independent review of `D1-UAT-DEFECT-003-BUILD-R1`.
+- If Control Plane accepts candidate build, next separate step is separately authorized App794 deploy -> DEFECT-003 focused Owner UAT only.
 - D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Control Plane review are complete.
 
 ## Permanent rules

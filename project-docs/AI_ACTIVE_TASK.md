@@ -11,7 +11,7 @@ D1_BASE_ARCHITECTURE = CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
 D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
 D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILT / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
 D1_FINAL_CLOSURE = HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review
 D2_ENGINEERING = PASS / CLOSED / DURABLE
 D3 = HOLD
@@ -77,12 +77,15 @@ App 794 Sandbox deployment and CSS filename migration are completely executed an
 3. Zero records, schemas, layouts, ACLs, or workflows modified across all apps.
 4. Deployment work packages are now CLOSED. No further Kintone writes or deploys are authorized.
 
-## Active stage: DEFECT-003 Corrective Verification Completed
+## Active stage: D1-UAT-DEFECT-003-BUILD-R1 Executed
 
-DEFECT-003 test and control-doc corrective verification is completed:
-- Independent test execution PASS: 113 total, 113 PASS, 0 FAIL, 0 SKIP, exit code 0.
-- Current state: Awaiting Control Plane (ChatGPT) independent review.
-- No deploy authority exists in this work package (Kintone writes = 0, builds = 0, deploys = 0).
+Candidate bundle build is completed and verified:
+- Build command `npm run ui:build` executed with exit code 0.
+- Candidate JS blob: `204d34db9e2eab297409a6a3d5e7f29c649779d5` (554,900 bytes).
+- Candidate CSS blob: `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` (43,728 bytes, byte-identical to Rev 69).
+- Defect-003 markers verified present in candidate bundle.
+- Current state: EXECUTED / Awaiting Control Plane (ChatGPT) review.
+- Deployment authorization: NO (Kintone writes = 0, deploys = 0).
 
 ## Owner Runtime UAT Status
 

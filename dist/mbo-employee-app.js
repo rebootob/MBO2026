@@ -7030,8 +7030,9 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
      * @param {import('./mbo-session-manager.js').MboSessionManager|null} [options.sessionManager=null]
      * @param {function} [options.onReload] - injectable for tests; defaults to location.reload
      * @param {function} [options.checkSharedEligibility=null] - async (employeeCode) => eligibilityResult
+     * @param {function} [options.onExitToKintoneHome=null] - injectable navigation callback; defaults to window.location.assign('/k/')
      */
-    constructor(adapter, { sessionManager = null, onReload = null, checkSharedEligibility = null } = {}) {
+    constructor(adapter, { sessionManager = null, onReload = null, checkSharedEligibility = null, onExitToKintoneHome = null } = {}) {
       this.adapter = adapter;
       this.sessionManager = sessionManager;
       this.checkSharedEligibility = checkSharedEligibility;
@@ -7039,6 +7040,11 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       this._pendingForceChange = false;
       this._onReload = onReload || (() => {
         if (typeof location !== "undefined") location.reload();
+      });
+      this._onExitToKintoneHome = onExitToKintoneHome || (() => {
+        if (typeof window !== "undefined" && window.location && typeof window.location.assign === "function") {
+          window.location.assign("/k/");
+        }
       });
     }
     // ---------------------------------------------------------------------------
@@ -7336,8 +7342,43 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       submitBtn.type = "submit";
       submitBtn.textContent = "Login";
       styled(submitBtn, "width:100%;padding:10px;background:#0057b8;color:#fff;border:none;border-radius:4px;font-size:15px;cursor:pointer;");
+      const forgotPwBtn = ce("button");
+      forgotPwBtn.type = "button";
+      forgotPwBtn.setAttribute("data-mbo-forgot-password-btn", "");
+      forgotPwBtn.textContent = "\u0E25\u0E37\u0E21\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19? / Forgot Password?";
+      styled(forgotPwBtn, "display:block;width:100%;margin-top:12px;background:none;border:none;color:#0057b8;font-size:13px;cursor:pointer;text-align:center;text-decoration:underline;padding:4px 0;");
+      const forgotPwHelp = ce("div");
+      forgotPwHelp.setAttribute("data-mbo-forgot-password-help", "");
+      forgotPwHelp.setAttribute("role", "region");
+      forgotPwHelp.setAttribute("aria-label", "Password Reset Guidance");
+      forgotPwHelp.setAttribute("hidden", "");
+      styled(forgotPwHelp, "display:none;margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;color:#475569;line-height:1.5;white-space:pre-wrap;");
+      forgotPwHelp.textContent = "\u0E25\u0E37\u0E21\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19 MBO \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D HR \u0E2B\u0E23\u0E37\u0E2D System Administrator \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E02\u0E2D\u0E23\u0E35\u0E40\u0E0B\u0E47\u0E15\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19\nForgot your MBO password? Please contact HR or the System Administrator to request a password reset.";
+      let helpVisible = false;
+      forgotPwBtn.addEventListener("click", () => {
+        helpVisible = !helpVisible;
+        if (helpVisible) {
+          if (typeof forgotPwHelp.removeAttribute === "function") forgotPwHelp.removeAttribute("hidden");
+          styled(forgotPwHelp, "display:block;margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;color:#475569;line-height:1.5;white-space:pre-wrap;");
+        } else {
+          forgotPwHelp.setAttribute("hidden", "");
+          styled(forgotPwHelp, "display:none;margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:12px;color:#475569;line-height:1.5;white-space:pre-wrap;");
+        }
+      });
+      const backHomeBtn = ce("button");
+      backHomeBtn.type = "button";
+      backHomeBtn.setAttribute("data-mbo-back-home", "");
+      backHomeBtn.setAttribute("data-mbo-back-home-btn", "");
+      backHomeBtn.textContent = "\u0E01\u0E25\u0E31\u0E1A\u0E2B\u0E19\u0E49\u0E32\u0E2B\u0E25\u0E31\u0E01 Kintone / Back to Kintone Home";
+      styled(backHomeBtn, "display:block;width:100%;margin-top:16px;padding:10px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:4px;font-size:14px;cursor:pointer;text-align:center;");
+      backHomeBtn.addEventListener("click", () => {
+        this._onExitToKintoneHome();
+      });
       form.appendChild(errorEl);
       form.appendChild(submitBtn);
+      form.appendChild(forgotPwBtn);
+      form.appendChild(forgotPwHelp);
+      form.appendChild(backHomeBtn);
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         errorEl.textContent = "";
@@ -7375,7 +7416,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       overlay.appendChild(card);
       host.appendChild(overlay);
       const usernameInput = form.querySelector('[name="username"]');
-      if (usernameInput) usernameInput.focus();
+      if (usernameInput && typeof usernameInput.focus === "function") usernameInput.focus();
     }
     // ---------------------------------------------------------------------------
     // Internal: Force Password Change card (replaces login card content)
@@ -7399,8 +7440,18 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       submitBtn.type = "submit";
       submitBtn.textContent = "Set New Password";
       styled(submitBtn, "width:100%;padding:10px;background:#0057b8;color:#fff;border:none;border-radius:4px;font-size:15px;cursor:pointer;");
+      const backHomeBtn = ce("button");
+      backHomeBtn.type = "button";
+      backHomeBtn.setAttribute("data-mbo-back-home", "");
+      backHomeBtn.setAttribute("data-mbo-back-home-btn", "");
+      backHomeBtn.textContent = "\u0E01\u0E25\u0E31\u0E1A\u0E2B\u0E19\u0E49\u0E32\u0E2B\u0E25\u0E31\u0E01 Kintone / Back to Kintone Home";
+      styled(backHomeBtn, "display:block;width:100%;margin-top:16px;padding:10px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;border-radius:4px;font-size:14px;cursor:pointer;text-align:center;");
+      backHomeBtn.addEventListener("click", () => {
+        this._onExitToKintoneHome();
+      });
       form.appendChild(errorEl);
       form.appendChild(submitBtn);
+      form.appendChild(backHomeBtn);
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         errorEl.textContent = "";
@@ -7422,7 +7473,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       card.appendChild(note);
       card.appendChild(form);
       const firstInput = form.querySelector('[name="newPassword"]');
-      if (firstInput) firstInput.focus();
+      if (firstInput && typeof firstInput.focus === "function") firstInput.focus();
     }
     // ---------------------------------------------------------------------------
     // Internal: Change Password dialog (authenticated own-password change)
@@ -7496,7 +7547,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       overlay.appendChild(card);
       host.appendChild(overlay);
       const firstInput = form.querySelector('[name="currentPassword"]');
-      if (firstInput) firstInput.focus();
+      if (firstInput && typeof firstInput.focus === "function") firstInput.focus();
     }
     // ---------------------------------------------------------------------------
     // Internal: helper — labeled input group

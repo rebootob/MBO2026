@@ -27,10 +27,10 @@ PRODUCTION_READY = NO
 ```text
 D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS (DEPLOYED REV 69)
 D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS (DEPLOYED REV 69)
-D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILT / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
 ```
 
-Both DEFECT-001 and DEFECT-002 are deployed and verified by Owner runtime UAT (4/4 PASS). DEFECT-003 source implementation and focused tests (113/113 PASS) are verified, awaiting Control Plane review.
+Both DEFECT-001 and DEFECT-002 are deployed and verified by Owner runtime UAT (4/4 PASS). DEFECT-003 candidate build is completed (blob 204d34db...), awaiting Control Plane review.
 
 ## Hybrid Identity locked contract
 
@@ -71,8 +71,10 @@ Deployment and migration work packages are fully executed and closed.
 There are NO active deployment authorizations and NO permitted Kintone writes.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-003-R1 (EXECUTED / AWAITING CONTROL PLANE REVIEW)
+ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-003-BUILD-R1 (EXECUTED / AWAITING CONTROL PLANE REVIEW)
 APP794_DEPLOYMENT = COMPLETED FOR REV 69 / DEFECT-003 DEPLOYMENT PENDING
+CANDIDATE_JS_BLOB = 204d34db9e2eab297409a6a3d5e7f29c649779d5
+CANDIDATE_CSS_BLOB = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 RECORD_WRITES = NONE
 SCHEMA/ACL/PROCESS_WRITES = NONE
 D3 = HOLD
@@ -80,9 +82,9 @@ D3 = HOLD
 
 ## Immediate next gate: Control Plane Review
 
-- `D1-UAT-DEFECT-003-R1` focused test execution (113/113 PASS) and control documentation synchronization completed.
+- `D1-UAT-DEFECT-003-BUILD-R1` candidate bundle build (exit code 0, blob 204d34db...) and verification completed.
 - Awaiting ChatGPT Control Plane review.
 - Original Owner Runtime UAT (UAT-1 to UAT-4) is locked at 4/4 PASS.
-- Future DEFECT-003 Owner UAT will run only after separate build and deployment authorization.
+- Future DEFECT-003 Owner UAT will run only after separate deployment authorization.
 - No Kintone write or deployment authority exists in this work package.
 - D3 remains strictly on HOLD.
