@@ -1,14 +1,18 @@
-# Generic Approval Routing Architecture Blueprint (FROZEN)
+# Generic Approval Routing Architecture Blueprint (DEFERRED FUTURE REFERENCE)
 
-> **Architecture Status:** **`GENERIC_ROUTING_ARCHITECTURE = FROZEN`** & **`SAME_RECORD_NEW_REVISION = FROZEN`**  
-> **Core Architecture:** Configuration-driven Twin-Status Execution Engine (`Step N - ALL` / `Step N - ANY`) via Native Kintone `filterCond`  
-> **Slot Capacity:** `GENERIC_APPROVAL_SLOT_CAPACITY = 6` + Dedicated `HR_FINAL_CHECK` (45 Total Native Statuses)  
-> **Operational Governance:** HR Self-Service (>= 95% Routine Administration), Three Change Scopes, Three-Layer History, and Same Record Reopen  
-> **Last Updated:** 2026-08-24  
+> **Architecture Status:** **`GENERIC_45_STATE_ARCHITECTURE = DEFERRED_FUTURE_ARCHITECTURE_REFERENCE`**
+> **D3 V1 Implementation Authority:** **`D3_V1_IMPLEMENTATION_AUTHORITY = EXISTING_TOPOLOGY_VARIABLE_1_TO_4_SEQUENTIAL_APPRAISERS`** (Owner Approved 2026-09-08 via `DECISION-D3-001`)
+> **D3 V1 Authorization Status:** **`45_STATE_IMPLEMENTATION_AUTHORIZED_FOR_D3_V1 = NO`**
+> **Durable Revision Invariant:** **`SAME_RECORD_NEW_REVISION = FROZEN`** (Unaffected / Preserved)
+> **Reference Architecture:** Configuration-driven Twin-Status Execution Engine (`Step N - ALL` / `Step N - ANY`) via Native Kintone `filterCond` (45 Total Native Statuses across 6 Generic Slots + Dedicated HR Final Check)
+> **Operational Governance:** HR Self-Service (>= 95% Routine Administration), Three Change Scopes, Three-Layer History, and Same Record Reopen
+> **Last Updated:** 2026-09-08 (Reconciled with Owner DECISION-D3-001)
 
 ---
 
-## 1. Frozen Core Routing Principles
+## 1. Core Routing Principles (Deferred Reference Architecture & Revision Invariant)
+
+*(Note: Per Owner Decision DECISION-D3-001, Stage D3 V1 executes on the existing topology family with 1–4 sequential appraisers. The 45-state generic twin-status architecture below is preserved as an unexecuted future reference blueprint requiring a separate Owner decision if ever revived. The revision invariant `SAME_RECORD_NEW_REVISION = FROZEN` remains active and unaffected.)*
 
 1. **Configuration-Driven Routing:** All routing logic is strictly data-driven via Routing Master (App 795). Zero hardcoding of Sections, Positions, or Approver IDs in JavaScript.
 2. **Three-Dimensional Identity Separation:** Requester Authorization $\neq$ Scoring Appraiser $\neq$ Workflow Approver.

@@ -70,15 +70,56 @@ For example, if 20 TMG2 Marketing employees reach Natta's review step at the sam
 
 Approver access must not be granted from App795 static membership alone. On record open/action, the current Workflow assignment must still identify the current Kintone user as the authorized actor.
 
-### Self-Approval Guard
-
-If an employee's own MBO resolves to the same Kintone user as an Appraiser/Approver, runtime must fail closed:
+### Self-Appraiser Contract — Owner Approved 2026-09-08 (DECISION-D3-002)
 
 ```text
-SELF_APPROVAL_ROUTE_CONFLICT
+SELF_APPRAISER_POLICY = ELIDE_SELF_AND_COMPACT_SURVIVING_ROUTE
 ```
 
-Do not silently skip that appraiser, auto-approve, or reinterpret the route. A business exception requires a separate explicit rule and review.
+For an employee's OWN MBO only:
+
+If the employee's dedicated Kintone user is also present in one or more appraiser slots:
+1. Remove that exact self identity from the appraiser route.
+2. Preserve all surviving approvers in original sequential order.
+3. Preserve the surviving slot's approval rule where applicable.
+4. Compact surviving business appraiser slots leftward.
+5. Recalculate effective topology from the surviving route.
+
+Example:
+Employee Natta, route: `Natta -> Uchida`
+Own MBO effective route: `Uchida`
+
+The employee MUST NOT approve themselves.
+
+If removal results in ZERO valid appraisers:
+FAIL CLOSED with `SELF_APPROVAL_ROUTE_CONFLICT`.
+
+Strict rules:
+- NO auto-approval.
+- NO jump directly to HR solely because all appraisers were removed.
+- NO silent completion.
+- NO manual requester route selection.
+
+If a slot contains multiple approvers and self is only one member:
+- Remove only the self identity; surviving approvers in that slot remain.
+If a slot becomes empty:
+- Remove/compact that empty business slot.
+
+This policy applies ONLY to OWN MBO. For evaluation of other employees, normal authoritative routing applies unchanged.
+
+## D3 V1 Approval Routing Architecture — Owner Approved 2026-09-08 (DECISION-D3-001)
+
+- **Approval Model**: `D3_V1_APPROVAL_MODEL = VARIABLE_SEQUENTIAL_1_TO_4_ON_EXISTING_TOPOLOGY`
+- **Bounds**: Minimum 1 appraiser, Maximum 4 appraisers (`MIN_APPRAISERS = 1`, `MAX_APPRAISERS = 4`).
+- **Count**: Variable by authoritative route (`APPRAISER_COUNT = VARIABLE_BY_ROUTE`).
+- **User-Facing Slot Labels**: Ordinal (`1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser` with Thai equivalents). Technical topology names remain storage/compatibility details.
+- **Existing Topology Identifiers Preserved**:
+  - `M1_ONLY` = 1 sequential appraiser
+  - `M1_G1` = 2 sequential appraisers
+  - `M1_M2_G1` = 3 sequential appraisers
+  - `M1_G1_G2` = 3 sequential appraisers
+  - `M1_M2_G1_G2` = 4 sequential appraisers
+- **Execution Truth**: Current live App 794 runs the 16-state / 28-action process covering active `M1_G1` routes. Expanding to safely execute variable sequential 1–4 appraisers across the full topology family is the target of Stage D3 implementation work. G2 topology is intentionally blocked by the validation engine until compatible Process Management is implemented. D3 V1 shall NOT implement the 45-state generic twin-status architecture.
 
 ## Confirmed Current Live Routing Coverage (R12A)
 

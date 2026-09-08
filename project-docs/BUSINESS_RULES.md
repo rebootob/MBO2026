@@ -1,8 +1,8 @@
 # TTMET MBO & Performance Management Business Rules (MBO V2)
 
-> **Document Status:** Active (Authoritative Standards Baseline)  
-> **Last Updated:** 2026-08-24  
-> **Governance Decisions:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-038 (KINTONE_ONLY)`, `DEC-039 (DATA_ISOLATION)`, `DEC-040 (LEGACY_MIGRATION)`  
+> **Document Status:** Active (Authoritative Standards Baseline)
+> **Last Updated:** 2026-08-24
+> **Governance Decisions:** `DEC-035 (SCORING_SOURCE_OF_TRUTH = LIVE_KINTONE_FIRST)`, `DEC-036 (APPRAISER_WEIGHT_AND_COMPLETENESS_GOVERNANCE)`, `DEC-038 (KINTONE_ONLY)`, `DEC-039 (DATA_ISOLATION)`, `DEC-040 (LEGACY_MIGRATION)`
 
 ---
 
@@ -72,10 +72,24 @@
 
 ---
 
-## 8. Generic Routing Architecture (FROZEN)
-* **Twin-Status Engine:** Supports both `ALL` and `ANY` rules natively via twin statuses (`Step N - ALL` / `Step N - ANY`) and native `filterCond` branching.
-* **Standard Capacity:** Exactly 6 Generic Approval Slots + Dedicated HR Final Check (45 Native Statuses total).
-* **Identity Separation:** Requester Authorization, Scoring Appraiser, and Workflow Approver are governed independently.
+## 8. D3 V1 Routing Architecture & Self-Appraiser Governance (CONFIRMED 2026-09-08)
+* **Owner Decisions:**
+  - `DECISION-D3-001 = VARIABLE_1_TO_4_SEQUENTIAL_APPRAISERS_ON_EXISTING_TOPOLOGY`
+  - `DECISION-D3-002 = SELF_APPRAISER_ELISION_WITH_FAIL_CLOSED_IF_NO_APPRAISER_REMAINS`
+* **D3 V1 Routing Rules:**
+  - Minimum 1 appraiser, maximum 4 appraisers (`MIN_APPRAISERS = 1`, `MAX_APPRAISERS = 4`).
+  - Variable by authoritative route in App 795 (`APPRAISER_COUNT = VARIABLE_BY_ROUTE`).
+  - Ordinal user-facing labels: `1st Appraiser`, `2nd Appraiser`, `3rd Appraiser`, `4th Appraiser` (with Thai equivalents).
+  - Preserves existing topology identifiers (`M1_ONLY`, `M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`).
+  - Strict sequential execution.
+  - Zero user route selection: routes resolve deterministically from Master.
+  - Missing or invalid required routing fails closed.
+* **Self-Appraiser Contract (Own MBO):**
+  - If dedicated Kintone user appears in an appraiser slot for their own MBO, elide that self identity and compact the surviving route leftward.
+  - If removal results in zero surviving appraisers, fail closed with `SELF_APPROVAL_ROUTE_CONFLICT`.
+  - Auto-approval is strictly prohibited.
+* **45-State / 6-Slot Twin-Status Architecture:**
+  - Classified as `DEFERRED_FUTURE_ARCHITECTURE_REFERENCE` (`45_STATE_IMPLEMENTATION_AUTHORIZED_FOR_D3_V1 = NO`).
 * **Controlled Route Refresh:** In-flight stages are locked. Stage refresh on transfer requires HR action and audit logging.
 
 ---
