@@ -3,7 +3,7 @@
 Updated: 2026-09-08 ICT. Fresh-fetch canonical branch before acting.
 
 ```text
-OWNER_OBJECTIVE = COMPLETE OWNER UAT SAFELY; KEEP D3 ON HOLD UNTIL CURRENT D1 ENTRY DEFECTS ARE VERIFIED BY OWNER RUNTIME UAT
+OWNER_OBJECTIVE = D1 FINAL CLOSURE RECORDED; KEEP D3 ON HOLD PENDING EXPLICIT OWNER D3 AUTHORIZATION
 ANTIGRAVITY_AUTO_AUTH = NO
 CLAUDE_AUTO_REVIEW = NO
 NO_LIVE_KINTONE_WRITE_OR_DEPLOY_WITHOUT_EXACT_AUTH = YES
@@ -14,9 +14,9 @@ PRODUCTION_READY = NO
 
 | ID | Status |
 |---|---|
-| D1 | Base architecture CLOSED; original Owner UAT 4/4 PASS; DEFECT-003 Owner UAT 3/3 PASS; D1 chain complete, awaiting Control Plane final review |
+| D1 | PASS / CLOSED / DURABLE; Base architecture CLOSED; original Owner UAT 4/4 PASS; DEFECT-003 Owner UAT 3/3 PASS; Control Plane final review PASS / CLOSED |
 | D2 | Engineering PASS / CLOSED / DURABLE; Owner UAT in progress and paused |
-| D3 | HOLD |
+| D3 | HOLD / NOT AUTHORIZED |
 | D4 | IN PROGRESS / NOT ACTIVE |
 | D5 | IN PROGRESS / NOT ACTIVE |
 | D6 | UAT activity started informally by Owner; full D6 matrix not closed |
@@ -25,12 +25,12 @@ PRODUCTION_READY = NO
 ## Active defects
 
 ```text
-D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS (DEPLOYED REV 69)
-D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS (DEPLOYED REV 69)
-D1-UAT-DEFECT-003 = PASS / CLOSED (SOURCE REVIEW PASS / FOCUSED TEST PASS 113/113 / CANDIDATE BUILD PASS / SANDBOX DEPLOY PASS / OWNER RUNTIME UAT 3/3 PASS)
+D1-UAT-DEFECT-001 = PASS / CLOSED
+D1-UAT-DEFECT-002 = PASS / CLOSED
+D1-UAT-DEFECT-003 = PASS / CLOSED
 ```
 
-DEFECT-001, DEFECT-002, and DEFECT-003 are fully deployed and verified by Owner runtime UAT. D1 corrective chain is complete, awaiting Control Plane final review.
+DEFECT-001, DEFECT-002, and DEFECT-003 are fully deployed, verified by Owner runtime UAT, and certified PASS / CLOSED by independent Control Plane review. D1 is closed and durable.
 
 ## Hybrid Identity locked contract
 
@@ -73,23 +73,30 @@ Deployment and migration work packages are fully executed and closed.
 There are NO active deployment authorizations and NO permitted Kintone writes.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-003-CLOSE-R1 (EXECUTED / AWAITING CONTROL PLANE REVIEW)
-D1_UAT_CORRECTIVE_CHAIN = COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
-D1_FINAL_CLOSURE = AWAITING CONTROL PLANE REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+LAST_COMPLETED_WORK_PACKAGE = D1-FINAL-CLOSURE-SYNC
+LAST_COMPLETED_RESULT = CONTROL PLANE D1 FINAL DECISION RECORDED
+D1 = PASS / CLOSED / DURABLE
+D1_UAT_CORRECTIVE_CHAIN = PASS / CLOSED
+D1_FINAL_CLOSURE = PASS / CLOSED
 APP794_DEPLOYMENT = COMPLETED FOR REV 70
 APP794_LIVE_REVISION = 70
 LIVE_JS_BLOB = 204d34db9e2eab297409a6a3d5e7f29c649779d5
 LIVE_CSS_BLOB = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 RECORD_WRITES = NONE
 SCHEMA/ACL/PROCESS_WRITES = NONE
-DEPLOYMENT_AUTHORIZATION = CONSUMED / CLOSED
-D3 = HOLD
+DEPLOYMENT_AUTHORIZATION = NONE
+KINTONE_WRITE_AUTHORIZATION = NONE
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D3 = HOLD / NOT AUTHORIZED
+D3_IMPLEMENTATION_AUTHORIZED = NO
+PRODUCTION_READY = NO
 ```
 
-## Immediate next gate: Control Plane Final Review
+## Current stage status: D1 Closed / D3 on Hold
 
-- `D1-UAT-DEFECT-003-CLOSE-R1` documentation and evidence synchronization completed.
+- D1 final closure decision certified as PASS / CLOSED by independent Control Plane (ChatGPT) in `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`.
 - Owner runtime UAT for DEFECT-003 is verified at 3/3 PASS (Back Home, Forgot Password, Dedicated Account Deny).
 - Original Owner Runtime UAT (UAT-1 to UAT-4) remains locked at 4/4 PASS.
-- Awaiting independent Control Plane (ChatGPT) final closure review.
-- D3 remains strictly on HOLD until Control Plane completes review and formally authorizes transition.
+- D1 is now closed. D3 remains on HOLD because transition to D3 requires a separate explicit Owner authorization and bounded D3 work package.
+- D3 is NOT authorized.

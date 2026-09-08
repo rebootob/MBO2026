@@ -14,9 +14,9 @@ Updated: 2026-09-08 ICT
 
 | Stage | Status | Current control meaning |
 |---|---|---|
-| D1 | **BASE CLOSED / CORRECTIVE CHAIN COMPLETE / OWNER UAT COMPLETE / AWAITING FINAL CLOSURE REVIEW** | Technical & runtime corrective chain complete; Original Owner UAT 4/4 PASS; DEFECT-003 Owner UAT 3/3 PASS; App794 Live rev 70; awaiting independent Control Plane final closure review. |
+| D1 | **PASS / CLOSED / DURABLE** | Base architecture CLOSED; technical & runtime corrective chain complete; Original Owner UAT 4/4 PASS; DEFECT-003 Owner UAT 3/3 PASS; App794 Live rev 70; ChatGPT Control Plane certified PASS / CLOSED. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engine remains closed; Owner UAT is separate and currently paused. |
-| D3 | **HOLD** | No workflow implementation may start while current D1 UAT defect chain is unresolved. |
+| D3 | **HOLD / NOT AUTHORIZED** | D1 is closed; D3 implementation requires separate explicit Owner authorization and bounded work package. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT NOT CLOSED** | Owner has started real runtime testing, but full business UAT is not complete. |
@@ -97,6 +97,9 @@ RESULT = PASS / CLOSED (Live App794 deployed rev 69 -> 70 with exact candidate b
 
 DEFECT003_OWNER_UAT
 RESULT = 3/3 PASS (Owner verified)
+
+D1-FINAL-CLOSURE-SYNC
+RESULT = PASS / CLOSED (Independent ChatGPT Control Plane final review decision recorded: D1 = PASS / CLOSED)
 ```
 
 App794 is verified live at revision 70 with exact candidate JS/CSS blobs (JS blob 204d34db9e2eab297409a6a3d5e7f29c649779d5, CSS blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61).
@@ -119,8 +122,11 @@ Do not equate D2 engineering closure with Owner runtime UAT acceptance.
 Deployment and migration work packages are completed and closed. No pending Kintone writes or deployments are authorized.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-003-CLOSE-R1-DOCFIX1
-STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+LAST_COMPLETED_WORK_PACKAGE = D1-FINAL-CLOSURE-SYNC
+LAST_COMPLETED_RESULT = CONTROL PLANE D1 FINAL DECISION RECORDED
+STATUS = D1 CLOSED / D3 ON HOLD
+D1_FINAL_CLOSURE = PASS / CLOSED
 APP794_LIVE_REVISION = 70
 APP794_LIVE_JS = mbo-employee-app.js (blob 204d34db9e2eab297409a6a3d5e7f29c649779d5)
 APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
@@ -129,14 +135,16 @@ APP53_APP801_WRITES = 0
 SCHEMA_LAYOUT_ACL_PROCESS_WRITES = 0
 KINTONE_WRITES = NONE
 D2_CHANGE = NONE
-D3 = HOLD
+D3 = HOLD / NOT AUTHORIZED
+D3_IMPLEMENTATION_AUTHORIZED = NO
+PRODUCTION_READY = NO
 ```
 
-## Immediate next gate: Control Plane Final D1 Closure Review
+## Current stage status: D1 Closed / D3 on Hold
 
 1. Original Focused Owner UAT: 4/4 PASS (Locked Truth).
 2. DEFECT-003 Focused Owner UAT: 3/3 PASS (Owner Verified).
-3. D1 UAT Corrective Chain: COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW.
-4. D1 Final Closure: AWAITING CONTROL PLANE REVIEW (Antigravity does not self-certify PASS).
+3. D1 UAT Corrective Chain: PASS / CLOSED.
+4. D1 Final Closure: PASS / CLOSED (ChatGPT Control Plane independent verdict recorded in `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`).
 
-D3 remains strictly on HOLD until independent Control Plane (ChatGPT) completes review and formally authorizes transition.
+D1 is now closed. D3 remains on HOLD because transition to D3 requires a separate explicit Owner authorization and bounded D3 work package. D3 is NOT authorized.

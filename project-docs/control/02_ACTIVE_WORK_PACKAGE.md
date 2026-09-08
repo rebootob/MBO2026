@@ -4,26 +4,31 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003-CLOSE-R1`
-- **TITLE**: `Owner UAT Evidence + D1 Final Closure Control Sync`
-- **TYPE**: `DOCS-ONLY FINAL CLOSURE`
+- **ACTIVE_WORK_PACKAGE**: `NONE`
+- **LAST_COMPLETED_WORK_PACKAGE**: `D1-FINAL-CLOSURE-SYNC`
+- **TITLE**: `Record Independent Control Plane D1 Final Closure Decision`
+- **TYPE**: `DOCS-ONLY FINAL DECISION RECORDING`
 - **OWNER_AUTHORIZATION**: `APPROVED`
-- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
-- **EXECUTION_SOURCE_HEAD**: `8e646c23768c7c7339185c6a92abcf0369dbe219`
+- **STATUS**: `PASS / CLOSED`
+- **REVIEWED_HEAD**: `3e057bbfd5083f942cb20c2b32be05a8cccb79b9`
+- **D1_FINAL_CLOSURE**: `PASS / CLOSED`
+- **D1_BASE_ARCHITECTURE**: `PASS / CLOSED / DURABLE`
+- **D1_UAT_CORRECTIVE_CHAIN**: `PASS / CLOSED`
+- **DEFECT001_STATUS**: `PASS / CLOSED`
+- **DEFECT002_STATUS**: `PASS / CLOSED`
+- **DEFECT003_STATUS**: `PASS / CLOSED`
 - **ORIGINAL_OWNER_UAT**: `4/4 PASS`
 - **DEFECT003_OWNER_UAT**: `3/3 PASS`
-- **DEFECT003_STATUS**: `PASS / CLOSED`
 - **APP794_LIVE_REVISION**: `70`
 - **LIVE_JS_BLOB**: `204d34db9e2eab297409a6a3d5e7f29c649779d5`
 - **LIVE_CSS_BLOB**: `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`
-- **D1_UAT_CORRECTIVE_CHAIN**: `COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW`
-- **D1_FINAL_CLOSURE**: `AWAITING CONTROL PLANE REVIEW`
 - **D2_ENGINEERING**: `PASS / CLOSED / DURABLE`
-- **D3**: `HOLD`
+- **D2_OWNER_UAT**: `IN PROGRESS / PAUSED`
+- **D3**: `HOLD / NOT AUTHORIZED`
+- **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
 - **PRODUCTION_READY**: `NO`
 - **DEPLOYMENT_AUTHORIZED**: `NO`
 - **KINTONE_WRITES_AUTHORIZED**: `NONE`
-- **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
 
 ## Completed predecessor work packages
 
@@ -43,6 +48,17 @@ Updated: 2026-09-08 ICT
    - Exact CSS bytes preserved (blob `0532c1c3...`).
    - Normal deployment tool preflight restored to PASS (`validatePreflight: true`).
 
+3. **`D1-UAT-DEFECT-003-CLOSE-R1`**
+   - Status: `PASS / CLOSED`
+   - Execution Commit: `a66c351013534b739426f990bead47eec37c773e`
+   - Evidence: `project-docs/D1_UAT_DEFECT_003_OWNER_UAT_CLOSE_R1_EVIDENCE.md`
+   - Owner runtime UAT: 3/3 PASS (Back to Home, Forgot Password, Dedicated Deny).
+
+4. **`D1-FINAL-CLOSURE-SYNC`**
+   - Status: `PASS / CLOSED`
+   - Evidence: `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`
+   - Independent Control Plane (ChatGPT) verdict recorded: D1 = PASS / CLOSED.
+
 ## Current App794 Live state
 
 - **App ID**: 794
@@ -56,15 +72,13 @@ Updated: 2026-09-08 ICT
 ## Allowed operations
 
 Only:
-- Control plane documentation synchronization.
-- Owner runtime verification in Kintone sandbox browser (DEFECT-003 focused UAT).
-- Control Plane (ChatGPT) independent review.
+- Reviewing repository documentation and evidence.
 
 Forbidden:
 - AI code modifications to `src/`, `tests/`, `scripts/`, `dist/`.
 - Additional Kintone deployments or write operations.
-- Automatic starting of D3.
-- Self-certifying final D1 closure or DEFECT-003 Owner UAT PASS.
+- Starting D3 without explicit Owner authorization.
+- Self-certifying independent Control Plane review.
 
 ## Owner Runtime UAT Status
 
@@ -85,8 +99,9 @@ The focused Owner UAT checks on App 794 Live (Revision 70) were personally execu
 
 ## Next permitted action
 
-- ChatGPT Control Plane independent review of `D1-UAT-DEFECT-003-CLOSE-R1` evidence and final D1 closure.
-- D3 remains strictly on HOLD until Control Plane completes final review and formally authorizes transition.
+- None currently authorized.
+- Stage D1 is PASS / CLOSED / DURABLE.
+- D3 remains strictly on HOLD: transition to D3 requires separate explicit Owner authorization and bounded D3 work package. D3 is NOT authorized.
 
 ## Permanent rules
 

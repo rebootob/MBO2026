@@ -5,20 +5,23 @@ Updated: 2026-09-08 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp00
 ## Current canonical checkpoint
 
 ```text
-REVIEWED_SOURCE_HEAD = 8e646c23768c7c7339185c6a92abcf0369dbe219
+REVIEWED_SOURCE_HEAD = 3e057bbfd5083f942cb20c2b32be05a8cccb79b9
 CANONICAL_HEAD = FRESH-FETCH ai/antigravity-wp002c BEFORE ACTING
-D1_BASE_ARCHITECTURE = CLOSED / DURABLE
+D1 = PASS / CLOSED / DURABLE
+D1_BASE_ARCHITECTURE = PASS / CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
-D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
+D1-UAT-DEFECT-001 = PASS / CLOSED
+D1-UAT-DEFECT-002 = PASS / CLOSED
 D1-UAT-DEFECT-003 = PASS / CLOSED (SOURCE REVIEW PASS / FOCUSED TEST PASS 113/113 / CANDIDATE BUILD PASS / SANDBOX DEPLOY PASS / OWNER RUNTIME UAT 3/3 PASS)
-D1_UAT_CORRECTIVE_CHAIN = COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
-D1_FINAL_CLOSURE = AWAITING CONTROL PLANE REVIEW
+D1_UAT_CORRECTIVE_CHAIN = PASS / CLOSED
+D1_FINAL_CLOSURE = PASS / CLOSED
 APP794_LIVE_REVISION = 70
 APP794_CSS_TARGET = CANONICAL (mbo-employee.css)
 D2_ENGINEERING = PASS / CLOSED / DURABLE
-D3 = HOLD
+D3 = HOLD / NOT AUTHORIZED
 PRODUCTION_READY = NO
+ACTIVE_WORK_PACKAGE = NONE
+LAST_COMPLETED_WORK_PACKAGE = D1-FINAL-CLOSURE-SYNC
 ```
 
 ## Proven Hybrid Identity contract
@@ -115,9 +118,9 @@ The focused Owner UAT checks on App 794 Live (Revision 70) were personally execu
 3. Dedicated Account Deny screen keeps Back Home button accessible = PASS.
 
 - **DEFECT-003 Status**: PASS / CLOSED
-- **D1 UAT Corrective Chain**: COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
-- **D1 Final Closure Status**: AWAITING CONTROL PLANE REVIEW (Antigravity must not self-certify PASS)
-- **D3 Status**: STRICT HOLD (Pending Control Plane review and explicit D3 work package authorization)
+- **D1 UAT Corrective Chain**: PASS / CLOSED
+- **D1 Final Closure Status**: PASS / CLOSED (Independent Control Plane verdict recorded in project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md)
+- **D3 Status**: STRICT HOLD (D1 is closed; D3 requires separate explicit Owner authorization and bounded D3 work package; not authorized)
 
 ## Startup order for next chat
 
@@ -126,6 +129,6 @@ The focused Owner UAT checks on App 794 Live (Revision 70) were personally execu
 3. Read `AI_CONTROL_CENTER.md`.
 4. Read `AI_ACTIVE_TASK.md`.
 5. Read `control/00_MASTER_DELIVERY_CONTROL.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
-6. Inspect `project-docs/D1_UAT_DEFECT_003_OWNER_UAT_CLOSE_R1_EVIDENCE.md` and related evidence files.
-7. Wait for Control Plane (ChatGPT) final D1 closure review.
+6. Inspect `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`.
+7. Note that Stage D1 is PASS / CLOSED / DURABLE.
 8. Do not start D3 without explicit Owner authorization.

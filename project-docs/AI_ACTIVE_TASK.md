@@ -1,26 +1,31 @@
-# AI ACTIVE TASK — D1-UAT-DEFECT-003 LOGIN ESCAPE & RECOVERY UX
+# AI ACTIVE TASK — D1 FINAL CLOSURE RECORDED
 
-Mode: **CONTROL PLANE / D1 UAT CORRECTIVE / DEFECT-003 IMPLEMENTATION / D3 HOLD**
+Mode: **CONTROL PLANE / D1 FINAL CLOSURE RECORDED / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-08 ICT
 
 ## Current truth
 
 ```text
-D1_BASE_ARCHITECTURE = CLOSED / DURABLE
+D1 = PASS / CLOSED / DURABLE
+D1_BASE_ARCHITECTURE = PASS / CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
-D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
+D1-UAT-DEFECT-001 = PASS / CLOSED
+D1-UAT-DEFECT-002 = PASS / CLOSED
 D1-UAT-DEFECT-003 = PASS / CLOSED (SOURCE REVIEW PASS / FOCUSED TEST PASS 113/113 / CANDIDATE BUILD PASS / SANDBOX DEPLOY PASS / OWNER RUNTIME UAT 3/3 PASS)
-D1_UAT_CORRECTIVE_CHAIN = COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW
-D1_FINAL_CLOSURE = AWAITING CONTROL PLANE REVIEW
+D1_UAT_CORRECTIVE_CHAIN = PASS / CLOSED
+D1_FINAL_CLOSURE = PASS / CLOSED
 APP794_LIVE_REVISION = 70
 APP794_LIVE_JS = mbo-employee-app.js (blob 204d34db9e2eab297409a6a3d5e7f29c649779d5)
 APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
 D2_ENGINEERING = PASS / CLOSED / DURABLE
-D3 = HOLD
+D3 = HOLD / NOT AUTHORIZED
+D3_IMPLEMENTATION_AUTHORIZED = NO
 PRODUCTION_READY = NO
-DEPLOYMENT_AUTHORIZATION = CONSUMED / CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+LAST_COMPLETED_WORK_PACKAGE = D1-FINAL-CLOSURE-SYNC
+LAST_COMPLETED_RESULT = CONTROL PLANE D1 FINAL DECISION RECORDED
+DEPLOYMENT_AUTHORIZATION = NONE
 KINTONE_WRITE_AUTHORIZATION = NONE
 ```
 
@@ -84,12 +89,13 @@ App 794 Sandbox deployment for DEFECT-003 is completely executed and verified:
 3. Zero records, schemas, layouts, ACLs, or workflows modified across all apps.
 4. Deployment authorization is now CONSUMED and CLOSED. Zero further Kintone writes or deploys authorized.
 
-## Active stage: DEFECT-003 Owner UAT Completed / Awaiting Control Plane Final Closure Review
+## Active stage: D1 Final Closure Certified / D3 Strictly on Hold
 
-DEFECT-003 focused Owner runtime UAT is completed and verified (3/3 PASS).
-- `D1-UAT-DEFECT-003` is PASS / CLOSED across its full lifecycle.
-- D1 corrective chain is COMPLETE and ready for independent Control Plane (ChatGPT) final closure review.
-- D1 Final Closure status: AWAITING CONTROL PLANE REVIEW.
+D1 is now fully PASS / CLOSED / DURABLE by independent Control Plane (ChatGPT) verdict recorded in `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`.
+- `D1-UAT-DEFECT-001`, `D1-UAT-DEFECT-002`, and `D1-UAT-DEFECT-003` are PASS / CLOSED.
+- D1 corrective chain is PASS / CLOSED.
+- D1 Final Closure status: PASS / CLOSED.
+- D3 remains strictly on HOLD: D1 is now closed, but transition to D3 requires separate explicit Owner authorization and a bounded D3 work package. D3 is NOT authorized.
 
 ## Owner Runtime UAT Status
 
@@ -109,5 +115,5 @@ The focused Owner UAT checks on App 794 Live (Revision 70) were personally execu
 3. **DEFECT003-UAT-3 (Dedicated Account Deny & Back Home Usable)**: PASS (Owner confirmed dedicated denial remains active and Back Home button functions cleanly).
 
 - **DEFECT-003 Owner UAT Total**: 3/3 PASS.
-- Antigravity does NOT self-certify independent Control Plane final PASS.
-- D3 remains strictly on HOLD awaiting Control Plane final review and stage authorization.
+- Independent Control Plane (ChatGPT) has certified D1 = PASS / CLOSED. Antigravity did not self-certify.
+- D3 remains strictly on HOLD pending separate explicit Owner work package authorization.
