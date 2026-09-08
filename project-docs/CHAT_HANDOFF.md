@@ -5,15 +5,15 @@ Updated: 2026-09-08 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp00
 ## Current canonical checkpoint
 
 ```text
-REVIEWED_SOURCE_HEAD = ff10913eedc6f6b58b882a5148b4cebbb02200bf
+REVIEWED_SOURCE_HEAD = 2a02ab2583f53c3906674713c2e09e1757449ba8
 CANONICAL_HEAD = FRESH-FETCH ai/antigravity-wp002c BEFORE ACTING
 D1_BASE_ARCHITECTURE = CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
 D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
 D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILT / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
-D1_FINAL_CLOSURE = HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review
-APP794_LIVE_REVISION = 69
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILD PASS / SANDBOX DEPLOYED (REV 70) / OWNER DEFECT-003 UAT PENDING
+D1_FINAL_CLOSURE = HOLD pending DEFECT-003 Owner UAT + Control Plane review
+APP794_LIVE_REVISION = 70
 APP794_CSS_TARGET = CANONICAL (mbo-employee.css)
 D2_ENGINEERING = PASS / CLOSED / DURABLE
 D3 = HOLD
@@ -89,13 +89,13 @@ Backend duplicate guard remains defense-in-depth and must not be weakened.
 
 ## Current App794 Live Customization State
 
-App 794 is verified live at revision 69 with exact candidate assets:
-- **Desktop JS**: `mbo-employee-app.js` (Git blob `8958634b92b35f74b58a7a0b2abd09b8b5e93758`)
+App 794 is verified live at revision 70 with exact DEFECT-003 candidate assets:
+- **Desktop JS**: `mbo-employee-app.js` (Git blob `204d34db9e2eab297409a6a3d5e7f29c649779d5`)
 - **Desktop CSS**: `mbo-employee.css` (Git blob `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`)
 - **Topology**: Desktop JS = 1, Desktop CSS = 1, Mobile JS = 0, Mobile CSS = 0
 - **Writes across all apps**: 0 records, 0 schemas, 0 ACLs, 0 workflows
 
-Previous App794 Rev69 deployment/migration work packages are fully executed and closed. No deployment is currently authorized (DEFECT-003 deployment = PENDING; current deployment authorization = NONE).
+Deployment work package `D1-UAT-DEFECT-003-SANDBOX-DEPLOY-R1` is completed (Rev 69 -> 70). Deployment authorization is CONSUMED and CLOSED. Zero further deployments or Kintone writes are authorized.
 
 ## Owner Runtime UAT Status
 
@@ -107,14 +107,14 @@ Previous App794 Rev69 deployment/migration work packages are fully executed and 
 
 These 4 tests are complete and MUST NOT be repeated or presented as pending.
 
-### Future Focused Owner UAT for DEFECT-003 (Post-Deployment Only)
-The following focused checks apply only after a separately authorized build and deployment of DEFECT-003:
+### Focused Owner UAT for DEFECT-003 (Ready for Owner Execution)
+With App 794 Live at revision 70, the following focused checks are ready for Owner testing:
 1. Back to Kintone Home button exits blocking login overlay.
 2. Forgot Password reveals bilingual HR/Administrator support info.
 3. Dedicated Account Deny screen keeps Back Home button accessible.
 
-*Note: DEFECT-003 is not deployed yet. These tests cannot be executed now.*
-D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Control Plane review are complete.
+Do not mark Owner UAT PASS until the Owner performs these runtime checks.
+D3 remains strictly on HOLD until DEFECT-003 Owner UAT is completed and reviewed.
 
 ## Startup order for next chat
 
@@ -123,6 +123,7 @@ D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Contro
 3. Read `AI_CONTROL_CENTER.md`.
 4. Read `AI_ACTIVE_TASK.md`.
 5. Read `control/00_MASTER_DELIVERY_CONTROL.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
-6. Inspect `project-docs/D1_UAT_DEFECT_003_R1_TEST_CONTROL_EVIDENCE.md` and `project-docs/D1_UAT_DEFECT_003_BUILD_R1_EVIDENCE.md`.
-7. Wait for Control Plane (ChatGPT) review.
-8. Do not start D3.
+6. Inspect `project-docs/D1_UAT_DEFECT_003_R1_TEST_CONTROL_EVIDENCE.md`, `project-docs/D1_UAT_DEFECT_003_BUILD_R1_EVIDENCE.md`, and `project-docs/D1_UAT_DEFECT_003_SANDBOX_DEPLOY_R1_EVIDENCE.md`.
+7. Assist Owner with runtime execution of the 3 DEFECT-003 UAT checks.
+8. Wait for Control Plane (ChatGPT) review.
+9. Do not start D3.

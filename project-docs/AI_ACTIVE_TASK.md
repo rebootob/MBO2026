@@ -11,12 +11,16 @@ D1_BASE_ARCHITECTURE = CLOSED / DURABLE
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
 D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
 D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
-D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILT / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
-D1_FINAL_CLOSURE = HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / CANDIDATE BUILD PASS / SANDBOX DEPLOYED / OWNER DEFECT-003 UAT PENDING
+D1_FINAL_CLOSURE = HOLD pending DEFECT-003 Owner UAT + Control Plane review
+APP794_LIVE_REVISION = 70
+APP794_LIVE_JS = mbo-employee-app.js (blob 204d34db9e2eab297409a6a3d5e7f29c649779d5)
+APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
 D2_ENGINEERING = PASS / CLOSED / DURABLE
 D3 = HOLD
 PRODUCTION_READY = NO
-KINTONE_WRITE_AUTHORIZATION = NONE
+DEPLOYMENT_AUTHORIZATION = CONSUMED / CLOSED
+KINTONE_WRITE_AUTHORIZATION = NONE AFTER EXECUTION
 ```
 
 ## Active defect summary
@@ -62,35 +66,31 @@ BUILD_ARTIFACT_HEAD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
 DEPLOY_TOOL_HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e (PASS / CLOSED)
 SANDBOX_DEPLOY_R2 = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236 (PASS / CLOSED, Rev 67 -> 68)
 CSS_MIGRATION_R1 = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d (PASS / CLOSED, Rev 68 -> 69)
+DEFECT003_BUILD_R1 = 2a02ab2583f53c3906674713c2e09e1757449ba8 (PASS / CLOSED)
+DEFECT003_SANDBOX_DEPLOY_R1 = EXECUTED (Rev 69 -> 70, PASS)
 
-APP794_LIVE_REVISION = 69
-APP794_LIVE_JS = mbo-employee-app.js (blob 8958634b92b35f74b58a7a0b2abd09b8b5e93758)
+APP794_LIVE_REVISION = 70
+APP794_LIVE_JS = mbo-employee-app.js (blob 204d34db9e2eab297409a6a3d5e7f29c649779d5)
 APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
 STANDARD_DEPLOY_PREFLIGHT = PASS (validatePreflight = true)
 ```
 
-## Deployment & Migration Completion
+## Deployment Completion — DEFECT-003 Live
 
-App 794 Sandbox deployment and CSS filename migration are completely executed and verified:
-1. `D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2` deployed candidate artifacts to Live App 794 (rev 67 -> 68).
-2. `D1-UAT-APP794-CSS-FILENAME-MIGRATION-R1` migrated live CSS customization filename from `"mbo-employee .css"` to canonical `"mbo-employee.css"` (rev 68 -> 69), preserving exact bytes and restoring standard deployment tool preflight.
+App 794 Sandbox deployment for DEFECT-003 is completely executed and verified:
+1. `D1-UAT-DEFECT-003-SANDBOX-DEPLOY-R1` deployed candidate artifacts to Live App 794 (rev 69 -> 70).
+2. Deployed JS blob = `204d34db9e2eab297409a6a3d5e7f29c649779d5`, CSS blob = `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` (exact byte-for-byte candidate match).
 3. Zero records, schemas, layouts, ACLs, or workflows modified across all apps.
-4. Deployment work packages are now CLOSED. No further Kintone writes or deploys are authorized.
+4. Deployment authorization is now CONSUMED and CLOSED. Zero further Kintone writes or deploys authorized.
 
-## Active stage: D1-UAT-DEFECT-003-BUILD-R1 Executed
+## Active stage: Ready for DEFECT-003 Focused Owner Runtime UAT
 
-Candidate bundle build is completed and verified:
-- Build command `npm run ui:build` executed with exit code 0.
-- Candidate JS blob: `204d34db9e2eab297409a6a3d5e7f29c649779d5` (554,900 bytes).
-- Candidate CSS blob: `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61` (43,728 bytes, byte-identical to Rev 69).
-- Defect-003 markers verified present in candidate bundle.
-- Current state: EXECUTED / Awaiting Control Plane (ChatGPT) review.
-- Deployment authorization: NO (Kintone writes = 0, deploys = 0).
+App 794 (Live revision 70) is ready for Owner runtime testing of DEFECT-003.
 
 ## Owner Runtime UAT Status
 
 ### Original Focused UAT: 4/4 PASS (Locked Truth)
-The original 4 Owner Runtime UAT cases on App794 (Live revision 69) were executed and verified by Owner:
+The original 4 Owner Runtime UAT cases on App794 were executed and verified by Owner:
 1. **Dedicated Account Test (Ms.Papatchaya auto-bind 0113)**: PASS
 2. **Shared Login Boundary Test (tmh + 0113 DENY)**: PASS
 3. **Shared Login Boundary Test (tmh + shared employee ALLOW)**: PASS
@@ -98,12 +98,11 @@ The original 4 Owner Runtime UAT cases on App794 (Live revision 69) were execute
 
 DO NOT re-request or repeat these 4 tests.
 
-### Future Focused Owner UAT for DEFECT-003 (Post-Deployment Only)
-After a separate, authorized build and deployment of DEFECT-003 to App794, the only required focused Owner UAT checks will be:
+### Focused Owner UAT for DEFECT-003 (Now Ready for Owner Execution)
+With App 794 Live at revision 70, the following focused Owner UAT checks are ready to run:
 1. **DEFECT003-UAT-1**: In MBO Login overlay, click "กลับหน้าหลัก Kintone / Back to Kintone Home" -> cleanly exits blocking overlay back to Kintone portal.
 2. **DEFECT003-UAT-2**: In MBO Login overlay, click "ลืมรหัสผ่าน / Forgot Password" -> bilingual HR/Administrator support text appears without password reset or session change.
 3. **DEFECT003-UAT-3**: Enter Employee 0113 under shared account -> `DEDICATED_ACCOUNT_REQUIRED` denial appears, and Back to Kintone Home button remains active and functional.
 
-*These DEFECT-003 UAT cases are NOT authorized to run now because DEFECT-003 has not yet been built or deployed.*
-
-D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Control Plane review are complete.
+Do not self-certify DEFECT-003 Owner UAT PASS.
+D3 remains strictly on HOLD until DEFECT-003 focused UAT is completed and reviewed.
