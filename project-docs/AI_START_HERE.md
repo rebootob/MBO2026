@@ -57,26 +57,29 @@ Ms.Papatchaya native Kintone => auto-bind 0113 => ALLOW
 tmh + employee with no dedicated mapping => Shared App801 path still ALLOW
 ```
 
-## 4. Current accepted corrective chain
+## 4. Current accepted corrective, deploy & migration chain
 
 ```text
 R1 = 8c3fda998fe8bd0b627d62a5beb10455bde8f725 / PARTIAL PASS
 R2 = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb / PASS
 BUILD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
 DEPLOY_TOOL_CSS_FIX = 03b531383e86c643a5258a2baf6fdbd15bc9099e / PASS
+SANDBOX_DEPLOY_R2 = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236 / PASS (Rev 67 -> 68)
+CSS_MIGRATION_R1 = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d / PASS (Rev 68 -> 69)
 ```
 
 Canonical customization names:
 ```text
-mbo-employee-app.js
-mbo-employee.css
+mbo-employee-app.js (Git blob 8958634b92b35f74b58a7a0b2abd09b8b5e93758)
+mbo-employee.css (Git blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
 ```
-Historical wrong CSS name `mbo-employee .css` must fail closed.
+Standard deployment tool preflight restored to `PASS` (`validatePreflight = true`).
+App794 verified live at revision 69.
 
 ## 5. Current stage scoreboard
 
 ```text
-D1 = BASE CLOSED / NARROW UAT REGRESSION OPEN
+D1 = BASE CLOSED / CANDIDATE DEPLOYED (REV 69) / OWNER UAT PENDING
 D2_ENGINEERING = PASS / CLOSED / DURABLE
 D2_OWNER_UAT = IN PROGRESS / PAUSED
 D3 = HOLD
@@ -89,29 +92,23 @@ PRODUCTION_READY = NO
 
 Do not interpret automated/source closure as Owner UAT PASS.
 
-## 6. Current authorization
+## 6. Current operational state
 
-Owner authorized one-shot App794 Sandbox customization deploy after CSS target correction.
+Deployment and migration work packages are fully executed and closed.
+No further Kintone writes or deployments are authorized.
 
 ```text
-WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
-AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
-TARGET = App794 customization ONLY
-MAX_ATTEMPTS = 1
-AUTO_RETRY = NO
-AUTO_ROLLBACK = NO
-RECORD_WRITE = NONE
-SCHEMA/ACL/PROCESS_WRITE = NONE
-D2_CHANGE = NONE
+ACTIVE_WORK_PACKAGE = D1-UAT-OWNER-RUNTIME-UAT-READINESS
+STATUS = READY FOR OWNER RUNTIME UAT
+APP794_LIVE_REVISION = 69
+KINTONE_WRITES_AUTHORIZED = NONE
 D3 = HOLD
 ```
 
-A docs-only successor commit may rebase this already-approved execution basis after independent verification that only docs changed.
-
-## 7. Owner UAT after deploy review
+## 7. Owner runtime UAT (Active Milestone)
 
 1. Papatchaya personal Kintone -> 0113 auto-bind -> own MBO.
-2. `tmh + 0113` -> DENY.
+2. `tmh + 0113` -> DENY with dedicated-account guidance.
 3. `tmh + shared-only employee` -> ALLOW via App801.
 4. Existing current-FY MBO -> Open Current MBO, not Create New.
 

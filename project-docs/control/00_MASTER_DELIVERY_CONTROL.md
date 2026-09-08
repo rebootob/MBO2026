@@ -14,7 +14,7 @@ Updated: 2026-09-08 ICT
 
 | Stage | Status | Current control meaning |
 |---|---|---|
-| D1 | **BASE CLOSED / NARROWLY REOPENED BY PROVEN UAT REGRESSION** | Identity/Employee-Self entry boundary only; do not reopen unrelated D1 functions. |
+| D1 | **BASE CLOSED / TECHNICAL DEFECT RESOLUTION DEPLOYED / OWNER UAT PENDING** | Identity/Employee-Self entry candidate deployed to App794 (rev 69); Owner runtime retest pending. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engine remains closed; Owner UAT is separate and currently paused. |
 | D3 | **HOLD** | No workflow implementation may start while current D1 UAT defect chain is unresolved. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
@@ -60,7 +60,7 @@ Current-FY entry behavior must be:
 
 Backend duplicate creation guard remains defense-in-depth and must not be weakened.
 
-## Accepted corrective chain
+## Accepted corrective, deploy & migration chain
 
 ```text
 D1-UAT-IDENTITY-ENTRY-CORRECTIVE-R1
@@ -73,14 +73,24 @@ RESULT = PASS / CLOSED
 
 BUILD ARTIFACT
 HEAD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
+JS Blob = 8958634b92b35f74b58a7a0b2abd09b8b5e93758
+CSS Blob = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
 
 D1-UAT-SANDBOX-DEPLOY-TOOL-R1
 HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e
 RESULT = PASS / CLOSED
 CANONICAL_CSS_TARGET = mbo-employee.css
+
+D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
+HEAD = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236
+RESULT = PASS / CLOSED (Live App794 deployed rev 67 -> 68 with exact candidate blob match)
+
+D1-UAT-APP794-CSS-FILENAME-MIGRATION-R1
+HEAD = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d
+RESULT = PASS / CLOSED (Live App794 migrated rev 68 -> 69, CSS target canonicalized, standard preflight PASS)
 ```
 
-No accepted evidence yet proves this corrected candidate is live in App794.
+App794 is verified live at revision 69 with exact candidate JS/CSS blobs.
 
 ## D2 durable engineering closure
 
@@ -95,45 +105,23 @@ PDF XLSX-007 = OWNER-DEFERRED / NON-BLOCKING
 
 Do not equate D2 engineering closure with Owner runtime UAT acceptance.
 
-## Active execution authorization
+## Active operational state & execution boundaries
 
-Owner explicitly approved:
-`อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
+Deployment and migration work packages are completed and closed. No pending Kintone writes or deployments are authorized.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
-AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
-TARGET_APP = 794 customization only
-MAX_ATTEMPTS = 1
-AUTO_RETRY = NO
-AUTO_ROLLBACK = NO
-ALLOWED_WRITES = candidate JS/CSS upload + App794 preview customization PUT + App794 deploy POST
-RECORD_WRITES = NONE
-SCHEMA_LAYOUT_ACL_PROCESS_WRITES = NONE
+ACTIVE_WORK_PACKAGE = D1-UAT-OWNER-RUNTIME-UAT (READY / PENDING OWNER EXECUTION)
+APP794_LIVE_REVISION = 69
+APP794_LIVE_JS = mbo-employee-app.js
+APP794_LIVE_CSS = mbo-employee.css
+APP794_RECORD_WRITES = 0
+APP53_APP801_WRITES = 0
+SCHEMA_LAYOUT_ACL_PROCESS_WRITES = 0
 D2_CHANGE = NONE
 D3 = HOLD
 ```
 
-If a documentation-only synchronization commit advances canonical HEAD, Control Plane may rebase this already-approved deployment basis only after independently proving the new commit changes documentation only and preserves `src/`, `tests/`, `scripts/`, `config/`, and `dist/` exactly.
-
-## Mandatory deployment acceptance
-
-Before writes:
-- exact fresh HEAD + clean worktree;
-- focused tests 0 FAIL;
-- deterministic committed artifact reproduction;
-- GET-only App794 live/preview preflight;
-- exact `mbo-employee-app.js` + `mbo-employee.css`;
-- topology 1 JS / 1 CSS / mobile 0/0;
-- exact current source/artifact release manifest.
-
-After deploy:
-- status SUCCESS;
-- post live/preview readback;
-- exact deployed JS/CSS Git-blob identity match;
-- zero record/schema/ACL/process writes.
-
-## Owner UAT gate after independent deployment review
+## Owner UAT gate (Immediate Next Milestone)
 
 1. Papatchaya personal Kintone -> auto-bind 0113 -> own MBO.
 2. `tmh + 0113` -> deny.
@@ -141,3 +129,4 @@ After deploy:
 4. Current-FY existing MBO -> Open Current MBO, not Create New.
 
 Only Owner runtime evidence can close these UAT defects.
+D3 remains on HOLD until Owner UAT passes and Control Plane authorizes next stage.

@@ -4,105 +4,76 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2`
-- **OWNER_AUTHORIZATION**: `อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
-- **AUTHORIZATION_ID**: `D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02`
-- **TARGET**: `App794 customization ONLY`
-- **MODE**: `ONE-SHOT / SAFETY-GATED / NO SOURCE CHANGE`
-- **MAX_ATTEMPTS**: `1`
-- **AUTO_RETRY**: `NO`
-- **AUTO_ROLLBACK**: `NO`
+# MBO2026 Active Work Package Contract
+
+Updated: 2026-09-08 ICT
+
+## Current contract state
+
+- **ACTIVE_WORK_PACKAGE**: `D1-UAT-OWNER-RUNTIME-UAT-READINESS`
+- **OWNER_AUTHORIZATION**: `Owner Runtime UAT Readiness (Post Deploy & Migration Closure)`
+- **STATUS**: `READY FOR OWNER RUNTIME UAT`
+- **TARGET**: `App794 Sandbox Runtime Testing`
+- **MODE**: `READ-ONLY VERIFICATION / ZERO AI WRITES`
+- **ALLOWED_KINTONE_WRITES**: `NONE`
 - **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
 
-## Basis and docs-only rebase rule
+## Completed predecessor work packages
 
-Original approved execution basis:
-`03b531383e86c643a5258a2baf6fdbd15bc9099e`
+1. **`D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2`**
+   - Status: `PASS / CLOSED`
+   - Execution Commit: `cd74b01e6650bb04b5fbdba6c365dd9a1bf87236`
+   - Evidence: `project-docs/D1_UAT_DEFECT_001_002_SANDBOX_DEPLOY_R2_EVIDENCE.md`
+   - App794 Live revision advanced from 67 to 68.
+   - Candidate JS (`8958634b...`) and CSS (`0532c1c3...`) verified byte-identical to committed artifacts.
 
-A later documentation-only synchronization commit may become the effective execution basis without duplicate Owner approval only if ChatGPT Control Plane independently proves that the intervening commit changes documentation only and leaves all runtime/build scope unchanged, including:
-- `src/`
-- `tests/`
-- `scripts/`
-- `config/`
-- `dist/`
-- package manifests
+2. **`D1-UAT-APP794-CSS-FILENAME-MIGRATION-R1`**
+   - Status: `PASS / CLOSED`
+   - Execution Commit: `38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d`
+   - Evidence: `project-docs/D1_UAT_APP794_CSS_FILENAME_MIGRATION_R1_EVIDENCE.md`
+   - App794 Live revision advanced from 68 to 69.
+   - Live CSS filename migrated from historical `"mbo-employee .css"` to canonical `"mbo-employee.css"`.
+   - Exact CSS bytes preserved (blob `0532c1c3...`).
+   - Normal deployment tool preflight restored to PASS (`validatePreflight: true`).
 
-If any non-document file changed, STOP and require a new independent review / authorization decision.
+## Current App794 Live state
 
-## Objective
+- **App ID**: 794
+- **Live Revision**: 69
+- **Preview Revision**: 69
+- **Live Desktop JS**: `mbo-employee-app.js` (blob `8958634b92b35f74b58a7a0b2abd09b8b5e93758`)
+- **Live Desktop CSS**: `mbo-employee.css` (blob `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`)
+- **Topology**: Desktop JS = 1, Desktop CSS = 1, Mobile JS = 0, Mobile CSS = 0
+- **Total Record / Schema / ACL Writes**: 0
 
-Deploy the already-reviewed corrections for:
-
-- `D1-UAT-DEFECT-001` — Shared principal must not authenticate Employee-Self as a dedicated employee.
-- `D1-UAT-DEFECT-002` — existing current-FY MBO must lead to existing record, not a create-new path.
-
-## Allowed Kintone writes — exact
+## Allowed operations
 
 Only:
-1. POST candidate `mbo-employee-app.js` file;
-2. POST candidate `mbo-employee.css` file;
-3. PUT App794 preview customization;
-4. POST App794 deploy request.
+- Owner runtime verification in Kintone sandbox browser.
+- Control plane documentation synchronization.
 
-## Forbidden
+Forbidden:
+- AI code modifications to `src/`, `tests/`, `scripts/`, `dist/`.
+- Kintone network write operations (record, schema, layout, ACL, process, customization).
+- Automatic starting of D3.
+- Self-certifying Owner UAT PASS.
 
-- record create/update/delete;
-- App53 write;
-- App795/App796/App797/App798/App800/App801 write;
-- schema/layout change;
-- ACL change;
-- Process Management change;
-- routing/scoring change;
-- D2 change;
-- D3 work;
-- source/test/tool edit during deployment;
-- automatic retry;
-- automatic rollback.
+## Owner runtime UAT cases (Active Operational Milestone)
 
-## Pre-deploy acceptance gates
+1. **Case 1 (Dedicated Account Auto-Bind)**:
+   - Dedicated user (Ms.Papatchaya) logs in natively to Kintone -> navigates to App 794 -> auto-binds to `0113` -> opens own MBO.
+2. **Case 2 (Shared Principal Deny on Dedicated Employee)**:
+   - Shared principal (`tmh`) attempts login with `0113` + App 801 password -> DENIED with dedicated account required guidance.
+3. **Case 3 (Shared Principal Allow on Shared Employee)**:
+   - Shared principal (`tmh`) attempts login with an employee having valid `MBO_Kintone_User.value = []` + valid App 801 password -> ALLOWED.
+4. **Case 4 (Current-FY Navigation Guard)**:
+   - Employee with an existing current-FY MBO -> Employee-Self shows "Open Current MBO" and no Create New path.
 
-- fresh canonical HEAD and origin match exactly;
-- clean worktree;
-- focused identity/employee-self/deploy-preservation tests 0 FAIL;
-- deterministic build reproduces committed `dist/mbo-employee-app.js` and `dist/mbo-employee.css` exactly;
-- exact committed artifact Git blob SHAs captured;
-- GET-only App794 Live + Preview preflight;
-- exact names:
-  - `mbo-employee-app.js`
-  - `mbo-employee.css`
-- topology:
-  - Desktop JS = 1
-  - Desktop CSS = 1
-  - Mobile JS = 0
-  - Mobile CSS = 0
-- Live/Preview scope and topology align;
-- release manifest uses exact current 40-char HEAD and artifact blob SHAs.
+## Next state
 
-Historical wrong CSS target `mbo-employee .css` must fail closed.
-
-## Post-deploy acceptance gates
-
-- deployment status `SUCCESS`;
-- exact post Live + Preview revisions captured;
-- scope/topology unchanged;
-- deployed JS/CSS file names canonical;
-- downloaded Live JS/CSS Git blob identities exactly equal committed candidate blobs;
-- App794 record writes = 0;
-- App53/App801/other app record writes = 0;
-- schema/layout/ACL/process writes = 0;
-- final repository worktree clean.
-
-## Required next state
-
-After executor stops, ChatGPT independently reviews deployment evidence.
-
-Only after independent deployment PASS may Owner perform runtime UAT:
-1. dedicated Papatchaya -> auto-bind 0113;
-2. `tmh + 0113` -> deny;
-3. `tmh + shared-only employee` -> allow;
-4. existing current-FY MBO -> Open Current MBO.
-
-D3 remains HOLD regardless of deploy completion until Control Plane explicitly changes the gate.
+- Owner executes the 4 runtime test cases above.
+- Owner / ChatGPT Control Plane independently reviews runtime results.
+- D3 remains HOLD until Owner UAT is closed and Control Plane formally authorizes transition.
 
 ## Permanent rules
 

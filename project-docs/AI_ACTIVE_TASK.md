@@ -1,6 +1,6 @@
-# AI ACTIVE TASK — D1 UAT IDENTITY/ENTRY SANDBOX DEPLOY PENDING
+# AI ACTIVE TASK — D1 UAT OWNER RUNTIME UAT READY (DEPLOYMENT CLOSED)
 
-Mode: **CONTROL PLANE / D1 UAT CORRECTIVE / APP794 SANDBOX DEPLOY AUTHORIZED / D3 HOLD**
+Mode: **CONTROL PLANE / D1 UAT READY / APP794 CANDIDATE DEPLOYED / D3 HOLD**
 Branch: `ai/antigravity-wp002c`
 Updated: 2026-09-08 ICT
 
@@ -8,11 +8,11 @@ Updated: 2026-09-08 ICT
 
 ```text
 D1_BASE_ARCHITECTURE = CLOSED / DURABLE
-D1_REOPEN_REASON = PROVEN_REGRESSION DURING OWNER UAT
-D1-UAT-DEFECT-001 = IMPLEMENTED / SOURCE REVIEW PASS / PENDING DEPLOY + OWNER UAT
-D1-UAT-DEFECT-002 = IMPLEMENTED / SOURCE REVIEW PASS / PENDING DEPLOY + OWNER UAT
+D1_REOPEN_REASON = PROVEN_REGRESSION DURING OWNER UAT (TECHNICALLY RESOLVED & DEPLOYED)
+D1-UAT-DEFECT-001 = IMPLEMENTED / SOURCE REVIEW PASS / TECHNICALLY DEPLOYED (REV 69) / OWNER UAT PENDING
+D1-UAT-DEFECT-002 = IMPLEMENTED / SOURCE REVIEW PASS / TECHNICALLY DEPLOYED (REV 69) / OWNER UAT PENDING
 D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED
+D2_OWNER_UAT = IN PROGRESS / PAUSED ON D1 ENTRY UAT
 D3 = HOLD
 PRODUCTION_READY = NO
 ```
@@ -51,67 +51,48 @@ Only an explicit valid empty USER_SELECT array means Shared eligible. Missing/ma
 
 Keep backend duplicate creation guard unchanged.
 
-## Accepted corrective chain
+## Accepted corrective, deploy & migration chain
 
 ```text
-R1_HEAD = 8c3fda998fe8bd0b627d62a5beb10455bde8f725
-R1 = PARTIAL PASS
-R2_HEAD = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb
-R2 = PASS / CLOSED
+R1_HEAD = 8c3fda998fe8bd0b627d62a5beb10455bde8f725 (PARTIAL PASS)
+R2_HEAD = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb (PASS / CLOSED)
 BUILD_ARTIFACT_HEAD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
-DEPLOY_TOOL_HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e
-DEPLOY_TOOL_CSS_TARGET = mbo-employee.css
+DEPLOY_TOOL_HEAD = 03b531383e86c643a5258a2baf6fdbd15bc9099e (PASS / CLOSED)
+SANDBOX_DEPLOY_R2 = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236 (PASS / CLOSED, Rev 67 -> 68)
+CSS_MIGRATION_R1 = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d (PASS / CLOSED, Rev 68 -> 69)
+
+APP794_LIVE_REVISION = 69
+APP794_LIVE_JS = mbo-employee-app.js (blob 8958634b92b35f74b58a7a0b2abd09b8b5e93758)
+APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
+STANDARD_DEPLOY_PREFLIGHT = PASS (validatePreflight = true)
 ```
 
-## Active authorization
+## Deployment & Migration Completion
 
-Owner authorization:
-`อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
+App 794 Sandbox deployment and CSS filename migration are completely executed and verified:
+1. `D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2` deployed candidate artifacts to Live App 794 (rev 67 -> 68).
+2. `D1-UAT-APP794-CSS-FILENAME-MIGRATION-R1` migrated live CSS customization filename from `"mbo-employee .css"` to canonical `"mbo-employee.css"` (rev 68 -> 69), preserving exact bytes and restoring standard deployment tool preflight.
+3. Zero records, schemas, layouts, ACLs, or workflows modified across all apps.
+4. Deployment work packages are now CLOSED. No further Kintone writes or deploys are authorized.
 
-Authorization ID:
-`D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02`
+## Active stage: Owner Runtime UAT
 
-```text
-ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
-TARGET = App794 customization only
-MAX_ATTEMPTS = 1
-AUTO_RETRY = NO
-AUTO_ROLLBACK = NO
-RECORD_WRITE = NONE
-SCHEMA_WRITE = NONE
-ACL_WRITE = NONE
-PROCESS_WRITE = NONE
-D2_CHANGE = NONE
-D3 = HOLD
-```
+App 794 is ready for Owner runtime testing. Expected test cases:
 
-This documentation sync is allowed to create a docs-only successor HEAD. After Control Plane verifies that the successor changes documentation only and leaves source/tests/scripts/dist unchanged, the already-approved deployment basis may be rebased to that docs-only HEAD without asking Owner for duplicate approval.
-
-## Mandatory deploy gates
-
-Before upload/write:
-- fresh-fetch exact HEAD;
-- clean worktree;
-- focused identity/index/deploy-preservation tests 0 FAIL;
-- deterministic build reproduces committed `dist/mbo-employee-app.js` and `dist/mbo-employee.css` exactly;
-- GET-only App794 live+preview preflight;
-- exact names `mbo-employee-app.js` and `mbo-employee.css`;
-- topology Desktop JS=1, Desktop CSS=1, Mobile=0/0;
-- exact release manifest using current HEAD and committed artifact blob SHAs.
-
-Allowed writes only:
-1. candidate JS upload;
-2. candidate CSS upload;
-3. App794 Preview customization PUT;
-4. App794 deploy POST.
-
-After SUCCESS: GET readback and exact deployed byte identity proof required.
-
-## Owner UAT after independent deploy review
-
-1. Dedicated Ms.Papatchaya -> auto-bind 0113 -> own MBO.
-2. `tmh + 0113` -> DENY.
-3. `tmh + shared-only employee` -> ALLOW via App801.
-4. Existing current-FY record -> Open Current MBO, not Create New.
+1. **Dedicated Account Test**:
+   - Log in as Ms.Papatchaya natively in Kintone.
+   - Navigate to App 794.
+   - Confirm auto-binds to `0113` and opens own MBO.
+2. **Shared Login Boundary Test (Deny)**:
+   - Log in as shared account `tmh`.
+   - In Employee-Self login, enter `0113` + App 801 password.
+   - Confirm DENY with clear dedicated account guidance.
+3. **Shared Login Boundary Test (Allow)**:
+   - Log in as shared account `tmh`.
+   - In Employee-Self login, enter an employee ID whose App53 `MBO_Kintone_User.value = []` + valid App 801 password.
+   - Confirm ALLOW.
+4. **Current-FY Entry UX Test**:
+   - For an employee with an existing current-FY MBO record, confirm Employee-Self displays "Open Current MBO" and offers no Create New path.
 
 Do not perform or claim Owner UAT on the Owner's behalf.
+D3 remains strictly on HOLD until Owner UAT is completed and reviewed.

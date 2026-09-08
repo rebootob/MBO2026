@@ -5,7 +5,7 @@ Updated: 2026-09-08 ICT.
 ## Current stage scoreboard
 
 ```text
-D1 = BASE PASS/CLOSED, NARROWLY REOPENED BY PROVEN OWNER-UAT REGRESSION
+D1 = BASE PASS/CLOSED, CANDIDATE DEPLOYED (REV 69), OWNER RUNTIME UAT PENDING
 D2_ENGINEERING = PASS / CLOSED / DURABLE
 D2_OWNER_UAT = IN PROGRESS / PAUSED
 D3 = HOLD
@@ -46,37 +46,38 @@ Employee Self current-FY navigation:
 ```
 Backend duplicate guard stays intact.
 
-## Corrective / deploy preparation chain
+## Corrective, deploy & migration chain
 
 ```text
 R1 = 8c3fda998fe8bd0b627d62a5beb10455bde8f725 / PARTIAL PASS
 R2 = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb / PASS
 BUILD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
 DEPLOY_TOOL_FIX = 03b531383e86c643a5258a2baf6fdbd15bc9099e / PASS
-CSS_TARGET = mbo-employee.css
+SANDBOX_DEPLOY_R2 = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236 / PASS (Rev 67 -> 68)
+CSS_MIGRATION_R1 = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d / PASS (Rev 68 -> 69)
+
+APP794_LIVE_REVISION = 69
+APP794_LIVE_JS = mbo-employee-app.js (blob 8958634b92b35f74b58a7a0b2abd09b8b5e93758)
+APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
+STANDARD_DEPLOY_PREFLIGHT = PASS (validatePreflight = true)
 ```
 
-No accepted evidence yet proves the new candidate is live in App794.
+App794 is verified live with exact candidate bytes.
 
-## Active authorized work
+## Active operational state
 
-Owner approved:
-`อนุมัติ App794 Sandbox Deploy หลังแก้ CSS Target`
+Deployment and migration work packages are fully executed and closed.
+Zero Kintone writes or deployments are currently authorized.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
-AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
-TARGET = APP794 CUSTOMIZATION ONLY
-MAX_ATTEMPTS = 1
-AUTO_RETRY = NO
-AUTO_ROLLBACK = NO
+ACTIVE_WORK_PACKAGE = D1-UAT-OWNER-RUNTIME-UAT-READINESS
+STATUS = READY FOR OWNER RUNTIME UAT
+APP794_LIVE_REVISION = 69
 KINTONE_RECORD_WRITE = NONE
 SCHEMA/ACL/PROCESS_WRITE = NONE
 D2_CHANGE = NONE
 D3 = HOLD
 ```
-
-A docs-only successor commit may be used as the execution basis only after Control Plane verifies it changes documentation only and preserves source/tests/scripts/dist exactly.
 
 ## D2 durable closure
 
@@ -93,8 +94,7 @@ Owner UAT is not equivalent to engineering closure and is still incomplete.
 
 ## Next sequence
 
-1. Execute only the authorized App794 one-shot deploy contract.
-2. ChatGPT independently reviews deployment evidence and exact deployed bytes.
-3. Owner performs the 4 runtime UAT cases.
-4. If defects pass, resume broader Owner UAT.
-5. Keep D3 HOLD until Control Plane explicitly authorizes entry after UAT state is clear.
+1. App794 deployment and CSS migration are completed and independently verified.
+2. Owner performs the 4 runtime UAT cases.
+3. If defects pass, resume broader Owner UAT.
+4. Keep D3 HOLD until Control Plane explicitly authorizes entry after UAT state is clear.

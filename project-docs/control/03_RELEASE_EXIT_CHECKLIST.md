@@ -17,10 +17,10 @@ The previous D1 automated/source closure remains the technical baseline, but rea
 
 | GATE_ID | REQUIREMENT | STATUS | CURRENT BLOCKER / EVIDENCE |
 |---|---|---|---|
-| `GATE-SEC-01` | Identity, Session Auth & Hybrid Access Control | **IN_PROGRESS / REOPENED BY PROVEN REGRESSION** | `D1-UAT-DEFECT-001`; source fix reviewed, sandbox deploy + Owner UAT pending |
-| `GATE-SELF-01` | Employee Self Portal & Navigation | **IN_PROGRESS / REOPENED BY PROVEN REGRESSION** | `D1-UAT-DEFECT-002`; source fix reviewed, sandbox deploy + Owner UAT pending |
-| `GATE-UAT-01` | End-to-End Business User Acceptance Testing | **IN_PROGRESS** | Owner started real sandbox UAT; not globally accepted |
-| `GATE-PROD-01` | Pre-deployment / customization safety | **IN_PROGRESS** | deploy tool CSS target corrected and reviewed; one-shot App794 Sandbox deploy authorized but not yet independently accepted |
+| `GATE-SEC-01` | Identity, Session Auth & Hybrid Access Control | **IN_PROGRESS / TECHNICALLY RESOLVED** | `D1-UAT-DEFECT-001`; source fix reviewed, candidate deployed to App794 (rev 69), Owner runtime retest pending |
+| `GATE-SELF-01` | Employee Self Portal & Navigation | **IN_PROGRESS / TECHNICALLY RESOLVED** | `D1-UAT-DEFECT-002`; source fix reviewed, candidate deployed to App794 (rev 69), Owner runtime retest pending |
+| `GATE-UAT-01` | End-to-End Business User Acceptance Testing | **IN_PROGRESS** | Candidate deployed to App794 rev 69; Owner runtime retest pending |
+| `GATE-PROD-01` | Pre-deployment / customization safety | **PASS / CLOSED** | Candidate deployed to App794 Sandbox (rev 68) and CSS target migrated (rev 69); standard deploy tool preflight PASS (`validatePreflight: true`) |
 | `GATE-CUTOVER-01` | Final Production Cutover | **NOT_STARTED** | Owner signoff + all blocking gates required |
 
 ## Hybrid Identity UAT acceptance
@@ -54,43 +54,32 @@ Any missing/malformed/ambiguous App53 mapping must fail closed.
 
 Backend duplicate guard must remain active.
 
-## Current corrective/deployment evidence chain
+## Current corrective, deploy & migration evidence chain
 
 ```text
 R1 = 8c3fda998fe8bd0b627d62a5beb10455bde8f725 / PARTIAL PASS
 R2 = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb / PASS
 BUILD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
 DEPLOY_TOOL = 03b531383e86c643a5258a2baf6fdbd15bc9099e / PASS
-CANONICAL_CSS = mbo-employee.css
+SANDBOX_DEPLOY_R2 = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236 / PASS (Rev 67 -> 68)
+CSS_MIGRATION_R1 = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d / PASS (Rev 68 -> 69)
+
+CANONICAL_JS = mbo-employee-app.js (blob 8958634b92b35f74b58a7a0b2abd09b8b5e93758)
+CANONICAL_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
+APP794_LIVE_REVISION = 69
+STANDARD_DEPLOY_PREFLIGHT = PASS (validatePreflight: true)
 ```
 
-No accepted evidence yet proves this candidate has been deployed to App794.
+## Deployment completion & active UAT status
 
-## Authorized sandbox deploy gate
+App794 candidate deployment and CSS filename migration are completed and closed.
+Zero Kintone writes or deployments are currently authorized.
 
-Owner approved one-shot App794 customization deploy:
-
-```text
-WORK_PACKAGE = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2
-AUTHORIZATION_ID = D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-20260908-02
-TARGET = App794 customization only
-MAX_ATTEMPTS = 1
-AUTO_RETRY = NO
-AUTO_ROLLBACK = NO
-```
-
-Allowed writes only:
-- candidate JS upload;
-- candidate CSS upload;
-- App794 Preview customization PUT;
-- App794 deploy POST.
-
-Must remain zero:
-- App794 record writes;
-- App53/App801/other app record writes;
-- schema/layout writes;
-- ACL writes;
-- Process Management writes.
+Active operational gate is Owner runtime UAT:
+1. Dedicated Papatchaya -> auto-bind 0113 -> own MBO.
+2. `tmh + 0113` -> deny with dedicated-account guidance.
+3. `tmh + shared-only employee` -> allow via App801.
+4. Current-FY existing MBO -> Open Current MBO, not Create New.
 
 ## D2 release status
 
