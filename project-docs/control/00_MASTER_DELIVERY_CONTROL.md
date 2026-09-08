@@ -14,7 +14,7 @@ Updated: 2026-09-08 ICT
 
 | Stage | Status | Current control meaning |
 |---|---|---|
-| D1 | **BASE CLOSED / TECHNICAL DEFECT RESOLUTION DEPLOYED / OWNER UAT PENDING** | Identity/Employee-Self entry candidate deployed to App794 (rev 69); Owner runtime retest pending. |
+| D1 | **BASE CLOSED / CORRECTIVE CHAIN COMPLETE / OWNER UAT COMPLETE / AWAITING FINAL CLOSURE REVIEW** | Technical & runtime corrective chain complete; Original Owner UAT 4/4 PASS; DEFECT-003 Owner UAT 3/3 PASS; App794 Live rev 70; awaiting independent Control Plane final closure review. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engine remains closed; Owner UAT is separate and currently paused. |
 | D3 | **HOLD** | No workflow implementation may start while current D1 UAT defect chain is unresolved. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
@@ -88,9 +88,18 @@ RESULT = PASS / CLOSED (Live App794 deployed rev 67 -> 68 with exact candidate b
 D1-UAT-APP794-CSS-FILENAME-MIGRATION-R1
 HEAD = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d
 RESULT = PASS / CLOSED (Live App794 migrated rev 68 -> 69, CSS target canonicalized, standard preflight PASS)
+
+DEFECT003_BUILD_R1 = 2a02ab2583f53c3906674713c2e09e1757449ba8
+RESULT = PASS / CLOSED (Candidate JS blob: 204d34db9e2eab297409a6a3d5e7f29c649779d5, CSS blob: 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
+
+DEFECT003_SANDBOX_DEPLOY_R1
+RESULT = PASS / CLOSED (Live App794 deployed rev 69 -> 70 with exact candidate blob match)
+
+DEFECT003_OWNER_UAT
+RESULT = 3/3 PASS (Owner verified)
 ```
 
-App794 is verified live at revision 69 with exact candidate JS/CSS blobs.
+App794 is verified live at revision 70 with exact candidate JS/CSS blobs (JS blob 204d34db9e2eab297409a6a3d5e7f29c649779d5, CSS blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61).
 
 ## D2 durable engineering closure
 
@@ -110,23 +119,24 @@ Do not equate D2 engineering closure with Owner runtime UAT acceptance.
 Deployment and migration work packages are completed and closed. No pending Kintone writes or deployments are authorized.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-OWNER-RUNTIME-UAT (READY / PENDING OWNER EXECUTION)
-APP794_LIVE_REVISION = 69
-APP794_LIVE_JS = mbo-employee-app.js
-APP794_LIVE_CSS = mbo-employee.css
+ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-003-CLOSE-R1-DOCFIX1
+STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
+APP794_LIVE_REVISION = 70
+APP794_LIVE_JS = mbo-employee-app.js (blob 204d34db9e2eab297409a6a3d5e7f29c649779d5)
+APP794_LIVE_CSS = mbo-employee.css (blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
 APP794_RECORD_WRITES = 0
 APP53_APP801_WRITES = 0
 SCHEMA_LAYOUT_ACL_PROCESS_WRITES = 0
+KINTONE_WRITES = NONE
 D2_CHANGE = NONE
 D3 = HOLD
 ```
 
-## Owner UAT gate (Immediate Next Milestone)
+## Immediate next gate: Control Plane Final D1 Closure Review
 
-1. Papatchaya personal Kintone -> auto-bind 0113 -> own MBO.
-2. `tmh + 0113` -> deny.
-3. `tmh + shared-only employee` -> allow via App801.
-4. Current-FY existing MBO -> Open Current MBO, not Create New.
+1. Original Focused Owner UAT: 4/4 PASS (Locked Truth).
+2. DEFECT-003 Focused Owner UAT: 3/3 PASS (Owner Verified).
+3. D1 UAT Corrective Chain: COMPLETE / READY FOR CONTROL PLANE FINAL CLOSURE REVIEW.
+4. D1 Final Closure: AWAITING CONTROL PLANE REVIEW (Antigravity does not self-certify PASS).
 
-Only Owner runtime evidence can close these UAT defects.
-D3 remains on HOLD until Owner UAT passes and Control Plane authorizes next stage.
+D3 remains strictly on HOLD until independent Control Plane (ChatGPT) completes review and formally authorizes transition.
