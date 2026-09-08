@@ -42,7 +42,7 @@ Stage D3 cannot proceed to implementation because repository truth reveals two u
    - User guidance is provided by `StatusGuidanceUI` and `ApproverTaskIndexUI`.
 
 4. **Reopen & Revision Reality**:
-   - **App 798 (MBO Revision Archive)** schema container is deployed on Sandbox with 15 fields defined in `config/schema-spec.js` (verified by committed backup `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json`).
+   - **App 798 (MBO Revision Archive)** schema container is deployed on Sandbox with 15 fields defined in `config/schema-spec.js` (verified by canonical repository evidence in `project-docs/APP_REGISTRY.md`, `config/sandbox-apps.json`, and delivery documentation).
    - **App 794 Schema Gap**: App 794 does NOT have revision counter fields (`Revision_Number`, `Objective_Revision`, `Evaluation_Revision`).
    - **Implementation Gap**: Zero service, UI, or test code exists in `src/` for Reopen requests, approvals, or snapshot archival to App 798.
 
@@ -195,8 +195,10 @@ The authoritative schema in `config/schema-spec.js` defines exactly 15 fields:
 *(Note: Prior draft incorrectly cited legacy field names that do not exist in schema-spec. The 15 fields above are the sole authoritative schema.)*
 
 ### 6.3 App 798 Deployment Evidence Status
-- Committed backup `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json` proves App 798 container was deployed live to Sandbox on 2026-08-25 (Settings rev 4, Fields rev 4).
-- `APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN`.
+- Canonical repository evidence (`project-docs/APP_REGISTRY.md` line 18, `config/sandbox-apps.json`, and delivery documentation records) verifies that App 798 (`MBO Revision Archive [Sandbox]`) was live-deployed to Sandbox with the 15-field schema.
+- `APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN_BY_COMMITTED_REPOSITORY_EVIDENCE`.
+- `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE` (historical backup payloads are not retained as committed canonical files in Git tree).
+- `APP798_EXACT_HISTORICAL_REVISION = NOT_ASSERTED` (exact live settings/fields revision numbers are not asserted without an explicit committed canonical artifact).
 - However, **App 794** has zero revision fields, and `src/` has zero lines of code implementing the reopen workflow or snapshot generator.
 
 ---
@@ -302,7 +304,7 @@ The following items are **STRICTLY FORBIDDEN** from Stage D3:
 - **Self-Approval Guard Baseline**: `project-docs/CONFIRMED_BASELINE/ROUTING_WORKFLOW.md` (commit `dc049ad`).
 - **Self-Appraiser Elision Implementation**: `src/services/routing-service.js` (commit `20747ef`, `5cc5ea6`, `c20e406`).
 - **App 798 Schema Specification**: `config/schema-spec.js` (lines 127–143).
-- **App 798 Sandbox Deployment Evidence**: `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json` (Settings rev 4, Fields rev 4).
+- **App 798 Sandbox Deployment Evidence**: `project-docs/APP_REGISTRY.md` (line 18), `config/sandbox-apps.json`, and delivery sprint documentation.
 - **D1 Final Closure Decision**: `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`.
 
 ---

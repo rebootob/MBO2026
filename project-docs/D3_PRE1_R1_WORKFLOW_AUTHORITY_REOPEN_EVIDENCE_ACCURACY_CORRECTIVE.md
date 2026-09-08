@@ -57,7 +57,7 @@ Independent Control Plane review identified the following material documentation
 2. **Unsupported Architecture Supersession Claim**: Classified the 45-state model as merely "conceptual future" and recommended Option A as if already decided, ignoring that `GENERIC_ROUTING_ARCHITECTURE.md` explicitly declares `GENERIC_ROUTING_ARCHITECTURE = FROZEN`.
 3. **Overlooked Self-Appraiser Contract Conflict**: Failed to analyze the direct tension between `ROUTING_WORKFLOW.md` (mandating fail-closed `SELF_APPROVAL_ROUTE_CONFLICT`) and `src/services/routing-service.js` (implementing self-appraiser elision and slot shifting).
 4. **Inaccurate App 798 Field Claims**: Listed non-existent field names (`Original_Record_ID`, `Employee_ID`, `Revision_Type`, `Objectives_Snapshot_JSON`, `Competencies_Snapshot_JSON`, `Score_Summary_JSON`) instead of the canonical 15 fields in `config/schema-spec.js`.
-5. **Unqualified App 798 Deployment Claim**: Claimed App 798 was deployed without citing the exact committed backup evidence (`backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json`).
+5. **Unqualified App 798 Deployment Claim**: Claimed App 798 was deployed without citing canonical repository evidence (`project-docs/APP_REGISTRY.md` line 18, `config/sandbox-apps.json`, and delivery documentation).
 
 ---
 
@@ -148,7 +148,7 @@ Authoritative schema in `config/schema-spec.js` (lines 127–143) contains exact
 
 | Field Code | Field Type | Required | Unique | Constraints / Options |
 |---|---|---|---|---|
-| `Archive_Key` | `SINGLE_LINE_TEXT` | `true` | `true` | Max length 64 |
+| `Archive_Key` | `SINGLE_LINE_TEXT` | `true` | `true` | No explicit maxLength declared in schema-spec |
 | `Source_Record_ID` | `NUMBER` | `false` | `false` | Kintone record ID of original App 794 record |
 | `Source_Record_Key` | `SINGLE_LINE_TEXT` | `true` | `false` | e.g. `FY2027-0149` |
 | `Fiscal_Year` | `SINGLE_LINE_TEXT` | `true` | `false` | e.g. `2027` |
@@ -168,14 +168,15 @@ Authoritative schema in `config/schema-spec.js` (lines 127–143) contains exact
 
 ## 8. App 798 Deployment Evidence Status
 
-- **Committed Evidence**: `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json`
-  - Timestamp: `2026-08-25T04:47:05.223Z`
-  - App ID: `798` (`MBO Revision Archive [Sandbox]`)
-  - Live Settings Revision: `4`
-  - Live Fields Revision: `4`
-  - Properties verified: All 15 canonical business fields plus Kintone system fields (`Status`, `Assignee`, `Categories`, `Updated_by`, `Created_by`, `Record_number`).
+- **Committed Repository Evidence**:
+  - `project-docs/APP_REGISTRY.md` (line 18): `798 | Sandbox (Live Deployed / 15 Fields Live Schema Verified) | MBO Revision Archive [Sandbox]`
+  - `config/sandbox-apps.json` (line 6): `"revisionArchiveAppId": 798`
+  - Delivery sprint documentation records confirming App 798 container creation and 15-field schema deployment.
 - **Classification**:
-  `APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN`
+  - `APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN_BY_COMMITTED_REPOSITORY_EVIDENCE`
+  - `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE`
+  - `APP798_EXACT_HISTORICAL_REVISION = NOT_ASSERTED`
+  - `ARCHIVE_KEY_CANONICAL_CONSTRAINT = required=true / unique=true / no explicit maxLength declared`
 
 ---
 
@@ -183,7 +184,7 @@ Authoritative schema in `config/schema-spec.js` (lines 127–143) contains exact
 
 | Layer | Requirement | Current State | Gap Classification |
 |---|---|---|---|
-| **App 798 (Archive)** | 15 Schema Fields | Deployed on Sandbox (Rev 4) | Schema exists; requires API write integration |
+| **App 798 (Archive)** | 15 Schema Fields | Deployed on Sandbox (15-field schema verified) | Schema exists; requires API write integration |
 | **App 794 (Transaction)** | Revision Fields | Missing `Revision_Number`, `Objective_Revision`, `Evaluation_Revision` | **SCHEMA GAP ON APP 794** |
 | **Service Layer** | Reopen Request & Approval | 0 lines of code in `src/` | **IMPLEMENTATION GAP (REOPEN-001)** |
 | **Service Layer** | Revision Snapshot Generator | 0 lines of code in `src/` | **IMPLEMENTATION GAP (REOPEN-002)** |
