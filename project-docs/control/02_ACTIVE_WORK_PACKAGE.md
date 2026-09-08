@@ -1,187 +1,200 @@
 # MBO2026 Active Work Package Contract
 
-Updated: 2026-09-08 ICT
+Updated: 2026-09-09 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D3-DECISION-006-SYNC`
-- **TITLE**: `Owner Decision D3-006 — Effective-Dated Routing Model A`
-- **TYPE**: `DECISION-SYNC / DOCS-ONLY`
+- **ACTIVE_WORK_PACKAGE**: `D3-DECISION-008-SYNC`
+- **TITLE**: `Owner Decision D3-008 — Route Snapshot Persistence Control-Doc Sync`
+- **TYPE**: `CONTROL-DOC SYNC / DOCUMENTATION-ONLY`
 - **OWNER_AUTHORIZATION**: `APPROVED`
 - **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
-- **PARENT_D3_DECISION_005_SYNC**: `PASS / CLOSED`
-- **LAST_COMPLETED_WORK_PACKAGE**: `D3-DECISION-005-SYNC`
-- **LAST_COMPLETED_RESULT**: `SINGLE EXACT USER PER SEQUENTIAL SLOT / ALL ONLY LOCKED`
-- **D3_DECISION_SYNC**: `PASS / CLOSED`
-- **D3_DECISION_SYNC_CLOSE**: `PASS / CLOSED AS CORRECTED`
-- **D3_DECISION_SYNC_CLOSE_R1**: `PASS / CLOSED`
-- **D3_PRE1_CHAIN**: `PASS / CLOSED AS CORRECTED`
-- **DECISION_D3_001**: `LOCKED / OWNER APPROVED`
-- **DECISION_D3_002**: `LOCKED / OWNER APPROVED`
-- **OWNER_DEC_D3_003**: `LOCKED / OWNER APPROVED (HR_CONFIGURABLE_SCORING_APPRAISERS_WITHIN_WORKFLOW_ROUTE_USING_FROZEN_PROFILE_K_EXPECTED)`
-- **OWNER_DEC_D3_005**: `LOCKED / OWNER APPROVED (SINGLE_EXACT_USER_PER_SEQUENTIAL_SLOT_ALL_ONLY_FOR_D3_V1)`
-- **USERS_PER_SEQUENTIAL_SLOT**: `EXACTLY 1`
-- **NATIVE_ASSIGNEE_RULE**: `ALL`
-- **ANY_SUPPORT_D3_V1**: `NO / DEFERRED`
-- **MULTI_USER_SLOT_D3_V1**: `NO / DEFERRED`
-- **TWIN_STATUS_ENGINE_D3_V1**: `NO`
-- **45_STATE_GENERIC_ARCHITECTURE**: `DEFERRED`
-- **OWNER_DEC_D3_006**: `LOCKED / OWNER APPROVED (MODEL_A_VERSIONED_ROWS_IN_APP795)`
-- **EFFECTIVE_DATED_ROUTING_MODEL**: `MODEL_A_VERSIONED_ROWS_IN_APP795`
-- **ROUTING_KEY_UNIQUE**: `NO`
-- **VERSION_KEY_UNIQUE**: `YES`
-- **ROUTE_VERSION_HAS_NO_EFFECT_BEFORE_EFFECTIVE_FROM**: `YES`
-- **FUTURE_ACTIVE_VERSION**: `SCHEDULED_NOT_YET_EFFECTIVE`
-- **RESOLVER**: `READ_ONLY_DATE_INTERVAL`
-- **TIME_TRIGGERED_ACTIVATION_WRITE**: `NO`
-- **OVERLAP**: `FAIL_CLOSED`
-- **NO_EFFECTIVE_ROUTE**: `FAIL_CLOSED`
-- **HISTORICAL_VERSION_RECORDS**: `PRESERVED`
-- **LEGACY_ACTIVE_DUAL_AUTHORITY**: `NOT ALLOWED`
-- **APP795_SCHEMA_MIGRATION_REQUIRED**: `YES`
-- **ROUTING_ARCHITECTURE_MAJOR_DECISIONS_COMPLETE**: `YES`
-- **SNAPSHOT_METADATA_PATH_DECISION**: `PENDING`
-- **OWNER_DEC_D3_007**: `LOCKED / OWNER APPROVED (DGM_K1_PRESIDENT_DIRECT_M1_ONLY)`
-- **DGM_K_EXPECTED**: `1`
-- **DGM_WORKFLOW**: `PRESIDENT_ONLY`
-- **DGM_TOPOLOGY**: `M1_ONLY`
-- **DGM_SCORING_WEIGHT**: `100%`
-- **DGM_CURRENT_ROUTE_SCORING_VIABILITY**: `PASS`
-- **SCORER_COUNT_SOURCE**: `FROZEN_EVALUATION_PROFILE_K_EXPECTED (1 or 2)`
-- **SCORER_IDENTITY_CONTROL**: `HR`
-- **WORKFLOW_APPRAISER_COUNT**: `1..4`
-- **SCORING_SET_RELATION**: `SCORING_APPRAISERS SUBSET_OR_EQUAL WORKFLOW_APPRAISERS`
-- **SCORER_WEIGHT_FORMULA**: `DEC-036 UNCHANGED (100% or 50%/50%)`
-- **SCORER_PLAN_DEFAULT**: `NONE`
-- **MISSING_SCORER_PLAN**: `FAIL_CLOSED (SCORER_PLAN_NOT_CONFIGURED)`
-- **FIRST_ACTOR_BECOMES_SCORER**: `PROHIBITED`
-- **AMBIGUOUS_GROUP_SCORER**: `FAIL_CLOSED`
-- **CURRENT_LIVE_STANDARD_ROUTE**: `M1_G1 / 2 APPRAISERS`
-- **D3_TARGET_ROUTE_CAPABILITY**: `1..4 APPRAISERS`
-- **REVISION_ARCHIVE_APP**: `798`
-- **HR_CONTROL_CENTER_APP**: `800`
-- **ROUTE_VIABILITY_REQUIRED**: `YES`
-- **PRE_ACTIVATION_EMPLOYEE_VIABILITY_CHECK_REQUIRED**: `YES`
-- **EFFECTIVE_DATED_PERSISTENCE_MODEL**: `MODEL_A_VERSIONED_ROWS_WITH_UNIQUE_VERSION_KEY`
-- **APP795_KEY_MIGRATION**: `ROUTING_KEY NON-UNIQUE, VERSION_KEY UNIQUE`
-- **TIME_RESOLVER_PURITY**: `READ_ONLY_GET_QUERY (NO ACTIVATION MUTATION)`
-- **SCORE_STORAGE_COMPATIBILITY**: `ALTERNATIVE_A_PHYSICAL_COMPATIBILITY_ADAPTER (ZERO APP794 PHYSICAL SCORE MATRIX IMPACT)`
-- **APP794_AUDIT_METADATA_GAP**: `MINIMAL_GAP (3-4 AUDIT SNAPSHOT FIELDS)`
-- **SELF_APPRAISER_SCORER_ELISION**: `FAIL_CLOSED_IF_SURVIVING_SCORERS_BELOW_K_EXPECTED`
-- **SELF_ELISION_SIMULATED_BEFORE_SCORER_RESOLUTION**: `YES`
-- **AUTO_LOWER_K_EXPECTED**: `FORBIDDEN`
-- **RANDOM_SCORER_PROMOTION**: `FORBIDDEN`
-- **THREE_APPRAISER_TOPOLOGIES**: `M1_M2_G1 + M1_G1_G2`
-- **APPRAISER_COUNT_DETERMINES_TOPOLOGY**: `NO`
-- **ROUTE_PATTERN_REQUIRED**: `YES`
-- **HR_ROUTING_SELF_SERVICE_REQUIRED**: `YES`
-- **DECISION_006_SYNC_DOCUMENT**: `project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md`
-- **DECISION_005_SYNC_DOCUMENT**: `project-docs/D3_DECISION_005_SINGLE_USER_ALL_ONLY_SYNC.md`
-- **R3_R1_CORRECTIVE_DOCUMENT**: `project-docs/D3_WP001_R3_R1_DGM_AUTHORITY_SCORER_FAIL_CLOSED_CORRECTIVE.md`
-- **HISTORICAL_R3_DESIGN**: `project-docs/D3_WP001_R3_K_EXPECTED_ROUTE_VIABILITY_SELF_ELISION_SCORING_COMPATIBILITY_DESIGN.md (SUPERSEDED WHERE CORRECTED BY R3-R1)`
-- **HISTORICAL_R2_DESIGN**: `project-docs/D3_WP001_R2_EFFECTIVE_DATED_ROUTING_HR_SCORING_ROLE_DESIGN.md (SUPERSEDED WHERE CORRECTED BY R3/R3-R1)`
-- **HISTORICAL_R1_DESIGN**: `project-docs/D3_WP001_R1_NATIVE_PROCESS_ROUTE_PATTERN_EFFECTIVE_DATED_ROUTING_CORRECTIVE.md (SUPERSEDED WHERE CORRECTED BY R2/R3/R3-R1)`
-- **HISTORICAL_PARENT_DESIGN**: `project-docs/D3_WP001_VARIABLE_1_4_APPRAISER_PROCESS_COMPATIBILITY_DESIGN.md (SUPERSEDED WHERE CORRECTED BY R1/R2/R3/R3-R1)`
-- **CLOSURE_DOCUMENT**: `project-docs/D3_DECISION_SYNC_CLOSE_CONTROL_PLANE_CLOSURE.md`
-- **DECISION_DOCUMENT**: `project-docs/D3_DECISION_SYNC_OWNER_ARCHITECTURE_ROUTING_DECISIONS.md`
-- **D3_READINESS**: `MAJOR_ROUTING_DECISIONS_LOCKED / SNAPSHOT_METADATA_PENDING`
-- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_006_SYNC`
-- **D1_FINAL_CLOSURE**: `PASS / CLOSED`
-- **D1_BASE_ARCHITECTURE**: `PASS / CLOSED / DURABLE`
-- **D1_UAT_CORRECTIVE_CHAIN**: `PASS / CLOSED`
-- **DEFECT001_STATUS**: `PASS / CLOSED`
-- **DEFECT002_STATUS**: `PASS / CLOSED`
-- **DEFECT003_STATUS**: `PASS / CLOSED`
-- **ORIGINAL_OWNER_UAT**: `4/4 PASS`
-- **DEFECT003_OWNER_UAT**: `3/3 PASS`
-- **APP794_LIVE_REVISION**: `70`
-- **LIVE_JS_BLOB**: `204d34db9e2eab297409a6a3d5e7f29c649779d5`
-- **LIVE_CSS_BLOB**: `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`
-- **D2_ENGINEERING**: `PASS / CLOSED / DURABLE`
-- **D2_OWNER_UAT**: `IN PROGRESS / PAUSED`
-- **D3**: `HOLD / NOT AUTHORIZED`
+- **D3-WP001-R4**: `PASS / CLOSED VIA R4-R1`
+- **D3-WP001-R4-R1**: `PASS / CLOSED`
+- **OWNER_DEC_D3_008**: `LOCKED / OWNER APPROVED`
+- **SNAPSHOT_METADATA_PATH_DECISION**: `LOCKED`
 - **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
-- **PRODUCTION_READY**: `NO`
 - **DEPLOYMENT_AUTHORIZED**: `NO`
 - **KINTONE_WRITES_AUTHORIZED**: `NONE`
+- **PRODUCTION_READY**: `NO`
+- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC`
 
-## Completed predecessor work packages
+## Owner-authorized scope
 
-1. **`D1-UAT-DEFECT-001-002-SANDBOX-DEPLOY-R2`**
-   - Status: `PASS / CLOSED`
-   - Execution Commit: `cd74b01e6650bb04b5fbdba6c365dd9a1bf87236`
-   - Evidence: `project-docs/D1_UAT_DEFECT_001_002_SANDBOX_DEPLOY_R2_EVIDENCE.md`
-   - App794 Live revision advanced from 67 to 68.
-   - Candidate JS (`8958634b...`) and CSS (`0532c1c3...`) verified byte-identical to committed artifacts.
+This work package synchronizes only the following control documents to accepted repository truth through `OWNER_DEC_D3_008`:
 
-2. **`D1-UAT-APP794-CSS-FILENAME-MIGRATION-R1`**
-   - Status: `PASS / CLOSED`
-   - Execution Commit: `38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d`
-   - Evidence: `project-docs/D1_UAT_APP794_CSS_FILENAME_MIGRATION_R1_EVIDENCE.md`
-   - App794 Live revision advanced from 68 to 69.
-   - Live CSS filename migrated from historical `"mbo-employee .css"` to canonical `"mbo-employee.css"`.
-   - Exact CSS bytes preserved (blob `0532c1c3...`).
-   - Normal deployment tool preflight restored to PASS (`validatePreflight: true`).
+```text
+project-docs/AI_CONTROL_CENTER.md
+project-docs/AI_ACTIVE_TASK.md
+project-docs/control/00_MASTER_DELIVERY_CONTROL.md
+project-docs/control/02_ACTIVE_WORK_PACKAGE.md
+```
 
-3. **`D1-UAT-DEFECT-003-CLOSE-R1`**
-   - Status: `PASS / CLOSED`
-   - Execution Commit: `a66c351013534b739426f990bead47eec37c773e`
-   - Evidence: `project-docs/D1_UAT_DEFECT_003_OWNER_UAT_CLOSE_R1_EVIDENCE.md`
-   - Owner runtime UAT: 3/3 PASS (Back to Home, Forgot Password, Dedicated Deny).
+No source, test, config, schema, build, deployment, migration, Kintone read/write, process transition, or data backfill is authorized.
 
-4. **`D1-FINAL-CLOSURE-SYNC`**
-   - Status: `PASS / CLOSED`
-   - Evidence: `project-docs/D1_FINAL_CLOSURE_CONTROL_PLANE_DECISION.md`
-   - Independent Control Plane (ChatGPT) verdict recorded: D1 = PASS / CLOSED.
+## Locked D3 decision chain
 
-## Current App794 Live state
+```text
+DECISION_D3_001 = LOCKED / OWNER APPROVED
+DECISION_D3_002 = LOCKED / OWNER APPROVED
+OWNER_DEC_D3_003 = LOCKED / OWNER APPROVED
+OWNER_DEC_D3_005 = LOCKED / OWNER APPROVED
+OWNER_DEC_D3_006 = LOCKED / OWNER APPROVED
+OWNER_DEC_D3_007 = LOCKED / OWNER APPROVED
+OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
+```
 
-- **App ID**: 794
-- **Live Revision**: 70
-- **Preview Revision**: 70
-- **Live Desktop JS**: `mbo-employee-app.js` (blob `204d34db9e2eab297409a6a3d5e7f29c649779d5`)
-- **Live Desktop CSS**: `mbo-employee.css` (blob `0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61`)
-- **Topology**: Desktop JS = 1, Desktop CSS = 1, Mobile JS = 0, Mobile CSS = 0
-- **Total Record / Schema / ACL Writes**: 0
+## D3-008 locked persistence contract
+
+```text
+VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
+```
+
+Authority separation:
+
+```text
+App795 = effective-dated routing master for NEW resolution points
+App794 = current MBO transaction + currently bound active-stage route/provenance snapshot
+App798 = immutable event-scoped historical snapshot ledger
+App800 = HR control / administrative UI only
+```
+
+### App794 target provenance
+
+```text
+APP794_NEW_LOGICAL_FIELDS = 5
+Frozen_Profile_Code
+K_expected_Snapshot
+Effective_Routing_Key
+Effective_Route_Version_Key
+Effective_Scorer_Slots_Snapshot
+APP794_EFFECTIVE_ROUTING_KEY_REQUIRED = YES
+APP794_BOUND_STAGE_AUTHORITY_AFTER_RESOLUTION = YES
+IN_FLIGHT_STAGE_DOES_NOT_SILENTLY_RERESOLVE = YES
+```
+
+### App798 event-scoped history
+
+```text
+APP798_RUNTIME_ROUTING_AUTHORITY = NO
+APP798_NEW_PHYSICAL_FIELDS_FOR_D3_008 = 0
+APP798_EVENT_SCOPED_HISTORY = YES
+APP798_FULL_PROVENANCE = Snapshot_JSON + Snapshot_Hash
+EVENT_TYPE_1 = STAGE_COMPLETION_SNAPSHOT
+EVENT_TYPE_2 = EVALUATION_REVISION_CREATED
+EVENT_TYPE_3 = ROUTE_REASSIGNMENT_PRECHANGE
+APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS = FORBIDDEN
+ARCHIVE_KEY_IDEMPOTENT_EVENT_IDENTITY = YES
+TIMESTAMP_ONLY_RETRY_KEYS = FORBIDDEN
+SAME_LOGICAL_EVENT_DUPLICATE_ROW = FORBIDDEN
+ARCHIVE_HASH_CONFLICT = FAIL_CLOSED
+ARCHIVE_ACTOR_NOT_RESOLVED = FAIL_CLOSED
+```
+
+The older App794 Objective/Mid-Year/Final six-slot physical persistence matrices are superseded for D3 V1 where they conflict with D3-008. Historical stage immutability, audit preservation, and explicit reassignment remain valid.
+
+## D3 routing and scorer invariants retained
+
+```text
+WORKFLOW_APPRAISER_COUNT = 1..4
+USERS_PER_SEQUENTIAL_SLOT = EXACTLY 1
+NATIVE_ASSIGNEE_RULE = ALL
+ANY_SUPPORT_D3_V1 = NO / DEFERRED
+MULTI_USER_SLOT_D3_V1 = NO / DEFERRED
+45_STATE_GENERIC_ARCHITECTURE = DEFERRED
+
+SCORER_COUNT_SOURCE = FROZEN_EVALUATION_PROFILE_K_EXPECTED (1 or 2)
+SCORER_IDENTITY_CONTROL = HR
+SCORING_SET_RELATION = SCORING_APPRAISERS SUBSET_OR_EQUAL WORKFLOW_APPRAISERS
+SCORER_PLAN_DEFAULT = NONE
+MISSING_SCORER_PLAN = FAIL_CLOSED (SCORER_PLAN_NOT_CONFIGURED)
+FIRST_ACTOR_BECOMES_SCORER = PROHIBITED
+AUTO_LOWER_K_EXPECTED = FORBIDDEN
+RANDOM_SCORER_PROMOTION = FORBIDDEN
+
+CURRENT_LIVE_STANDARD_ROUTE = M1_G1 / 2 APPRAISERS
+D3_TARGET_ROUTE_CAPABILITY = 1..4 APPRAISERS
+
+DGM_K_EXPECTED = 1
+DGM_WORKFLOW = PRESIDENT_ONLY
+DGM_TOPOLOGY = M1_ONLY
+DGM_SCORING_WEIGHT = 100%
+```
+
+## App795 Model A retained
+
+```text
+EFFECTIVE_DATED_ROUTING_MODEL = MODEL_A_VERSIONED_ROWS_IN_APP795
+ROUTING_KEY_UNIQUE = NO
+VERSION_KEY_UNIQUE = YES
+ROUTE_VERSION_HAS_NO_EFFECT_BEFORE_EFFECTIVE_FROM = YES
+FUTURE_ACTIVE_VERSION = SCHEDULED_NOT_YET_EFFECTIVE
+RESOLVER = READ_ONLY_DATE_INTERVAL
+TIME_TRIGGERED_ACTIVATION_WRITE = NO
+OVERLAP = FAIL_CLOSED
+NO_EFFECTIVE_ROUTE = FAIL_CLOSED
+HISTORICAL_VERSION_RECORDS = PRESERVED
+LEGACY_ACTIVE_DUAL_AUTHORITY = NOT ALLOWED
+APP795_SCHEMA_MIGRATION_REQUIRED = YES
+APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
+```
+
+## Project status retained
+
+```text
+D1 = PASS / CLOSED / DURABLE
+D1_ORIGINAL_OWNER_UAT = 4/4 PASS
+D1-UAT-DEFECT-001 = PASS / CLOSED
+D1-UAT-DEFECT-002 = PASS / CLOSED
+D1-UAT-DEFECT-003 = PASS / CLOSED
+DEFECT003_OWNER_UAT = 3/3 PASS
+APP794_LIVE_REVISION = 70
+APP794_LIVE_JS_BLOB = 204d34db9e2eab297409a6a3d5e7f29c649779d5
+APP794_LIVE_CSS_BLOB = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+D2_OWNER_UAT = IN PROGRESS / PAUSED
+
+D3 = ARCHITECTURE / DESIGN ACTIVE
+D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
+D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / IMPLEMENTATION_READINESS_NOT_STARTED
+D3_IMPLEMENTATION_AUTHORIZED = NO
+
+D4 = IN PROGRESS / NOT ACTIVE
+D5 = IN PROGRESS / NOT ACTIVE
+D6 = UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED
+D7 = SOURCE FUNCTIONALITY CLOSED / PRODUCTION CUTOVER NOT AUTHORIZED
+PRODUCTION_READY = NO
+```
+
+## Current evidence documents
+
+```text
+D3_DECISION_006 = project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md
+D3_R4 = project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md
+D3_R4_R1 = project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md
+D3_DECISION_008 = project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
+```
 
 ## Allowed operations
 
 Only:
-- Reviewing repository documentation and evidence.
+- read/review repository evidence;
+- independent Control Plane review of this exact docs-only sync.
 
-Forbidden:
-- AI code modifications to `src/`, `tests/`, `scripts/`, `dist/`.
-- Additional Kintone deployments or write operations.
-- Starting D3 without explicit Owner authorization.
-- Self-certifying independent Control Plane review.
+Forbidden until separate explicit Owner authorization:
+- source changes;
+- tests/builds;
+- config/schema changes;
+- App794 field creation;
+- App795 Model A migration;
+- App798 archive behavior implementation;
+- deployment;
+- Kintone reads/writes;
+- process transitions;
+- data backfill;
+- auto-starting implementation-readiness work.
 
-## Owner Runtime UAT Status
+## Closure rule
 
-### Original Focused UAT: 4/4 PASS (Locked Truth)
-The original 4 Owner Runtime UAT cases on App794 were executed and verified by Owner:
-1. **Case 1 (Dedicated Account Auto-Bind)**: Dedicated user (Ms.Papatchaya) auto-binds to `0113` and opens own MBO -> **PASS**.
-2. **Case 2 (Shared Principal Deny on Dedicated Employee)**: Shared principal (`tmh`) + `0113` -> DENIED with dedicated account guidance -> **PASS**.
-3. **Case 3 (Shared Principal Allow on Shared Employee)**: Shared principal (`tmh`) + employee with `MBO_Kintone_User.value = []` -> ALLOWED -> **PASS**.
-4. **Case 4 (Current-FY Navigation Guard)**: Existing current-FY MBO -> "Open Current MBO" and no Create New path -> **PASS**.
-
-These 4 tests are complete and MUST NOT be re-requested or repeated.
-
-### Focused Owner UAT for DEFECT-003: 3/3 PASS (Owner Verified)
-The focused Owner UAT checks on App 794 Live (Revision 70) were personally executed by Owner:
-1. **DEFECT003-UAT-1 (Back to Kintone Home)**: PASS (Owner confirmed clicking Back Home cleanly exits blocking overlay to Kintone home).
-2. **DEFECT003-UAT-2 (Forgot Password Guidance)**: PASS (Owner confirmed bilingual HR/Admin support guidance appears, no reset triggered).
-3. **DEFECT003-UAT-3 (Dedicated Account Deny & Back Home Usable)**: PASS (Owner confirmed dedicated denial remains active and Back Home button functions cleanly).
-
-## Next permitted action
-
-- `CONTROL_PLANE_REVIEW_OF_D3_WP001_R3_R1`.
-- Stage D3 remains strictly on HOLD: transition to D3 implementation requires separate explicit Owner authorization and bounded D3 work package. D3 implementation is NOT authorized.
-
-## Permanent rules
-
-- No code change without authorized FUNCTION_ID or DEFECT_ID.
-- Exactly one active work package.
-- Out-of-scope findings are logged, not auto-fixed.
-- Closed functions reopen only for proven regression or explicit Owner change request.
-- Security/privacy/data-integrity defects are material and block closure.
-- Kintone writes/deployment require explicit Owner authority and exact bounded scope.
+Antigravity or the execution plane cannot self-certify this package. `D3-DECISION-008-SYNC` remains `EXECUTED / AWAITING CONTROL PLANE REVIEW` until ChatGPT independently reviews the exact final diff and evidence.
