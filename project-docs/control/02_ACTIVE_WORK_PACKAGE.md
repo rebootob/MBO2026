@@ -4,17 +4,17 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D3-DECISION-SYNC`
-- **TITLE**: `D3 Owner Architecture & Self-Appraiser Decision Sync`
-- **TYPE**: `DOCS-ONLY / CONTROL-AUTHORITY SYNC`
-- **OWNER_AUTHORIZATION**: `APPROVED`
-- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
+- **ACTIVE_WORK_PACKAGE**: `NONE`
+- **LAST_COMPLETED_WORK_PACKAGE**: `D3-DECISION-SYNC-CLOSE`
+- **LAST_COMPLETED_RESULT**: `CONTROL PLANE D3 DECISION SYNC CLOSURE RECORDED`
+- **D3_DECISION_SYNC**: `PASS / CLOSED`
 - **D3_PRE1_CHAIN**: `PASS / CLOSED AS CORRECTED`
 - **DECISION_D3_001**: `LOCKED / OWNER APPROVED`
 - **DECISION_D3_002**: `LOCKED / OWNER APPROVED`
+- **CLOSURE_DOCUMENT**: `project-docs/D3_DECISION_SYNC_CLOSE_CONTROL_PLANE_CLOSURE.md`
 - **DECISION_DOCUMENT**: `project-docs/D3_DECISION_SYNC_OWNER_ARCHITECTURE_ROUTING_DECISIONS.md`
-- **D3_READINESS**: `DECISIONS_RESOLVED / READY_FOR_BOUNDED_IMPLEMENTATION_PLANNING`
-- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_SYNC`
+- **D3_READINESS**: `READY_FOR_BOUNDED_IMPLEMENTATION_PLANNING`
+- **NEXT_PERMITTED_ACTION**: `OWNER_AUTHORIZATION_FOR_BOUNDED_D3_WP001_DESIGN_ONLY`
 - **LAST_COMPLETED_WORK_PACKAGE**: `D1-FINAL-CLOSURE-SYNC`
 - **D1_FINAL_CLOSURE**: `PASS / CLOSED`
 - **D1_BASE_ARCHITECTURE**: `PASS / CLOSED / DURABLE`
@@ -104,9 +104,9 @@ The focused Owner UAT checks on App 794 Live (Revision 70) were personally execu
 
 ## Next permitted action
 
-- Control Plane (ChatGPT) review of `D3-DECISION-SYNC`.
+- `OWNER_AUTHORIZATION_FOR_BOUNDED_D3_WP001_DESIGN_ONLY`.
 - Do NOT auto-start D3-WP001.
-- Stage D3 remains strictly on HOLD: transition to D3 implementation requires separate explicit Owner authorization and bounded D3 work package. D3 is NOT authorized.
+- Stage D3 remains strictly on HOLD: transition to D3 implementation requires separate explicit Owner authorization and bounded D3 work package. D3 implementation is NOT authorized.
 
 ## Permanent rules
 
