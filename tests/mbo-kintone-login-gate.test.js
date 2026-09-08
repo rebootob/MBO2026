@@ -53,6 +53,7 @@ function createMockEl(tag = 'div') {
     setAttribute(k, v) { this._attrs[k] = v; },
     getAttribute(k) { return this._attrs[k] ?? null; },
     hasAttribute(k) { return k in this._attrs; },
+    removeAttribute(k) { delete this._attrs[k]; },
     appendChild(child) { this._children.push(child); return child; },
     insertBefore(child, _ref) { this._children.unshift(child); return child; },
     remove() {
@@ -441,4 +442,238 @@ describe('D1 EmployeePartAUI — authenticated Employee_Code lock', () => {
       }
     );
   });
+});
+
+// ---------------------------------------------------------------------------
+// D1-UAT-DEFECT-003 — Login Escape & Recovery UX
+// ---------------------------------------------------------------------------
+
+describe('D1-UAT-DEFECT-003 — Login Escape & Recovery UX', () => {
+
+  it('1. Login overlay contains Back to Kintone Home action', async () => {
+    const gate = new MboKintoneLoginGate({}, { onReload: () => {} });
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      assert.ok(overlay, 'Overlay must be present');
+      const backHomeBtn = overlay.querySelector('[data-mbo-back-home]');
+      assert.ok(backHomeBtn, 'Back to Kintone Home button must be present');
+      assert.ok(backHomeBtn.textContent.includes('กลับหน้าหลัก Kintone / Back to Kintone Home'));
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
+  it('2. Back Home action is type="button" and does not submit login form', async () => {
+    const gate = new MboKintoneLoginGate({}, { onReload: () => {} });
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      const backHomeBtn = overlay.querySelector('[data-mbo-back-home]');
+      assert.equal(backHomeBtn.type, 'button', 'Must be type="button" to prevent form submission');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
+  it('3. Back Home invokes only the injected navigation callback without calling adapter.login or creating principal', async () => {
+    let exitCalled = false;
+    let loginCalled = false;
+    const mockAdapter = {
+      login: async () => { loginCalled = true; return { status: 'AUTHENTICATED', employeeCode: '0118' }; }
+    };
+    const gate = new MboKintoneLoginGate(mockAdapter, {
+      onExitToKintoneHome: () => { exitCalled = true; },
+      onReload: () => {}
+    });
+
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      const backHomeBtn = overlay.querySelector('[data-mbo-back-home]');
+      backHomeBtn._trigger('click');
+
+      assert.equal(exitCalled, true, 'Must invoke injected onExitToKintoneHome callback');
+      assert.equal(loginCalled, false, 'Must NOT invoke adapter.login');
+      assert.equal(gate.getEmployeeCode(), null, 'Must NOT authenticate principal');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
+  it('4. Forgot Password action exists, is type="button", and clicking it reveals bilingual support guidance', async () => {
+    const gate = new MboKintoneLoginGate({}, { onReload: () => {} });
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      const forgotPwBtn = overlay.querySelector('[data-mbo-forgot-password-btn]');
+      const helpEl = overlay.querySelector('[data-mbo-forgot-password-help]');
+
+      assert.ok(forgotPwBtn, 'Forgot password button must exist');
+      assert.equal(forgotPwBtn.type, 'button', 'Forgot password button must be type="button"');
+      assert.ok(helpEl, 'Forgot password help container must exist');
+      assert.equal(helpEl.hasAttribute('hidden'), true, 'Help must initially be hidden');
+
+      // Click to toggle open
+      forgotPwBtn._trigger('click');
+      assert.equal(helpEl.hasAttribute('hidden'), false, 'Help must be visible after click');
+      assert.ok(helpEl.textContent.includes('ลืมรหัสผ่าน MBO กรุณาติดต่อ HR หรือ System Administrator'));
+      assert.ok(helpEl.textContent.includes('Forgot your MBO password? Please contact HR or the System Administrator'));
+
+      // Click again to toggle closed
+      forgotPwBtn._trigger('click');
+      assert.equal(helpEl.hasAttribute('hidden'), true, 'Help must be hidden after second click');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
+  it('5. Forgot Password action does NOT call adapter.login, changePassword, forceChangePassword, or issue session', async () => {
+    let loginCalled = false;
+    let changePwCalled = false;
+    let forceChangeCalled = false;
+    let sessionIssued = false;
+
+    const mockAdapter = {
+      login: async () => { loginCalled = true; },
+      changePassword: async () => { changePwCalled = true; },
+      forceChangePassword: async () => { forceChangeCalled = true; },
+    };
+    const mockSessionManager = {
+      issueSession: async () => { sessionIssued = true; },
+      restoreSession: async () => null,
+    };
+
+    const gate = new MboKintoneLoginGate(mockAdapter, {
+      sessionManager: mockSessionManager,
+      onReload: () => {}
+    });
+
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      await new Promise(resolve => setTimeout(resolve, 20));
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      const forgotPwBtn = overlay.querySelector('[data-mbo-forgot-password-btn]');
+      forgotPwBtn._trigger('click');
+
+      assert.equal(loginCalled, false, 'Must not call adapter.login');
+      assert.equal(changePwCalled, false, 'Must not call adapter.changePassword');
+      assert.equal(forceChangeCalled, false, 'Must not call adapter.forceChangePassword');
+      assert.equal(sessionIssued, false, 'Must not issue session');
+      assert.equal(gate.getEmployeeCode(), null, 'Must not authenticate');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
+  it('6. DEDICATED_ACCOUNT_REQUIRED state still denies Employee 0113 and overlay contains Back Home escape action', async () => {
+    let exitCalled = false;
+    const mockAdapter = {
+      login: async () => ({ status: 'AUTHENTICATED', employeeCode: '0113' })
+    };
+    const mockEligibility = async (empCode) => {
+      if (empCode === '0113') {
+        return {
+          eligible: false,
+          status: 'DEDICATED_ACCOUNT_REQUIRED',
+          reason: 'DEDICATED_ACCOUNT_REQUIRED',
+          message: 'พนักงานรายนี้มีบัญชี Kintone ส่วนตัว กรุณาเข้าสู่ระบบด้วยบัญชี Kintone ของตนเอง\nThis employee has a dedicated Kintone account. Please sign in using their dedicated Kintone account.'
+        };
+      }
+      return { eligible: true };
+    };
+
+    const gate = new MboKintoneLoginGate(mockAdapter, {
+      checkSharedEligibility: mockEligibility,
+      onExitToKintoneHome: () => { exitCalled = true; },
+      onReload: () => {}
+    });
+
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      const form = overlay.querySelector('[data-mbo-login-form]');
+
+      // Set input values for Employee 0113
+      const usernameInput = form.querySelector('[name="username"]');
+      const passwordInput = form.querySelector('[name="password"]');
+      if (usernameInput) usernameInput.value = '0113';
+      if (passwordInput) passwordInput.value = 'pw';
+
+      // Submit form
+      form._trigger('submit', { preventDefault: () => {} });
+      await new Promise(resolve => setTimeout(resolve, 20));
+
+      const errorEl = overlay.querySelector('[data-mbo-error]');
+      assert.ok(errorEl.textContent.includes('พนักงานรายนี้มีบัญชี Kintone ส่วนตัว'), 'Must display dedicated account error');
+      assert.equal(gate.getEmployeeCode(), null, 'Must remain unauthenticated');
+
+      // Check that Back to Kintone Home action is present and clickable
+      const backHomeBtn = overlay.querySelector('[data-mbo-back-home]');
+      assert.ok(backHomeBtn, 'Back to Kintone Home button must remain available');
+      backHomeBtn._trigger('click');
+      assert.equal(exitCalled, true, 'Clicking Back Home must invoke navigation callback');
+      assert.equal(gate.getEmployeeCode(), null, 'Principal must still be null after escape');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
+  it('7. Force Password Change card also contains Back Home escape action', async () => {
+    let exitCalled = false;
+    const mockAdapter = {
+      login: async () => ({ status: 'PASSWORD_CHANGE_REQUIRED', employeeCode: '0118' }),
+      forceChangePassword: async () => ({ status: 'PASSWORD_CHANGED', employeeCode: '0118' })
+    };
+
+    const gate = new MboKintoneLoginGate(mockAdapter, {
+      onExitToKintoneHome: () => { exitCalled = true; },
+      onReload: () => {}
+    });
+
+    const host = createMockEl('div');
+    const origDoc = globalThis.document;
+    globalThis.document = createMockDocument();
+    try {
+      gate.requireLogin(host);
+      const overlay = host.querySelector('[data-mbo-login-overlay]');
+      const form = overlay.querySelector('[data-mbo-login-form]');
+
+      // Submit login to transition to Force Password Change card
+      form._trigger('submit', { preventDefault: () => {} });
+      await new Promise(resolve => setTimeout(resolve, 20));
+
+      // Check that force change form has Back to Kintone Home button
+      const forceChangeForm = overlay.querySelector('[data-mbo-force-change-form]');
+      assert.ok(forceChangeForm, 'Force change form must be rendered');
+      const backHomeBtn = forceChangeForm.querySelector('[data-mbo-back-home]');
+      assert.ok(backHomeBtn, 'Back Home button must exist in force change form');
+      assert.equal(backHomeBtn.type, 'button');
+
+      backHomeBtn._trigger('click');
+      assert.equal(exitCalled, true, 'Clicking Back Home must invoke callback');
+      assert.equal(gate.getEmployeeCode(), null, 'Principal must remain null');
+    } finally {
+      globalThis.document = origDoc;
+    }
+  });
+
 });

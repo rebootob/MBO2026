@@ -4,11 +4,17 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D1-UAT-OWNER-RUNTIME-UAT-READINESS`
-- **OWNER_AUTHORIZATION**: `Owner Runtime UAT Readiness (Post Deploy & Migration Closure)`
-- **STATUS**: `READY FOR OWNER RUNTIME UAT`
-- **TARGET**: `App794 Sandbox Runtime Testing`
-- **MODE**: `READ-ONLY VERIFICATION / ZERO AI WRITES`
+- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003`
+- **TITLE**: `Login Escape & Recovery UX`
+- **OWNER_AUTHORIZATION**: `APPROVED`
+- **STATUS**: `IMPLEMENTATION IN PROGRESS / SOURCE AND TEST COMPLETE`
+- **ORIGINAL_FOCUSED_UAT_1_TO_4**: `4/4 PASS`
+- **D1_FINAL_CLOSURE**: `HOLD pending DEFECT-003 correction + review + deployment + focused UAT`
+- **D2_ENGINEERING**: `PASS / CLOSED / DURABLE`
+- **D3**: `HOLD`
+- **PRODUCTION_READY**: `NO`
+- **TARGET**: `src/ui/mbo-kintone-login-gate.js`
+- **MODE**: `SOURCE AND TEST ONLY / NO DEPLOY / ZERO KINTONE WRITES`
 - **ALLOWED_KINTONE_WRITES**: `NONE`
 - **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
 
