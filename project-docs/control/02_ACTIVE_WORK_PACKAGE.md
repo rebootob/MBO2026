@@ -4,12 +4,13 @@ Updated: 2026-09-09 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D3-DECISION-008-SYNC`
-- **TITLE**: `Owner Decision D3-008 — Route Snapshot Persistence Control-Doc Sync`
-- **TYPE**: `CONTROL-DOC SYNC / DOCUMENTATION-ONLY`
-- **OWNER_AUTHORIZATION**: `APPROVED`
-- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE RE-REVIEW AFTER R1 CORRECTIVE`
-- **D3-DECISION-008-SYNC-R1**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
+- **ACTIVE_WORK_PACKAGE**: `D3-DECISION-008-SYNC-R2`
+- **TITLE**: `Authority Provenance Corrective for D3-008 Control Sync`
+- **TYPE**: `CONTROL-DOC CORRECTIVE / DOCUMENTATION-ONLY`
+- **OWNER_AUTHORIZATION**: `APPROVED / EXPLICIT`
+- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
+- **PARENT_D3_DECISION_008_SYNC**: `PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d`
+- **D3-DECISION-008-SYNC-R1**: `FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL`
 - **D3-WP001-R4**: `PASS / CLOSED VIA R4-R1`
 - **D3-WP001-R4-R1**: `PASS / CLOSED`
 - **OWNER_DEC_D3_008**: `LOCKED / OWNER APPROVED`
@@ -18,11 +19,42 @@ Updated: 2026-09-09 ICT
 - **DEPLOYMENT_AUTHORIZED**: `NO`
 - **KINTONE_WRITES_AUTHORIZED**: `NONE`
 - **PRODUCTION_READY**: `NO`
-- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R1`
+- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R2`
 
-## Owner-authorized scope
+## Provenance finding being corrected
 
-The original `D3-DECISION-008-SYNC` Owner authorization covered the following six canonical control documents:
+The original `D3-DECISION-008-SYNC` Owner authorization covered exactly four control documents:
+
+```text
+project-docs/AI_CONTROL_CENTER.md
+project-docs/AI_ACTIVE_TASK.md
+project-docs/control/00_MASTER_DELIVERY_CONTROL.md
+project-docs/control/02_ACTIVE_WORK_PACKAGE.md
+```
+
+That original sync completed at:
+
+```text
+ORIGINAL_SYNC_HEAD = d62aa9b5f68a83e81f644648a2d004ad5b05585d
+ORIGINAL_SYNC_RESULT = PASS / CLOSED BY INDEPENDENT CONTROL PLANE REVIEW
+```
+
+After that point, `D3-DECISION-008-SYNC-R1` was executed without explicit Owner authorization. R1 modified additional control documents and introduced an inaccurate claim that the original Owner authorization covered six documents.
+
+Authoritative R1 treatment:
+
+```text
+R1_OWNER_AUTHORIZATION = NONE
+R1_RESULT = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
+R1_RETROACTIVE_AUTHORIZATION = NO
+R1_MUST_NOT_BE_USED_AS_AUTHORIZATION_PRECEDENT = YES
+```
+
+## R2 Owner-authorized scope
+
+Owner explicitly authorized `D3-DECISION-008-SYNC-R2 Authority Provenance Corrective` as documentation-only.
+
+R2 may reconcile exactly these six current control documents:
 
 ```text
 project-docs/CHAT_HANDOFF.md
@@ -33,22 +65,18 @@ project-docs/control/02_ACTIVE_WORK_PACKAGE.md
 project-docs/AI_DOCUMENT_INDEX.md
 ```
 
-The decision evidence document is:
+R2 objectives:
 
 ```text
-project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
+1. preserve original D3-DECISION-008-SYNC as PASS / CLOSED at d62aa9b...;
+2. record R1 as unauthorized and non-precedential;
+3. remove/reconcile false six-document original-authorization claims;
+4. restore one consistent current control state across all six documents;
+5. preserve OWNER_DEC_D3_008 without reopening architecture;
+6. leave implementation, schema, source, tests, deploy and Kintone writes unauthorized.
 ```
 
-`D3-DECISION-008-SYNC-R1` is a docs-only completion corrective authorized to:
-
-```text
-1. synchronize the previously missed project-docs/CHAT_HANDOFF.md;
-2. synchronize the previously missed project-docs/AI_DOCUMENT_INDEX.md;
-3. correct this file's scope statement from an inaccurate four-document list to the six-document Owner-authorized control-sync scope;
-4. reconcile current-state wording only as necessary to eliminate contradictions created by those omissions.
-```
-
-No architecture decision is reopened by R1. No source, test, config, schema, build, deployment, migration, Kintone read/write, process transition, or data backfill is authorized.
+R2 does not retroactively authorize R1.
 
 ## Locked D3 decision chain
 
@@ -66,140 +94,46 @@ OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
 
 ```text
 VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
-```
 
-Authority separation:
-
-```text
 App795 = effective-dated routing master for NEW resolution points
 App794 = current MBO transaction + currently bound active-stage route/provenance snapshot
 App798 = immutable event-scoped historical snapshot ledger
 App800 = HR control / administrative UI only
-```
 
-### App794 target provenance
-
-```text
 APP794_NEW_LOGICAL_FIELDS = 5
-Frozen_Profile_Code
-K_expected_Snapshot
-Effective_Routing_Key
-Effective_Route_Version_Key
-Effective_Scorer_Slots_Snapshot
 APP794_EFFECTIVE_ROUTING_KEY_REQUIRED = YES
 APP794_BOUND_STAGE_AUTHORITY_AFTER_RESOLUTION = YES
-IN_FLIGHT_STAGE_DOES_NOT_SILENTLY_RERESOLVE = YES
-```
-
-### App798 event-scoped history
-
-```text
 APP798_RUNTIME_ROUTING_AUTHORITY = NO
-APP798_NEW_PHYSICAL_FIELDS_FOR_D3_008 = 0
 APP798_EVENT_SCOPED_HISTORY = YES
-APP798_FULL_PROVENANCE = Snapshot_JSON + Snapshot_Hash
 EVENT_TYPE_1 = STAGE_COMPLETION_SNAPSHOT
 EVENT_TYPE_2 = EVALUATION_REVISION_CREATED
 EVENT_TYPE_3 = ROUTE_REASSIGNMENT_PRECHANGE
-APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS = FORBIDDEN
 ARCHIVE_KEY_IDEMPOTENT_EVENT_IDENTITY = YES
-TIMESTAMP_ONLY_RETRY_KEYS = FORBIDDEN
-SAME_LOGICAL_EVENT_DUPLICATE_ROW = FORBIDDEN
 ARCHIVE_HASH_CONFLICT = FAIL_CLOSED
 ARCHIVE_ACTOR_NOT_RESOLVED = FAIL_CLOSED
 ```
 
-The older App794 Objective/Mid-Year/Final six-slot physical persistence matrices are superseded for D3 V1 where they conflict with D3-008. Historical stage immutability, audit preservation, and explicit reassignment remain valid.
-
-## D3 routing and scorer invariants retained
-
-```text
-WORKFLOW_APPRAISER_COUNT = 1..4
-USERS_PER_SEQUENTIAL_SLOT = EXACTLY 1
-NATIVE_ASSIGNEE_RULE = ALL
-ANY_SUPPORT_D3_V1 = NO / DEFERRED
-MULTI_USER_SLOT_D3_V1 = NO / DEFERRED
-45_STATE_GENERIC_ARCHITECTURE = DEFERRED
-
-SCORER_COUNT_SOURCE = FROZEN_EVALUATION_PROFILE_K_EXPECTED (1 or 2)
-SCORER_IDENTITY_CONTROL = HR
-SCORING_SET_RELATION = SCORING_APPRAISERS SUBSET_OR_EQUAL WORKFLOW_APPRAISERS
-SCORER_PLAN_DEFAULT = NONE
-MISSING_SCORER_PLAN = FAIL_CLOSED (SCORER_PLAN_NOT_CONFIGURED)
-FIRST_ACTOR_BECOMES_SCORER = PROHIBITED
-AUTO_LOWER_K_EXPECTED = FORBIDDEN
-RANDOM_SCORER_PROMOTION = FORBIDDEN
-
-CURRENT_LIVE_STANDARD_ROUTE = M1_G1 / 2 APPRAISERS
-D3_TARGET_ROUTE_CAPABILITY = 1..4 APPRAISERS
-
-DGM_K_EXPECTED = 1
-DGM_WORKFLOW = PRESIDENT_ONLY
-DGM_TOPOLOGY = M1_ONLY
-DGM_SCORING_WEIGHT = 100%
-```
-
-## App795 Model A retained
-
-```text
-EFFECTIVE_DATED_ROUTING_MODEL = MODEL_A_VERSIONED_ROWS_IN_APP795
-ROUTING_KEY_UNIQUE = NO
-VERSION_KEY_UNIQUE = YES
-ROUTE_VERSION_HAS_NO_EFFECT_BEFORE_EFFECTIVE_FROM = YES
-FUTURE_ACTIVE_VERSION = SCHEDULED_NOT_YET_EFFECTIVE
-RESOLVER = READ_ONLY_DATE_INTERVAL
-TIME_TRIGGERED_ACTIVATION_WRITE = NO
-OVERLAP = FAIL_CLOSED
-NO_EFFECTIVE_ROUTE = FAIL_CLOSED
-HISTORICAL_VERSION_RECORDS = PRESERVED
-LEGACY_ACTIVE_DUAL_AUTHORITY = NOT ALLOWED
-APP795_SCHEMA_MIGRATION_REQUIRED = YES
-APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
-```
+The older App794 Objective/Mid-Year/Final six-slot physical persistence matrices remain superseded for D3 V1 where they conflict with D3-008.
 
 ## Project status retained
 
 ```text
 D1 = PASS / CLOSED / DURABLE
-D1_ORIGINAL_OWNER_UAT = 4/4 PASS
-D1-UAT-DEFECT-001 = PASS / CLOSED
-D1-UAT-DEFECT-002 = PASS / CLOSED
-D1-UAT-DEFECT-003 = PASS / CLOSED
-DEFECT003_OWNER_UAT = 3/3 PASS
-APP794_LIVE_REVISION = 70
-APP794_LIVE_JS_BLOB = 204d34db9e2eab297409a6a3d5e7f29c649779d5
-APP794_LIVE_CSS_BLOB = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-
 D2_ENGINEERING = PASS / CLOSED / DURABLE
 D2_OWNER_UAT = IN PROGRESS / PAUSED
-
 D3 = ARCHITECTURE / DESIGN ACTIVE
 D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / IMPLEMENTATION_READINESS_NOT_STARTED
+D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / CONTROL_PROVENANCE_CORRECTIVE_AWAITING_REVIEW
 D3_IMPLEMENTATION_AUTHORIZED = NO
-
-D4 = IN PROGRESS / NOT ACTIVE
-D5 = IN PROGRESS / NOT ACTIVE
-D6 = UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED
-D7 = SOURCE FUNCTIONALITY CLOSED / PRODUCTION CUTOVER NOT AUTHORIZED
 PRODUCTION_READY = NO
 ```
 
-## Current evidence documents
+## R2 execution evidence boundary
 
 ```text
-D3_DECISION_006 = project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md
-D3_R4 = project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md
-D3_R4_R1 = project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md
-D3_DECISION_008 = project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
-```
-
-## R1 execution evidence boundary
-
-```text
-R1_START_HEAD = d62aa9b5f68a83e81f644648a2d004ad5b05585d
-R1_AUTHORIZED_CHANGE_TYPE = DOCUMENTATION / CONTROL-DOC CORRECTIVE ONLY
-R1_TARGETS = CHAT_HANDOFF.md + AI_DOCUMENT_INDEX.md + control/02_ACTIVE_WORK_PACKAGE.md
+R2_START_HEAD = 9e85051e7d8ebd96006acd7cb22d512110e454e7
+R2_AUTHORIZED_CHANGE_TYPE = DOCUMENTATION / CONTROL-DOC AUTHORITY PROVENANCE CORRECTIVE ONLY
+R2_TARGET_COUNT = 6
 SOURCE_FILES_CHANGED = 0
 TEST_FILES_CHANGED = 0
 CONFIG_SCHEMA_FILES_CHANGED = 0
@@ -214,7 +148,7 @@ PROCESS_TRANSITIONS = 0
 
 Only:
 - read/review repository evidence;
-- independent Control Plane review of the completed D3-008 control sync and this R1 corrective.
+- independent Control Plane review of this exact R2 docs-only corrective.
 
 Forbidden until separate explicit Owner authorization:
 - source changes;
@@ -231,4 +165,4 @@ Forbidden until separate explicit Owner authorization:
 
 ## Closure rule
 
-The execution plane cannot self-certify this corrective. `D3-DECISION-008-SYNC-R1` remains `EXECUTED / AWAITING CONTROL PLANE REVIEW`, and the parent `D3-DECISION-008-SYNC` remains `AWAITING CONTROL PLANE RE-REVIEW`, until ChatGPT independently reviews the exact final diff and evidence.
+The execution plane cannot self-certify this corrective. `D3-DECISION-008-SYNC-R2` remains `EXECUTED / AWAITING CONTROL PLANE REVIEW` until ChatGPT independently reviews the exact final diff and evidence.
