@@ -15,17 +15,19 @@
 | **Assistant Manager** | Assistant Manager, Asst. Manager | **60%** | **40%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | **CONFIRMED (DEC-035)** |
 | **Section Manager** | Section Manager | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | **CONFIRMED (DEC-035)** |
 | **Senior Manager** | Senior Manager | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | **CONFIRMED (DEC-035)** |
-| **Deputy General Manager** | Deputy General Manager (DGM) | **50%** | **50%** | 2 | **50% / 50%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | **CONFIRMED (DEC-035)** |
+| **Deputy General Manager** | Deputy General Manager (DGM) | **50%** | **50%** | **1** | **100%** | `DIFFICULTY_ACHIEVEMENT_MATRIX` | **CONFIRMED (DEC-035, OWNER-CONFIRMED 2026-09-08)** |
 | **General Manager** | General Manager (GM) | **50%** | **50%** | **1** | **100%** | `ACHIEVEMENT_DIRECT` | **CONFIRMED (DEC-035)** |
 | **Vice President** | Vice President (VP) | **50%** | **50%** | **1** | **100%** | `ACHIEVEMENT_DIRECT` | **CONFIRMED (DEC-035)** |
+
+> **Governance Note (2026-09-08 / 2026-09-09):** Explicit Owner confirmation (*"DGM = K_expected 1 และ President คนเดียว ถูกต้องครับ"*) supersedes stale historical DGM $K=2$ wording and aligns with the published FY2026 canonical scoring configuration (`scoring-config-master.js:347`) and confirmed executive direct routing baseline (`M1_ONLY`, President direct).
 
 ---
 
 ## 2. Appraiser Weight & Scoring Completeness Governance (DEC-036)
 1. **Universal Part A & Part B Application:** Appraiser Weight Governance ($1/K_{\text{expected}}$) applies to all scoring values combining multiple appraisers.
 2. **Appraiser Weight Layer (Layer 1):**
-   - $K_{\text{expected}} = 1 \implies \text{Appraiser 1} = 100\%$ (GM / VP current deployed baseline).
-   - $K_{\text{expected}} = 2 \implies \text{Appraiser 1} = 50\%, \text{Appraiser 2} = 50\%$ (Staff, Japan, Asst Mgr, Sect Mgr, Snr Mgr, DGM).
+   - $K_{\text{expected}} = 1 \implies \text{Appraiser 1} = 100\%$ (DGM / GM / VP current deployed baseline).
+   - $K_{\text{expected}} = 2 \implies \text{Appraiser 1} = 50\%, \text{Appraiser 2} = 50\%$ (Staff, Japan, Asst Mgr, Sect Mgr, Snr Mgr).
 3. **Completeness Gate ($K_{\text{valid}} == K_{\text{expected}}$):** Partial appraiser evaluation fails closed with `APPRAISER_RATING_INCOMPLETE`. No partial scoring is permitted.
 4. **No Weight Redistribution:** A single completed appraiser in a 2-appraiser profile never inherits 100% weight.
 5. **Layer Separation:** Appraiser Weight (Layer 1) is completely decoupled from Part A / Part B Weight (Layer 2) and workflow routing.
