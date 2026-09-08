@@ -1,5 +1,7 @@
 # Transaction Route Snapshot Schema in App 794 (FROZEN)
 
+> **D3 V1 PARTIAL SUPERSESSION NOTICE — 2026-09-09:** The physical persistence model in Sections 1–2 below (separate Objective/Mid-Year/Final six-slot native matrices and six generic slots per stage) is **SUPERSEDED FOR D3 V1** by `D3-WP001-R4` as corrected by `D3-WP001-R4-R1`. D3 V1 uses the existing 1..4 compatibility route fields for the currently bound stage plus five native provenance metadata fields, with completed/revision/reassignment history preserved in App798 immutable event-scoped snapshots. Historical business principles on stage immutability and explicit reassignment remain valid. This notice is documentation-only and does not implement schema changes.
+
 > **Architecture Status:** **`FROZEN`**  
 > **Target App:** App 794 Transaction Core  
 > **Model:** Stage-Specific Immutable Routing Snapshots (Objective, Mid-Year, Final)  
