@@ -99,6 +99,11 @@ PASS / CLOSED
 D3-PRE1
 Evidence: project-docs/D3_PRE1_WORKFLOW_REOPEN_SCOPE_READINESS_GAP_REVIEW.md
 Workflow / Reopen Scope & Readiness Gap Review
+PARTIAL PASS / CORRECTIVE UNDER REVIEW
+
+D3-PRE1-R1
+Evidence: project-docs/D3_PRE1_R1_WORKFLOW_AUTHORITY_REOPEN_EVIDENCE_ACCURACY_CORRECTIVE.md
+Workflow Authority & Reopen Evidence Accuracy Corrective
 EXECUTED / AWAITING CONTROL PLANE REVIEW
 ```
 
@@ -126,10 +131,13 @@ Final accepted D2 engineering evidence chain includes `0e4a9ccb1f62476f6f0fde6c0
 ## Current operational state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-PRE1
-TITLE = Workflow / Reopen Scope & Readiness Gap Review
+ACTIVE_WORK_PACKAGE = D3-PRE1-R1
+TITLE = Workflow Authority & Reopen Evidence Accuracy Corrective
+TYPE = EVIDENCE-ONLY / DOCS-ONLY CORRECTIVE
 STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
-REVIEW_DOCUMENT = project-docs/D3_PRE1_WORKFLOW_REOPEN_SCOPE_READINESS_GAP_REVIEW.md
+PARENT_D3_PRE1 = PARTIAL PASS / CORRECTIVE UNDER REVIEW
+CORRECTIVE_DOCUMENT = project-docs/D3_PRE1_R1_WORKFLOW_AUTHORITY_REOPEN_EVIDENCE_ACCURACY_CORRECTIVE.md
+REVISED_REVIEW_DOCUMENT = project-docs/D3_PRE1_WORKFLOW_REOPEN_SCOPE_READINESS_GAP_REVIEW.md
 D3_READINESS = OWNER_DECISION_REQUIRED
 LAST_COMPLETED_WORK_PACKAGE = D1-FINAL-CLOSURE-SYNC
 LAST_COMPLETED_RESULT = CONTROL PLANE D1 FINAL DECISION RECORDED
@@ -141,4 +149,4 @@ D3_IMPLEMENTATION_AUTHORIZED = NO
 PRODUCTION_READY = NO
 ```
 
-Read `AI_ACTIVE_TASK.md` and `project-docs/D3_PRE1_WORKFLOW_REOPEN_SCOPE_READINESS_GAP_REVIEW.md` for workflow and reopen readiness details. Stage D1 is formally PASS / CLOSED / DURABLE. D3 remains on HOLD pending separate explicit Owner work package authorization.
+Read `AI_ACTIVE_TASK.md` and `project-docs/D3_PRE1_R1_WORKFLOW_AUTHORITY_REOPEN_EVIDENCE_ACCURACY_CORRECTIVE.md` for workflow authority, reopen evidence, and decision matrix details. Stage D1 is formally PASS / CLOSED / DURABLE. D3 remains on HOLD pending separate explicit Owner work package authorization.
