@@ -36,7 +36,7 @@ Antigravity operates as an execution agent and did not self-certify this closure
 | **D1-UAT-DEFECT-002** | Employee-Self entry navigation guard (single vs multi MBO) | `D1_UAT_DEFECT_001_002_SANDBOX_DEPLOY_R2_EVIDENCE.md` | **PASS / CLOSED** |
 | **D1-UAT-DEFECT-003** | Login escape & recovery UX (Back to Home, Forgot Password) | `D1_UAT_DEFECT_003_OWNER_UAT_CLOSE_R1_EVIDENCE.md` | **PASS / CLOSED** |
 | **Focused Unit / Integration Tests** | Hybrid identity, login gate, employee lookup, self-index | `D1_UAT_DEFECT_003_R1_TEST_CONTROL_EVIDENCE.md` (113/113 PASS) | **PASS / CLOSED** |
-| **Candidate Artifact Build** | Vite build byte verification & Git blob tracking | `dist/mbo-employee-app.js` (blob `204d34db...`)<br>`dist/mbo-employee.css` (blob `0532c1c3...`) | **PASS / CLOSED** |
+| **Candidate Artifact Build** | esbuild bundle/build byte verification & Git blob tracking | `dist/mbo-employee-app.js` (blob `204d34db...`)<br>`dist/mbo-employee.css` (blob `0532c1c3...`) | **PASS / CLOSED** |
 | **App794 Sandbox Customization** | Live customization deployed & topology verified | App 794 Live revision 70, scope ALL, topology: JS=1, CSS=1, Mobile=0/0 | **PASS / CLOSED** |
 | **Original Owner Runtime UAT** | Dedicated auto-bind, shared deny, shared allow, entry UX | 4 / 4 PASS (Owner executed in sandbox) | **PASS / CLOSED** |
 | **DEFECT-003 Owner Runtime UAT** | Back Home escape, Forgot password guide, Dedicated deny | 3 / 3 PASS (Owner executed on Live Rev 70) | **PASS / CLOSED** |
