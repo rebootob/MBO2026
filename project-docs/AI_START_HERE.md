@@ -1,125 +1,80 @@
 # AI START HERE — MBO2026
 
-> Mandatory lean entry point for every AI working on MBO2026.
-> Updated: 2026-09-08 ICT.
+> Mandatory lean entry point. This file is routing guidance, **not current project-status authority**.
+> Updated: 2026-09-09 ICT.
 
-## 1. Startup order
+## 1. Canonical startup order
 
-Before planning, reviewing, coding or changing Kintone:
-1. fresh-fetch current HEAD of `ai/antigravity-wp002c`;
-2. read `project-docs/CHAT_HANDOFF.md` first;
-3. read `project-docs/AI_CONTROL_CENTER.md`;
-4. read `project-docs/AI_ACTIVE_TASK.md`;
-5. read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md`;
-6. read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`;
-7. read `project-docs/AI_DOCUMENT_INDEX.md` and only directly relevant Baselines/evidence;
-8. inspect exact current source/tests/diff only when needed.
+Before planning, reviewing, coding, changing Kintone or reporting status:
 
-Repository truth + accepted newer live evidence beat chat memory and embedded checkpoints.
+1. Fresh-fetch current HEAD of `ai/antigravity-wp002c`.
+2. Read `project-docs/AI_CONTROL_CENTER.md` — primary current control truth.
+3. Read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` — exact active authorization/scope, if any.
+4. Read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` — D1-D7 stage scoreboard.
+5. Read `project-docs/AI_ACTIVE_TASK.md` only when execution/review details are needed.
+6. Read `project-docs/AI_DOCUMENT_INDEX.md` to route to exact locked decisions/baselines/evidence.
+7. Read `project-docs/CHAT_HANDOFF.md` only as a convenience handoff pointer; it is not status authority.
+8. Inspect exact source/tests/diff/live evidence only when the current gate requires it.
 
-## 2. Permanent roles
+Do not broad-scan historical documents by default.
+
+## 2. Authority model
+
+Read and obey:
+
+`project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md`
+
+Current-state precedence:
+
+```text
+Owner latest explicit decision
+-> accepted concrete Git/Kintone/runtime evidence
+-> AI_CONTROL_CENTER.md
+-> control/02_ACTIVE_WORK_PACKAGE.md
+-> control/00_MASTER_DELIVERY_CONTROL.md
+-> locked subject-specific decisions/baselines/evidence
+-> routing/reference/historical summaries
+```
+
+This Start Here file intentionally contains **no mutable HEAD, app revision, active defect list, active work package or current next gate**.
+
+## 3. Permanent roles
 
 ```text
 Owner = final human authority
 ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
 Antigravity = LOW-CREDIT / BOUNDED Execution Plane only when genuinely necessary
-Claude = specialist / second opinion / STOP by default
+Claude / other agents = specialist / second opinion / STOP by default
 ```
 
-No false PASS. Executor cannot self-certify independent PASS. No Kintone write/deploy without exact explicit authorization. Never widen/reuse consumed authorization.
+## 4. Permanent safety
 
-## 3. Current exceptional state — D1 UAT regression
+- Fresh-fetch before status/review/execution decisions.
+- No false PASS.
+- No source/schema/test/build/deployment/Kintone write without exact bounded authorization.
+- Never widen or reuse a consumed authorization.
+- Closed functions reopen only for proven regression or explicit Owner change request.
+- App53 and protected legacy apps are read-only by default.
+- Docs-only approval never implies implementation or deployment authorization.
 
-D1 was previously closed, but Owner runtime UAT proved a narrow identity/entry regression. Per governance, only the affected boundary is reopened.
+## 5. Review behavior
 
-```text
-D1-UAT-DEFECT-001 = CRITICAL / SHARED PRINCIPAL CAN ENTER DEDICATED EMPLOYEE SELF
-D1-UAT-DEFECT-002 = MATERIAL / EXISTING CURRENT-FY MBO OFFERS CREATE PATH
-```
+Substantive architecture/source/schema/security/test/migration/deployment/live changes require independent review.
 
-Locked identity architecture:
-```text
-Dedicated / 1:1:
-personal Kintone user -> App53 MBO_Kintone_User exact active mapping -> auto-bind Employee
+Metadata-only control transcription and routing-document maintenance use same-run verification and do **not** create recursive review packages merely to update review-gate labels.
 
-Shared:
-shared Kintone principal -> Employee ID + App801 password
-allowed only for employee with valid App53 MBO_Kintone_User.value = []
-```
+See `MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md` for the exact rule.
 
-Owner-proven case:
-`0113 / Ms.Papatchaya` has dedicated App53 mapping `Ms.Papatchaya`.
+## 6. User shorthand
 
-Required:
-```text
-tmh + 0113 => DENY
-Ms.Papatchaya native Kintone => auto-bind 0113 => ALLOW
-tmh + employee with no dedicated mapping => Shared App801 path still ALLOW
-```
+`review` -> fresh-fetch; inspect the exact substantive authorization/diff/evidence; decide PASS/CORRECTIVE/BLOCKED.
 
-## 4. Current accepted corrective, deploy & migration chain
+`ต่อ` / `ต่อไป` -> fresh-fetch current gate and propose only the smallest safe next action.
 
-```text
-R1 = 8c3fda998fe8bd0b627d62a5beb10455bde8f725 / PARTIAL PASS
-R2 = 88ed6b7ea99ca9871190c2a913879b9e7638e3cb / PASS
-BUILD = d9efa5a0c418ad98ca8b70965b130a8b607e81b5
-DEPLOY_TOOL_CSS_FIX = 03b531383e86c643a5258a2baf6fdbd15bc9099e / PASS
-SANDBOX_DEPLOY_R2 = cd74b01e6650bb04b5fbdba6c365dd9a1bf87236 / PASS (Rev 67 -> 68)
-CSS_MIGRATION_R1 = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d / PASS (Rev 68 -> 69)
-```
+`อนุมัติ ...` -> exact bounded one-shot authorization only.
 
-Canonical customization names:
-```text
-mbo-employee-app.js (Git blob 8958634b92b35f74b58a7a0b2abd09b8b5e93758)
-mbo-employee.css (Git blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61)
-```
-Standard deployment tool preflight restored to `PASS` (`validatePreflight = true`).
-App794 verified live at revision 69.
+## 7. New chat
 
-## 5. Current stage scoreboard
+Use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`.
 
-```text
-D1 = BASE CLOSED / CANDIDATE DEPLOYED (REV 69) / OWNER UAT PENDING
-D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED
-D3 = HOLD
-D4 = IN PROGRESS / NOT ACTIVE
-D5 = IN PROGRESS / NOT ACTIVE
-D6 = UAT NOT CLOSED
-D7 = SOURCE FUNCTIONALITY CLOSED / CUTOVER NOT AUTHORIZED
-PRODUCTION_READY = NO
-```
-
-Do not interpret automated/source closure as Owner UAT PASS.
-
-## 6. Current operational state
-
-Deployment and migration work packages are fully executed and closed.
-No further Kintone writes or deployments are authorized.
-
-```text
-ACTIVE_WORK_PACKAGE = D1-UAT-OWNER-RUNTIME-UAT-READINESS
-STATUS = READY FOR OWNER RUNTIME UAT
-APP794_LIVE_REVISION = 69
-KINTONE_WRITES_AUTHORIZED = NONE
-D3 = HOLD
-```
-
-## 7. Owner runtime UAT (Active Milestone)
-
-1. Papatchaya personal Kintone -> 0113 auto-bind -> own MBO.
-2. `tmh + 0113` -> DENY with dedicated-account guidance.
-3. `tmh + shared-only employee` -> ALLOW via App801.
-4. Existing current-FY MBO -> Open Current MBO, not Create New.
-
-## 8. User shorthand
-
-`review` -> fresh-fetch current HEAD; inspect exact authorization baseline, diff, tests/evidence; independently decide PASS/CORRECTIVE/BLOCKED.
-
-`ต่อ` / `ต่อไป` -> fresh-fetch current gate; choose smallest safe next action.
-
-`อนุมัติ ...` -> exact narrow one-shot authorization only; never widen/reuse.
-
-## 9. New chat
-
-Copy the text block in `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`. New chat must fresh-fetch current HEAD and read `CHAT_HANDOFF.md` first.
+That bootstrap intentionally contains no embedded mutable project checkpoint; the new chat must fresh-fetch and read the authoritative control documents instead.
