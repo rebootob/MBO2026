@@ -1,90 +1,110 @@
 # MBO2026 — LEAN MULTI-AI HANDOFF PROTOCOL
 
-> Provider-neutral continuity standard.  
-> Updated: 2026-08-30 20:45 ICT  
+> Provider-neutral continuity standard.
+> Updated: 2026-09-09 ICT.
 > Core principle: **AI can change; project truth must not change.**
 
-## 1. Truth and roles
-
-Conversation memory is convenience only. Canonical truth is repository + accepted Kintone/Live evidence.
+## 1. Authority and roles
 
 ```text
+Owner = final human authority
 ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
-Antigravity = Low-Credit Execution Plane only
+Antigravity = LOW-CREDIT / BOUNDED Execution Plane only
 Canonical branch = ai/antigravity-wp002c
 ```
 
-Purpose-specific authority:
-- Confirmed Baseline = durable rules;
-- Master Joblist = D1–D7 completeness;
-- Control Center = current accepted state/gate/authorization;
-- Active Task = current execution packet, not proof of success;
-- Git/Kintone evidence = actual implementation/runtime truth;
-- CHAT_HANDOFF = concise cross-chat snapshot, always revalidated against HEAD.
+The governing control-truth model is:
 
-## 2. Receiving AI startup — lean mandatory order
+`project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md`
 
-1. Fresh-fetch branch HEAD.
-2. Read `project-docs/CHAT_HANDOFF.md`.
-3. Read `project-docs/AI_CONTROL_CENTER.md`.
-4. Read `project-docs/AI_DOCUMENT_INDEX.md`.
-5. Read `project-docs/AI_ACTIVE_TASK.md` if execution/review is involved.
-6. Read only the relevant Baseline(s) routed by Document Index.
-7. If reviewing execution, inspect exact diff/source/test/evidence.
+Current-state authority is intentionally narrow:
 
-Do **not** automatically:
-- read all historical docs;
-- run `npm test` or build;
-- perform Kintone GET/write/deploy;
-- ask the user to repeat project history.
+1. `AI_CONTROL_CENTER.md` = primary current control truth and next gate.
+2. `control/02_ACTIVE_WORK_PACKAGE.md` = exact active authorization/scope.
+3. `control/00_MASTER_DELIVERY_CONTROL.md` = D1-D7 stage scoreboard.
 
-Those actions happen only when the current gate requires them.
+`AI_ACTIVE_TASK.md` is a convenience execution packet. `CHAT_HANDOFF.md`, `AI_START_HERE.md`, `AI_DOCUMENT_INDEX.md`, `00_MASTER_JOBLIST.md`, `NEW_CHAT_BOOTSTRAP_PROMPT.md` and `AI_REVIEW_PACKAGE.md` are routing/reference/historical surfaces, not parallel status authorities.
 
-## 3. Control Plane handoff checkpoint
+## 2. Receiving-AI startup
 
-Before moving chats, ChatGPT should ensure operational docs truthfully capture:
-- current branch and need to re-fetch HEAD;
-- D1–D7 scoreboard;
-- accepted Live baseline;
-- exact current gate/Active Task;
-- accepted work that must not be reopened;
-- exact next owner;
-- open evidence/configuration blockers;
-- current authorization ledger;
-- App53/legacy protection state;
-- special D1 dedicated/shared/dual-role semantics.
+1. Fresh-fetch current canonical HEAD.
+2. Read `AI_CONTROL_CENTER.md`.
+3. Read `control/02_ACTIVE_WORK_PACKAGE.md`.
+4. Read `control/00_MASTER_DELIVERY_CONTROL.md`.
+5. Read `AI_ACTIVE_TASK.md` only if execution/review details are needed.
+6. Read `AI_DOCUMENT_INDEX.md` to locate exact locked decisions/baselines/evidence.
+7. Inspect exact source/tests/diff/live evidence only when required by the current gate.
 
-No test run is required merely to update documentation. Never invent a test count that was not observed/persisted.
+Do not broad-read historical docs by default and do not treat embedded old checkpoints as current authority.
+
+## 3. Conflict resolution
+
+Use this precedence:
+
+```text
+Latest explicit Owner decision
+> accepted concrete Git/Kintone/runtime evidence
+> AI_CONTROL_CENTER.md
+> control/02_ACTIVE_WORK_PACKAGE.md
+> control/00_MASTER_DELIVERY_CONTROL.md
+> locked subject-specific decision/baseline/evidence
+> routing/reference/historical summary
+```
+
+If two control documents conflict, stop substantive execution and reconcile against the higher-precedence source. Do not guess.
 
 ## 4. Executor handoff checkpoint
 
-Antigravity must follow only the current Active Task:
-1. fresh-fetch current branch;
-2. open Control Center + Active Task + exact named files;
-3. modify only allowed files;
-4. run only explicitly required test/build/runtime commands;
-5. run `git diff --check` when required;
-6. commit/push once if task says so;
-7. STOP and report exact commit/files/tests/operations.
+A bounded execution agent must:
 
-Antigravity must not edit Control Plane documents unless explicitly authorized, and must not self-certify independent PASS.
+1. fresh-fetch HEAD;
+2. read the exact active authorization contract;
+3. modify only allowed files/operations;
+4. run only required tests/build/runtime operations;
+5. preserve safety gates;
+6. report exact changed files/commits/tests/operations;
+7. stop after the authorized scope.
 
-## 5. Independent review protocol
+Execution agents cannot self-authorize or self-certify substantive PASS/CLOSED.
 
-When user says `review`, ChatGPT:
-1. fresh-fetches HEAD;
-2. reads Control Center + authorizing Active Task + relevant Baseline;
-3. verifies parent/scope/diff/source/test evidence;
-4. separates executor-reported results from independently inspected/executed evidence;
-5. decides `PASS`, `CORRECTIVE`, or `BLOCKED`;
-6. updates Control Plane docs;
-7. opens only the smallest next gate.
+## 5. Review policy
 
-Accepted work is not reimplemented without proven regression.
+### 5.1 Substantive changes
 
-## 6. Live Kintone safety
+Architecture, source, schema/config, security/privacy, tests, migration/backfill, Kintone writes/process changes, deployment/cutover and live-runtime PASS claims require independent Control Plane review.
 
-No POST/PUT/DELETE/deploy/ACL/group/schema/record change without a fresh exact explicit authorization naming the target and scope.
+Normal pattern:
+
+`OWNER AUTH -> BOUNDED EXECUTION -> ONE INDEPENDENT REVIEW -> CLOSE`
+
+If a material defect is found:
+
+`-> ONE BOUNDED CORRECTIVE -> ONE REVIEW -> CLOSE`
+
+### 5.2 Metadata/control transcription
+
+A new recursive review package is **not required** when the operation only records an already accepted decision/verdict, updates links, corrects stale next-action wording, or synchronizes routing/reference documents without changing the underlying contract.
+
+Use:
+
+`EXECUTE -> SAME-RUN CONSISTENCY VERIFY -> CLOSE`
+
+Do not create R1/R2/R3 merely so every file can mention the latest review-gate label.
+
+## 6. Control Plane handoff checkpoint
+
+Before leaving a substantive package, ensure the authoritative layers are sufficient:
+
+- Control Center has current cross-project state and next gate;
+- Active Work Package has exact authorization/scope or says `NONE`;
+- Master Delivery reflects any changed D1-D7 stage status;
+- exact decision/evidence docs retain durable subject-specific truth.
+
+Do not copy the same current-state block into every startup/reference document.
+
+## 7. Live Kintone safety
+
+No POST/PUT/DELETE/deploy/ACL/group/schema/record/process mutation without fresh exact Owner authorization naming target and scope.
 
 ```text
 NO_AUTH = NO_WRITE
@@ -94,23 +114,10 @@ NO_REUSE
 NO_AUTOMATIC_ROLLBACK
 ```
 
-App53 and legacy PMS Apps `283,310,305,643,307,640,715,716` remain protected/read-only by default.
-
-## 7. D1 continuity rules that must survive handoff
-
-```text
-D1 = KINTONE-ONLY
-HYBRID_IDENTITY = DEDICATED_KINTONE_AUTO_BIND + SHARED_ACCOUNT_MBO_LOGIN
-SHARED_APPROVER_AUTHORITY = DENIED
-OWN_MBO_SELF_APPROVER_ELISION = APPROVED
-```
-
-Dedicated identity requires exact active App53 mapping. The App53 audit is complete, but `MBO_Kintone_User` is design-only/not live and Natta's canonical Employee_Code remains unresolved.
-
-Approver authority is authoritative current App794 native `Assignee`, never static App795/snapshot fields/UI role strings.
+App53 and protected legacy PMS apps remain read-only by default.
 
 ## 8. New-chat procedure
 
-Use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md` as the first message in a new ChatGPT conversation. It instructs the new chat to re-fetch HEAD and read `CHAT_HANDOFF.md` before acting.
+Use `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`.
 
-No old `develop`-branch push instruction or broad 12-document read list is part of the current protocol.
+The bootstrap carries no mutable checkpoint. The receiving chat must derive current state from fresh repository truth and the authoritative control layers.
