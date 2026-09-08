@@ -4,18 +4,20 @@ Updated: 2026-09-08 ICT
 
 ## Current contract state
 
-- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003`
-- **TITLE**: `Login Escape & Recovery UX`
+- **ACTIVE_WORK_PACKAGE**: `D1-UAT-DEFECT-003-R1`
+- **TITLE**: `TEST + CONTROL-DOC Corrective`
+- **TYPE**: `TEST + CONTROL-DOC CORRECTIVE`
 - **OWNER_AUTHORIZATION**: `APPROVED`
-- **STATUS**: `IMPLEMENTATION IN PROGRESS / SOURCE AND TEST COMPLETE`
-- **ORIGINAL_FOCUSED_UAT_1_TO_4**: `4/4 PASS`
-- **D1_FINAL_CLOSURE**: `HOLD pending DEFECT-003 correction + review + deployment + focused UAT`
+- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
+- **SOURCE_IMPLEMENTATION_HEAD**: `e5ec45f98eaf28cca0dd959ce24bfe3e4fc055c9`
+- **ORIGINAL_OWNER_UAT**: `4/4 PASS`
+- **DEFECT003_STATUS**: `SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING`
+- **D1_FINAL_CLOSURE**: `HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review`
 - **D2_ENGINEERING**: `PASS / CLOSED / DURABLE`
 - **D3**: `HOLD`
 - **PRODUCTION_READY**: `NO`
-- **TARGET**: `src/ui/mbo-kintone-login-gate.js`
-- **MODE**: `SOURCE AND TEST ONLY / NO DEPLOY / ZERO KINTONE WRITES`
-- **ALLOWED_KINTONE_WRITES**: `NONE`
+- **KINTONE_WRITES_AUTHORIZED**: `NONE`
+- **DEPLOYMENT_AUTHORIZED**: `NO`
 - **D3_IMPLEMENTATION_AUTHORIZED**: `NO`
 
 ## Completed predecessor work packages
@@ -49,31 +51,40 @@ Updated: 2026-09-08 ICT
 ## Allowed operations
 
 Only:
-- Owner runtime verification in Kintone sandbox browser.
-- Control plane documentation synchronization.
+- Independent test execution and control plane documentation synchronization.
+- Control Plane (ChatGPT) independent review.
 
 Forbidden:
 - AI code modifications to `src/`, `tests/`, `scripts/`, `dist/`.
+- Building `dist/` or deploying App794.
 - Kintone network write operations (record, schema, layout, ACL, process, customization).
 - Automatic starting of D3.
-- Self-certifying Owner UAT PASS.
+- Self-certifying final D1 closure.
 
-## Owner runtime UAT cases (Active Operational Milestone)
+## Owner Runtime UAT Status
 
-1. **Case 1 (Dedicated Account Auto-Bind)**:
-   - Dedicated user (Ms.Papatchaya) logs in natively to Kintone -> navigates to App 794 -> auto-binds to `0113` -> opens own MBO.
-2. **Case 2 (Shared Principal Deny on Dedicated Employee)**:
-   - Shared principal (`tmh`) attempts login with `0113` + App 801 password -> DENIED with dedicated account required guidance.
-3. **Case 3 (Shared Principal Allow on Shared Employee)**:
-   - Shared principal (`tmh`) attempts login with an employee having valid `MBO_Kintone_User.value = []` + valid App 801 password -> ALLOWED.
-4. **Case 4 (Current-FY Navigation Guard)**:
-   - Employee with an existing current-FY MBO -> Employee-Self shows "Open Current MBO" and no Create New path.
+### Original Focused UAT: 4/4 PASS (Locked Truth)
+The original 4 Owner Runtime UAT cases on App794 (Live revision 69) were executed and verified by Owner:
+1. **Case 1 (Dedicated Account Auto-Bind)**: Dedicated user (Ms.Papatchaya) auto-binds to `0113` and opens own MBO -> **PASS**.
+2. **Case 2 (Shared Principal Deny on Dedicated Employee)**: Shared principal (`tmh`) + `0113` -> DENIED with dedicated account guidance -> **PASS**.
+3. **Case 3 (Shared Principal Allow on Shared Employee)**: Shared principal (`tmh`) + employee with `MBO_Kintone_User.value = []` -> ALLOWED -> **PASS**.
+4. **Case 4 (Current-FY Navigation Guard)**: Existing current-FY MBO -> "Open Current MBO" and no Create New path -> **PASS**.
 
-## Next state
+These 4 tests are complete and MUST NOT be re-requested or repeated.
 
-- Owner executes the 4 runtime test cases above.
-- Owner / ChatGPT Control Plane independently reviews runtime results.
-- D3 remains HOLD until Owner UAT is closed and Control Plane formally authorizes transition.
+### Future Focused Owner UAT for DEFECT-003 (Post-Deployment Only)
+The following focused UAT applies **only** after a future separately authorized build and deployment of DEFECT-003 to App794:
+1. **DEFECT003-UAT-1**: In MBO Login overlay, click "กลับหน้าหลัก Kintone / Back to Kintone Home" -> cleanly exits blocking overlay back to Kintone portal.
+2. **DEFECT003-UAT-2**: In MBO Login overlay, click "ลืมรหัสผ่าน / Forgot Password" -> bilingual HR/Administrator support guidance appears without password reset or session change.
+3. **DEFECT003-UAT-3**: Enter Employee 0113 under shared account -> `DEDICATED_ACCOUNT_REQUIRED` denial appears, and Back to Kintone Home button remains active and functional.
+
+*These tests are NOT authorized to run now because DEFECT-003 has not yet been built or deployed.*
+
+## Next permitted action
+
+- ChatGPT Control Plane independent review of `D1-UAT-DEFECT-003-R1`.
+- If Control Plane accepts R1, next separate step may be build/release candidate -> separately authorized App794 deploy -> DEFECT-003 focused Owner UAT only.
+- D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Control Plane review are complete.
 
 ## Permanent rules
 

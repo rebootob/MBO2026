@@ -14,7 +14,7 @@ PRODUCTION_READY = NO
 
 | ID | Status |
 |---|---|
-| D1 | Base architecture CLOSED; candidate deployed to App794 (rev 69); Owner runtime UAT PENDING |
+| D1 | Base architecture CLOSED; original Owner UAT 4/4 PASS; DEFECT-003 tests PASS, awaiting Control Plane review |
 | D2 | Engineering PASS / CLOSED / DURABLE; Owner UAT in progress and paused |
 | D3 | HOLD |
 | D4 | IN PROGRESS / NOT ACTIVE |
@@ -25,11 +25,12 @@ PRODUCTION_READY = NO
 ## Active defects
 
 ```text
-D1-UAT-DEFECT-001 = CRITICAL / IDENTITY BOUNDARY (SOURCE REVIEW PASS / DEPLOYED / OWNER UAT PENDING)
-D1-UAT-DEFECT-002 = MATERIAL / EMPLOYEE-SELF ENTRY UX (SOURCE REVIEW PASS / DEPLOYED / OWNER UAT PENDING)
+D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS (DEPLOYED REV 69)
+D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS (DEPLOYED REV 69)
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
 ```
 
-Both source corrections were independently reviewed, candidate deployed to App794 Sandbox, and live CSS target migrated to canonical name. App794 is verified live at revision 69 with exact candidate blob match. Defects remain open operationally pending Owner runtime UAT.
+Both DEFECT-001 and DEFECT-002 are deployed and verified by Owner runtime UAT (4/4 PASS). DEFECT-003 source implementation and focused tests (113/113 PASS) are verified, awaiting Control Plane review.
 
 ## Hybrid Identity locked contract
 
@@ -70,19 +71,18 @@ Deployment and migration work packages are fully executed and closed.
 There are NO active deployment authorizations and NO permitted Kintone writes.
 
 ```text
-ACTIVE_WORK_PACKAGE = D1-UAT-OWNER-RUNTIME-UAT (READY / PENDING OWNER EXECUTION)
-APP794_DEPLOYMENT = COMPLETED / CLOSED
+ACTIVE_WORK_PACKAGE = D1-UAT-DEFECT-003-R1 (EXECUTED / AWAITING CONTROL PLANE REVIEW)
+APP794_DEPLOYMENT = COMPLETED FOR REV 69 / DEFECT-003 DEPLOYMENT PENDING
 RECORD_WRITES = NONE
 SCHEMA/ACL/PROCESS_WRITES = NONE
 D3 = HOLD
 ```
 
-## Immediate next gate: Owner runtime UAT
+## Immediate next gate: Control Plane Review
 
-App 794 is ready for Owner runtime testing:
-- Dedicated Papatchaya -> auto-bind 0113 and access own MBO;
-- `tmh + 0113` -> deny with dedicated-account guidance;
-- `tmh + shared-only employee` -> allow via App801;
-- current-FY existing MBO -> Open Current MBO, no Create New.
-
-Do not start D3 automatically after these checks. Owner UAT completion and Control Plane review are required.
+- `D1-UAT-DEFECT-003-R1` focused test execution (113/113 PASS) and control documentation synchronization completed.
+- Awaiting ChatGPT Control Plane review.
+- Original Owner Runtime UAT (UAT-1 to UAT-4) is locked at 4/4 PASS.
+- Future DEFECT-003 Owner UAT will run only after separate build and deployment authorization.
+- No Kintone write or deployment authority exists in this work package.
+- D3 remains strictly on HOLD.

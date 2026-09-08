@@ -8,16 +8,15 @@ Updated: 2026-09-08 ICT
 
 ```text
 D1_BASE_ARCHITECTURE = CLOSED / DURABLE
-D1_REOPEN_REASON = MATERIAL UX DEFECT DISCOVERED DURING OWNER UAT
 D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
-D1-UAT-DEFECT-001 = SOURCE REVIEW PASS / DEPLOYED (REV 69) / UAT-2 PASS
-D1-UAT-DEFECT-002 = SOURCE REVIEW PASS / DEPLOYED (REV 69) / UAT-4 PASS
-D1-UAT-DEFECT-003 = IMPLEMENTATION IN PROGRESS / OWNER-FOUND UX DEFECT
-D1_FINAL_CLOSURE = HOLD pending DEFECT-003 correction + review + deployment + focused UAT
+D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
+D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
+D1_FINAL_CLOSURE = HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review
 D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED ON D1 ENTRY UAT
 D3 = HOLD
 PRODUCTION_READY = NO
+KINTONE_WRITE_AUTHORIZATION = NONE
 ```
 
 ## Active defect summary
@@ -78,24 +77,30 @@ App 794 Sandbox deployment and CSS filename migration are completely executed an
 3. Zero records, schemas, layouts, ACLs, or workflows modified across all apps.
 4. Deployment work packages are now CLOSED. No further Kintone writes or deploys are authorized.
 
-## Active stage: Owner Runtime UAT
+## Active stage: DEFECT-003 Corrective Verification Completed
 
-App 794 is ready for Owner runtime testing. Expected test cases:
+DEFECT-003 test and control-doc corrective verification is completed:
+- Independent test execution PASS: 113 total, 113 PASS, 0 FAIL, 0 SKIP, exit code 0.
+- Current state: Awaiting Control Plane (ChatGPT) independent review.
+- No deploy authority exists in this work package (Kintone writes = 0, builds = 0, deploys = 0).
 
-1. **Dedicated Account Test**:
-   - Log in as Ms.Papatchaya natively in Kintone.
-   - Navigate to App 794.
-   - Confirm auto-binds to `0113` and opens own MBO.
-2. **Shared Login Boundary Test (Deny)**:
-   - Log in as shared account `tmh`.
-   - In Employee-Self login, enter `0113` + App 801 password.
-   - Confirm DENY with clear dedicated account guidance.
-3. **Shared Login Boundary Test (Allow)**:
-   - Log in as shared account `tmh`.
-   - In Employee-Self login, enter an employee ID whose App53 `MBO_Kintone_User.value = []` + valid App 801 password.
-   - Confirm ALLOW.
-4. **Current-FY Entry UX Test**:
-   - For an employee with an existing current-FY MBO record, confirm Employee-Self displays "Open Current MBO" and offers no Create New path.
+## Owner Runtime UAT Status
 
-Do not perform or claim Owner UAT on the Owner's behalf.
-D3 remains strictly on HOLD until Owner UAT is completed and reviewed.
+### Original Focused UAT: 4/4 PASS (Locked Truth)
+The original 4 Owner Runtime UAT cases on App794 (Live revision 69) were executed and verified by Owner:
+1. **Dedicated Account Test (Ms.Papatchaya auto-bind 0113)**: PASS
+2. **Shared Login Boundary Test (tmh + 0113 DENY)**: PASS
+3. **Shared Login Boundary Test (tmh + shared employee ALLOW)**: PASS
+4. **Current-FY Entry UX Test (1 MBO -> Open Current MBO, no Create New)**: PASS
+
+DO NOT re-request or repeat these 4 tests.
+
+### Future Focused Owner UAT for DEFECT-003 (Post-Deployment Only)
+After a separate, authorized build and deployment of DEFECT-003 to App794, the only required focused Owner UAT checks will be:
+1. **DEFECT003-UAT-1**: In MBO Login overlay, click "กลับหน้าหลัก Kintone / Back to Kintone Home" -> cleanly exits blocking overlay back to Kintone portal.
+2. **DEFECT003-UAT-2**: In MBO Login overlay, click "ลืมรหัสผ่าน / Forgot Password" -> bilingual HR/Administrator support text appears without password reset or session change.
+3. **DEFECT003-UAT-3**: Enter Employee 0113 under shared account -> `DEDICATED_ACCOUNT_REQUIRED` denial appears, and Back to Kintone Home button remains active and functional.
+
+*These DEFECT-003 UAT cases are NOT authorized to run now because DEFECT-003 has not yet been built or deployed.*
+
+D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Control Plane review are complete.

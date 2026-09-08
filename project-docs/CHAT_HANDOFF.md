@@ -5,14 +5,16 @@ Updated: 2026-09-08 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp00
 ## Current canonical checkpoint
 
 ```text
-CHECKPOINT_HEAD = 38f5ba111d6ebbfaa09a3415819a92f5a48a1f4d
+CHECKPOINT_HEAD = e5ec45f98eaf28cca0dd959ce24bfe3e4fc055c9
 D1_BASE_ARCHITECTURE = CLOSED / DURABLE
-D1-UAT-DEFECT-001 = IMPLEMENTED / SOURCE REVIEW PASS / TECHNICALLY DEPLOYED / OWNER UAT PENDING
-D1-UAT-DEFECT-002 = IMPLEMENTED / SOURCE REVIEW PASS / TECHNICALLY DEPLOYED / OWNER UAT PENDING
-APP794_DEPLOYMENT = TECHNICAL PASS (Live rev 69)
+D1_ORIGINAL_FOCUSED_UAT_1_TO_4 = 4/4 PASS
+D1-UAT-DEFECT-001 = OWNER RUNTIME UAT PASS
+D1-UAT-DEFECT-002 = OWNER RUNTIME UAT PASS
+D1-UAT-DEFECT-003 = SOURCE REVIEW PASS / FOCUSED TEST PASS / DEPLOYMENT PENDING / OWNER DEFECT-003 UAT PENDING
+D1_FINAL_CLOSURE = HOLD pending DEFECT-003 deployment + focused Owner UAT + Control Plane review
+APP794_LIVE_REVISION = 69
 APP794_CSS_TARGET = CANONICAL (mbo-employee.css)
 D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED ON D1 ENTRY UAT
 D3 = HOLD
 PRODUCTION_READY = NO
 ```
@@ -94,25 +96,32 @@ App 794 is verified live at revision 69 with exact candidate assets:
 
 Deployment work packages are fully executed and closed. No pending deployments exist.
 
-## Owner Runtime UAT (Active Focus)
+## Owner Runtime UAT Status
 
-The technical deployment is complete and independently verified. The next operational milestone is Owner runtime UAT:
+### Original Focused UAT: 4/4 PASS (Locked Truth)
+1. Ms.Papatchaya native Kintone login -> auto-bind `0113` -> own MBO opens = PASS.
+2. `tmh` + Employee `0113` -> DENY with dedicated-account guidance = PASS.
+3. `tmh` + employee with valid `MBO_Kintone_User.value = []` -> Shared App801 login works = PASS.
+4. Existing current-FY MBO -> `Open Current MBO`; no create-new path = PASS.
 
-1. Ms.Papatchaya native Kintone login -> auto-bind `0113` -> own MBO opens.
-2. `tmh` + Employee `0113` -> DENY with dedicated-account guidance.
-3. `tmh` + employee with no dedicated Kintone mapping -> Shared App801 login still works.
-4. Existing current-FY MBO -> `Open Current MBO`; no create-new path.
+These 4 tests are complete and MUST NOT be repeated or presented as pending.
 
-Do not mark Owner UAT PASS until the Owner performs these runtime checks.
-D3 remains strictly on HOLD until Owner UAT passes and Control Plane authorizes entry.
+### Future Focused Owner UAT for DEFECT-003 (Post-Deployment Only)
+The following focused checks apply only after a separately authorized build and deployment of DEFECT-003:
+1. Back to Kintone Home button exits blocking login overlay.
+2. Forgot Password reveals bilingual HR/Administrator support info.
+3. Dedicated Account Deny screen keeps Back Home button accessible.
+
+*Note: DEFECT-003 is not deployed yet. These tests cannot be executed now.*
+D3 remains strictly on HOLD until DEFECT-003 deployment, focused UAT, and Control Plane review are complete.
 
 ## Startup order for next chat
 
-1. Fresh-fetch canonical HEAD.
+1. Fresh-fetch canonical HEAD (`ai/antigravity-wp002c`).
 2. Read this file first.
 3. Read `AI_CONTROL_CENTER.md`.
 4. Read `AI_ACTIVE_TASK.md`.
 5. Read `control/00_MASTER_DELIVERY_CONTROL.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
-6. Inspect exact current commit/diff only as needed.
-7. Assist Owner in recording runtime UAT results.
+6. Inspect `project-docs/D1_UAT_DEFECT_003_R1_TEST_CONTROL_EVIDENCE.md`.
+7. Wait for Control Plane (ChatGPT) review.
 8. Do not start D3.
