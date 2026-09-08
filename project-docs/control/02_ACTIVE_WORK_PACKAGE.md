@@ -8,7 +8,8 @@ Updated: 2026-09-09 ICT
 - **TITLE**: `Owner Decision D3-008 — Route Snapshot Persistence Control-Doc Sync`
 - **TYPE**: `CONTROL-DOC SYNC / DOCUMENTATION-ONLY`
 - **OWNER_AUTHORIZATION**: `APPROVED`
-- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
+- **STATUS**: `EXECUTED / AWAITING CONTROL PLANE RE-REVIEW AFTER R1 CORRECTIVE`
+- **D3-DECISION-008-SYNC-R1**: `EXECUTED / AWAITING CONTROL PLANE REVIEW`
 - **D3-WP001-R4**: `PASS / CLOSED VIA R4-R1`
 - **D3-WP001-R4-R1**: `PASS / CLOSED`
 - **OWNER_DEC_D3_008**: `LOCKED / OWNER APPROVED`
@@ -17,20 +18,37 @@ Updated: 2026-09-09 ICT
 - **DEPLOYMENT_AUTHORIZED**: `NO`
 - **KINTONE_WRITES_AUTHORIZED**: `NONE`
 - **PRODUCTION_READY**: `NO`
-- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC`
+- **NEXT_PERMITTED_ACTION**: `CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R1`
 
 ## Owner-authorized scope
 
-This work package synchronizes only the following control documents to accepted repository truth through `OWNER_DEC_D3_008`:
+The original `D3-DECISION-008-SYNC` Owner authorization covered the following six canonical control documents:
 
 ```text
+project-docs/CHAT_HANDOFF.md
 project-docs/AI_CONTROL_CENTER.md
 project-docs/AI_ACTIVE_TASK.md
 project-docs/control/00_MASTER_DELIVERY_CONTROL.md
 project-docs/control/02_ACTIVE_WORK_PACKAGE.md
+project-docs/AI_DOCUMENT_INDEX.md
 ```
 
-No source, test, config, schema, build, deployment, migration, Kintone read/write, process transition, or data backfill is authorized.
+The decision evidence document is:
+
+```text
+project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
+```
+
+`D3-DECISION-008-SYNC-R1` is a docs-only completion corrective authorized to:
+
+```text
+1. synchronize the previously missed project-docs/CHAT_HANDOFF.md;
+2. synchronize the previously missed project-docs/AI_DOCUMENT_INDEX.md;
+3. correct this file's scope statement from an inaccurate four-document list to the six-document Owner-authorized control-sync scope;
+4. reconcile current-state wording only as necessary to eliminate contradictions created by those omissions.
+```
+
+No architecture decision is reopened by R1. No source, test, config, schema, build, deployment, migration, Kintone read/write, process transition, or data backfill is authorized.
 
 ## Locked D3 decision chain
 
@@ -176,11 +194,27 @@ D3_R4_R1 = project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MO
 D3_DECISION_008 = project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
 ```
 
+## R1 execution evidence boundary
+
+```text
+R1_START_HEAD = d62aa9b5f68a83e81f644648a2d004ad5b05585d
+R1_AUTHORIZED_CHANGE_TYPE = DOCUMENTATION / CONTROL-DOC CORRECTIVE ONLY
+R1_TARGETS = CHAT_HANDOFF.md + AI_DOCUMENT_INDEX.md + control/02_ACTIVE_WORK_PACKAGE.md
+SOURCE_FILES_CHANGED = 0
+TEST_FILES_CHANGED = 0
+CONFIG_SCHEMA_FILES_CHANGED = 0
+BUILD_PERFORMED = NO
+DEPLOYMENT_PERFORMED = NO
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+PROCESS_TRANSITIONS = 0
+```
+
 ## Allowed operations
 
 Only:
 - read/review repository evidence;
-- independent Control Plane review of this exact docs-only sync.
+- independent Control Plane review of the completed D3-008 control sync and this R1 corrective.
 
 Forbidden until separate explicit Owner authorization:
 - source changes;
@@ -197,4 +231,4 @@ Forbidden until separate explicit Owner authorization:
 
 ## Closure rule
 
-Antigravity or the execution plane cannot self-certify this package. `D3-DECISION-008-SYNC` remains `EXECUTED / AWAITING CONTROL PLANE REVIEW` until ChatGPT independently reviews the exact final diff and evidence.
+The execution plane cannot self-certify this corrective. `D3-DECISION-008-SYNC-R1` remains `EXECUTED / AWAITING CONTROL PLANE REVIEW`, and the parent `D3-DECISION-008-SYNC` remains `AWAITING CONTROL PLANE RE-REVIEW`, until ChatGPT independently reviews the exact final diff and evidence.
