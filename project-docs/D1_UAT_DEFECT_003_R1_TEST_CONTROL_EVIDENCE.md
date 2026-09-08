@@ -98,8 +98,11 @@ node --test \
 ### Changed Files
 - `project-docs/D1_UAT_DEFECT_003_R1_TEST_CONTROL_EVIDENCE.md` (NEW)
 - `project-docs/AI_ACTIVE_TASK.md` (SYNC)
-- `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` (SYNC)
+- `project-docs/AI_CONTROL_CENTER.md` (SYNC)
 - `project-docs/CHAT_HANDOFF.md` (SYNC)
+- `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` (SYNC)
+
+*(Note: DOCFIX1 corrected the Changed Files provenance list above to include `AI_CONTROL_CENTER.md`, which was part of the original 5-file commit `ff10913` but omitted in the initial evidence document).*
 
 ### Invariants Maintained
 - `src/**` changes: **0**
