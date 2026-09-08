@@ -148,21 +148,21 @@ Authoritative schema in `config/schema-spec.js` (lines 127–143) contains exact
 
 | Field Code | Field Type | Required | Unique | Constraints / Options |
 |---|---|---|---|---|
-| `Archive_Key` | `SINGLE_LINE_TEXT` | `true` | `true` | No explicit maxLength declared in schema-spec |
-| `Source_Record_ID` | `NUMBER` | `false` | `false` | Kintone record ID of original App 794 record |
-| `Source_Record_Key` | `SINGLE_LINE_TEXT` | `true` | `false` | e.g. `FY2027-0149` |
-| `Fiscal_Year` | `SINGLE_LINE_TEXT` | `true` | `false` | e.g. `2027` |
-| `Employee_Code` | `SINGLE_LINE_TEXT` | `true` | `false` | e.g. `0149` |
-| `Evaluation_Stage` | `DROP_DOWN` | `true` | `false` | Options: `OBJECTIVE`, `MIDYEAR`, `FINAL` |
-| `Revision_Number` | `NUMBER` | `true` | `false` | Min value `1` |
-| `Previous_Status` | `SINGLE_LINE_TEXT` | `false` | `false` | Status string prior to reopen |
-| `Superseded_By_Revision` | `NUMBER` | `false` | `false` | Min value `1` |
-| `Event_Type` | `SINGLE_LINE_TEXT` | `true` | `false` | Default `EVALUATION_REVISION_CREATED` |
-| `Reason` | `MULTI_LINE_TEXT` | `true` | `false` | Justification for reopening |
-| `Snapshot_JSON` | `MULTI_LINE_TEXT` | `true` | `false` | Full JSON state snapshot |
-| `Snapshot_Hash` | `SINGLE_LINE_TEXT` | `true` | `false` | SHA-256 hash of snapshot |
-| `Archived_By` | `USER_SELECT` | `true` | `false` | Actor performing the archival |
-| `Archived_At` | `DATETIME` | `true` | `false` | Archival timestamp |
+| `Archive_Key` | `SINGLE_LINE_TEXT` | `true` | `true` | no explicit maxLength declared |
+| `Source_Record_ID` | `NUMBER` | `false` | `false` | no additional explicit constraint |
+| `Source_Record_Key` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Fiscal_Year` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Employee_Code` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Evaluation_Stage` | `DROP_DOWN` | `true` | `false` | options OBJECTIVE / MIDYEAR / FINAL (default: OBJECTIVE) |
+| `Revision_Number` | `NUMBER` | `true` | `false` | minValue=1 |
+| `Previous_Status` | `SINGLE_LINE_TEXT` | `false` | `false` | no additional explicit constraint |
+| `Superseded_By_Revision` | `NUMBER` | `false` | `false` | minValue=1 |
+| `Event_Type` | `SINGLE_LINE_TEXT` | `true` | `false` | default EVALUATION_REVISION_CREATED |
+| `Reason` | `MULTI_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Snapshot_JSON` | `MULTI_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Snapshot_Hash` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Archived_By` | `USER_SELECT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| `Archived_At` | `DATETIME` | `true` | `false` | no additional explicit constraint beyond required=true |
 
 ---
 
@@ -174,7 +174,7 @@ Authoritative schema in `config/schema-spec.js` (lines 127–143) contains exact
   - Delivery sprint documentation records confirming App 798 container creation and 15-field schema deployment.
 - **Classification**:
   - `APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN_BY_COMMITTED_REPOSITORY_EVIDENCE`
-  - `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE`
+  - `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = SPECIFIC_CITED_PATH_NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE` (the specific previously cited path `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json` is not present as a committed canonical file supporting the current evidence chain)
   - `APP798_EXACT_HISTORICAL_REVISION = NOT_ASSERTED`
   - `ARCHIVE_KEY_CANONICAL_CONSTRAINT = required=true / unique=true / no explicit maxLength declared`
 

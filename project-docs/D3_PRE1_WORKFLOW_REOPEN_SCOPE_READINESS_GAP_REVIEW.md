@@ -197,7 +197,7 @@ The authoritative schema in `config/schema-spec.js` defines exactly 15 fields:
 ### 6.3 App 798 Deployment Evidence Status
 - Canonical repository evidence (`project-docs/APP_REGISTRY.md` line 18, `config/sandbox-apps.json`, and delivery documentation records) verifies that App 798 (`MBO Revision Archive [Sandbox]`) was live-deployed to Sandbox with the 15-field schema.
 - `APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN_BY_COMMITTED_REPOSITORY_EVIDENCE`.
-- `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE` (historical backup payloads are not retained as committed canonical files in Git tree).
+- `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = SPECIFIC_CITED_PATH_NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE` (the specific previously cited path `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json` is not present as a committed canonical file supporting the current evidence chain).
 - `APP798_EXACT_HISTORICAL_REVISION = NOT_ASSERTED` (exact live settings/fields revision numbers are not asserted without an explicit committed canonical artifact).
 - However, **App 794** has zero revision fields, and `src/` has zero lines of code implementing the reopen workflow or snapshot generator.
 

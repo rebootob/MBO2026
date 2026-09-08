@@ -27,7 +27,10 @@ APP798_APP_ID = 798
 APP798_SCHEMA_FIELD_COUNT = 15
 APP798_SANDBOX_STATE = DEPLOYED_AND_PROVEN_BY_COMMITTED_REPOSITORY_EVIDENCE
 APP798_EXACT_HISTORICAL_REVISION = NOT ASSERTED
-APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = NOT PRESENT AS COMMITTED CANONICAL FILE
+APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = SPECIFIC CITED PATH NOT PRESENT AS COMMITTED CANONICAL FILE
+ARCHIVE_KEY_REQUIRED = true
+ARCHIVE_KEY_UNIQUE = true
+ARCHIVE_KEY_EXPLICIT_MAX_LENGTH = NOT DECLARED
 ARCHIVE_KEY_CANONICAL_CONSTRAINT = required=true / unique=true / no explicit maxLength declared
 
 ARCHITECTURE_AUTHORITY_CONFLICT = UNCHANGED / OWNER DECISION REQUIRED
@@ -52,7 +55,7 @@ Independent Control Plane review of `D3-PRE1-R1` identified two specific materia
 
 ### Defect 1: False Committed Status for Backup Artifacts
 - **Problem**: R1 mistakenly treated an uncommitted local backup JSON file from sprint-02r as committed repository evidence and asserted specific historical settings and fields revision numbers.
-- **Repository Truth**: Historical local backup JSON files are untracked/ephemeral backup artifacts and are **not** committed in canonical git history.
+- **Repository Truth**: The specific previously cited path `backups/delivery-sprint-02r/2026-08-25T04-47-02-198Z/app_798_backup.json` is not present as a committed canonical file supporting the current evidence chain.
 - **Resolution**:
   - Removed all citations claiming backup JSON is a committed repository file.
   - Sourced App 798 deployment proof exclusively from canonical committed repository records:
@@ -61,18 +64,21 @@ Independent Control Plane review of `D3-PRE1-R1` identified two specific materia
     3. Delivery sprint documentation records confirming App 798 container creation and 15-field schema deployment.
   - Classified App 798 live state as `DEPLOYED_AND_PROVEN_BY_COMMITTED_REPOSITORY_EVIDENCE`.
   - Replaced assertions of historical revision numbers with `APP798_EXACT_HISTORICAL_REVISION = NOT_ASSERTED`.
-  - Declared `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE`.
+  - Declared `APP798_BACKUP_PAYLOAD_CANONICAL_STATUS = SPECIFIC_CITED_PATH_NOT_PRESENT_AS_COMMITTED_CANONICAL_FILE`.
 
 ### Defect 2: Unsupported `Archive_Key` Length Constraint Claim
 - **Problem**: R1 mistakenly asserted an explicit 64-character maximum length restriction for `Archive_Key`.
-- **Repository Truth**: `config/schema-spec.js` defines `Archive_Key` as:
+- **Repository Truth**: The canonical `text()` helper in `config/schema-spec.js` is defined as:
   ```javascript
-  Archive_Key: text('Archive Key', { required: true, unique: true })
+  const text = (label, options = {}) => ({ type: 'SINGLE_LINE_TEXT', label, required: false, unique: false, defaultValue: '', ...options });
   ```
-  The helper `text()` assigns `maxLength: ""` unless overridden. There is no explicit character length limit declared.
+  The `text()` helper does not declare a `maxLength` property at all. `Archive_Key` supplies only `required: true` and `unique: true` in addition to the text helper defaults. No explicit `maxLength` constraint is declared in canonical schema source.
 - **Resolution**:
   - Removed all assertions attributing an explicit character length limit to `Archive_Key`.
   - Established canonical constraint:
+    `ARCHIVE_KEY_REQUIRED = true`
+    `ARCHIVE_KEY_UNIQUE = true`
+    `ARCHIVE_KEY_EXPLICIT_MAX_LENGTH = NOT DECLARED`
     `ARCHIVE_KEY_CANONICAL_CONSTRAINT = required=true / unique=true / no explicit maxLength declared`.
 
 ---
@@ -84,20 +90,20 @@ App 798 (`MBO Revision Archive`) schema is strictly defined in `config/schema-sp
 | # | Field Code | Field Type | Required | Unique | Canonical Constraints |
 |---|---|---|---|---|---|
 | 1 | `Archive_Key` | `SINGLE_LINE_TEXT` | `true` | `true` | `required=true / unique=true / no explicit maxLength declared` |
-| 2 | `Source_Record_ID` | `NUMBER` | `false` | `false` | None (Kintone record ID) |
-| 3 | `Source_Record_Key` | `SINGLE_LINE_TEXT` | `true` | `false` | None |
-| 4 | `Fiscal_Year` | `SINGLE_LINE_TEXT` | `true` | `false` | None |
-| 5 | `Employee_Code` | `SINGLE_LINE_TEXT` | `true` | `false` | None |
-| 6 | `Evaluation_Stage` | `DROP_DOWN` | `true` | `false` | Options: `OBJECTIVE`, `MIDYEAR`, `FINAL` |
-| 7 | `Revision_Number` | `NUMBER` | `true` | `false` | Min value `1` |
-| 8 | `Previous_Status` | `SINGLE_LINE_TEXT` | `false` | `false` | None |
-| 9 | `Superseded_By_Revision` | `NUMBER` | `false` | `false` | Min value `1` |
-| 10 | `Event_Type` | `SINGLE_LINE_TEXT` | `true` | `false` | Default `EVALUATION_REVISION_CREATED` |
-| 11 | `Reason` | `MULTI_LINE_TEXT` | `true` | `false` | None |
-| 12 | `Snapshot_JSON` | `MULTI_LINE_TEXT` | `true` | `false` | None |
-| 13 | `Snapshot_Hash` | `SINGLE_LINE_TEXT` | `true` | `false` | SHA-256 hash |
-| 14 | `Archived_By` | `USER_SELECT` | `true` | `false` | None |
-| 15 | `Archived_At` | `DATETIME` | `true` | `false` | None |
+| 2 | `Source_Record_ID` | `NUMBER` | `false` | `false` | no additional explicit constraint |
+| 3 | `Source_Record_Key` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 4 | `Fiscal_Year` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 5 | `Employee_Code` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 6 | `Evaluation_Stage` | `DROP_DOWN` | `true` | `false` | options OBJECTIVE / MIDYEAR / FINAL (default: OBJECTIVE) |
+| 7 | `Revision_Number` | `NUMBER` | `true` | `false` | minValue=1 |
+| 8 | `Previous_Status` | `SINGLE_LINE_TEXT` | `false` | `false` | no additional explicit constraint |
+| 9 | `Superseded_By_Revision` | `NUMBER` | `false` | `false` | minValue=1 |
+| 10 | `Event_Type` | `SINGLE_LINE_TEXT` | `true` | `false` | default EVALUATION_REVISION_CREATED |
+| 11 | `Reason` | `MULTI_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 12 | `Snapshot_JSON` | `MULTI_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 13 | `Snapshot_Hash` | `SINGLE_LINE_TEXT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 14 | `Archived_By` | `USER_SELECT` | `true` | `false` | no additional explicit constraint beyond required=true |
+| 15 | `Archived_At` | `DATETIME` | `true` | `false` | no additional explicit constraint beyond required=true |
 
 Zero additional or legacy field names exist in canonical schema.
 
