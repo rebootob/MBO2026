@@ -2,7 +2,38 @@
  * Routing Service - App 795 Routing Master Validator & Topology Resolver
  * Pure New Model (Manager L1/L2, GM L1/L2, Executive Direct M1_ONLY)
  * Enhanced for M10M-R2 Executive Direct Routing (DGM / GM / VP -> President)
+ * D3-IMP-03 Model A Effective-Dated Resolution & App794 Bound Snapshot Integration
  */
+
+import {
+  resolveEffectiveRouteVersion,
+  D3RouteVersionResolutionError
+} from './d3-route-version-resolver.js';
+import {
+  evaluateD3RouteViability,
+  D3RouteViabilityError
+} from './d3-route-viability-service.js';
+import {
+  resolveProfileCodeForSnapshot,
+  resolveExpectedAppraiserCount,
+  PROFILE_CODES
+} from '../profiles/runtime-profile-resolver.js';
+import { D3RouteContractError } from '../config/d3-route-contract.js';
+
+export {
+  D3RouteVersionResolutionError,
+  D3RouteViabilityError,
+  D3RouteContractError
+};
+
+export class D3RouteBindingError extends Error {
+  constructor(code, message, details = null) {
+    super(`${code}: ${message}`);
+    this.name = 'D3RouteBindingError';
+    this.code = code;
+    this.details = details;
+  }
+}
 
 export class RoutingService {
   /**
@@ -25,16 +56,328 @@ export class RoutingService {
   }
 
   /**
+   * Derives exact App 795 Routing_Key based on position priority (DGM/GM/VP) or Section/Team
+   * @param {string} sectionCode
+   * @param {string} teamCode
+   * @param {string} positionCode
+   * @returns {string} Derived Routing_Key
+   */
+  static deriveRoutingKey(sectionCode, teamCode, positionCode = '') {
+    const cleanPosition = String(positionCode || '').trim();
+    const normalizedPos = RoutingService.normalizePosition(cleanPosition);
+    const cleanSection = String(sectionCode || '').trim();
+    const cleanTeam = String(teamCode || '').trim();
+
+    const isExecutiveDirect = ['DEPUTY_GENERAL_MANAGER', 'GENERAL_MANAGER', 'VICE_PRESIDENT'].includes(normalizedPos);
+    if (isExecutiveDirect) {
+      if (normalizedPos === 'DEPUTY_GENERAL_MANAGER') return 'POSITION_DGM';
+      if (normalizedPos === 'VICE_PRESIDENT') return 'POSITION_VP';
+      return 'POSITION_GM';
+    }
+
+    if (!cleanSection) {
+      throw new Error('ไม่พบข้อมูล Section ของพนักงาน กรุณาตรวจสอบ Employee Master (App 53)\nEmployee section is missing in Employee Master.');
+    }
+
+    const isTmgSection = cleanSection === 'TMG1' || cleanSection === 'TMG2' || /^TMG/i.test(cleanSection);
+    if (isTmgSection && !cleanTeam) {
+      throw new Error(`ไม่พบข้อมูล Team ของพนักงานใน Section ${cleanSection} กรุณาตรวจสอบ Employee Master (App 53) (TEAM_REQUIRED)\nTeam is required for employee in section ${cleanSection}.`);
+    }
+
+    return cleanTeam ? `${cleanSection}|${cleanTeam}` : cleanSection;
+  }
+
+  /**
+   * Checks if an App 794 record contains a complete and valid bound D3 provenance snapshot
+   * @param {Object} record
+   * @returns {boolean}
+   */
+  static hasCompleteD3Provenance(record) {
+    if (!record || typeof record !== 'object') return false;
+    const val = (f) => {
+      if (f === null || f === undefined) return '';
+      if (typeof f === 'object' && 'value' in f) {
+        return f.value !== null && f.value !== undefined ? String(f.value).trim() : '';
+      }
+      return String(f).trim();
+    };
+
+    const frozenProfile = val(record.Frozen_Profile_Code);
+    const kSnapshot = Number(val(record.K_expected_Snapshot));
+    const effectiveRoutingKey = val(record.Effective_Routing_Key);
+    const effectiveVersionKey = val(record.Effective_Route_Version_Key);
+    const scorerSlots = val(record.Effective_Scorer_Slots_Snapshot);
+    const topology = val(record.Routing_Topology);
+
+    if (!frozenProfile || (kSnapshot !== 1 && kSnapshot !== 2) || !effectiveRoutingKey || !effectiveVersionKey || !scorerSlots || !topology) {
+      return false;
+    }
+
+    try {
+      const parsedSlots = JSON.parse(scorerSlots);
+      if (!Array.isArray(parsedSlots) || parsedSlots.length !== kSnapshot) return false;
+      for (const slot of parsedSlots) {
+        if (!Number.isInteger(slot) || slot < 1) return false;
+      }
+    } catch {
+      return false;
+    }
+
+    const mgr1 = record.Manager_Level1_Approvers?.value || record.Manager_Level1_Approvers;
+    if (!Array.isArray(mgr1) || mgr1.length === 0) return false;
+
+    return true;
+  }
+
+  /**
+   * Extracts bound D3 route and provenance snapshot from an already bound App 794 record
+   * @param {Object} record
+   * @returns {Object}
+   */
+  static extractD3BoundSnapshot(record) {
+    const val = (f) => {
+      if (f === null || f === undefined) return '';
+      if (typeof f === 'object' && 'value' in f) return f.value;
+      return f;
+    };
+    const str = (f) => {
+      const v = val(f);
+      return v !== null && v !== undefined ? String(v).trim() : '';
+    };
+
+    const mgrL1 = val(record.Manager_Level1_Approvers) || [];
+    const mgrL2 = val(record.Manager_Level2_Approvers) || [];
+    const gmL1 = val(record.GM_Level1_Approvers) || [];
+    const gmL2 = val(record.GM_Level2_Approvers) || [];
+    const requesters = val(record.Requester_User) || [];
+
+    return {
+      Frozen_Profile_Code: str(record.Frozen_Profile_Code),
+      K_expected_Snapshot: Number(val(record.K_expected_Snapshot)),
+      Effective_Routing_Key: str(record.Effective_Routing_Key),
+      Effective_Route_Version_Key: str(record.Effective_Route_Version_Key),
+      Effective_Scorer_Slots_Snapshot: str(record.Effective_Scorer_Slots_Snapshot),
+
+      Routing_Topology: str(record.Routing_Topology),
+      Requester_User: requesters,
+      Manager_Level1_Approvers: mgrL1,
+      Manager_Level1_Approval_Rule: str(record.Manager_Level1_Approval_Rule) || 'ALL',
+      Manager_Level2_Approvers: mgrL2,
+      Manager_Level2_Approval_Rule: str(record.Manager_Level2_Approval_Rule) || 'ALL',
+      GM_Level1_Approvers: gmL1,
+      GM_Level1_Approval_Rule: str(record.GM_Level1_Approval_Rule) || 'ALL',
+      GM_Level2_Approvers: gmL2,
+      GM_Level2_Approval_Rule: str(record.GM_Level2_Approval_Rule) || 'ALL',
+      Has_Manager_Level2: mgrL2.length > 0 ? 'Yes' : 'No',
+      Has_GM_Level2: gmL2.length > 0 ? 'Yes' : 'No',
+
+      Manager_User: mgrL1,
+      First_Manager_User: mgrL2,
+      GM_User: gmL1,
+      Routing_Key: str(record.Effective_Routing_Key),
+      Version_Key: str(record.Effective_Route_Version_Key),
+      isBoundSnapshot: true,
+      inFlightImmutable: true
+    };
+  }
+
+  /**
+   * D3 Model A Runtime Resolution + App794 Bound Snapshot Integrator
+   * Evaluates: candidates -> Model A version resolution -> canonical normalization ->
+   * own-MBO self-elision -> HR scorer viability -> App 794 bound snapshot with 5 provenance fields.
+   */
+  static async resolveD3RoutingProfile({
+    routingAppId = 795,
+    sectionCode = '',
+    teamCode = '',
+    positionCode = '',
+    employeeSnapshot = null,
+    employeeUserCode = '',
+    isOwnMbo = false,
+    resolutionBusinessDate,
+    kintoneApi = null,
+    candidateRecords = null,
+    routingKey = '',
+    frozenProfileCode = null,
+    kExpected = null,
+    scorerPrioritySlots = undefined,
+    existingRecord = null,
+    isStageBoundary = false,
+    priorStageArchiveVerified = false
+  }) {
+    // 1. In-flight Stage Immutability & Stage Boundary Archive Prerequisite Guard
+    if (existingRecord && RoutingService.hasCompleteD3Provenance(existingRecord)) {
+      if (!isStageBoundary) {
+        return RoutingService.extractD3BoundSnapshot(existingRecord);
+      }
+      if (!priorStageArchiveVerified) {
+        throw new D3RouteBindingError(
+          'APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS',
+          'Next-stage fresh route binding requires verified prior-stage archive evidence.'
+        );
+      }
+    }
+
+    // 2. Business Resolution Date Requirement (Fail-closed)
+    if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
+      throw new D3RouteBindingError(
+        'RESOLUTION_BUSINESS_DATE_REQUIRED',
+        'Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution.'
+      );
+    }
+
+    // 3. Routing Key Derivation
+    const derivedKey = routingKey || RoutingService.deriveRoutingKey(sectionCode, teamCode, positionCode);
+
+    // 4. Candidate Version Records Acquisition
+    let candidates = candidateRecords;
+    if (!candidates) {
+      if (!kintoneApi || typeof kintoneApi.getRecords !== 'function') {
+        throw new D3RouteBindingError('CANDIDATE_RECORDS_REQUIRED', 'Either candidateRecords or kintoneApi must be provided.');
+      }
+      const query = `Routing_Key = "${derivedKey}"`;
+      const resp = await kintoneApi.getRecords(routingAppId, query);
+      candidates = resp?.records || [];
+    }
+
+    // 5. Model A Pure Version Resolution
+    const selectedVersion = resolveEffectiveRouteVersion({
+      records: candidates,
+      routingKey: derivedKey,
+      at: resolutionBusinessDate
+    });
+
+    // 6. Frozen Profile & K_expected Resolution
+    let profileCode = frozenProfileCode;
+    if (!profileCode && employeeSnapshot) {
+      profileCode = resolveProfileCodeForSnapshot(employeeSnapshot);
+    }
+    if (!profileCode) {
+      throw new D3RouteBindingError(
+        'FROZEN_PROFILE_CODE_REQUIRED',
+        'Frozen_Profile_Code is required for D3 route binding.'
+      );
+    }
+    if (!Object.values(PROFILE_CODES).includes(profileCode)) {
+      throw new D3RouteBindingError(
+        'INVALID_PROFILE_CODE',
+        `Unsupported profile code: ${profileCode}`
+      );
+    }
+
+    const canonicalK = resolveExpectedAppraiserCount(profileCode);
+    let resolvedK = kExpected;
+    if (resolvedK !== null && resolvedK !== undefined) {
+      const numK = Number(resolvedK);
+      if (numK !== 1 && numK !== 2) {
+        throw new D3RouteBindingError('INVALID_K_EXPECTED', `K_expected must be 1 or 2, received ${kExpected}`);
+      }
+      if (numK !== canonicalK) {
+        throw new D3RouteBindingError(
+          'INVALID_K_EXPECTED',
+          `Supplied K_expected (${numK}) does not match canonical expectation for profile ${profileCode} (${canonicalK}).`
+        );
+      }
+      resolvedK = numK;
+    } else {
+      resolvedK = canonicalK;
+    }
+
+    // 7. Scorer Viability & Self-Elision Evaluation
+    const viability = evaluateD3RouteViability({
+      routeVersion: selectedVersion.record,
+      kExpected: resolvedK,
+      employeeUserCode,
+      isOwnMbo,
+      scorerPrioritySlots: scorerPrioritySlots !== undefined ? scorerPrioritySlots : selectedVersion.record?.Scorer_Priority_Slots
+    });
+
+    const effectiveRoute = viability.effectiveRoute;
+    const activeScorers = viability.activeScorers;
+
+    // 8. Map to Reused App 794 Route Snapshot Fields
+    let mgrL1 = [];
+    let mgrL2 = [];
+    let gmL1 = [];
+    let gmL2 = [];
+
+    for (const slot of effectiveRoute.businessSlots) {
+      const u = { code: slot.user.code, ...(slot.user.name ? { name: slot.user.name } : {}) };
+      if (slot.targetSlot === 'M1') mgrL1 = [u];
+      else if (slot.targetSlot === 'M2') mgrL2 = [u];
+      else if (slot.targetSlot === 'G1') gmL1 = [u];
+      else if (slot.targetSlot === 'G2') gmL2 = [u];
+    }
+
+    const rawRequesters = selectedVersion.record?.Requester_User?.value || selectedVersion.record?.Requester_User || [];
+    const requesters = Array.isArray(rawRequesters) ? rawRequesters : [];
+
+    const effectiveScorerSlots = activeScorers.map(s => s.effectiveOrdinal);
+    const scorerSlotsSnapshot = JSON.stringify(effectiveScorerSlots);
+
+    return {
+      // 5 Mandatory D3-008 Provenance Fields
+      Frozen_Profile_Code: profileCode,
+      K_expected_Snapshot: resolvedK,
+      Effective_Routing_Key: selectedVersion.routingKey,
+      Effective_Route_Version_Key: selectedVersion.versionKey,
+      Effective_Scorer_Slots_Snapshot: scorerSlotsSnapshot,
+
+      // Reused Sequential Routing Snapshot Fields
+      Routing_Topology: effectiveRoute.topology,
+      Requester_User: requesters,
+      Manager_Level1_Approvers: mgrL1,
+      Manager_Level1_Approval_Rule: 'ALL',
+      Manager_Level2_Approvers: mgrL2,
+      Manager_Level2_Approval_Rule: 'ALL',
+      GM_Level1_Approvers: gmL1,
+      GM_Level1_Approval_Rule: 'ALL',
+      GM_Level2_Approvers: gmL2,
+      GM_Level2_Approval_Rule: 'ALL',
+      Has_Manager_Level2: mgrL2.length > 0 ? 'Yes' : 'No',
+      Has_GM_Level2: gmL2.length > 0 ? 'Yes' : 'No',
+
+      // Compatibility Fields
+      Manager_User: mgrL1,
+      First_Manager_User: mgrL2,
+      GM_User: gmL1,
+
+      // Resolution Metadata
+      Matched_Rule: selectedVersion.routingKey,
+      Routing_Key: selectedVersion.routingKey,
+      Version_Key: selectedVersion.versionKey,
+      Effective_From: selectedVersion.effectiveFrom,
+      Effective_To: selectedVersion.effectiveTo,
+      Resolution_Business_Date: selectedVersion.resolvedDate,
+      Active_Scorers: activeScorers,
+      selfAppraiserElided: effectiveRoute.selfAppraiserElided
+    };
+  }
+
+  /**
    * Pure Read-Only Route Resolution from App 795 (Zero Requester Authorization Check)
    * Supports Position Priority (DGM/GM/VP -> President) and Team-aware routing keys (Section_Code|Team)
+   * If options.d3 === true or options.resolutionBusinessDate is present, delegates to D3 Model A resolver.
    * @param {number} routingAppId
    * @param {string} sectionCode
    * @param {string} teamCode
    * @param {Object} kintoneApi
    * @param {string} positionCode
+   * @param {Object} options
    * @returns {Object} Resolved Routing Profile with Requester_User list
    */
-  static async resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode = '') {
+  static async resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode = '', options = {}) {
+    if (options && (options.d3 === true || options.resolutionBusinessDate)) {
+      return RoutingService.resolveD3RoutingProfile({
+        routingAppId,
+        sectionCode,
+        teamCode,
+        kintoneApi,
+        positionCode,
+        ...options
+      });
+    }
+
     const cleanPosition = String(positionCode || '').trim();
     const normalizedPos = RoutingService.normalizePosition(cleanPosition);
     const cleanSection = String(sectionCode || '').trim();
@@ -415,8 +758,8 @@ export class RoutingService {
    * @param {string} positionCode
    * @returns {Object} Full Sequential Routing Profile
    */
-  static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = '') {
-    const route = await RoutingService.resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode);
+  static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = '', options = {}) {
+    const route = await RoutingService.resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode, options);
     RoutingService.assertRequesterAuthorized(route, loginUserCode);
     return route;
   }

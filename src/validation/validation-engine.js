@@ -439,4 +439,221 @@ export class ValidationEngine {
     }
     return String(field).trim();
   }
+
+  /**
+   * Validates D3 App 794 bound route & provenance snapshot completeness (Fail-Closed)
+   * @param {Object} record App 794 record object
+   * @param {Object} options Optional validation context (e.g. employeeUserCode)
+   * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
+   */
+  static validateD3RouteProvenance(record, options = {}) {
+    const fieldErrors = [];
+
+    if (!record || typeof record !== 'object') {
+      fieldErrors.push({
+        field: 'RECORD',
+        messageTH: 'ไม่พบข้อมูล Record สำหรับตรวจสอบ D3 Provenance',
+        messageEN: 'Record data missing for D3 Provenance validation',
+        message: 'Record data missing for D3 Provenance validation'
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    const frozenProfile = this._val(record.Frozen_Profile_Code);
+    if (!frozenProfile) {
+      fieldErrors.push({
+        field: 'Frozen_Profile_Code',
+        messageTH: 'ไม่พบข้อมูล Frozen_Profile_Code',
+        messageEN: 'Frozen_Profile_Code is required',
+        message: 'Frozen_Profile_Code is required'
+      });
+    }
+
+    const kRaw = this._val(record.K_expected_Snapshot);
+    const kExpected = Number(kRaw);
+    if (!kRaw || (kExpected !== 1 && kExpected !== 2)) {
+      fieldErrors.push({
+        field: 'K_expected_Snapshot',
+        messageTH: 'K_expected_Snapshot ต้องเป็น 1 หรือ 2 เท่านั้น',
+        messageEN: 'K_expected_Snapshot must be exactly 1 or 2',
+        message: 'K_expected_Snapshot must be exactly 1 or 2'
+      });
+    }
+
+    const effectiveRoutingKey = this._val(record.Effective_Routing_Key);
+    if (!effectiveRoutingKey) {
+      fieldErrors.push({
+        field: 'Effective_Routing_Key',
+        messageTH: 'ไม่พบข้อมูล Effective_Routing_Key',
+        messageEN: 'Effective_Routing_Key is required',
+        message: 'Effective_Routing_Key is required'
+      });
+    }
+
+    const effectiveVersionKey = this._val(record.Effective_Route_Version_Key);
+    if (!effectiveVersionKey) {
+      fieldErrors.push({
+        field: 'Effective_Route_Version_Key',
+        messageTH: 'ไม่พบข้อมูล Effective_Route_Version_Key',
+        messageEN: 'Effective_Route_Version_Key is required',
+        message: 'Effective_Route_Version_Key is required'
+      });
+    }
+
+    const topology = this._val(record.Routing_Topology);
+    const validTopologies = ['M1_ONLY', 'M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
+    if (!topology || !validTopologies.includes(topology)) {
+      fieldErrors.push({
+        field: 'Routing_Topology',
+        messageTH: `รูปแบบเส้นทางการอนุมัติ "${topology || 'BLANK'}" ไม่ถูกต้อง`,
+        messageEN: `Routing topology "${topology || 'BLANK'}" is invalid`,
+        message: `Routing topology "${topology || 'BLANK'}" is invalid`
+      });
+    }
+
+    const slotDefinitions = {
+      M1_ONLY: ['M1'],
+      M1_G1: ['M1', 'G1'],
+      M1_M2_G1: ['M2', 'M1', 'G1'],
+      M1_G1_G2: ['M1', 'G1', 'G2'],
+      M1_M2_G1_G2: ['M2', 'M1', 'G1', 'G2']
+    };
+
+    const activeSlots = slotDefinitions[topology] || [];
+    if (activeSlots.length === 0) {
+      fieldErrors.push({
+        field: 'Routing_Topology',
+        messageTH: 'เส้นทางการอนุมัติไม่มีผู้อนุมัติที่รอดหลัง self-elision',
+        messageEN: 'No surviving workflow appraisers in routing topology',
+        message: 'No surviving workflow appraisers in routing topology'
+      });
+    }
+
+    const slotFields = {
+      M1: { users: 'Manager_Level1_Approvers', rule: 'Manager_Level1_Approval_Rule' },
+      M2: { users: 'Manager_Level2_Approvers', rule: 'Manager_Level2_Approval_Rule' },
+      G1: { users: 'GM_Level1_Approvers', rule: 'GM_Level1_Approval_Rule' },
+      G2: { users: 'GM_Level2_Approvers', rule: 'GM_Level2_Approval_Rule' }
+    };
+
+    const survivingApproverCodes = [];
+
+    for (const slotId of activeSlots) {
+      const { users: userField, rule: ruleField } = slotFields[slotId];
+      const rawUsers = record[userField]?.value !== undefined ? record[userField].value : record[userField];
+      const users = Array.isArray(rawUsers) ? rawUsers : [];
+      const rule = this._val(record[ruleField]) || 'ALL';
+
+      if (users.length !== 1) {
+        fieldErrors.push({
+          field: userField,
+          messageTH: `${userField} ต้องมีผู้ใช้งานคนเดียวใน D3 V1 (พบ ${users.length})`,
+          messageEN: `${userField} must contain exactly one user (found ${users.length})`,
+          message: `${userField} must contain exactly one user (found ${users.length})`
+        });
+      } else {
+        const u = users[0];
+        const uCode = String(u?.code || u?.value || u || '').trim();
+        if (!uCode) {
+          fieldErrors.push({
+            field: userField,
+            messageTH: `${userField} รหัสผู้ใช้งานต้องไม่ว่างเปล่า`,
+            messageEN: `${userField} user code cannot be blank`,
+            message: `${userField} user code cannot be blank`
+          });
+        } else {
+          survivingApproverCodes.push(uCode);
+        }
+      }
+
+      if (rule !== 'ALL') {
+        fieldErrors.push({
+          field: ruleField,
+          messageTH: `${ruleField} ต้องเป็น ALL ใน D3 V1 (พบ ${rule})`,
+          messageEN: `${ruleField} approval rule must be ALL (found ${rule})`,
+          message: `${ruleField} approval rule must be ALL (found ${rule})`
+        });
+      }
+    }
+
+    const scorerSlotsRaw = this._val(record.Effective_Scorer_Slots_Snapshot);
+    if (!scorerSlotsRaw) {
+      fieldErrors.push({
+        field: 'Effective_Scorer_Slots_Snapshot',
+        messageTH: 'ไม่พบข้อมูล Effective_Scorer_Slots_Snapshot',
+        messageEN: 'Effective_Scorer_Slots_Snapshot is required',
+        message: 'Effective_Scorer_Slots_Snapshot is required'
+      });
+    } else {
+      let parsedSlots;
+      try {
+        parsedSlots = JSON.parse(scorerSlotsRaw);
+      } catch {
+        fieldErrors.push({
+          field: 'Effective_Scorer_Slots_Snapshot',
+          messageTH: 'Effective_Scorer_Slots_Snapshot มีรูปแบบ JSON ไม่ถูกต้อง',
+          messageEN: 'Effective_Scorer_Slots_Snapshot contains malformed JSON',
+          message: 'Effective_Scorer_Slots_Snapshot contains malformed JSON'
+        });
+      }
+
+      if (Array.isArray(parsedSlots)) {
+        if (parsedSlots.length !== kExpected) {
+          fieldErrors.push({
+            field: 'Effective_Scorer_Slots_Snapshot',
+            messageTH: `จำนวน scorer slots (${parsedSlots.length}) ไม่ตรงกับ K_expected (${kExpected})`,
+            messageEN: `Scorer slots count (${parsedSlots.length}) does not match K_expected (${kExpected})`,
+            message: `Scorer slots count (${parsedSlots.length}) does not match K_expected (${kExpected})`
+          });
+        }
+
+        const uniqueSlots = new Set(parsedSlots);
+        if (uniqueSlots.size !== parsedSlots.length) {
+          fieldErrors.push({
+            field: 'Effective_Scorer_Slots_Snapshot',
+            messageTH: 'Scorer slots ต้องไม่ซ้ำกัน',
+            messageEN: 'Scorer slots must be unique',
+            message: 'Scorer slots must be unique'
+          });
+        }
+
+        const scorerUserCodes = [];
+        for (const ordinal of parsedSlots) {
+          if (!Number.isInteger(ordinal) || ordinal < 1 || ordinal > activeSlots.length) {
+            fieldErrors.push({
+              field: 'Effective_Scorer_Slots_Snapshot',
+              messageTH: `Scorer slot ordinal ${ordinal} ไม่ตรงกับเส้นทางที่รอด (${activeSlots.length} slots)`,
+              messageEN: `Scorer slot ordinal ${ordinal} does not reference surviving route (${activeSlots.length} slots)`,
+              message: `Scorer slot ordinal ${ordinal} does not reference surviving route (${activeSlots.length} slots)`
+            });
+          } else {
+            const approverCode = survivingApproverCodes[ordinal - 1];
+            if (approverCode) scorerUserCodes.push(approverCode);
+          }
+        }
+
+        if (kExpected === 2 && scorerUserCodes.length === 2 && scorerUserCodes[0] === scorerUserCodes[1]) {
+          fieldErrors.push({
+            field: 'Effective_Scorer_Slots_Snapshot',
+            messageTH: 'K=2 ต้องมีผู้ประเมิน 2 คนที่ไม่ซ้ำกัน',
+            messageEN: 'K=2 requires two distinct scorer identities',
+            message: 'K=2 requires two distinct scorer identities'
+          });
+        }
+
+        const targetEmpCode = String(options.employeeUserCode || this._val(record.Employee_Code) || '').trim();
+        if (targetEmpCode && scorerUserCodes.includes(targetEmpCode)) {
+          fieldErrors.push({
+            field: 'Effective_Scorer_Slots_Snapshot',
+            messageTH: 'พนักงานไม่สามารถประเมิน MBO ตนเองได้ (SELF_SCORING_CONFLICT)',
+            messageEN: 'Employee cannot score their own MBO (SELF_SCORING_CONFLICT)',
+            message: 'Employee cannot score their own MBO (SELF_SCORING_CONFLICT)'
+          });
+        }
+      }
+    }
+
+    return this._formatResult(fieldErrors);
+  }
 }
+

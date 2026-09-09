@@ -643,10 +643,17 @@ if (typeof kintone !== 'undefined') {
           empProfile.Employee_Section,
           empProfile.Team,
           kintoneApiWrapper,
-          empProfile.Employee_Position
+          empProfile.Employee_Position,
+          {
+            existingRecord: record,
+            employeeSnapshot: empProfile,
+            employeeUserCode: loginUserCode,
+            isOwnMbo: context.mode === 'DEDICATED',
+            ...(options.resolutionBusinessDate ? { resolutionBusinessDate: options.resolutionBusinessDate } : {})
+          }
         );
 
-        if (context.mode === 'DEDICATED') {
+        if (context.mode === 'DEDICATED' && !routeProfile.Effective_Route_Version_Key) {
           routeProfile = RoutingService.applyOwnMboSelfAppraiserElision(routeProfile, loginUserCode, true);
         }
 
@@ -741,6 +748,12 @@ if (typeof kintone !== 'undefined') {
           if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
         }
 
+        if (routing.Frozen_Profile_Code !== undefined) fieldsToSync.Frozen_Profile_Code = routing.Frozen_Profile_Code;
+        if (routing.K_expected_Snapshot !== undefined) fieldsToSync.K_expected_Snapshot = routing.K_expected_Snapshot;
+        if (routing.Effective_Routing_Key !== undefined) fieldsToSync.Effective_Routing_Key = routing.Effective_Routing_Key;
+        if (routing.Effective_Route_Version_Key !== undefined) fieldsToSync.Effective_Route_Version_Key = routing.Effective_Route_Version_Key;
+        if (routing.Effective_Scorer_Slots_Snapshot !== undefined) fieldsToSync.Effective_Scorer_Slots_Snapshot = routing.Effective_Scorer_Slots_Snapshot;
+
         const CORE_SNAPSHOT_FIELDS = [
           'Profile_Code',
           'PartA_Weight',
@@ -753,8 +766,26 @@ if (typeof kintone !== 'undefined') {
           'Record_Key'
         ];
 
+        const D3_PROVENANCE_FIELDS = [
+          'Frozen_Profile_Code',
+          'K_expected_Snapshot',
+          'Effective_Routing_Key',
+          'Effective_Route_Version_Key',
+          'Effective_Scorer_Slots_Snapshot'
+        ];
+
+        const isD3ProvenanceActive = Boolean(
+          routing.Effective_Route_Version_Key ||
+          routing.Frozen_Profile_Code ||
+          record.Effective_Route_Version_Key
+        );
+
+        const requiredSnapshotFields = isD3ProvenanceActive
+          ? [...CORE_SNAPSHOT_FIELDS, ...D3_PROVENANCE_FIELDS]
+          : CORE_SNAPSHOT_FIELDS;
+
         // Fail-closed if any required snapshot field is missing from form state schema
-        for (const fieldCode of CORE_SNAPSHOT_FIELDS) {
+        for (const fieldCode of requiredSnapshotFields) {
           if (!record[fieldCode]) {
             throw new Error(`ไม่พบช่องข้อมูล ${fieldCode} ในแบบฟอร์ม (App 794)\nField ${fieldCode} does not exist on Kintone form schema.`);
           }
@@ -770,7 +801,7 @@ if (typeof kintone !== 'undefined') {
         if (!isAutoloadingInCreateHandler) {
           syncRecordToKintone(record, {
             requireVerifiedPersistence: true,
-            requiredFields: CORE_SNAPSHOT_FIELDS
+            requiredFields: requiredSnapshotFields
           });
         }
       }
