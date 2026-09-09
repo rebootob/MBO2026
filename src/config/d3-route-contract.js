@@ -81,7 +81,7 @@ export function readD3String(value) {
 function normalizeUserIdentity(rawUser, fieldCode) {
   if (typeof rawUser === 'string') {
     const code = rawUser.trim();
-    if (!code) {
+    if (!code || rawUser !== code) {
       throw new D3RouteContractError(
         'INVALID_APPRAISER_IDENTITY',
         `Blank user identity in ${fieldCode}.`
@@ -91,8 +91,9 @@ function normalizeUserIdentity(rawUser, fieldCode) {
   }
 
   if (rawUser && typeof rawUser === 'object') {
-    const code = String(rawUser.code ?? rawUser.value ?? '').trim();
-    if (!code) {
+    const rawCode = String(rawUser.code ?? rawUser.value ?? '');
+    const code = rawCode.trim();
+    if (!code || rawCode !== code) {
       throw new D3RouteContractError(
         'INVALID_APPRAISER_IDENTITY',
         `Missing Kintone user code in ${fieldCode}.`
@@ -287,6 +288,32 @@ export function normalizeD3RouteVersion(routeVersion) {
     );
   }
 
+  const routingKey = readD3String(routeVersion.Routing_Key);
+  const versionKey = readD3String(routeVersion.Version_Key);
+  const versionNumberRaw = readD3String(routeVersion.Version_Number);
+  const versionNumber = Number(versionNumberRaw);
+
+  if (!routingKey) {
+    throw new D3RouteContractError(
+      'ROUTING_KEY_REQUIRED',
+      'Routing_Key is required for a D3 route version.'
+    );
+  }
+
+  if (!versionKey) {
+    throw new D3RouteContractError(
+      'INVALID_ROUTE_VERSION_IDENTITY',
+      'Version_Key is required for a D3 route version.'
+    );
+  }
+
+  if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+    throw new D3RouteContractError(
+      'INVALID_ROUTE_VERSION_NUMBER',
+      `Version_Number must be a positive integer, received ${versionNumberRaw || 'BLANK'}.`
+    );
+  }
+
   const businessSlots = sourceSlots.map((slotId, index) => {
     const def = D3_SLOT_DEFINITIONS[slotId];
     return {
@@ -301,9 +328,9 @@ export function normalizeD3RouteVersion(routeVersion) {
   });
 
   return {
-    routingKey: readD3String(routeVersion.Routing_Key),
-    versionKey: readD3String(routeVersion.Version_Key),
-    versionNumber: readD3String(routeVersion.Version_Number),
+    routingKey,
+    versionKey,
+    versionNumber,
     routePattern: pattern,
     topology,
     businessSlots
