@@ -21,7 +21,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline is revision 70. Closed work remains durable unless proven regression or Owner change request. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED** and is not equivalent to engineering closure. |
-| D3 | **ARCHITECTURE / DESIGN ACTIVE; IMPLEMENTATION NOT AUTHORIZED** | Routing/scoring/persistence architecture is locked through `OWNER_DEC_D3_008`. Implementation-readiness has not started. |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION-READINESS PLAN COMPLETE / IMPLEMENTATION NOT AUTHORIZED** | Routing/scoring/persistence architecture is locked through `OWNER_DEC_D3_008`. Evidence-grounded implementation sequencing is complete in `D3_IMPLEMENTATION_READINESS_PLAN.md`. No implementation package is active. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | Runtime/UAT activity exists but full business UAT closure is not established. |
@@ -46,11 +46,12 @@ PDF_XLSX_007 = OWNER-DEFERRED / NON-BLOCKING
 D2_OWNER_UAT = IN PROGRESS / PAUSED
 ```
 
-## D3 architecture checkpoint
+## D3 architecture & readiness checkpoint
 
 ```text
 D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / IMPLEMENTATION_READINESS_NOT_STARTED
+D3_IMPLEMENTATION_READINESS_PLAN = PASS / CLOSED
+D3_READINESS = IMPLEMENTATION_READINESS_PLAN_COMPLETE / IMPLEMENTATION_NOT_STARTED
 D3_IMPLEMENTATION_AUTHORIZED = NO
 
 DECISION_D3_001 = LOCKED / OWNER APPROVED
@@ -68,7 +69,17 @@ Primary D3-008 value:
 HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
 ```
 
-Exact architecture details are routed by `project-docs/AI_DOCUMENT_INDEX.md` and are intentionally not duplicated here.
+Implementation sequencing authority:
+
+`project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md`
+
+Recommended first future gate:
+
+```text
+D3-IMP-01 = LOCAL CORE ROUTING / SCORER / SNAPSHOT CONTRACTS + TESTS ONLY
+```
+
+This is a recommendation only; it is not currently authorized.
 
 ## Current authorization boundary
 
@@ -80,7 +91,9 @@ APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
 APP798_BEHAVIOR_IMPLEMENTATION_AUTHORIZED = NO
 SOURCE_CODE_CHANGES_AUTHORIZED = NO
 TEST_CHANGES_AUTHORIZED = NO
+BUILD_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
+KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 ```
