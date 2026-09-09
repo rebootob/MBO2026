@@ -13,12 +13,15 @@ CANONICAL_BRANCH = ai/antigravity-wp002c
 CONTROL_MODEL = MBO CONTROL TRUTH V3
 
 ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-01
+LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-02
 LAST_CLOSED_CONTROL_PACKAGE_STATUS = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+LAST_REVIEWED_IMPLEMENTATION_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
 
 D3_IMPLEMENTATION_READINESS_PLAN = COMPLETE
 D3_IMP_01 = PASS / CLOSED
-D3_IMP_01_VERIFY = SUFFICIENT EVIDENCE FOR PACKAGE CLOSURE / PRE-EXISTING LEGACY FULL-SUITE NON-EXIT DOCUMENTED
+D3_IMP_02 = PASS / CLOSED
+D3_IMP_02_R2 = PASS / CLOSED
+
 D3_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
 APP794_FIELD_CREATION_AUTHORIZED = NO
 APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
@@ -30,7 +33,7 @@ KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 
-NEXT_RECOMMENDED_GATE = D3-IMP-02
+NEXT_RECOMMENDED_GATE = D3-IMP-03
 NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
@@ -41,7 +44,7 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 |---|---|
 | D1 | **PASS / CLOSED / DURABLE**; accepted live App794 revision 70 |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE**; Owner runtime UAT **IN PROGRESS / PAUSED** |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan complete; `D3-IMP-01` **PASS / CLOSED**; no current implementation package authorized |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan, `D3-IMP-01`, and `D3-IMP-02` are **PASS / CLOSED**; no current package authorized |
 | D4 | **IN PROGRESS / NOT ACTIVE** |
 | D5 | **IN PROGRESS / NOT ACTIVE** |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** |
@@ -95,32 +98,50 @@ APP800 = HR CONTROL / ADMINISTRATIVE UI ONLY
 OLD_STAGE_SPECIFIC_SIX_SLOT_NATIVE_MODEL_D3_V1 = SUPERSEDED WHERE CONFLICTING
 ```
 
-Exact architecture and implementation sequence: `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md`.
-
 ## 4. D3 implementation package status
 
 ```text
 D3-IMPLEMENTATION-READINESS-PLAN = PASS / CLOSED
 D3-IMP-01 = PASS / CLOSED
 D3-IMP-01_FINAL_REVIEW_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
-D3-IMP-01_SCOPE_LEAK = NONE FOUND
-D3-IMP-01_KINTONE_READS = 0
-D3-IMP-01_KINTONE_WRITES = 0
-D3-IMP-01_SCHEMA_WRITES = 0
-D3-IMP-01_PROCESS_WRITES = 0
-D3-IMP-01_DEPLOYMENTS = 0
+
+D3-IMP-02 = PASS / CLOSED
+D3-IMP-02-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3-IMP-02-R2 = PASS / CLOSED
+D3-IMP-02_FINAL_REVIEW_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
+D3-IMP-02_SCOPE_LEAK = NONE FOUND
+D3-IMP-02_KINTONE_READS = 0
+D3-IMP-02_KINTONE_WRITES = 0
+D3-IMP-02_NETWORK_CALLS = 0
+D3-IMP-02_SCHEMA_LIVE_WRITES = 0
+D3-IMP-02_PROCESS_WRITES = 0
+D3-IMP-02_DATA_BACKFILL = 0
+D3-IMP-02_DEPLOYMENTS = 0
 ```
 
-Independent review accepted the package because the D3-focused suites and exact integration spot-checks completed successfully and the changed-file boundary remained entirely inside the authorized D3-IMP-01 allow-list.
+Accepted D3-IMP-02 capability:
+- local App795/App794 target schema contract;
+- App798 zero-new-field assertion;
+- explicit-HR scorer seed planning with fail-closed behavior;
+- deterministic current-schema migration planning for missing, compatible, safely-correctable and incompatible field states;
+- strict route-version record readiness validation;
+- guarded dry-run/read-back/rollback planning with live writes disabled.
 
-The repository-wide `npm test` run did **not** produce a normal final summary because the Node test process remained alive in the pre-existing legacy `tests/create-handler-form-state.test.js` path after preceding assertions completed. This file was not changed by D3-IMP-01 and predates the package. Diagnostic spot-checks confirmed `mbo-export-service` import exits normally and its focused service tests pass. Therefore this legacy harness non-exit is recorded as a pre-existing test-harness limitation, not as a D3-IMP-01 implementation regression. Do not rewrite history as `FULL_NPM_TEST = PASS`.
+Verification evidence recorded by execution and accepted by independent source/diff review:
+
+```text
+R2_SCHEMA_AND_MIGRATION_TESTS = 68 / 68 PASS
+R2_COMBINED_D3_TESTS = 108 / 108 PASS
+```
+
+The pre-existing repository-wide Node test-harness non-exit remains documented from D3-IMP-01 and is not rewritten as a full-suite PASS.
 
 ## 5. Recommended sequence
 
 ```text
 D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests       PASS / CLOSED
-D3-IMP-02 Local Schema Target + Guarded Migration Tooling                NEXT RECOMMENDED / NOT AUTHORIZED
-D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration  NOT AUTHORIZED
+D3-IMP-02 Local Schema Target + Guarded Migration Tooling                PASS / CLOSED
+D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration  NEXT RECOMMENDED / NOT AUTHORIZED
 D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service           NOT AUTHORIZED
 D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only     NOT AUTHORIZED
 D3-IMP-06 App800 HR Versioned Routing Self-Service                       NOT AUTHORIZED
