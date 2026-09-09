@@ -790,3 +790,100 @@ export function assertScoringConfigRecordWriteAuthorization(authConfig, requestC
   consumedAuthorizationIds.add(authConfig.authorizationId);
   return true;
 }
+
+export const D3_ROUTING_SCHEMA_MIGRATION_STAGE = 'STAGE_D3_SCHEMA_MIGRATION';
+export const D3_ROUTING_SCHEMA_MIGRATION_OPERATION = 'D3_ROUTING_SCHEMA_MIGRATE';
+export const D3_ROUTING_MASTER_APP_ID = 795;
+export const D3_SCHEMA_WRITE_LOCKED = true;
+
+const consumedD3SchemaAuthorizationIds = new Set();
+
+/**
+ * Narrow authorization guard for D3 Routing Schema Migration (App 795).
+ * Validates:
+ * - Fail-closed on missing/corrupted configs
+ * - Permanent protected apps hard-blocked
+ * - Target App ID must be exactly 795
+ * - Work package, stage, and operation validation
+ * - Active window and explicit user authorization
+ * - Non-empty single-use authorization ID
+ * - Structured pre-write backup evidence (captured, verified, 64-char sha256)
+ * - Expected schema revision
+ * - In D3-IMP-02: Write execution is strictly disabled (D3_SCHEMA_WRITE_LOCKED)
+ */
+export function assertD3RoutingSchemaMigrationAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED (FAIL-CLOSED): Missing or corrupted authorization/request configuration.');
+  }
+
+  const reqAppId = requestConfig.appId ?? requestConfig.targetAppId;
+  const authAppId = authConfig.appId;
+
+  if (PROTECTED_APP_IDS.includes(reqAppId) || PROTECTED_APP_IDS.includes(authAppId)) {
+    const blockedApp = PROTECTED_APP_IDS.includes(reqAppId) ? reqAppId : authAppId;
+    throw new Error(`WRITE BLOCKED: App ${blockedApp} is a permanent PROTECTED PRODUCTION APP and cannot be modified.`);
+  }
+
+  if (reqAppId !== D3_ROUTING_MASTER_APP_ID || authAppId !== D3_ROUTING_MASTER_APP_ID) {
+    throw new Error(`D3_SCHEMA_MIGRATION_BLOCKED: Target App ID must be exactly ${D3_ROUTING_MASTER_APP_ID}.`);
+  }
+
+  if (authConfig.workPackageId !== 'D3-IMP-02' && authConfig.workPackageId !== 'D3-MIGRATE') {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Work package identity mismatch.');
+  }
+
+  if (authConfig.stage !== D3_ROUTING_SCHEMA_MIGRATION_STAGE || requestConfig.stage !== D3_ROUTING_SCHEMA_MIGRATION_STAGE) {
+    throw new Error(`D3_SCHEMA_MIGRATION_BLOCKED: Stage must be exactly ${D3_ROUTING_SCHEMA_MIGRATION_STAGE}.`);
+  }
+
+  if (authConfig.operation !== D3_ROUTING_SCHEMA_MIGRATION_OPERATION || requestConfig.operation !== D3_ROUTING_SCHEMA_MIGRATION_OPERATION) {
+    throw new Error(`D3_SCHEMA_MIGRATION_BLOCKED: Operation must be exactly ${D3_ROUTING_SCHEMA_MIGRATION_OPERATION}.`);
+  }
+
+  if (authConfig.activeWindow !== true) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: One-time write window is CLOSED.');
+  }
+
+  if (authConfig.explicitUserAuthorization !== true) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Explicit user authorization is required.');
+  }
+
+  const authorizationId = authConfig.authorizationId;
+  if (typeof authorizationId !== 'string' || authorizationId.trim() === '') {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: A non-empty authorization ID is required.');
+  }
+
+  if (consumedD3SchemaAuthorizationIds.has(authorizationId)) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Authorization has already been consumed.');
+  }
+
+  // Backup evidence check
+  const backup = authConfig.backupEvidence;
+  if (!backup || typeof backup !== 'object' || Array.isArray(backup)) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Structured backup evidence object is required.');
+  }
+  if (backup.appId !== D3_ROUTING_MASTER_APP_ID) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Backup App ID mismatch.');
+  }
+  if (backup.captured !== true || backup.verified !== true) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Backup must be captured and verified.');
+  }
+  if (typeof backup.sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(backup.sha256)) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Backup sha256 must be 64-char lowercase hex string.');
+  }
+
+  // Revision guard
+  const rev = requestConfig.expectedRevision;
+  if (rev === undefined || rev === null || !Number.isInteger(Number(rev)) || Number(rev) < 1) {
+    throw new Error('D3_SCHEMA_MIGRATION_BLOCKED: Valid expected revision integer is required.');
+  }
+
+  // In D3-IMP-02: Write execution is strictly disabled
+  if (D3_SCHEMA_WRITE_LOCKED) {
+    throw new Error('D3_SCHEMA_WRITE_LOCKED: Real Kintone write execution is strictly disabled in D3-IMP-02.');
+  }
+
+  consumedD3SchemaAuthorizationIds.add(authorizationId);
+  return true;
+}
+

@@ -1,7 +1,7 @@
 const text = (label, options = {}) => ({ type: 'SINGLE_LINE_TEXT', label, required: false, unique: false, defaultValue: '', ...options });
 const area = (label, options = {}) => ({ type: 'MULTI_LINE_TEXT', label, required: false, defaultValue: '', ...options });
 const user = (label, required = false) => ({ type: 'USER_SELECT', label, required, defaultValue: [], entities: [] });
-const date = (label) => ({ type: 'DATE', label, required: false, defaultValue: '' });
+const date = (label, options = {}) => ({ type: 'DATE', label, required: false, defaultValue: '', ...options });
 const datetime = (label, options = {}) => ({ type: 'DATETIME', label, required: false, defaultValue: '', ...options });
 const number = (label, options = {}) => ({ type: 'NUMBER', label, required: false, unique: false, minValue: '', maxValue: '', defaultValue: '', ...options });
 const file = (label) => ({ type: 'FILE', label, required: false });
@@ -12,8 +12,29 @@ const approvalRuleOptions = {
   ANY: { label: 'ANY', index: '1' }
 };
 
+export const versionStatusOptions = {
+  DRAFT: { label: 'DRAFT', index: '0' },
+  ACTIVE: { label: 'ACTIVE', index: '1' },
+  CANCELLED: { label: 'CANCELLED', index: '2' },
+  SUPERSEDED: { label: 'SUPERSEDED', index: '3' }
+};
+
+export const routePatternOptions = {
+  PATTERN_1_M1: { label: 'PATTERN_1_M1', index: '0' },
+  PATTERN_2_M1_G1: { label: 'PATTERN_2_M1_G1', index: '1' },
+  PATTERN_3A_M2_M1_G1: { label: 'PATTERN_3A_M2_M1_G1', index: '2' },
+  PATTERN_3B_M1_G1_G2: { label: 'PATTERN_3B_M1_G1_G2', index: '3' },
+  PATTERN_4_M2_M1_G1_G2: { label: 'PATTERN_4_M2_M1_G1_G2', index: '4' }
+};
+
 export const routingFields = {
-  Routing_Key: text('Routing Key', { required: true, unique: true }),
+  // Model A Effective-Dated Target Fields
+  Routing_Key: text('Routing Key', { required: true, unique: false }),
+  Version_Key: text('Version Key', { required: true, unique: true }),
+  Version_Number: number('Version Number', { required: true, minValue: '1' }),
+  Version_Status: { type: 'DROP_DOWN', label: 'Version Status', required: true, defaultValue: 'DRAFT', options: versionStatusOptions },
+  Route_Pattern: { type: 'DROP_DOWN', label: 'Route Pattern', required: true, defaultValue: 'PATTERN_2_M1_G1', options: routePatternOptions },
+  Scorer_Priority_Slots: text('Scorer Priority Slots', { required: true }),
   Team: text('Team Name'),
   Section_Code: text('Section Code', { required: true, unique: false }),
   Section_Name: text('Section Name', { required: true }),
@@ -31,8 +52,8 @@ export const routingFields = {
 
   // Metadata & Status
   Active: { type: 'RADIO_BUTTON', label: 'Active', required: true, defaultValue: 'Active', options: { Active: { label: 'Active', index: '0' }, Inactive: { label: 'Inactive', index: '1' } } },
-  Effective_From: date('Effective From'),
-  Effective_To: date('Effective To'),
+  Effective_From: date('Effective From', { required: true }),
+  Effective_To: date('Effective To', { required: false }),
   Remark: area('Remark'),
 
   // [DEPRECATED] Legacy Routing Model (To be removed after full workflow transition)
@@ -62,6 +83,13 @@ export const mboFields = {
   Employee_Position: text('Employee Position'), Employee_Email: text('Employee Email'),
   Employee_Start_Date: date('Employee Start Date'), Department_Hoshin: area('Department Hoshin'), Section_Hoshin: area('Section Hoshin'),
   
+  // D3-008 Target Provenance Fields
+  Frozen_Profile_Code: text('Frozen Profile Code', { required: true }),
+  K_expected_Snapshot: number('K expected Snapshot', { required: true, minValue: '1', maxValue: '2' }),
+  Effective_Routing_Key: text('Effective Routing Key', { required: true }),
+  Effective_Route_Version_Key: text('Effective Route Version Key', { required: true }),
+  Effective_Scorer_Slots_Snapshot: text('Effective Scorer Slots Snapshot', { required: true }),
+
   // Target Sequential Routing Snapshot
   Requester_User: user('Requester User', true),
   Manager_Level1_Approvers: user('Manager Level 1 Approvers'),
