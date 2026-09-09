@@ -6,6 +6,21 @@ import { BUSINESS_STAGES } from '../config/constants.js';
 
 export const D3_PROCESS_CAPABILITY_ID = 'D3_V1_19_STATE_40_ACTION';
 
+export const D3_ACTIVE_ROUTE_SLOTS = {
+  M1_ONLY: ['M1'],
+  M1_G1: ['M1', 'G1'],
+  M1_M2_G1: ['M2', 'M1', 'G1'],
+  M1_G1_G2: ['M1', 'G1', 'G2'],
+  M1_M2_G1_G2: ['M2', 'M1', 'G1', 'G2']
+};
+
+export const D3_SLOT_FIELD_MAP = {
+  M2: { approverField: 'Manager_Level2_Approvers', ruleField: 'Manager_Level2_Approval_Rule' },
+  M1: { approverField: 'Manager_Level1_Approvers', ruleField: 'Manager_Level1_Approval_Rule' },
+  G1: { approverField: 'GM_Level1_Approvers', ruleField: 'GM_Level1_Approval_Rule' },
+  G2: { approverField: 'GM_Level2_Approvers', ruleField: 'GM_Level2_Approval_Rule' }
+};
+
 export class ValidationEngine {
   /**
    * Validate record against stage business rules
@@ -520,33 +535,63 @@ export class ValidationEngine {
 
     const getApprovalRule = (code) => {
       const field = record[code];
-      if (!field) return '';
-      if (typeof field === 'object' && field !== null && 'value' in field) {
+      if (field === null || field === undefined) return '';
+      if (typeof field === 'object' && 'value' in field) {
         if (typeof field.value === 'object' && field.value !== null && 'value' in field.value) {
-          return String(field.value.value || '').trim();
+          return String(field.value.value ?? '');
         }
-        return String(field.value || '').trim();
+        return String(field.value ?? '');
       }
-      return String(field).trim();
+      return String(field);
     };
 
+    const validatedSlots = new Set();
     const validateD3Slot = (approverField, ruleField) => {
-      const users = getApproverUsers(approverField);
-      const count = users.length;
-      if (count === 0) {
+      if (validatedSlots.has(approverField)) return;
+      validatedSlots.add(approverField);
+
+      const rawField = record[approverField];
+      let isArray = false;
+      let users = [];
+
+      if (rawField && Array.isArray(rawField.value)) {
+        isArray = true;
+        users = rawField.value;
+      } else if (Array.isArray(rawField)) {
+        isArray = true;
+        users = rawField;
+      }
+
+      if (!isArray || users.length === 0) {
         fieldErrors.push({
           field: approverField,
           messageTH: `ไม่พบข้อมูลผู้อนุมัติ ${approverField}`,
           messageEN: `${approverField} is empty.`,
           message: `ไม่พบข้อมูลผู้อนุมัติ ${approverField}\n${approverField} is empty.`
         });
-      } else if (count > 1) {
+      } else if (users.length > 1) {
         fieldErrors.push({
           field: approverField,
-          messageTH: `จำนวนผู้อนุมัติ ${approverField} ต้องมีเพียง 1 คน (พบ ${count} คน)`,
-          messageEN: `${approverField} must have exactly 1 user (found ${count}).`,
-          message: `จำนวนผู้อนุมัติ ${approverField} ต้องมีเพียง 1 คน (พบ ${count} คน)\n${approverField} must have exactly 1 user (found ${count}).`
+          messageTH: `จำนวนผู้อนุมัติ ${approverField} ต้องมีเพียง 1 คน (พบ ${users.length} คน)`,
+          messageEN: `${approverField} must have exactly 1 user (found ${users.length}).`,
+          message: `จำนวนผู้อนุมัติ ${approverField} ต้องมีเพียง 1 คน (พบ ${users.length} คน)\n${approverField} must have exactly 1 user (found ${users.length}).`
         });
+      } else {
+        const user = users[0];
+        const isObject = typeof user === 'object' && user !== null && !Array.isArray(user);
+        const code = isObject ? user.code : undefined;
+        const isString = typeof code === 'string';
+        const isNonEmpty = isString && code.length > 0;
+        const isNotWhitespace = isString && code.trim().length > 0;
+
+        if (!isObject || !isString || !isNonEmpty || !isNotWhitespace) {
+          fieldErrors.push({
+            field: approverField,
+            messageTH: `ข้อมูลผู้อนุมัติใน ${approverField} ไม่ถูกต้อง ต้องระบุรหัสผู้ใช้ Kintone ที่ถูกต้อง (EXACT USER IDENTITY INVARIANT)`,
+            messageEN: `${approverField} must contain a valid Kintone user object with exact non-empty code string.`,
+            message: `ข้อมูลผู้อนุมัติใน ${approverField} ไม่ถูกต้อง ต้องระบุรหัสผู้ใช้ Kintone ที่ถูกต้อง (EXACT USER IDENTITY INVARIANT)\n${approverField} must contain a valid Kintone user object with exact non-empty code string.`
+          });
+        }
       }
 
       const rule = getApprovalRule(ruleField);
@@ -559,6 +604,40 @@ export class ValidationEngine {
         });
       }
     };
+
+    // 3. Full Active-Route Slot Integrity Preflight
+    const activeSlots = D3_ACTIVE_ROUTE_SLOTS[topology] || [];
+    for (const slotKey of activeSlots) {
+      const { approverField, ruleField } = D3_SLOT_FIELD_MAP[slotKey];
+      validateD3Slot(approverField, ruleField);
+    }
+
+    // Sequential Appraiser Identity Distinctness Check across active slots
+    const seenUserCodes = new Map();
+    for (const slotKey of activeSlots) {
+      const { approverField } = D3_SLOT_FIELD_MAP[slotKey];
+      const rawField = record[approverField];
+      const users = (rawField && Array.isArray(rawField.value))
+        ? rawField.value
+        : (Array.isArray(rawField) ? rawField : []);
+      if (users.length === 1) {
+        const u = users[0];
+        if (typeof u === 'object' && u !== null && !Array.isArray(u) && typeof u.code === 'string' && u.code.trim().length > 0) {
+          const code = u.code;
+          if (seenUserCodes.has(code)) {
+            const priorSlot = seenUserCodes.get(code);
+            fieldErrors.push({
+              field: approverField,
+              messageTH: `พบผู้อนุมัติ ${code} ซ้ำกันในตำแหน่ง ${priorSlot} และ ${slotKey} (DISTINCT APPRAISER INVARIANT)`,
+              messageEN: `Duplicate appraiser user "${code}" in active route slots (${priorSlot} and ${slotKey}).`,
+              message: `พบผู้อนุมัติ ${code} ซ้ำกันในตำแหน่ง ${priorSlot} และ ${slotKey} (DISTINCT APPRAISER INVARIANT)\nDuplicate appraiser user "${code}" in active route slots (${priorSlot} and ${slotKey}).`
+            });
+          } else {
+            seenUserCodes.set(code, slotKey);
+          }
+        }
+      }
+    }
 
     const requesterUsers = getApproverUsers('Requester_User');
     const hasRequester = requesterUsers.length > 0;
