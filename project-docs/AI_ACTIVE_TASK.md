@@ -2,63 +2,40 @@
 
 Updated: 2026-09-09 ICT
 
-> Convenience execution/review handoff view. Exact authorization remains governed by Owner decisions plus `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` and newer accepted evidence.
-> Latest compact handoff evidence: `project-docs/MBO2026_CONTINUATION_CHECKPOINT_2026-09-09.md`.
+> Convenience execution/review handoff view only. Exact current authority remains governed by the latest Owner decision, `project-docs/AI_CONTROL_CENTER.md`, and `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`.
 
 ## Current task state
 
 ```text
-CURRENT_WORK_PACKAGE = D3-IMP-06
-TITLE = App800 HR Versioned Routing Self-Service
-OWNER_AUTHORIZED = YES
-EXECUTION_COMPLETE = YES
-INDEPENDENT_CONTROL_PLANE_REVIEW = COMPLETE
-CURRENT_VERDICT = PARTIAL PASS / CORRECTIVE REQUIRED
-D3-IMP-06_CLOSED = NO
-D3-IMP-06_EXECUTION_EVIDENCE_HEAD = e05b1bdafbd3e68d82646ad7e7d61f8ebe634396
+CURRENT_WORK_PACKAGE = NONE
+CURRENT_EXECUTION = NONE
 
-NEXT_PROPOSED_GATE = D3-IMP-06-R1
-NEXT_PROPOSED_TITLE = Fail-Closed HR Routing Authority + Canonical Sequence + Revision-Guarded Integration Corrective
-D3-IMP-06-R1_AUTHORIZED = NO
-NEXT_ACTION = WAIT FOR EXPLICIT OWNER AUTHORIZATION OR OWNER CHANGE/REJECTION OF THE PROPOSED CORRECTIVE
+LAST_CLOSED_SUBSTANTIVE_PACKAGE = D3-IMP-06
+LAST_CLOSED_CORRECTIVE = D3-IMP-06-R1
+LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-06-R1-CLOSE
+LAST_REVIEWED_SUBSTANTIVE_HEAD = 64a4f80288aa03b01078a4d60bee59dac9924665
+
+D3-IMP-06 = PASS / CLOSED
+D3-IMP-06-R1 = PASS / CLOSED
+D3-IMP-06-R1-C1-T1-R2 = PASS / CLOSED
+
+NEXT_RECOMMENDED_GATE = D3-PREFLIGHT-READONLY
+NEXT_GATE_AUTHORIZED = NO
+NEXT_ACTION = WAIT FOR EXPLICIT OWNER SELECTION/AUTHORIZATION
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
 D3-PREFLIGHT-READONLY = NOT AUTHORIZED
 DEPLOYMENT_AUTHORIZED = NO
-KINTONE_READS_AUTHORIZED = NO BY CURRENT PACKAGE
-KINTONE_WRITES_AUTHORIZED = NO
+KINTONE_READS_AUTHORIZED = NONE
+KINTONE_WRITES_AUTHORIZED = NONE
+PROCESS_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## Closed D3 package chain
+## D3-IMP-06/R1 final accepted state
 
-```text
-D3-IMP-01 = PASS / CLOSED
-D3-IMP-02 = PASS / CLOSED
-D3-IMP-02-R2 = PASS / CLOSED
-D3-IMP-03 = PASS / CLOSED
-D3-IMP-03-R2 = PASS / CLOSED
-D3-IMP-04 = PASS / CLOSED
-D3-IMP-04-R2 = PASS / CLOSED
-D3-IMP-05 = PASS / CLOSED
-D3-IMP-05-R1 = PASS / CLOSED
-```
-
-## D3-IMP-06 accepted portions
-
-```text
-ROLE_SEPARATION = ACCEPTED
-HR_BUSINESS_AUTHORITY = ACCEPTED
-ADMIN_FORM_TECHNICAL_AUTHORITY = ACCEPTED
-SERVICE_LAYER_HR_GUARD = ACCEPTED
-LOCAL_ONLY_BOUNDARY = ACCEPTED
-VERSION_KEY_BASE_FORMAT = ACCEPTED
-REMARK_FIELD_AUTHORITY = ACCEPTED
-ZERO_KINTONE_EXECUTION = ACCEPTED
-```
-
-Role model:
+Role model retained:
 
 ```text
 APP800_ACCESS = hr OR admin-form
@@ -69,48 +46,43 @@ DUAL_ROLE = UNION
 HISTORICAL_ROUTE_DELETE = NEVER
 ```
 
-## D3-IMP-06 independent review findings
+All six original independent-review findings are closed:
 
-One bounded corrective must close all of these together:
+1. canonical M2-first sequence;
+2. explicit fail-closed K/scorer/process authority;
+3. explicit version-history completeness / exact existing version context;
+4. revision-guarded same-key supersession;
+5. real UI-to-service API integration with exact principal propagation;
+6. unauthorized dist artifact restored.
 
-1. Canonical M2 route sequence in App800/UI must be `M2 -> M1 -> G1` and `M2 -> M1 -> G1 -> G2`, not M1-first.
-2. Remove implicit/default `K_expected`, scorer plan and process capability behavior; missing authority must fail closed.
-3. Require explicit proof that supplied App795 version history for the exact Routing_Key is complete before deriving `max + 1` / first version.
-4. Supersession must compare both supplied expected revisions against actual `$revision` values and reject stale revisions; active and new versions must share the exact Routing_Key.
-5. Align UI event binder method names/arguments with the real HR routing management service API and propagate the explicit principal through preview/validate paths.
-6. Restore unauthorized `dist/hr-control-center-bundle.js` change to the D3-IMP-06 starting-head version; no build/deployment artifact update is authorized.
+Additional C1/T1/R2 evidence closure retained fail-closed semantics while aligning stale regression fixtures and adding a deterministic **test-only** business-date seam whose default remains `null`.
 
-Full evidence and reasoning:
-
-`project-docs/MBO2026_CONTINUATION_CHECKPOINT_2026-09-09.md`
-
-## Proposed authorization wording — NOT an authorization
+## Accepted local evidence
 
 ```text
-อนุมัติ D3-IMP-06-R1 Fail-Closed HR Routing Authority + Canonical Sequence + Revision-Guarded Integration Corrective แบบ LOCAL-ONLY / ZERO KINTONE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
+OBJECTIVE_SAVE_VALIDATION = 39 / 39 PASS
+HR_ROUTING_TARGETED_REGRESSION = 130 / 130 PASS
+CREATE_HANDLER_FORM_STATE = 2 / 2 PASS / CLEAN EXIT
+EMPLOYEE_MAIN_MBO_APP_INTEGRATION = 4 / 4 PASS / CLEAN EXIT
+INDIVIDUAL_REPOSITORY_TEST_FILE_MATRIX = 78 / 78 FILES PASS / CLEAN EXIT
+NPM_TEST_AGGREGATE = NODE HARNESS NON-EXIT / NOT USED AS FULL-SUITE PASS CLAIM
 ```
 
-Do not execute merely because this text exists.
+Execution remained fully local:
 
-## Current authority routing
-
-1. Latest explicit Owner decision.
-2. Accepted concrete Git/Kintone/runtime evidence.
-3. `project-docs/MBO2026_CONTINUATION_CHECKPOINT_2026-09-09.md` for the latest D3-IMP-06 review handoff evidence.
-4. `project-docs/AI_CONTROL_CENTER.md`.
-5. `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`.
-6. `project-docs/control/00_MASTER_DELIVERY_CONTROL.md`.
-7. `project-docs/AI_DOCUMENT_INDEX.md`.
-8. `project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md`.
-
-If older control wording conflicts with the newer Owner authorization or the accepted D3-IMP-06 review evidence, do not guess: fresh-fetch exact Git evidence, use authority precedence, and perform only a bounded documentation consistency sync if needed.
+```text
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+PROCESS_READS = 0
+PROCESS_WRITES = 0
+SCHEMA_LIVE_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+```
 
 ## Permanent boundary
 
-```text
-D3-IMP-06-R1_AUTHORIZED = NO
-D3-PREFLIGHT-READONLY_AUTHORIZED = NO
-DEPLOYMENT_AUTHORIZED = NO
-KINTONE_WRITES_AUTHORIZED = NO
-PRODUCTION_READY = NO
-```
+No current package authorizes source changes, test changes, build output, live schema/configuration changes, Kintone reads/writes, Process Management writes, migration, deployment, UAT execution or production cutover.
+
+`D3-PREFLIGHT-READONLY` is only the next recommended gate in the readiness sequence. It must not start without a fresh explicit Owner authorization.

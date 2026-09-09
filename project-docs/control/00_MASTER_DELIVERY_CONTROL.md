@@ -19,9 +19,9 @@ PRODUCTION_READY = NO
 
 | Stage | Status | Delivery meaning |
 |---|---|---|
-| D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline is revision 70. Closed work remains durable unless proven regression or Owner change request. |
-| D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED** and is not equivalent to engineering closure. |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Architecture is locked through `OWNER_DEC_D3_008`; readiness plan plus `D3-IMP-01` through `D3-IMP-05` are **PASS / CLOSED**; no current implementation package is authorized; live business-date provider remains a deployment blocker. |
+| D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline remains revision 70. |
+| D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED**. |
+| D3 | **ARCHITECTURE LOCKED / LOCAL IMPLEMENTATION THROUGH D3-IMP-06 PASS / CLOSED** | D3-IMP-01 through D3-IMP-06 are closed. No live preflight, schema migration, deployment or production package is authorized. `LIVE_BUSINESS_DATE_PROVIDER` remains a deployment blocker. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | Runtime/UAT activity exists but full business UAT closure is not established. |
@@ -46,180 +46,53 @@ PDF_XLSX_007 = OWNER-DEFERRED / NON-BLOCKING
 D2_OWNER_UAT = IN PROGRESS / PAUSED
 ```
 
-## D3 architecture & implementation checkpoint
+## D3 architecture and implementation checkpoint
 
 ```text
 D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
 D3_IMPLEMENTATION_READINESS_PLAN = PASS / CLOSED
+
 D3-IMP-01 = PASS / CLOSED
-D3-IMP-01_FINAL_REVIEW_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
 D3-IMP-02 = PASS / CLOSED
 D3-IMP-02-R2 = PASS / CLOSED
-D3-IMP-02_FINAL_REVIEW_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
 D3-IMP-03 = PASS / CLOSED
-D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-03-R2 = PASS / CLOSED
-D3-IMP-03_FINAL_REVIEW_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
 D3-IMP-04 = PASS / CLOSED
-D3-IMP-04-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-04-R2 = PASS / CLOSED
-D3-IMP-04_FINAL_REVIEW_HEAD = 077acd29534d28523b349aee7edc4d4a0148122a
-D3-IMP-04_FINAL_EVIDENCE_HEAD = d803ae60b42d97cde070d4efef41d5a2c8f836af
 D3-IMP-05 = PASS / CLOSED
 D3-IMP-05-R1 = PASS / CLOSED
-D3-IMP-05_FINAL_REVIEWED_IMPLEMENTATION_HEAD = 556165b8d467444d70c275ed388bfed2508010c9
-D3-IMP-05_FINAL_REVIEWED_EVIDENCE_HEAD = 077da72c4147993333c6cb3c8a77d661abf0ebe3
-D3_IMPLEMENTATION_MODE = BOUNDED PACKAGE AUTHORIZATION ONLY
+D3-IMP-06 = PASS / CLOSED
+D3-IMP-06-R1 = PASS / CLOSED
+
+D3_IMP_06_FINAL_REVIEWED_SUBSTANTIVE_HEAD = 64a4f80288aa03b01078a4d60bee59dac9924665
 CURRENT_D3_IMPLEMENTATION_PACKAGE = NONE
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
-
-DECISION_D3_001 = LOCKED / OWNER APPROVED
-DECISION_D3_002 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_003 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_005 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_006 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_007 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
 ```
 
-Primary D3-008 value:
+Primary D3-008 value remains:
 
 ```text
 HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
 ```
 
-### D3-IMP-01 delivered capability
-
-Local-only pure contracts now exist for:
-- Model A effective-dated App795 route-version selection;
-- canonical route normalization for all five D3 V1 topologies;
-- exact one-user-per-active-slot and ALL-only D3 validation;
-- own-MBO self-elision and deterministic compaction;
-- explicit HR scorer-plan resolution for frozen `K_expected` 1 or 2;
-- deterministic canonical D3 snapshot JSON serialization and SHA-256 hashing.
-
-### D3-IMP-02 delivered capability
-
-Local-only schema/migration readiness now exists for:
-- App795 Model A versioned-routing target schema;
-- five App794 provenance fields;
-- App798 zero-new-field D3-008 archive contract;
-- explicit HR scorer-plan seed preparation with no implicit scorer defaults;
-- deterministic current-schema diff planning across all eight App795 target fields;
-- fail-closed handling of incompatible field types and missing backup/revision/current-schema evidence;
-- record readiness checks for version identity, status, route pattern, effective dates, one-user/ALL route structure and scorer plans;
-- rollback/read-back planning with live write execution disabled.
-
-Accepted D3-IMP-02 verification evidence:
+D3 V1 routing sequence remains exactly:
 
 ```text
-SCHEMA_AND_MIGRATION_TESTS = 68 / 68 PASS
-COMBINED_D3_FOCUSED_TESTS = 108 / 108 PASS
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-NETWORK_CALLS = 0
-SCHEMA_LIVE_WRITES = 0
-PROCESS_WRITES = 0
-DATA_BACKFILL = 0
-DEPLOYMENTS = 0
+M1_ONLY = M1
+M1_G1 = M1 -> G1
+M1_M2_G1 = M2 -> M1 -> G1
+M1_G1_G2 = M1 -> G1 -> G2
+M1_M2_G1_G2 = M2 -> M1 -> G1 -> G2
 ```
 
-### D3-IMP-03 delivered capability
-
-Local-only runtime integration now exists for:
-- explicit activation of Model A App795 route-version resolution in the D3 runtime path;
-- exact effective version selection by explicit business date, with no legacy `Active` authority fallback;
-- App796 PUBLISHED `Expected_Appraiser_Count` as canonical runtime `K_expected` authority;
-- own-MBO self-elision and explicit scorer viability using the accepted pure D3 contracts;
-- App794 five mandatory provenance fields plus effective post-self-elision sequential route snapshot;
-- tri-state immutable bound-stage handling with malformed/partial provenance fail-closed;
-- next-stage fresh binding blocked until verified prior-stage archive success;
-- explicit-only business-date source lock; live business-date provider remains unresolved and blocks deployment, not local implementation closure.
-
-Accepted D3-IMP-03 verification evidence:
+## D3-IMP-06 closure evidence summary
 
 ```text
-D3_RUNTIME_ROUTE_BINDING_TESTS = 48 / 48 PASS
-ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
-CORE_INTEGRATION_TESTS = 1 / 1 PASS
-D3_IMP_01_TESTS = 40 / 40 PASS
-D3_IMP_02_TESTS = 68 / 68 PASS
-COMBINED_FOCUSED_TESTS = 86 / 86 PASS
-ALL_D3_TESTS = 156 / 156 PASS
-
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-NETWORK_CALLS = 0
-SCHEMA_LIVE_WRITES = 0
-PROCESS_WRITES = 0
-APP798_WRITES = 0
-DATA_BACKFILL = 0
-DEPLOYMENTS = 0
-```
-
-### D3-IMP-04 delivered capability
-
-Local-only App798 archive/reopen/reassignment capability now exists for:
-- exactly three immutable event types: `STAGE_COMPLETION_SNAPSHOT`, `EVALUATION_REVISION_CREATED`, `ROUTE_REASSIGNMENT_PRECHANGE`;
-- deterministic event-specific `Archive_Key` construction with no date-boundary event;
-- canonical `D3_V1` snapshot JSON and SHA-256 reuse from the accepted serializer;
-- App798 repository hard-locked to exact App ID 798 and exposing create/read-only archive operations only;
-- idempotent replay, full immutable record comparison, exact post-create read-back and uncertain-write recovery without blind second create;
-- module-private service-issued archive evidence and archive-before-change gate;
-- exact event-instance binding using canonical Archive_Key + Snapshot_Hash, including exact old-to-new revision binding for reopen and exact Stable_Event_ID for route reassignment;
-- explicit `{ userCode }` actor, explicit/injected timestamp authority, source identity hardening and snapshot scorer/appraiser coherence.
-
-Accepted D3-IMP-04-R2 verification evidence:
-
-```text
-REVISION_ARCHIVE_SERVICE_TESTS = 76 / 76 PASS
-REVISION_ARCHIVE_REPOSITORY_TESTS = 9 / 9 PASS
-D3_ARCHIVE_IDEMPOTENCY_TESTS = 14 / 14 PASS
-D3_REOPEN_ARCHIVE_INTEGRATION_TESTS = 4 / 4 PASS
-COMBINED_D3_IMP_04_R2_TESTS = 103 / 103 PASS
-D3_SNAPSHOT_SERIALIZER_TESTS = 7 / 7 PASS
-D3_IMP_01_TESTS = 40 / 40 PASS
-D3_IMP_02_TESTS = 68 / 68 PASS
-D3_IMP_03_TESTS = 86 / 86 PASS
-COMBINED_ALL_TESTS = 297 / 297 PASS
-
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-NETWORK_CALLS = 0
-APP798_LIVE_READS = 0
-APP798_LIVE_WRITES = 0
-APP794_WRITES = 0
-SCHEMA_LIVE_WRITES = 0
-PROCESS_WRITES = 0
-DATA_BACKFILL = 0
-DEPLOYMENTS = 0
-```
-
-### D3-IMP-05 delivered capability
-
-Local-only native-process compatibility now exists for:
-- exact 19-state / 40-action D3 V1 Process Management payload definition;
-- deterministic topology-filtered forward paths for `M1_ONLY`, `M1_G1`, `M1_M2_G1`, `M1_G1_G2`, and `M1_M2_G1_G2`;
-- G2 states `04B GM Level 2 Objective Review`, `09B GM Level 2 Mid-Year Review`, and `14B GM Level 2 Final Evaluation`;
-- explicit M1-only bypass paths without requiring G1/G2;
-- D3 process capability gating while preserving the legacy no-capability G2 fail-closed path and generic ANY support;
-- exact sequential App794 snapshot field authority for M2/M1/G1/G2 with exact one user and `ALL` rule;
-- R1 complete-active-route fail-closed validation, including future active slots and exact user-code shape;
-- duplicate active sequential appraiser rejection while retaining topology identity independent of appraiser count;
-- compatibility with accepted post-self-elision effective topology compaction;
-- zero Kintone/process write/deployment execution.
-
-Accepted D3-IMP-05-R1 verification evidence:
-
-```text
-D3_PROCESS_VALIDATION_TESTS = 58 / 58 PASS
-D3_WORKFLOW_PAYLOAD_TESTS = 42 / 42 PASS
-WORKFLOW_VALIDATOR_TESTS = 3 / 3 PASS
-D3_IMP_01_TESTS = 40 / 40 PASS
-D3_IMP_02_TESTS = 68 / 68 PASS
-D3_IMP_03_TESTS = 86 / 86 PASS
-D3_IMP_04_TESTS = 103 / 103 PASS
-COMBINED_PRIOR_PACKAGE_REGRESSION_TESTS = 300 / 300 PASS
+OBJECTIVE_SAVE_VALIDATION = 39 / 39 PASS
+HR_ROUTING_TARGETED_REGRESSION = 130 / 130 PASS
+CREATE_HANDLER_FORM_STATE = 2 / 2 PASS / CLEAN EXIT
+EMPLOYEE_MAIN_MBO_APP_INTEGRATION = 4 / 4 PASS / CLEAN EXIT
+INDIVIDUAL_REPOSITORY_TEST_FILE_MATRIX = 78 / 78 FILES PASS / CLEAN EXIT
 
 KINTONE_READS = 0
 KINTONE_WRITES = 0
@@ -236,9 +109,9 @@ DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 ```
 
-The pre-existing repository-wide Node test-harness non-exit remains documented and is not represented as a full-suite PASS.
+The aggregate Node test harness non-exit is not represented as a monolithic `npm test` PASS; closure uses the complete individual test-file matrix plus focused evidence.
 
-## Recommended implementation sequence
+## Recommended sequence from current stage
 
 ```text
 D3-IMP-01 = PASS / CLOSED
@@ -246,8 +119,8 @@ D3-IMP-02 = PASS / CLOSED
 D3-IMP-03 = PASS / CLOSED
 D3-IMP-04 = PASS / CLOSED
 D3-IMP-05 = PASS / CLOSED
-D3-IMP-06 = NEXT RECOMMENDED / NOT AUTHORIZED
-D3-PREFLIGHT-READONLY = NOT AUTHORIZED
+D3-IMP-06 = PASS / CLOSED
+D3-PREFLIGHT-READONLY = NEXT RECOMMENDED / NOT AUTHORIZED
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
@@ -260,16 +133,16 @@ Implementation sequencing authority: `project-docs/D3_IMPLEMENTATION_READINESS_P
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
-D3_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
-APP794_FIELD_CREATION_AUTHORIZED = NO
-APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
-APP798_BEHAVIOR_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
 SOURCE_CODE_CHANGES_AUTHORIZED = NO CURRENT PACKAGE
 TEST_CHANGES_AUTHORIZED = NO CURRENT PACKAGE
+APP794_FIELD_CREATION_AUTHORIZED = NO
+APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
+APP798_LIVE_BEHAVIOR_EXECUTION_AUTHORIZED = NO
 BUILD_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
 KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
+PROCESS_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
