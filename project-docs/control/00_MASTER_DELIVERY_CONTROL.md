@@ -18,7 +18,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline remains revision 70. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Owner runtime UAT remains paused. |
-| D3 | **PRE1 R1 CORRECTIVE EXECUTED / REVIEW PENDING** | Local implementation and live preflight are closed; exact 20-route plan exists; manifest integrity and migration-tooling blocker contract are corrected in R1; no sandbox migration write is authorized. |
+| D3 | **PRE1 + R1 PASS / CLOSED / EXECUTOR IMPLEMENTATION NOT STARTED** | Local implementation and live preflight are closed; exact 20-route migration plan and manifest-integrity/tooling-blocker corrective are closed; no sandbox migration write is authorized. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | No current D6 authorization. |
@@ -29,8 +29,8 @@ PRODUCTION_READY = NO
 ```text
 D3-IMP-01..06 = PASS / CLOSED
 D3-PREFLIGHT-READONLY = PASS / CLOSED
-D3-SBX-MIGRATION-01-PRE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
-D3-SBX-MIGRATION-01-PRE1-R1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
@@ -40,7 +40,7 @@ ROUTE_MANIFEST_HASH_RULE = UTF-8(JSON.stringify(manifest.rows)) / NO TRAILING NE
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## D3 PRE1 migration blockers after R1 corrective
+## Remaining D3 migration prerequisites
 
 ```text
 SCORER_MAPPING = PENDING OWNER/HR APPROVAL
@@ -51,4 +51,4 @@ APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
 FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED
 ```
 
-No Kintone read/write, schema/process write, deployment, source/test/build change occurred in R1. R1 review must complete before PRE1 can close; any executor implementation requires a new explicit Owner authorization.
+No current authorization exists for executor implementation or any Kintone/schema/process/deployment operation.
