@@ -4,6 +4,8 @@
 
 import { BUSINESS_STAGES } from '../config/constants.js';
 
+export const D3_PROCESS_CAPABILITY_ID = 'D3_V1_19_STATE_40_ACTION';
+
 export class ValidationEngine {
   /**
    * Validate record against stage business rules
@@ -247,7 +249,15 @@ export class ValidationEngine {
    * @param {string} stage Resolved business stage from STATUS_TO_STAGE_MAP
    * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
    */
-  static validateWorkflowAction(record, actionName, stage) {
+  /**
+   * Validate workflow action against topology, status, and role/assignee constraints
+   * @param {Object} record Kintone record object
+   * @param {string} actionName Name of process action (event.action?.value)
+   * @param {string} stage Resolved business stage from STATUS_TO_STAGE_MAP
+   * @param {Object} options Optional capability parameters (e.g. processCapabilityId)
+   * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
+   */
+  static validateWorkflowAction(record, actionName, stage, options = {}) {
     const fieldErrors = [];
 
     if (!record) {
@@ -270,11 +280,174 @@ export class ValidationEngine {
       return this._formatResult(fieldErrors);
     }
 
+    const isD3 = options && options.processCapabilityId === D3_PROCESS_CAPABILITY_ID;
     const topology = this._val(record.Routing_Topology);
     const status = this._val(record.Status);
 
-    // 1. Exact Topology Whitelist Guard
-    const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
+    if (!isD3) {
+      // Legacy / Default 16-State Workflow Action Validation
+      const RECOGNIZED_TOPOLOGIES = ['M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2', 'M1_ONLY'];
+      if (!topology || !RECOGNIZED_TOPOLOGIES.includes(topology)) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `รูปแบบเส้นทางการอนุมัติ "${topology || 'BLANK'}" ไม่ถูกต้องหรือยังไม่ได้ระบุ (UNKNOWN TOPOLOGY FAIL-CLOSED)`,
+          messageEN: `Routing topology "${topology || 'BLANK'}" is invalid or unmapped.`,
+          message: `รูปแบบเส้นทางการอนุมัติ "${topology || 'BLANK'}" ไม่ถูกต้องหรือยังไม่ได้ระบุ (UNKNOWN TOPOLOGY FAIL-CLOSED)\nRouting topology "${topology || 'BLANK'}" is invalid or unmapped.`
+        });
+        return this._formatResult(fieldErrors);
+      }
+
+      // 2. G2 Topology Guard: Any G2 topology is NOT supported by current 16-state Process Management
+      if (topology.includes('G2')) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `เส้นทางการอนุมัติรูปแบบ ${topology} ยังไม่รองรับในระบบปัจจุบัน (G2 UNSUPPORTED CONFIGURATION ERROR)`,
+          messageEN: `Routing topology ${topology} is not supported by current Process Management workflow.`,
+          message: `เส้นทางการอนุมัติรูปแบบ ${topology} ยังไม่รองรับในระบบปัจจุบัน (G2 UNSUPPORTED CONFIGURATION ERROR)\nRouting topology ${topology} is not supported by current Process Management workflow.`
+        });
+        return this._formatResult(fieldErrors);
+      }
+
+      // 3. First-Manager source states guard (02, 07, 12 require M2 topology)
+      const firstMgrStates = [
+        '02 First Manager Objective Review',
+        '07 First Manager Mid-Year Review',
+        '12 First Manager Final Evaluation'
+      ];
+      if (firstMgrStates.includes(status) && !topology.includes('M2')) {
+        fieldErrors.push({
+          field: 'Status',
+          messageTH: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี First Manager (M2 Topology) เท่านั้น`,
+          messageEN: `Status ${status} is valid only for topologies containing First Manager (M2).`,
+          message: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี First Manager (M2 Topology) เท่านั้น\nStatus ${status} is valid only for topologies containing First Manager (M2).`
+        });
+        return this._formatResult(fieldErrors);
+      }
+
+      const firstManagerSubmits = [
+        'Submit Objective to First Manager',
+        'Submit Mid-Year to First Manager',
+        'Submit Final to First Manager'
+      ];
+
+      const directManagerSubmits = [
+        'Submit Objective to Manager',
+        'Submit Mid-Year to Manager',
+        'Submit Final to Manager'
+      ];
+
+      const hasFirstManager = Array.isArray(record.First_Manager_User?.value) && record.First_Manager_User.value.length > 0;
+      const hasManager = Array.isArray(record.Manager_User?.value) && record.Manager_User.value.length > 0;
+      const hasGM = Array.isArray(record.GM_User?.value) && record.GM_User.value.length > 0;
+      const hasRequester = Array.isArray(record.Requester_User?.value) && record.Requester_User.value.length > 0;
+
+      // 4. First-Manager Submit Actions Guard
+      if (firstManagerSubmits.includes(actionName)) {
+        if (!topology.includes('M2')) {
+          fieldErrors.push({
+            field: 'Routing_Topology',
+            messageTH: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}`,
+            messageEN: `Action "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}.`,
+            message: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}\nAction "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}.`
+          });
+        } else if (!hasFirstManager) {
+          fieldErrors.push({
+            field: 'First_Manager_User',
+            messageTH: `ไม่พบข้อมูลผู้อนุมัติ First_Manager_User สำหรับการส่งรายการ (${actionName})`,
+            messageEN: `First_Manager_User is empty for action "${actionName}".`,
+            message: `ไม่พบข้อมูลผู้อนุมัติ First_Manager_User สำหรับการส่งรายการ (${actionName})\nFirst_Manager_User is empty for action "${actionName}".`
+          });
+        }
+      }
+
+      // 5. Direct-Manager Submit Actions Guard
+      if (directManagerSubmits.includes(actionName)) {
+        if (topology.includes('M2')) {
+          fieldErrors.push({
+            field: 'Routing_Topology',
+            messageTH: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น`,
+            messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
+            message: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น\nAction "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
+          });
+        } else if (!hasManager) {
+          fieldErrors.push({
+            field: 'Manager_User',
+            messageTH: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งรายการ (${actionName})`,
+            messageEN: `Manager_User is empty for action "${actionName}".`,
+            message: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งรายการ (${actionName})\nManager_User is empty for action "${actionName}".`
+          });
+        }
+      }
+
+      // 6. Manager Hand-over Actions Guard
+      const managerHandoverActions = [
+        'Approve Objective', // from 02 to 03
+        'Approve Mid-Year First Manager', // from 07 to 08
+        'Approve Final First Manager' // from 12 to 13
+      ];
+      if (managerHandoverActions.includes(actionName) && (status.startsWith('02') || status.startsWith('07') || status.startsWith('12'))) {
+        if (!hasManager) {
+          fieldErrors.push({
+            field: 'Manager_User',
+            messageTH: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
+            messageEN: `Manager_User is empty for action "${actionName}".`,
+            message: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งเรื่องในขั้นตอนต่อไป\nManager_User is empty for action "${actionName}".`
+          });
+        }
+      }
+
+      // 7. GM Hand-over Actions Guard
+      const gmHandoverActions = [
+        'Approve Objective', // from 03 to 04
+        'Approve Mid-Year Manager', // from 08 to 09
+        'Approve Final Manager' // from 13 to 14
+      ];
+      if (gmHandoverActions.includes(actionName) && (status.startsWith('03') || status.startsWith('08') || status.startsWith('13'))) {
+        if (topology !== 'M1_ONLY' && !hasGM) {
+          fieldErrors.push({
+            field: 'GM_User',
+            messageTH: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
+            messageEN: `GM_User is empty for action "${actionName}".`,
+            message: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป\nGM_User is empty for action "${actionName}".`
+          });
+        }
+      }
+
+      // 8. Complete Requester_User Hand-over Guard (Return & Self/Requester Hand-off Actions)
+      const returnActions = [
+        'Return Objective',
+        'Return Mid-Year First Manager',
+        'Return Mid-Year Manager',
+        'Return Mid-Year GM',
+        'Return Final First Manager',
+        'Return Final Manager',
+        'Return Final GM',
+        'Return Final HR'
+      ];
+
+      const isRequesterHandoffAction =
+        (status.startsWith('04') && actionName === 'Approve Objective') ||
+        (status.startsWith('05') && actionName === 'Start Mid-Year') ||
+        (status.startsWith('09') && actionName === 'Approve Mid-Year GM') ||
+        (status.startsWith('10') && actionName === 'Start Self Evaluation') ||
+        returnActions.includes(actionName);
+
+      if (isRequesterHandoffAction && !hasRequester) {
+        fieldErrors.push({
+          field: 'Requester_User',
+          messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+          messageEN: `Requester_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+        });
+      }
+
+      return this._formatResult(fieldErrors);
+    }
+
+    // =========================================================================
+    // D3 Native 19-State / 40-Action Workflow Action Validation (D3_V1_19_STATE_40_ACTION)
+    // =========================================================================
+    const RECOGNIZED_TOPOLOGIES = ['M1_ONLY', 'M1_G1', 'M1_M2_G1', 'M1_G1_G2', 'M1_M2_G1_G2'];
     if (!topology || !RECOGNIZED_TOPOLOGIES.includes(topology)) {
       fieldErrors.push({
         field: 'Routing_Topology',
@@ -285,24 +458,18 @@ export class ValidationEngine {
       return this._formatResult(fieldErrors);
     }
 
-    // 2. G2 Topology Guard: Any G2 topology is NOT supported by current 16-state Process Management
-    if (topology.includes('G2')) {
-      fieldErrors.push({
-        field: 'Routing_Topology',
-        messageTH: `เส้นทางการอนุมัติรูปแบบ ${topology} ยังไม่รองรับในระบบปัจจุบัน (G2 UNSUPPORTED CONFIGURATION ERROR)`,
-        messageEN: `Routing topology ${topology} is not supported by current Process Management workflow.`,
-        message: `เส้นทางการอนุมัติรูปแบบ ${topology} ยังไม่รองรับในระบบปัจจุบัน (G2 UNSUPPORTED CONFIGURATION ERROR)\nRouting topology ${topology} is not supported by current Process Management workflow.`
-      });
-      return this._formatResult(fieldErrors);
-    }
+    const hasM2Topology = topology.includes('M2');
+    const hasG1Topology = topology.includes('G1');
+    const hasG2Topology = topology.includes('G2');
+    const isM1Only = topology === 'M1_ONLY';
 
-    // 3. First-Manager source states guard (02, 07, 12 require M2 topology)
+    // Source state vs topology validation
     const firstMgrStates = [
       '02 First Manager Objective Review',
       '07 First Manager Mid-Year Review',
       '12 First Manager Final Evaluation'
     ];
-    if (firstMgrStates.includes(status) && !topology.includes('M2')) {
+    if (firstMgrStates.includes(status) && !hasM2Topology) {
       fieldErrors.push({
         field: 'Status',
         messageTH: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี First Manager (M2 Topology) เท่านั้น`,
@@ -311,6 +478,90 @@ export class ValidationEngine {
       });
       return this._formatResult(fieldErrors);
     }
+
+    const g2States = [
+      '04B GM Level 2 Objective Review',
+      '09B GM Level 2 Mid-Year Review',
+      '14B GM Level 2 Final Evaluation'
+    ];
+    if (g2States.includes(status) && !hasG2Topology) {
+      fieldErrors.push({
+        field: 'Status',
+        messageTH: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2 Topology) เท่านั้น`,
+        messageEN: `Status ${status} is valid only for topologies containing GM Level 2 (G2).`,
+        message: `สถานะ ${status} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2 Topology) เท่านั้น\nStatus ${status} is valid only for topologies containing GM Level 2 (G2).`
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    const g1States = [
+      '04 GM Objective Review',
+      '09 GM Mid-Year Review',
+      '14 GM Final Evaluation'
+    ];
+    if (g1States.includes(status) && isM1Only) {
+      fieldErrors.push({
+        field: 'Status',
+        messageTH: `สถานะ ${status} ไม่สามารถใช้ได้กับเส้นทาง M1_ONLY`,
+        messageEN: `Status ${status} is not allowed for M1_ONLY topology.`,
+        message: `สถานะ ${status} ไม่สามารถใช้ได้กับเส้นทาง M1_ONLY\nStatus ${status} is not allowed for M1_ONLY topology.`
+      });
+      return this._formatResult(fieldErrors);
+    }
+
+    // Helpers to extract users and rules for D3 sequential approver slots (NO fallback to legacy fields)
+    const getApproverUsers = (code) => {
+      const field = record[code];
+      if (!field) return [];
+      if (Array.isArray(field.value)) return field.value;
+      if (Array.isArray(field)) return field;
+      return [];
+    };
+
+    const getApprovalRule = (code) => {
+      const field = record[code];
+      if (!field) return '';
+      if (typeof field === 'object' && field !== null && 'value' in field) {
+        if (typeof field.value === 'object' && field.value !== null && 'value' in field.value) {
+          return String(field.value.value || '').trim();
+        }
+        return String(field.value || '').trim();
+      }
+      return String(field).trim();
+    };
+
+    const validateD3Slot = (approverField, ruleField) => {
+      const users = getApproverUsers(approverField);
+      const count = users.length;
+      if (count === 0) {
+        fieldErrors.push({
+          field: approverField,
+          messageTH: `ไม่พบข้อมูลผู้อนุมัติ ${approverField}`,
+          messageEN: `${approverField} is empty.`,
+          message: `ไม่พบข้อมูลผู้อนุมัติ ${approverField}\n${approverField} is empty.`
+        });
+      } else if (count > 1) {
+        fieldErrors.push({
+          field: approverField,
+          messageTH: `จำนวนผู้อนุมัติ ${approverField} ต้องมีเพียง 1 คน (พบ ${count} คน)`,
+          messageEN: `${approverField} must have exactly 1 user (found ${count}).`,
+          message: `จำนวนผู้อนุมัติ ${approverField} ต้องมีเพียง 1 คน (พบ ${count} คน)\n${approverField} must have exactly 1 user (found ${count}).`
+        });
+      }
+
+      const rule = getApprovalRule(ruleField);
+      if (rule !== 'ALL') {
+        fieldErrors.push({
+          field: ruleField,
+          messageTH: `กฎการอนุมัติ ${ruleField} ต้องเป็น ALL เท่านั้น (พบ ${rule || 'BLANK'})`,
+          messageEN: `${ruleField} must be ALL (found ${rule || 'BLANK'}).`,
+          message: `กฎการอนุมัติ ${ruleField} ต้องเป็น ALL เท่านั้น (พบ ${rule || 'BLANK'})\n${ruleField} must be ALL (found ${rule || 'BLANK'}).`
+        });
+      }
+    };
+
+    const requesterUsers = getApproverUsers('Requester_User');
+    const hasRequester = requesterUsers.length > 0;
 
     const firstManagerSubmits = [
       'Submit Objective to First Manager',
@@ -324,84 +575,30 @@ export class ValidationEngine {
       'Submit Final to Manager'
     ];
 
-    const hasFirstManager = Array.isArray(record.First_Manager_User?.value) && record.First_Manager_User.value.length > 0;
-    const hasManager = Array.isArray(record.Manager_User?.value) && record.Manager_User.value.length > 0;
-    const hasGM = Array.isArray(record.GM_User?.value) && record.GM_User.value.length > 0;
-    const hasRequester = Array.isArray(record.Requester_User?.value) && record.Requester_User.value.length > 0;
-
-    // 4. First-Manager Submit Actions Guard
-    if (firstManagerSubmits.includes(actionName)) {
-      if (!topology.includes('M2')) {
-        fieldErrors.push({
-          field: 'Routing_Topology',
-          messageTH: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}`,
-          messageEN: `Action "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}.`,
-          message: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}\nAction "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}.`
-        });
-      } else if (!hasFirstManager) {
-        fieldErrors.push({
-          field: 'First_Manager_User',
-          messageTH: `ไม่พบข้อมูลผู้อนุมัติ First_Manager_User สำหรับการส่งรายการ (${actionName})`,
-          messageEN: `First_Manager_User is empty for action "${actionName}".`,
-          message: `ไม่พบข้อมูลผู้อนุมัติ First_Manager_User สำหรับการส่งรายการ (${actionName})\nFirst_Manager_User is empty for action "${actionName}".`
-        });
-      }
-    }
-
-    // 5. Direct-Manager Submit Actions Guard
-    if (directManagerSubmits.includes(actionName)) {
-      if (topology.includes('M2')) {
-        fieldErrors.push({
-          field: 'Routing_Topology',
-          messageTH: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น`,
-          messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
-          message: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น\nAction "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
-        });
-      } else if (!hasManager) {
-        fieldErrors.push({
-          field: 'Manager_User',
-          messageTH: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งรายการ (${actionName})`,
-          messageEN: `Manager_User is empty for action "${actionName}".`,
-          message: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งรายการ (${actionName})\nManager_User is empty for action "${actionName}".`
-        });
-      }
-    }
-
-    // 6. Manager Hand-over Actions Guard
-    const managerHandoverActions = [
-      'Approve Objective', // from 02 to 03
-      'Approve Mid-Year First Manager', // from 07 to 08
-      'Approve Final First Manager' // from 12 to 13
+    const m1OnlyActions = [
+      'Approve Objective (M1 Only)',
+      'Approve Mid-Year Manager (M1 Only)',
+      'Approve Final Manager (M1 Only)'
     ];
-    if (managerHandoverActions.includes(actionName) && (status.startsWith('02') || status.startsWith('07') || status.startsWith('12'))) {
-      if (!hasManager) {
-        fieldErrors.push({
-          field: 'Manager_User',
-          messageTH: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
-          messageEN: `Manager_User is empty for action "${actionName}".`,
-          message: `ไม่พบข้อมูลผู้อนุมัติ Manager_User สำหรับการส่งเรื่องในขั้นตอนต่อไป\nManager_User is empty for action "${actionName}".`
-        });
-      }
-    }
 
-    // 7. GM Hand-over Actions Guard
-    const gmHandoverActions = [
-      'Approve Objective', // from 03 to 04
-      'Approve Mid-Year Manager', // from 08 to 09
-      'Approve Final Manager' // from 13 to 14
+    const toG2Actions = [
+      'Approve Objective to G2',
+      'Approve Mid-Year GM to G2',
+      'Approve Final GM to G2'
     ];
-    if (gmHandoverActions.includes(actionName) && (status.startsWith('03') || status.startsWith('08') || status.startsWith('13'))) {
-      if (topology !== 'M1_ONLY' && !hasGM) {
-        fieldErrors.push({
-          field: 'GM_User',
-          messageTH: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป`,
-          messageEN: `GM_User is empty for action "${actionName}".`,
-          message: `ไม่พบข้อมูลผู้อนุมัติ GM_User สำหรับการส่งเรื่องในขั้นตอนต่อไป\nGM_User is empty for action "${actionName}".`
-        });
-      }
-    }
 
-    // 8. Complete Requester_User Hand-over Guard (Return & Self/Requester Hand-off Actions)
+    const g2ApproveActions = [
+      'Approve Objective G2',
+      'Approve Mid-Year G2',
+      'Approve Final G2'
+    ];
+
+    const g2ReturnActions = [
+      'Return Objective G2',
+      'Return Mid-Year G2',
+      'Return Final G2'
+    ];
+
     const returnActions = [
       'Return Objective',
       'Return Mid-Year First Manager',
@@ -413,20 +610,202 @@ export class ValidationEngine {
       'Return Final HR'
     ];
 
-    const isRequesterHandoffAction =
-      (status.startsWith('04') && actionName === 'Approve Objective') ||
-      (status.startsWith('05') && actionName === 'Start Mid-Year') ||
-      (status.startsWith('09') && actionName === 'Approve Mid-Year GM') ||
-      (status.startsWith('10') && actionName === 'Start Self Evaluation') ||
-      returnActions.includes(actionName);
+    // 1. First-Manager Submit Actions
+    if (firstManagerSubmits.includes(actionName)) {
+      if (!hasM2Topology) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}`,
+          messageEN: `Action "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}. Direct Manager submit must be used.`,
+          message: `การส่งรายการผ่าน First Manager (${actionName}) ไม่สามารถใช้ได้กับเส้นทาง ${topology || 'Direct Manager'}\nAction "${actionName}" is not allowed for topology ${topology || 'Direct Manager'}. Direct Manager submit must be used.`
+        });
+      } else {
+        validateD3Slot('Manager_Level2_Approvers', 'Manager_Level2_Approval_Rule');
+      }
+    }
 
-    if (isRequesterHandoffAction && !hasRequester) {
-      fieldErrors.push({
-        field: 'Requester_User',
-        messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
-        messageEN: `Requester_User is empty for action "${actionName}".`,
-        message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
-      });
+    // 2. Direct-Manager Submit Actions
+    if (directManagerSubmits.includes(actionName)) {
+      if (hasM2Topology) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น`,
+          messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
+          message: `เส้นทาง ${topology} ต้องส่งรายการผ่าน First Manager เท่านั้น\nAction "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
+        });
+      } else {
+        validateD3Slot('Manager_Level1_Approvers', 'Manager_Level1_Approval_Rule');
+      }
+    }
+
+    // 3. M2 Hand-over Actions (02 -> 03, 07 -> 08, 12 -> 13)
+    const m2HandoverActions = [
+      'Approve Objective',
+      'Approve Mid-Year First Manager',
+      'Approve Final First Manager'
+    ];
+    if (m2HandoverActions.includes(actionName) && (status.startsWith('02') || status.startsWith('07') || status.startsWith('12'))) {
+      validateD3Slot('Manager_Level1_Approvers', 'Manager_Level1_Approval_Rule');
+      validateD3Slot('Manager_Level2_Approvers', 'Manager_Level2_Approval_Rule');
+    }
+
+    // 4. M1_ONLY Bypass Actions (03 -> 05, 08 -> 10, 13 -> 15)
+    if (m1OnlyActions.includes(actionName)) {
+      if (!isM1Only) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทาง M1_ONLY เท่านั้น`,
+          messageEN: `Action "${actionName}" is allowed only for M1_ONLY topology.`,
+          message: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทาง M1_ONLY เท่านั้น\nAction "${actionName}" is allowed only for M1_ONLY topology.`
+        });
+      } else {
+        validateD3Slot('Manager_Level1_Approvers', 'Manager_Level1_Approval_Rule');
+        if (actionName === 'Approve Objective (M1 Only)' || actionName === 'Approve Mid-Year Manager (M1 Only)') {
+          if (!hasRequester) {
+            fieldErrors.push({
+              field: 'Requester_User',
+              messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+              messageEN: `Requester_User is empty for action "${actionName}".`,
+              message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+            });
+          }
+        }
+      }
+    }
+
+    // 5. Manager Approval towards G1 (03 -> 04, 08 -> 09, 13 -> 14)
+    const m1ToG1Actions = [
+      'Approve Objective',
+      'Approve Mid-Year Manager',
+      'Approve Final Manager'
+    ];
+    if (m1ToG1Actions.includes(actionName) && (status.startsWith('03') || status.startsWith('08') || status.startsWith('13'))) {
+      if (isM1Only) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `เส้นทาง M1_ONLY ไม่สามารถส่งไปยัง GM ได้ กรุณาใช้คำสั่งสำหรับ M1 Only`,
+          messageEN: `Action "${actionName}" is not allowed for M1_ONLY topology. M1 Only action must be used.`,
+          message: `เส้นทาง M1_ONLY ไม่สามารถส่งไปยัง GM ได้ กรุณาใช้คำสั่งสำหรับ M1 Only\nAction "${actionName}" is not allowed for M1_ONLY topology. M1 Only action must be used.`
+        });
+      } else if (hasG1Topology) {
+        validateD3Slot('GM_Level1_Approvers', 'GM_Level1_Approval_Rule');
+        validateD3Slot('Manager_Level1_Approvers', 'Manager_Level1_Approval_Rule');
+      }
+    }
+
+    // 6. G1 Approval to G2 (04 -> 04B, 09 -> 09B, 14 -> 14B)
+    if (toG2Actions.includes(actionName)) {
+      if (!hasG2Topology) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2 Topology) เท่านั้น`,
+          messageEN: `Action "${actionName}" is allowed only for G2 topologies.`,
+          message: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2 Topology) เท่านั้น\nAction "${actionName}" is allowed only for G2 topologies.`
+        });
+      } else {
+        validateD3Slot('GM_Level2_Approvers', 'GM_Level2_Approval_Rule');
+        validateD3Slot('GM_Level1_Approvers', 'GM_Level1_Approval_Rule');
+      }
+    }
+
+    // 7. G1 Direct Completion Approval (04 -> 05, 09 -> 10, 14 -> 15)
+    const g1DirectApproveActions = [
+      'Approve Objective',
+      'Approve Mid-Year GM',
+      'Approve Final GM'
+    ];
+    if (g1DirectApproveActions.includes(actionName) && ((status.startsWith('04') && !status.startsWith('04B')) || (status.startsWith('09') && !status.startsWith('09B')) || (status.startsWith('14') && !status.startsWith('14B')))) {
+      if (hasG2Topology) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `เส้นทาง ${topology} ต้องส่งต่อไปยัง GM Level 2 (G2) ก่อน ไม่สามารถอนุมัติเสร็จสิ้นโดยตรงได้`,
+          messageEN: `Action "${actionName}" is not allowed for G2 topology. Approve to G2 must be used.`,
+          message: `เส้นทาง ${topology} ต้องส่งต่อไปยัง GM Level 2 (G2) ก่อน ไม่สามารถอนุมัติเสร็จสิ้นโดยตรงได้\nAction "${actionName}" is not allowed for G2 topology. Approve to G2 must be used.`
+        });
+      } else {
+        validateD3Slot('GM_Level1_Approvers', 'GM_Level1_Approval_Rule');
+        if (actionName === 'Approve Objective' || actionName === 'Approve Mid-Year GM') {
+          if (!hasRequester) {
+            fieldErrors.push({
+              field: 'Requester_User',
+              messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+              messageEN: `Requester_User is empty for action "${actionName}".`,
+              message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+            });
+          }
+        }
+      }
+    }
+
+    // 8. G2 Approval Actions (04B -> 05, 09B -> 10, 14B -> 15)
+    if (g2ApproveActions.includes(actionName)) {
+      if (!hasG2Topology) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2) เท่านั้น`,
+          messageEN: `Action "${actionName}" is allowed only for G2 topologies.`,
+          message: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2) เท่านั้น\nAction "${actionName}" is allowed only for G2 topologies.`
+        });
+      } else {
+        validateD3Slot('GM_Level2_Approvers', 'GM_Level2_Approval_Rule');
+        if (actionName === 'Approve Objective G2' || actionName === 'Approve Mid-Year G2') {
+          if (!hasRequester) {
+            fieldErrors.push({
+              field: 'Requester_User',
+              messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+              messageEN: `Requester_User is empty for action "${actionName}".`,
+              message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+            });
+          }
+        }
+      }
+    }
+
+    // 9. G2 Return Actions (04B -> 01, 09B -> 06, 14B -> 11)
+    if (g2ReturnActions.includes(actionName)) {
+      if (!hasG2Topology) {
+        fieldErrors.push({
+          field: 'Routing_Topology',
+          messageTH: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2) เท่านั้น`,
+          messageEN: `Action "${actionName}" is allowed only for G2 topologies.`,
+          message: `คำสั่ง ${actionName} ใช้ได้เฉพาะเส้นทางที่มี GM Level 2 (G2) เท่านั้น\nAction "${actionName}" is allowed only for G2 topologies.`
+        });
+      } else {
+        validateD3Slot('GM_Level2_Approvers', 'GM_Level2_Approval_Rule');
+        if (!hasRequester) {
+          fieldErrors.push({
+            field: 'Requester_User',
+            messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+            messageEN: `Requester_User is empty for action "${actionName}".`,
+            message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+          });
+        }
+      }
+    }
+
+    // 10. Generic Return Actions to Requester
+    if (returnActions.includes(actionName)) {
+      if (!hasRequester) {
+        fieldErrors.push({
+          field: 'Requester_User',
+          messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+          messageEN: `Requester_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+        });
+      }
+    }
+
+    // 11. Stage Start Actions (05 -> 06, 10 -> 11)
+    const stageStartActions = ['Start Mid-Year', 'Start Self Evaluation'];
+    if (stageStartActions.includes(actionName)) {
+      if (!hasRequester) {
+        fieldErrors.push({
+          field: 'Requester_User',
+          messageTH: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})`,
+          messageEN: `Requester_User is empty for action "${actionName}".`,
+          message: `ไม่พบข้อมูลผู้ขอประเมิน Requester_User สำหรับการดำเนินงาน (${actionName})\nRequester_User is empty for action "${actionName}".`
+        });
+      }
     }
 
     return this._formatResult(fieldErrors);
