@@ -2,73 +2,34 @@
 
 Updated: 2026-09-09 ICT
 
-> Convenience execution/review handoff view only. Exact current authority remains governed by the latest Owner decision, `project-docs/AI_CONTROL_CENTER.md`, and `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`.
-
-## Current task state
+## Current task
 
 ```text
-CURRENT_WORK_PACKAGE = NONE
-CURRENT_EXECUTION = NONE
+CURRENT_WORK_PACKAGE = D3-SBX-MIGRATION-01-PRE1
+MODE = PLAN-ONLY / ZERO WRITE
+OWNER_AUTHORIZED = YES
+EXECUTION_COMPLETE = YES
+INDEPENDENT_REVIEW = PENDING
+PRE1_CLOSED = NO
+BASE_HEAD = a8c839db3d1160be2fce2880fd6c9cdc6b0e2aee
+MANIFEST_SHA256 = b51fb7f4e81953c48858409a1ceb8ea948c0a2e0eb384ad3aabc9b6640d7a04b
+NEXT_ACTION = OWNER COMMAND "review" / independent fresh-fetch review
+```
 
-LAST_CLOSED_SUBSTANTIVE_PACKAGE = D3-IMP-06
-LAST_CLOSED_CORRECTIVE = D3-IMP-06-R1
-LAST_CLOSED_CONTROL_PACKAGE = D3-PREFLIGHT-READONLY-CLOSE
-LAST_REVIEWED_SUBSTANTIVE_HEAD = 64a4f80288aa03b01078a4d60bee59dac9924665
-D3_PREFLIGHT_BASE_HEAD = d5bcad85594d50a3239219e8a8e544654a5cc2b7
+Produced artifacts:
 
-D3-IMP-06 = PASS / CLOSED
-D3-IMP-06-R1 = PASS / CLOSED
-D3-PREFLIGHT-READONLY = PASS / CLOSED
+- `project-docs/D3_SBX_MIGRATION_01_PRE1.md`
+- `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json`
 
-NEXT_RECOMMENDED_GATE = D3-SBX-MIGRATION-01-PRE1
-NEXT_GATE_MODE = PLAN-ONLY / ZERO WRITE
-NEXT_GATE_AUTHORIZED = NO
-NEXT_ACTION = WAIT FOR EXPLICIT OWNER SELECTION/AUTHORIZATION
-AUTO_START_NEXT_WORK_PACKAGE = NO
+Key pending decisions:
 
-KINTONE_READS_AUTHORIZED = NONE
-KINTONE_WRITES_AUTHORIZED = NONE
-PROCESS_WRITES_AUTHORIZED = NONE
-SCHEMA_LIVE_WRITES_AUTHORIZED = NONE
-DEPLOYMENT_AUTHORIZED = NO
-PRODUCTION_READY = NO
+```text
+SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1] / PROPOSAL ONLY
+APP794_PROVENANCE_WRITE_TOOLING = GAP
+APP794_EXISTING_RECORD_BACKFILL_POLICY = UNDEFINED
+APP795_HR_WRITE_ACL = PLAN READY / RECOMMEND DEFER TO SELF-SERVICE ACTIVATION
+D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## Accepted D3-PREFLIGHT live facts
-
-```text
-EVIDENCE_ZIP_SHA256 = cd6fd048a15faa5bdb490828463049b2890b654d49a517b91167bf3a8ee528ad
-APP794 = REV 70 / 344 FIELDS / D3 PROVENANCE 5 FIELDS MISSING
-APP794_PROCESS = 16 STATES / 31 ACTIONS
-D3_PROCESS_TARGET = 19 STATES / 40 ACTIONS
-
-APP795 = REV 11 / 20 RECORDS COMPLETE
-APP795_ROUTING_KEY_UNIQUE = TRUE / TARGET FALSE
-APP795_VERSION_FIELDS = MISSING
-APP795_ROUTE_PATTERN = MISSING
-APP795_SCORER_PRIORITY_SLOTS = MISSING
-APP795_TOPOLOGY = 17 x M1_G1 + 3 x M1_ONLY
-APP795_CURRENT_INTERVAL = 2026-04-01 THROUGH 2027-03-31
-
-APP796 = 8 PUBLISHED FY2026 CONFIGS
-K_EXPECTED = 5 PROFILES K2 + 3 EXECUTIVE PROFILES K1
-
-APP798 = 11 ARCHIVE PRIMITIVES PRESENT / 0 RECORDS
-APP800 = REV 8
-HR_ADMIN_GROUP = hr ONLY
-admin-form = VALID USER / NOT HR_ADMIN_GROUP MEMBER
-REQUIRED_ROUTING_USERS = FOUND / VALID
-```
-
-## Required decisions before any sandbox migration write
-
-1. **Scorer mapping:** live App795 has no `Scorer_Priority_Slots`; automatic inference remains prohibited. Evidence-derived candidate `M1_G1 -> [1,2]`, `M1_ONLY -> [1]` is not yet Owner/HR authorized.
-2. **App795 HR write ACL:** reviewed write-authority plan required before App800 self-service activation.
-3. **Live business date:** `LIVE_BUSINESS_DATE_PROVIDER` remains unresolved and blocks runtime deployment.
-
-## Permanent boundary
-
-No current package authorizes source/test/build changes, Kintone reads/writes, schema/process writes, migration, deployment, UAT execution or production cutover.
-
-`D3-SBX-MIGRATION-01-PRE1` is only the next recommended bounded gate and must not start without a fresh explicit Owner authorization.
+No Kintone read/write, schema/process write, deployment, source/test/build change was executed by PRE1.
