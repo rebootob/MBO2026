@@ -1123,9 +1123,35 @@
       planPayload: validation.isValid ? candidate : null
     };
   }
+  function convertSlotNamesToOrdinals(slotNamesOrOrdinals, pattern) {
+    const unwrapped = unwrapD3Field(slotNamesOrOrdinals);
+    if (unwrapped === null || unwrapped === void 0 || unwrapped === "") return "";
+    const patternInfo = D3_ROUTE_PATTERNS[pattern];
+    const sourceSlots = patternInfo ? patternInfo.sourceSlots : ["M1"];
+    const items = Array.isArray(unwrapped) ? unwrapped : String(unwrapped).split(",").map((s) => s.trim());
+    const ordinals = [];
+    for (const item of items) {
+      if (!item) continue;
+      const num = Number(item);
+      if (Number.isInteger(num)) {
+        if (!ordinals.includes(num)) ordinals.push(num);
+      } else {
+        const idx = sourceSlots.indexOf(item);
+        if (idx !== -1) {
+          const ord = idx + 1;
+          if (!ordinals.includes(ord)) ordinals.push(ord);
+        } else {
+          ordinals.push(item);
+        }
+      }
+    }
+    return ordinals.join(",");
+  }
   function buildCandidateRecordFromDraft(draft = {}) {
     const topology = draft.topology || TOPOLOGIES.M1_ONLY;
     const pattern = draft.routePattern || TOPOLOGY_TO_PATTERN_MAP[topology] || "PATTERN_1_M1";
+    const rawScorer = draft.scorerPrioritySlots || (draft.scorerSlots ? [draft.scorerSlots.midYear, draft.scorerSlots.final1, draft.scorerSlots.final2].filter(Boolean) : "1");
+    const resolvedScorerOrdinals = convertSlotNamesToOrdinals(rawScorer, pattern);
     const record = {
       Routing_Key: { value: draft.routingKey || "" },
       Route_Pattern: { value: pattern },
@@ -1133,9 +1159,7 @@
       Effective_From: { value: draft.effectiveFrom || "" },
       Effective_To: { value: draft.effectiveTo || "" },
       Remark: { value: draft.businessReason || draft.remark || "" },
-      Scorer_Priority_Slots: {
-        value: draft.scorerPrioritySlots || (draft.scorerSlots ? [draft.scorerSlots.midYear, draft.scorerSlots.final1, draft.scorerSlots.final2].filter(Boolean).join(",") : "M1")
-      }
+      Scorer_Priority_Slots: { value: resolvedScorerOrdinals }
     };
     const slots = draft.slots || {};
     const slotMapping = {
@@ -1170,10 +1194,10 @@
         "Principal userCode must be a non-empty string without leading or trailing whitespace."
       );
     }
-    if (!Array.isArray(groups) || !groups.every((g) => typeof g === "string" && g.trim().length > 0)) {
+    if (!Array.isArray(groups) || groups.length === 0 || !groups.every((g) => typeof g === "string" && g.trim().length > 0)) {
       throw new HrRoutingManagementServiceError(
         "ROUTING_PRINCIPAL_INVALID",
-        "Principal groups must be an array of non-empty strings."
+        "Principal groups must be a non-empty array of non-empty strings."
       );
     }
     return {
@@ -1215,7 +1239,8 @@
     }
   }
   function validateDateString(dateStr, fieldName = "Date") {
-    const clean = String(dateStr ?? "").trim();
+    const unwrapped = readD3String(dateStr);
+    const clean = String(unwrapped ?? "").trim();
     if (!clean) return "";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
       throw new HrRoutingManagementServiceError(
@@ -1250,13 +1275,14 @@
     return { effectiveFrom: from, effectiveTo: to };
   }
   function validateBusinessReason(reason) {
-    if (reason === null || reason === void 0 || typeof reason !== "string" || !reason.trim()) {
+    const unwrapped = readD3String(reason);
+    if (unwrapped === null || unwrapped === void 0 || typeof unwrapped !== "string" || !unwrapped.trim()) {
       throw new HrRoutingManagementServiceError(
         "ROUTING_BUSINESS_REASON_REQUIRED",
         "Non-empty business reason (Remark) is required for routing mutations."
       );
     }
-    return reason.trim();
+    return unwrapped.trim();
   }
   function deriveNextVersionNumber(existingVersions, routingKey) {
     const matching = (existingVersions || []).filter((v) => {
@@ -1439,11 +1465,17 @@
         routeCandidate.Effective_To
       );
       let viability;
+      const rawScorer = routeCandidate.Scorer_Priority_Slots;
+      const resolvedScorer = convertSlotNamesToOrdinals(rawScorer, rawPattern);
+      const candidateWithResolvedScorer = {
+        ...routeCandidate,
+        Scorer_Priority_Slots: { value: resolvedScorer }
+      };
       try {
         viability = evaluateD3RouteViability({
-          routeVersion: routeCandidate,
+          routeVersion: candidateWithResolvedScorer,
           kExpected,
-          scorerPrioritySlots: routeCandidate.Scorer_Priority_Slots
+          scorerPrioritySlots: resolvedScorer
         });
       } catch (err) {
         if (err instanceof D3RouteViabilityError || err instanceof D3RouteContractError) {
@@ -1914,11 +1946,19 @@
         );
       }
       try {
+        const rawPattern = readD3String(routeCandidate.Route_Pattern);
+        const rawScorer = routeCandidate.Scorer_Priority_Slots;
+        const resolvedScorer = rawPattern ? convertSlotNamesToOrdinals(rawScorer, rawPattern) : rawScorer;
+        const candidateToEvaluate = {
+          ...routeCandidate,
+          Scorer_Priority_Slots: { value: resolvedScorer }
+        };
         const viability = evaluateD3RouteViability({
-          routeVersion: routeCandidate,
+          routeVersion: candidateToEvaluate,
           kExpected,
           employeeUserCode,
-          isOwnMbo
+          isOwnMbo,
+          scorerPrioritySlots: resolvedScorer
         });
         return {
           isSelfElisionApplied: isOwnMbo,
@@ -2072,7 +2112,7 @@
     ` : `
       <div class="hr-action-group admin-disabled" style="margin-top: 1rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 4px; padding: 0.75rem;">
         <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #92400e;">
-          \u{1F512} <strong>Business Mutation Notice:</strong> You are logged in as <strong>admin-form</strong> without HR membership. Business routing mutations (Create Draft, Edit Draft, Publish, Supersede) are strictly reserved for HR. Admin-Form may only preview, validate, and view diagnostics.
+          \u{1F512} <strong>Business Mutation Notice:</strong> You are logged in as <strong>admin-form</strong> without HR membership. Business mutation requires HR role (ROUTING_HR_AUTHORIZATION_REQUIRED). Business routing mutations (Create Draft, Edit Draft, Publish, Supersede) are strictly reserved for HR. Admin-Form may only preview, validate, and view diagnostics.
         </p>
         <div style="display: flex; gap: 0.5rem;">
           <button type="button" disabled class="btn-disabled" title="HR role required (ROUTING_HR_AUTHORIZATION_REQUIRED)" style="padding: 0.5rem 1rem; background: #cbd5e1; color: #64748b; border: none; border-radius: 4px; cursor: not-allowed;">

@@ -165,7 +165,7 @@ export function renderHrRoutingManagerHtml({
     : `
       <div class="hr-action-group admin-disabled" style="margin-top: 1rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 4px; padding: 0.75rem;">
         <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #92400e;">
-          🔒 <strong>Business Mutation Notice:</strong> You are logged in as <strong>admin-form</strong> without HR membership. Business routing mutations (Create Draft, Edit Draft, Publish, Supersede) are strictly reserved for HR. Admin-Form may only preview, validate, and view diagnostics.
+          🔒 <strong>Business Mutation Notice:</strong> You are logged in as <strong>admin-form</strong> without HR membership. Business mutation requires HR role (ROUTING_HR_AUTHORIZATION_REQUIRED). Business routing mutations (Create Draft, Edit Draft, Publish, Supersede) are strictly reserved for HR. Admin-Form may only preview, validate, and view diagnostics.
         </p>
         <div style="display: flex; gap: 0.5rem;">
           <button type="button" disabled class="btn-disabled" title="HR role required (ROUTING_HR_AUTHORIZATION_REQUIRED)" style="padding: 0.5rem 1rem; background: #cbd5e1; color: #64748b; border: none; border-radius: 4px; cursor: not-allowed;">
