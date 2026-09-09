@@ -21,7 +21,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline is revision 70. Closed work remains durable unless proven regression or Owner change request. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED** and is not equivalent to engineering closure. |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Routing/scoring/persistence architecture is locked through `OWNER_DEC_D3_008`; readiness plan is complete; `D3-IMP-01` is **PASS / CLOSED**; no current implementation package is authorized. |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Architecture is locked through `OWNER_DEC_D3_008`; readiness plan, `D3-IMP-01`, and `D3-IMP-02` are **PASS / CLOSED**; no current implementation package is authorized. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | Runtime/UAT activity exists but full business UAT closure is not established. |
@@ -53,6 +53,9 @@ D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
 D3_IMPLEMENTATION_READINESS_PLAN = PASS / CLOSED
 D3-IMP-01 = PASS / CLOSED
 D3-IMP-01_FINAL_REVIEW_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
+D3-IMP-02 = PASS / CLOSED
+D3-IMP-02-R2 = PASS / CLOSED
+D3-IMP-02_FINAL_REVIEW_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
 D3_IMPLEMENTATION_MODE = BOUNDED PACKAGE AUTHORIZATION ONLY
 CURRENT_D3_IMPLEMENTATION_PACKAGE = NONE
 
@@ -74,7 +77,6 @@ HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPS
 ### D3-IMP-01 delivered capability
 
 Local-only pure contracts now exist for:
-
 - Model A effective-dated App795 route-version selection;
 - canonical route normalization for all five D3 V1 topologies;
 - exact one-user-per-active-slot and ALL-only D3 validation;
@@ -82,18 +84,40 @@ Local-only pure contracts now exist for:
 - explicit HR scorer-plan resolution for frozen `K_expected` 1 or 2;
 - deterministic canonical D3 snapshot JSON serialization and SHA-256 hashing.
 
-No runtime App794/App795/App798 activation, schema migration, Process Management change, Kintone write or deployment was performed.
+### D3-IMP-02 delivered capability
 
-### Verification limitation recorded
+Local-only schema/migration readiness now exists for:
+- App795 Model A versioned-routing target schema;
+- five App794 provenance fields;
+- App798 zero-new-field D3-008 archive contract;
+- explicit HR scorer-plan seed preparation with no implicit scorer defaults;
+- deterministic current-schema diff planning across all eight App795 target fields;
+- fail-closed handling of incompatible field types and missing backup/revision/current-schema evidence;
+- record readiness checks for version identity, status, route pattern, effective dates, one-user/ALL route structure and scorer plans;
+- rollback/read-back planning with live write execution disabled.
 
-The D3-focused suites and exact integration spot-checks passed. The repository-wide `npm test` process did not exit normally because execution reached a pre-existing legacy `tests/create-handler-form-state.test.js` path whose Node process remained alive. The file predates D3-IMP-01 and was not part of its diff. This is a documented legacy test-harness limitation and is not represented as a full-suite PASS.
+Accepted R2 verification evidence:
+
+```text
+SCHEMA_AND_MIGRATION_TESTS = 68 / 68 PASS
+COMBINED_D3_FOCUSED_TESTS = 108 / 108 PASS
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+```
+
+The pre-existing repository-wide Node test-harness non-exit remains documented and is not represented as a full-suite PASS.
 
 ## Recommended implementation sequence
 
 ```text
 D3-IMP-01 = PASS / CLOSED
-D3-IMP-02 = NEXT RECOMMENDED / NOT AUTHORIZED
-D3-IMP-03 = NOT AUTHORIZED
+D3-IMP-02 = PASS / CLOSED
+D3-IMP-03 = NEXT RECOMMENDED / NOT AUTHORIZED
 D3-IMP-04 = NOT AUTHORIZED
 D3-IMP-05 = NOT AUTHORIZED
 D3-IMP-06 = NOT AUTHORIZED
