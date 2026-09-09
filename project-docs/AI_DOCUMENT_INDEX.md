@@ -51,8 +51,9 @@ Primary durable decision/evidence documents:
 - `project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md`
 - `project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md`
 - `project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md`
+- `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md` — evidence-grounded implementation sequence, exact planned boundaries and live-preflight/deployment gates; does not itself authorize implementation.
 
-For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in these historical work-package documents.
+For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
 ## 5. D3 architecture-redesign references
 
@@ -104,6 +105,7 @@ CURRENT STATE -> AI_CONTROL_CENTER.md
 EXACT ACTIVE AUTHORIZATION -> control/02_ACTIVE_WORK_PACKAGE.md
 D1-D7 SCOREBOARD -> control/00_MASTER_DELIVERY_CONTROL.md
 SUBJECT CONTRACT -> locked decision/baseline/evidence document
+IMPLEMENTATION SEQUENCE -> D3_IMPLEMENTATION_READINESS_PLAN.md
 DOCUMENT LOCATION -> AI_DOCUMENT_INDEX.md
 ```
 
