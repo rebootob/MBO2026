@@ -8,7 +8,7 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-03
+ACTIVE_WORK_PACKAGE = D3-IMP-03-R1
 ACTIVE_WORK_PACKAGE_STATUS = IN_PROGRESS
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
@@ -18,6 +18,7 @@ LAST_REVIEWED_IMPLEMENTATION_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
 
 D3-IMP-02-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-02-R2 = PASS / CLOSED
+D3-IMP-03 = INDEPENDENT CONTROL PLANE REVIEWED / 3 BLOCKING FINDINGS -> R1 AUTHORIZED
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -30,6 +31,7 @@ DEPLOYMENTS_AUTHORIZED = 0
 NEXT_RECOMMENDED_GATE = D3-IMP-04
 NEXT_PERMITTED_ACTION = LOCAL_IMPLEMENTATION_AND_TESTS_ONLY
 AUTO_START_NEXT_WORK_PACKAGE = NO
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
 ## D3-IMP-01 closure record
@@ -141,3 +143,28 @@ APP798_WRITES = 0
 DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 ```
+
+## D3-IMP-03-R1 corrective package
+
+Owner-authorized package:
+
+```text
+D3-IMP-03-R1 = Runtime Activation + Canonical K Authority + Bound Snapshot Fail-Closed Corrective
+SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
+Three blocking findings corrected:
+1. Activate D3 Model A in Actual Main Runtime Path (`src/main-mbo-app.js`):
+   - Explicit `d3: true` passed to route resolution.
+   - Explicit `resolutionBusinessDate` input required; fails closed with `RESOLUTION_BUSINESS_DATE_REQUIRED` if missing.
+   - Zero fallback to legacy `Active in ("Active")`.
+2. Canonical K_expected Authority = App796 Scoring Config:
+   - Removed hardcoded duplicate K mapping from `src/profiles/runtime-profile-resolver.js`.
+   - Reordered `onLookupEmployee` pipeline: App 796 scoring config lookup runs before routing resolution and validates `Expected_Appraiser_Count` (1 or 2).
+   - `RoutingService.resolveD3RoutingProfile` requires `kExpected` from caller; fails closed if missing or invalid.
+3. Bound Snapshot Reuse Must Use Full Fail-Closed Validation:
+   - Tri-state classification: unbound (all 5 blank) -> fresh resolution; completely valid bound -> immutable reuse; partially populated / malformed -> fail closed (`D3_BOUND_SNAPSHOT_INVALID`).
+   - Zero silent repair in `extractD3BoundSnapshot`.
+   - Full validation checks active rules explicitly `'ALL'`, inactive slots empty, unique approvers, distinct K=2 scorers, no self-scoring.
+   - Employee reset/change safety clears 5 D3 provenance fields.

@@ -35,29 +35,3 @@ export function resolveProfileCodeForSnapshot(employeeSnapshot) {
   }
 }
 
-export const EXPECTED_APPRAISER_COUNT_BY_PROFILE = Object.freeze({
-  [PROFILE_CODES.STAFF_CHIEF]: 2,
-  [PROFILE_CODES.JAPANESE_STAFF]: 2,
-  [PROFILE_CODES.ASST_MGR]: 2,
-  [PROFILE_CODES.SECTION_MGR]: 2,
-  [PROFILE_CODES.SENIOR_MGR]: 2,
-  [PROFILE_CODES.DGM]: 1,
-  [PROFILE_CODES.GM]: 1,
-  [PROFILE_CODES.VP]: 1
-});
-
-export function resolveExpectedAppraiserCount(profileCode) {
-  if (!profileCode || typeof profileCode !== 'string') {
-    throw new RuntimeProfileResolverError('INVALID_PROFILE_CODE', 'Profile code is required and must be a string.');
-  }
-  const clean = profileCode.trim();
-  const count = EXPECTED_APPRAISER_COUNT_BY_PROFILE[clean];
-  if (count !== 1 && count !== 2) {
-    throw new RuntimeProfileResolverError(
-      'INVALID_PROFILE_CODE',
-      `Unsupported or invalid profile code for expected appraiser count: ${clean}`
-    );
-  }
-  return count;
-}
-

@@ -15,9 +15,9 @@ import {
 } from './d3-route-viability-service.js';
 import {
   resolveProfileCodeForSnapshot,
-  resolveExpectedAppraiserCount,
   PROFILE_CODES
 } from '../profiles/runtime-profile-resolver.js';
+import { ValidationEngine } from '../validation/validation-engine.js';
 import { D3RouteContractError } from '../config/d3-route-contract.js';
 
 export {
@@ -89,48 +89,19 @@ export class RoutingService {
 
   /**
    * Checks if an App 794 record contains a complete and valid bound D3 provenance snapshot
+   * Delegates to ValidationEngine.validateD3RouteProvenance (Single Source of Truth)
    * @param {Object} record
+   * @param {Object} options
    * @returns {boolean}
    */
-  static hasCompleteD3Provenance(record) {
+  static hasCompleteD3Provenance(record, options = {}) {
     if (!record || typeof record !== 'object') return false;
-    const val = (f) => {
-      if (f === null || f === undefined) return '';
-      if (typeof f === 'object' && 'value' in f) {
-        return f.value !== null && f.value !== undefined ? String(f.value).trim() : '';
-      }
-      return String(f).trim();
-    };
-
-    const frozenProfile = val(record.Frozen_Profile_Code);
-    const kSnapshot = Number(val(record.K_expected_Snapshot));
-    const effectiveRoutingKey = val(record.Effective_Routing_Key);
-    const effectiveVersionKey = val(record.Effective_Route_Version_Key);
-    const scorerSlots = val(record.Effective_Scorer_Slots_Snapshot);
-    const topology = val(record.Routing_Topology);
-
-    if (!frozenProfile || (kSnapshot !== 1 && kSnapshot !== 2) || !effectiveRoutingKey || !effectiveVersionKey || !scorerSlots || !topology) {
-      return false;
-    }
-
-    try {
-      const parsedSlots = JSON.parse(scorerSlots);
-      if (!Array.isArray(parsedSlots) || parsedSlots.length !== kSnapshot) return false;
-      for (const slot of parsedSlots) {
-        if (!Number.isInteger(slot) || slot < 1) return false;
-      }
-    } catch {
-      return false;
-    }
-
-    const mgr1 = record.Manager_Level1_Approvers?.value || record.Manager_Level1_Approvers;
-    if (!Array.isArray(mgr1) || mgr1.length === 0) return false;
-
-    return true;
+    return ValidationEngine.validateD3RouteProvenance(record, options).isValid;
   }
 
   /**
    * Extracts bound D3 route and provenance snapshot from an already bound App 794 record
+   * Zero silent repair: preserves exact stored values without defaulting rules or inferring topology
    * @param {Object} record
    * @returns {Object}
    */
@@ -161,15 +132,15 @@ export class RoutingService {
       Routing_Topology: str(record.Routing_Topology),
       Requester_User: requesters,
       Manager_Level1_Approvers: mgrL1,
-      Manager_Level1_Approval_Rule: str(record.Manager_Level1_Approval_Rule) || 'ALL',
+      Manager_Level1_Approval_Rule: str(record.Manager_Level1_Approval_Rule),
       Manager_Level2_Approvers: mgrL2,
-      Manager_Level2_Approval_Rule: str(record.Manager_Level2_Approval_Rule) || 'ALL',
+      Manager_Level2_Approval_Rule: str(record.Manager_Level2_Approval_Rule),
       GM_Level1_Approvers: gmL1,
-      GM_Level1_Approval_Rule: str(record.GM_Level1_Approval_Rule) || 'ALL',
+      GM_Level1_Approval_Rule: str(record.GM_Level1_Approval_Rule),
       GM_Level2_Approvers: gmL2,
-      GM_Level2_Approval_Rule: str(record.GM_Level2_Approval_Rule) || 'ALL',
-      Has_Manager_Level2: mgrL2.length > 0 ? 'Yes' : 'No',
-      Has_GM_Level2: gmL2.length > 0 ? 'Yes' : 'No',
+      GM_Level2_Approval_Rule: str(record.GM_Level2_Approval_Rule),
+      Has_Manager_Level2: str(record.Has_Manager_Level2),
+      Has_GM_Level2: str(record.Has_GM_Level2),
 
       Manager_User: mgrL1,
       First_Manager_User: mgrL2,
@@ -205,16 +176,47 @@ export class RoutingService {
     isStageBoundary = false,
     priorStageArchiveVerified = false
   }) {
-    // 1. In-flight Stage Immutability & Stage Boundary Archive Prerequisite Guard
-    if (existingRecord && RoutingService.hasCompleteD3Provenance(existingRecord)) {
-      if (!isStageBoundary) {
-        return RoutingService.extractD3BoundSnapshot(existingRecord);
-      }
-      if (!priorStageArchiveVerified) {
-        throw new D3RouteBindingError(
-          'APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS',
-          'Next-stage fresh route binding requires verified prior-stage archive evidence.'
-        );
+    // 1. In-flight Stage Immutability & Tri-State Bound Snapshot Guard
+    if (existingRecord && typeof existingRecord === 'object') {
+      const getVal = (f) => {
+        if (f === null || f === undefined) return '';
+        if (typeof f === 'object' && 'value' in f) {
+          return f.value !== null && f.value !== undefined ? String(f.value).trim() : '';
+        }
+        return String(f).trim();
+      };
+
+      const provenanceValues = [
+        getVal(existingRecord.Frozen_Profile_Code),
+        getVal(existingRecord.K_expected_Snapshot),
+        getVal(existingRecord.Effective_Routing_Key),
+        getVal(existingRecord.Effective_Route_Version_Key),
+        getVal(existingRecord.Effective_Scorer_Slots_Snapshot)
+      ];
+      const isAllBlank = provenanceValues.every(v => v === '');
+
+      if (!isAllBlank) {
+        // Attempted bound record: Must pass FULL fail-closed validation
+        const valResult = ValidationEngine.validateD3RouteProvenance(existingRecord, {
+          employeeUserCode
+        });
+        if (!valResult.isValid) {
+          throw new D3RouteBindingError(
+            'D3_BOUND_SNAPSHOT_INVALID',
+            `Existing record contains invalid or incomplete D3 bound snapshot: ${valResult.errors.join('; ')}`,
+            valResult.fieldErrors
+          );
+        }
+
+        if (!isStageBoundary) {
+          return RoutingService.extractD3BoundSnapshot(existingRecord);
+        }
+        if (!priorStageArchiveVerified) {
+          throw new D3RouteBindingError(
+            'APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS',
+            'Next-stage fresh route binding requires verified prior-stage archive evidence.'
+          );
+        }
       }
     }
 
@@ -265,23 +267,18 @@ export class RoutingService {
       );
     }
 
-    const canonicalK = resolveExpectedAppraiserCount(profileCode);
-    let resolvedK = kExpected;
-    if (resolvedK !== null && resolvedK !== undefined) {
-      const numK = Number(resolvedK);
-      if (numK !== 1 && numK !== 2) {
-        throw new D3RouteBindingError('INVALID_K_EXPECTED', `K_expected must be 1 or 2, received ${kExpected}`);
-      }
-      if (numK !== canonicalK) {
-        throw new D3RouteBindingError(
-          'INVALID_K_EXPECTED',
-          `Supplied K_expected (${numK}) does not match canonical expectation for profile ${profileCode} (${canonicalK}).`
-        );
-      }
-      resolvedK = numK;
-    } else {
-      resolvedK = canonicalK;
+    if (kExpected === null || kExpected === undefined) {
+      throw new D3RouteBindingError(
+        'K_EXPECTED_NOT_CONFIGURED',
+        'kExpected is required and must be provided from App 796 scoring configuration.'
+      );
     }
+
+    const numK = Number(kExpected);
+    if (numK !== 1 && numK !== 2) {
+      throw new D3RouteBindingError('INVALID_K_EXPECTED', `K_expected must be 1 or 2, received ${kExpected}`);
+    }
+    const resolvedK = numK;
 
     // 7. Scorer Viability & Self-Elision Evaluation
     const viability = evaluateD3RouteViability({

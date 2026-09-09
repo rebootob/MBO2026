@@ -538,11 +538,13 @@ export class ValidationEngine {
 
     const survivingApproverCodes = [];
 
+    // Active slots validation: exactly 1 user per active slot and explicit ALL rule (no fallback)
     for (const slotId of activeSlots) {
       const { users: userField, rule: ruleField } = slotFields[slotId];
       const rawUsers = record[userField]?.value !== undefined ? record[userField].value : record[userField];
       const users = Array.isArray(rawUsers) ? rawUsers : [];
-      const rule = this._val(record[ruleField]) || 'ALL';
+      const rawRule = record[ruleField]?.value !== undefined ? record[ruleField].value : record[ruleField];
+      const rule = (rawRule !== null && rawRule !== undefined) ? String(rawRule).trim() : '';
 
       if (users.length !== 1) {
         fieldErrors.push({
@@ -569,11 +571,39 @@ export class ValidationEngine {
       if (rule !== 'ALL') {
         fieldErrors.push({
           field: ruleField,
-          messageTH: `${ruleField} ต้องเป็น ALL ใน D3 V1 (พบ ${rule})`,
-          messageEN: `${ruleField} approval rule must be ALL (found ${rule})`,
-          message: `${ruleField} approval rule must be ALL (found ${rule})`
+          messageTH: `${ruleField} ต้องระบุค่า ALL อย่างชัดเจนใน D3 V1 (พบ "${rule}")`,
+          messageEN: `${ruleField} approval rule must be explicitly ALL (found "${rule}")`,
+          message: `${ruleField} approval rule must be explicitly ALL (found "${rule}")`
         });
       }
+    }
+
+    // Inactive slots validation: must be strictly empty
+    const allSlots = ['M1', 'M2', 'G1', 'G2'];
+    const inactiveSlots = allSlots.filter(s => !activeSlots.includes(s));
+    for (const slotId of inactiveSlots) {
+      const { users: userField } = slotFields[slotId];
+      const rawUsers = record[userField]?.value !== undefined ? record[userField].value : record[userField];
+      const users = Array.isArray(rawUsers) ? rawUsers : [];
+      if (users.length > 0) {
+        fieldErrors.push({
+          field: userField,
+          messageTH: `${userField} ต้องว่างเปล่าสำหรับ topology ${topology} (พบ ${users.length})`,
+          messageEN: `${userField} must be empty for topology ${topology} (found ${users.length})`,
+          message: `${userField} must be empty for topology ${topology} (found ${users.length})`
+        });
+      }
+    }
+
+    // No duplicate appraiser identities across active slots
+    const uniqueApprovers = new Set(survivingApproverCodes);
+    if (uniqueApprovers.size !== survivingApproverCodes.length) {
+      fieldErrors.push({
+        field: 'Routing_Topology',
+        messageTH: 'ห้ามมีผู้อนุมัติซ้ำกันในเส้นทางการอนุมัติ (DUPLICATE_APPROVERS)',
+        messageEN: 'Duplicate approver identities in routing path (DUPLICATE_APPROVERS)',
+        message: 'Duplicate approver identities in routing path (DUPLICATE_APPROVERS)'
+      });
     }
 
     const scorerSlotsRaw = this._val(record.Effective_Scorer_Slots_Snapshot);
@@ -641,7 +671,7 @@ export class ValidationEngine {
           });
         }
 
-        const targetEmpCode = String(options.employeeUserCode || this._val(record.Employee_Code) || '').trim();
+        const targetEmpCode = String(options.employeeUserCode || '').trim();
         if (targetEmpCode && scorerUserCodes.includes(targetEmpCode)) {
           fieldErrors.push({
             field: 'Effective_Scorer_Slots_Snapshot',

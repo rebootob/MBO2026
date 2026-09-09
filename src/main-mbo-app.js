@@ -615,8 +615,14 @@ if (typeof kintone !== 'undefined') {
           'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
           'Manager_Level1_Approvers', 'Manager_Level2_Approvers',
           'GM_Level1_Approvers', 'GM_Level2_Approvers',
+          'Manager_Level1_Approval_Rule', 'Manager_Level2_Approval_Rule',
+          'GM_Level1_Approval_Rule', 'GM_Level2_Approval_Rule',
           'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology',
-          'First_Manager_User', 'Manager_User', 'GM_User', 'Requester_User'
+          'First_Manager_User', 'Manager_User', 'GM_User', 'Requester_User',
+          'Frozen_Profile_Code', 'K_expected_Snapshot', 'Effective_Routing_Key',
+          'Effective_Route_Version_Key', 'Effective_Scorer_Slots_Snapshot',
+          'Profile_Code', 'PartA_Weight', 'PartB_Weight', 'Part_A_Scoring_Mode',
+          'Competency_Set_Code', 'Configuration_Hash'
         ];
         if (record.Employee_Code) {
           record.Employee_Code.value = newCode;
@@ -636,7 +642,53 @@ if (typeof kintone !== 'undefined') {
         const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
         const empProfile = empLookupRes.employee || empLookupRes;
 
-        // Step 2: Routing Profile Resolution & Hybrid Requester / Route Composition
+        // Step 2: Frozen Profile Code Resolution
+        const profileCode = resolveProfileCode(empProfile);
+
+        // Step 3: Published Scoring Configuration Lookup from App 796
+        const fy = record.Fiscal_Year?.value || 'FY2026';
+        let scoringConfig = null;
+        try {
+          const scoringQuery = `Profile_Code = "${profileCode}" and Config_Status in ("PUBLISHED") and Fiscal_Year = "${fy}" limit 2`;
+          const scoringRes = await kintoneApiWrapper.getRecords(SCORING_APP_ID, scoringQuery);
+          const scoringRecords = scoringRes?.records || [];
+
+          if (scoringRecords.length === 0) {
+            throw new Error(`ไม่พบการตั้งค่า Scoring Master (App 796) ที่สถานะ PUBLISHED สำหรับตำแหน่ง ${empProfile.Employee_Position} (${profileCode}) ใน ${fy}\nPublished scoring configuration was not found in App 796 for position ${empProfile.Employee_Position} (${profileCode}) in ${fy}.`);
+          }
+          if (scoringRecords.length > 1) {
+            throw new Error(`พบการตั้งค่า Scoring Master (App 796) ซ้ำซ้อนสำหรับโปรไฟล์ ${profileCode} ใน ${fy}\nDuplicate published scoring configurations found in App 796 for profile ${profileCode} in ${fy}.`);
+          }
+
+          const scRec = scoringRecords[0];
+          scoringConfig = {
+            Profile_Code: profileCode,
+            Expected_Appraiser_Count: scRec.Expected_Appraiser_Count?.value ? Number(scRec.Expected_Appraiser_Count.value) : undefined,
+            PartA_Weight: scRec.PartA_Weight?.value ? Number(scRec.PartA_Weight.value) : undefined,
+            PartB_Weight: scRec.PartB_Weight?.value ? Number(scRec.PartB_Weight.value) : undefined,
+            Part_A_Scoring_Mode: scRec.Part_A_Scoring_Mode?.value || '',
+            Competency_Set_Code: scRec.Competency_Set_Code?.value || '',
+            Configuration_Hash: scRec.Configuration_Hash?.value || ''
+          };
+        } catch (scoringErr) {
+          console.warn('[MBO V2] Scoring resolution info:', scoringErr.message);
+          // Re-throw if it's a fail-closed error
+          throw scoringErr;
+        }
+
+        // Step 4: Extract & Validate Expected_Appraiser_Count from App 796 Scoring Config
+        const kExpected = scoringConfig.Expected_Appraiser_Count;
+        if (kExpected !== 1 && kExpected !== 2) {
+          throw new Error(`ไม่พบหรือค่า Expected_Appraiser_Count ไม่ถูกต้องใน Scoring Master (App 796) สำหรับโปรไฟล์ ${profileCode} (K_EXPECTED_NOT_CONFIGURED)\nExpected_Appraiser_Count must be 1 or 2 in App 796 scoring configuration for profile ${profileCode}.`);
+        }
+
+        // Step 5: D3 Model A Route Resolution with Canonical K & Explicit Business Date
+        // LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+        const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate || record?.Resolution_Business_Date?.value;
+        if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
+          throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED). Live business date provider is unresolved and blocks deployment.');
+        }
+
         const loginUserCode = context.kintoneUserCode;
         let routeProfile = await RoutingService.resolveRoutingProfile(
           ROUTING_APP_ID,
@@ -645,11 +697,14 @@ if (typeof kintone !== 'undefined') {
           kintoneApiWrapper,
           empProfile.Employee_Position,
           {
+            d3: true,
             existingRecord: record,
             employeeSnapshot: empProfile,
             employeeUserCode: loginUserCode,
             isOwnMbo: context.mode === 'DEDICATED',
-            ...(options.resolutionBusinessDate ? { resolutionBusinessDate: options.resolutionBusinessDate } : {})
+            resolutionBusinessDate: resolutionBusinessDate,
+            frozenProfileCode: profileCode,
+            kExpected: kExpected
           }
         );
 
@@ -668,42 +723,11 @@ if (typeof kintone !== 'undefined') {
           Requester_User: effectiveRequesterUsers
         };
 
-        // Step 3: Published Scoring Configuration Lookup from App 796
-        const fy = record.Fiscal_Year?.value || 'FY2026';
-        let scoringConfig = null;
-        try {
-          const profileCode = resolveProfileCode(empProfile);
-          const scoringQuery = `Profile_Code = "${profileCode}" and Config_Status in ("PUBLISHED") and Fiscal_Year = "${fy}" limit 2`;
-          const scoringRes = await kintoneApiWrapper.getRecords(SCORING_APP_ID, scoringQuery);
-          const scoringRecords = scoringRes?.records || [];
-
-          if (scoringRecords.length === 0) {
-            throw new Error(`ไม่พบการตั้งค่า Scoring Master (App 796) ที่สถานะ PUBLISHED สำหรับตำแหน่ง ${empProfile.Employee_Position} (${profileCode}) ใน ${fy}\nPublished scoring configuration was not found in App 796 for position ${empProfile.Employee_Position} (${profileCode}) in ${fy}.`);
-          }
-          if (scoringRecords.length > 1) {
-            throw new Error(`พบการตั้งค่า Scoring Master (App 796) ซ้ำซ้อนสำหรับโปรไฟล์ ${profileCode} ใน ${fy}\nDuplicate published scoring configurations found in App 796 for profile ${profileCode} in ${fy}.`);
-          }
-
-          const scRec = scoringRecords[0];
-          scoringConfig = {
-            Profile_Code: profileCode,
-            PartA_Weight: scRec.PartA_Weight?.value ? Number(scRec.PartA_Weight.value) : undefined,
-            PartB_Weight: scRec.PartB_Weight?.value ? Number(scRec.PartB_Weight.value) : undefined,
-            Part_A_Scoring_Mode: scRec.Part_A_Scoring_Mode?.value || '',
-            Competency_Set_Code: scRec.Competency_Set_Code?.value || '',
-            Configuration_Hash: scRec.Configuration_Hash?.value || ''
-          };
-        } catch (scoringErr) {
-          console.warn('[MBO V2] Scoring resolution info:', scoringErr.message);
-          // Re-throw if it's a fail-closed error
-          throw scoringErr;
-        }
-
-        // Step 4: Record Key & Duplicate Check
+        // Step 6: Record Key & Duplicate Check
         const generatedKey = buildRecordKey(fy, empProfile.Employee_Code);
         await EmployeeService.checkDuplicateMBO(getMboAppId(), fy, empProfile.Employee_Code, record.$id?.value, kintoneApiWrapper);
 
-        // Step 5: Snapshot data safely into record in-memory
+        // Step 7: Snapshot data safely into record in-memory
         const fieldsToSync = {
           Employee_Code: empProfile.Employee_Code,
           Employee_Name: empProfile.Employee_Name,
