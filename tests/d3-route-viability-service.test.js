@@ -152,6 +152,55 @@ test('D3 V1 rejects duplicate appraiser identity across sequential slots', () =>
   );
 });
 
+test('D3 route contract requires Routing_Key', () => {
+  const rv = routeVersion({
+    pattern: 'PATTERN_1_M1',
+    m1: U('m1')
+  });
+  rv.Routing_Key = { value: '' };
+
+  assert.throws(
+    () => normalizeD3RouteVersion(rv),
+    error => error.code === 'ROUTING_KEY_REQUIRED'
+  );
+});
+
+test('D3 route contract requires Version_Key', () => {
+  const rv = routeVersion({
+    pattern: 'PATTERN_1_M1',
+    m1: U('m1')
+  });
+  rv.Version_Key = { value: '' };
+
+  assert.throws(
+    () => normalizeD3RouteVersion(rv),
+    error => error.code === 'INVALID_ROUTE_VERSION_IDENTITY'
+  );
+});
+
+test('D3 route contract requires positive integer Version_Number', () => {
+  const rv = routeVersion({
+    pattern: 'PATTERN_1_M1',
+    m1: U('m1')
+  });
+  rv.Version_Number = { value: '0' };
+
+  assert.throws(
+    () => normalizeD3RouteVersion(rv),
+    error => error.code === 'INVALID_ROUTE_VERSION_NUMBER'
+  );
+});
+
+test('D3 route contract rejects whitespace-mutated user identity', () => {
+  assert.throws(
+    () => normalizeD3RouteVersion(routeVersion({
+      pattern: 'PATTERN_1_M1',
+      m1: U(' m1 ')
+    })),
+    error => error.code === 'INVALID_APPRAISER_IDENTITY'
+  );
+});
+
 test('Self-elision: M1_G1 self at slot 1 compacts to M1_ONLY', () => {
   const result = evaluateD3RouteViability({
     routeVersion: routeVersion({
