@@ -74,6 +74,18 @@ test('Snapshot manifest whitelists business sections and excludes transient top-
   assert.equal(manifest.source.Record_Key, 'FY2026-EMP100');
 });
 
+test('Snapshot manifest fails closed when a required reproduction section is missing', () => {
+  const input = logicalSnapshotA();
+  delete input.hoshin;
+
+  assert.throws(
+    () => buildD3SnapshotManifest(input),
+    error =>
+      error instanceof D3SnapshotSerializationError &&
+      error.code === 'SNAPSHOT_SECTION_MISSING'
+  );
+});
+
 test('Canonical JSON and SHA-256 are deterministic across object insertion order', () => {
   const a = logicalSnapshotA();
 
@@ -167,18 +179,22 @@ test('Canonical fixture has stable known JSON and SHA-256', () => {
     },
     scoring: {
       Scorers: [{ code: 'president', weight: 100 }]
-    }
+    },
+    hoshin: {},
+    config: {},
+    business: {},
+    computed: {}
   };
 
   const hashed = hashD3Snapshot(fixture);
 
   assert.equal(
     hashed.canonicalJson,
-    '{"profile":{"Frozen_Profile_Code":"PROF_DGM","K_expected_Snapshot":1},"route":{"Effective_Route_Version_Key":"POSITION_DGM#v1","Effective_Routing_Key":"POSITION_DGM","Workflow_Appraisers":[{"code":"president"}]},"scoring":{"Scorers":[{"code":"president","weight":100}]},"snapshotSchemaVersion":"D3_V1","source":{"Record_Key":"FY2026-0001"},"stage":{"Evaluation_Stage":"FINAL","Revision_Number":2}}'
+    '{"business":{},"computed":{},"config":{},"hoshin":{},"profile":{"Frozen_Profile_Code":"PROF_DGM","K_expected_Snapshot":1},"route":{"Effective_Route_Version_Key":"POSITION_DGM#v1","Effective_Routing_Key":"POSITION_DGM","Workflow_Appraisers":[{"code":"president"}]},"scoring":{"Scorers":[{"code":"president","weight":100}]},"snapshotSchemaVersion":"D3_V1","source":{"Record_Key":"FY2026-0001"},"stage":{"Evaluation_Stage":"FINAL","Revision_Number":2}}'
   );
   assert.equal(
     hashed.sha256,
-    'd2f0ecfe35352f239de2aa57edebaf1ab505548a531ec717d84b2dac6c2b8e12'
+    'c78d4552a697075f6e94963ffaca9baeb20af8db198cf2602219973372fb3b6a'
   );
 });
 
