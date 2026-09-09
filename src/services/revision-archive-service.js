@@ -79,6 +79,21 @@ function validatePositiveInteger(value, paramName) {
   return num;
 }
 
+function isStrictPositiveInteger(value) {
+  if (value === null || value === undefined || value === '') return false;
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value > 0;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed !== value) return false;
+    if (!/^\d+$/.test(trimmed)) return false;
+    const num = Number(trimmed);
+    return Number.isInteger(num) && num > 0;
+  }
+  return false;
+}
+
 export function buildArchiveKey({
   eventType,
   sourceRecordKey,
@@ -265,6 +280,19 @@ function validateSnapshotCoherence(logicalSnapshot, request) {
     );
   }
 
+  // Employee_Code hardening: non-empty exact string without whitespace
+  if (typeof request.employeeCode !== 'string' || !request.employeeCode.trim() || request.employeeCode.trim() !== request.employeeCode) {
+    throw new RevisionArchiveError(
+      'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+      `Request Employee_Code must be a non-empty exact string without whitespace, received: "${request.employeeCode}".`
+    );
+  }
+  if (typeof source.Employee_Code !== 'string' || !source.Employee_Code.trim() || source.Employee_Code.trim() !== source.Employee_Code) {
+    throw new RevisionArchiveError(
+      'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+      `Snapshot source.Employee_Code must be a non-empty exact string without whitespace, received: "${source.Employee_Code}".`
+    );
+  }
   if (source.Employee_Code !== request.employeeCode) {
     throw new RevisionArchiveError(
       'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
@@ -272,6 +300,19 @@ function validateSnapshotCoherence(logicalSnapshot, request) {
     );
   }
 
+  // Fiscal_Year hardening: non-empty exact string without whitespace
+  if (typeof request.fiscalYear !== 'string' || !request.fiscalYear.trim() || request.fiscalYear.trim() !== request.fiscalYear) {
+    throw new RevisionArchiveError(
+      'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+      `Request Fiscal_Year must be a non-empty exact string without whitespace, received: "${request.fiscalYear}".`
+    );
+  }
+  if (typeof source.Fiscal_Year !== 'string' || !source.Fiscal_Year.trim() || source.Fiscal_Year.trim() !== source.Fiscal_Year) {
+    throw new RevisionArchiveError(
+      'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+      `Snapshot source.Fiscal_Year must be a non-empty exact string without whitespace, received: "${source.Fiscal_Year}".`
+    );
+  }
   if (source.Fiscal_Year !== request.fiscalYear) {
     throw new RevisionArchiveError(
       'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
@@ -279,22 +320,40 @@ function validateSnapshotCoherence(logicalSnapshot, request) {
     );
   }
 
-  // Source_Record_ID coherence
-  if (request.sourceRecordId !== undefined && request.sourceRecordId !== null && request.sourceRecordId !== '') {
-    const reqId = Number(request.sourceRecordId);
-    if (!Number.isInteger(reqId) || reqId < 1) {
+  // Source_Record_ID hardening (Cases A, B, C)
+  const hasRequestSourceRecordId = request.sourceRecordId !== undefined && request.sourceRecordId !== null;
+  const hasSnapshotSourceRecordId = source.Record_ID !== undefined && source.Record_ID !== null;
+
+  if (hasRequestSourceRecordId) {
+    // CASE A: request.sourceRecordId supplied
+    if (!isStrictPositiveInteger(request.sourceRecordId)) {
       throw new RevisionArchiveError(
         'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
         `Request sourceRecordId must be a positive integer, received: ${request.sourceRecordId}.`
       );
     }
-    if (Number(source.Record_ID) !== reqId) {
+    if (!hasSnapshotSourceRecordId || !isStrictPositiveInteger(source.Record_ID)) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+        `Snapshot source.Record_ID must exist and be a positive integer when request sourceRecordId is supplied, received: ${source.Record_ID}.`
+      );
+    }
+    if (Number(request.sourceRecordId) !== Number(source.Record_ID)) {
       throw new RevisionArchiveError(
         'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
         `Snapshot source.Record_ID (${source.Record_ID}) does not match request Source_Record_ID (${request.sourceRecordId}).`
       );
     }
+  } else if (hasSnapshotSourceRecordId) {
+    // CASE B: request.sourceRecordId omitted but snapshot.source.Record_ID exists
+    if (!isStrictPositiveInteger(source.Record_ID)) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+        `Snapshot source.Record_ID must be a positive integer when present, received: ${source.Record_ID}.`
+      );
+    }
   }
+  // CASE C: both omitted -> allowed
 
   if (stage.Evaluation_Stage !== request.evaluationStage) {
     throw new RevisionArchiveError(
@@ -633,9 +692,9 @@ export class RevisionArchiveService {
       ? String(logicalSnapshot.stage.Previous_Status)
       : (previousStatus ? String(previousStatus) : '');
 
-    const resolvedSourceRecordId = (sourceRecordId !== undefined && sourceRecordId !== null && sourceRecordId !== '')
+    const resolvedSourceRecordId = (sourceRecordId !== undefined && sourceRecordId !== null)
       ? Number(sourceRecordId)
-      : (logicalSnapshot.source?.Record_ID !== undefined && logicalSnapshot.source?.Record_ID !== null && logicalSnapshot.source?.Record_ID !== ''
+      : (logicalSnapshot.source?.Record_ID !== undefined && logicalSnapshot.source?.Record_ID !== null
           ? Number(logicalSnapshot.source.Record_ID)
           : null);
 
@@ -683,6 +742,7 @@ export class RevisionArchiveService {
         evaluationStage,
         revisionNumber: Number(revisionNumber),
         supersededByRevision: expectedFacts.supersededByRevision,
+        sourceRecordId: resolvedSourceRecordId,
         archivedBy: actorUserCode,
         archivedAt: existing.archivedAt
       });
@@ -740,6 +800,7 @@ export class RevisionArchiveService {
           evaluationStage,
           revisionNumber: Number(revisionNumber),
           supersededByRevision: expectedFacts.supersededByRevision,
+          sourceRecordId: resolvedSourceRecordId,
           archivedBy: actorUserCode,
           archivedAt: rec.archivedAt
         });
@@ -774,6 +835,7 @@ export class RevisionArchiveService {
       evaluationStage,
       revisionNumber: Number(revisionNumber),
       supersededByRevision: expectedFacts.supersededByRevision,
+      sourceRecordId: resolvedSourceRecordId,
       archivedBy: actorUserCode,
       archivedAt
     });
@@ -809,8 +871,14 @@ export class RevisionArchiveService {
   /**
    * Archive-Before-Change gate helper.
    * Fails closed if evidence is missing, invalid, or does not match expected context.
+   * Requires complete expected context binding the exact event instance.
+   *
+   * @param {object} evidence - Service-issued archive evidence object
+   * @param {object} expectedContext - Full expected event context
+   * @returns {boolean} true on verified gate pass
    */
-  static assertArchiveBeforeChangeGate(evidence, expectedContext = {}) {
+  static assertArchiveBeforeChangeGate(evidence, expectedContext) {
+    // 1. Evidence validity & unforgeable service-issued branding check
     if (!RevisionArchiveService.validateArchiveEvidence(evidence)) {
       throw new RevisionArchiveError(
         'ARCHIVE_GATE_EVIDENCE_INVALID',
@@ -818,32 +886,213 @@ export class RevisionArchiveService {
       );
     }
 
-    if (expectedContext.sourceRecordKey && evidence.sourceRecordKey !== expectedContext.sourceRecordKey) {
+    // 2. Expected context presence check
+    if (!expectedContext || typeof expectedContext !== 'object') {
       throw new RevisionArchiveError(
-        'ARCHIVE_GATE_EVIDENCE_INVALID',
-        `Archive evidence sourceRecordKey (${evidence.sourceRecordKey}) does not match expected (${expectedContext.sourceRecordKey}).`
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        'assertArchiveBeforeChangeGate requires a complete expectedContext object.'
       );
     }
 
-    if (expectedContext.evaluationStage && evidence.evaluationStage !== expectedContext.evaluationStage) {
+    const {
+      sourceRecordKey,
+      evaluationStage,
+      revisionNumber,
+      eventType,
+      archiveKey,
+      snapshotHash,
+      supersededByRevision,
+      stableEventId,
+      sourceRecordId,
+      employeeCode,
+      fiscalYear
+    } = expectedContext;
+
+    // Check base required fields
+    if (!sourceRecordKey || typeof sourceRecordKey !== 'string' || !sourceRecordKey.trim()) {
       throw new RevisionArchiveError(
-        'ARCHIVE_GATE_EVIDENCE_INVALID',
-        `Archive evidence evaluationStage (${evidence.evaluationStage}) does not match expected (${expectedContext.evaluationStage}).`
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        'expectedContext.sourceRecordKey is required and must be a non-empty string.'
       );
     }
 
-    if (expectedContext.revisionNumber && Number(evidence.revisionNumber) !== Number(expectedContext.revisionNumber)) {
+    if (!evaluationStage || !Object.values(ARCHIVE_EVALUATION_STAGES).includes(evaluationStage)) {
       throw new RevisionArchiveError(
-        'ARCHIVE_GATE_EVIDENCE_INVALID',
-        `Archive evidence revisionNumber (${evidence.revisionNumber}) does not match expected (${expectedContext.revisionNumber}).`
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        `expectedContext.evaluationStage is required and must be one of: ${Object.values(ARCHIVE_EVALUATION_STAGES).join(', ')}.`
       );
     }
 
-    if (expectedContext.eventType && evidence.eventType !== expectedContext.eventType) {
+    if (revisionNumber === undefined || revisionNumber === null || revisionNumber === '' || !isStrictPositiveInteger(revisionNumber)) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        `expectedContext.revisionNumber is required and must be a positive integer, received: ${revisionNumber}.`
+      );
+    }
+
+    if (!eventType || !Object.values(ARCHIVE_EVENT_TYPES).includes(eventType)) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        `expectedContext.eventType is required and must be one of: ${Object.values(ARCHIVE_EVENT_TYPES).join(', ')}.`
+      );
+    }
+
+    if (!archiveKey || typeof archiveKey !== 'string' || !archiveKey.trim()) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        'expectedContext.archiveKey is required and must be a non-empty string.'
+      );
+    }
+
+    const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/i;
+    if (!snapshotHash || typeof snapshotHash !== 'string' || !SHA256_HEX_REGEX.test(snapshotHash.trim())) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+        'expectedContext.snapshotHash is required and must be a 64-character SHA-256 hex string.'
+      );
+    }
+
+    // Event-specific required fields in expectedContext
+    if (eventType === ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED) {
+      if (supersededByRevision === undefined || supersededByRevision === null || supersededByRevision === '' || !isStrictPositiveInteger(supersededByRevision)) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+          'expectedContext.supersededByRevision is required and must be a positive integer for EVALUATION_REVISION_CREATED.'
+        );
+      }
+      if (Number(supersededByRevision) <= Number(revisionNumber)) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+          `expectedContext.supersededByRevision (${supersededByRevision}) must be greater than revisionNumber (${revisionNumber}).`
+        );
+      }
+    }
+
+    if (eventType === ARCHIVE_EVENT_TYPES.ROUTE_REASSIGNMENT_PRECHANGE) {
+      if (!stableEventId || typeof stableEventId !== 'string' || !stableEventId.trim()) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED',
+          'expectedContext.stableEventId is required and must be a non-empty string for ROUTE_REASSIGNMENT_PRECHANGE.'
+        );
+      }
+    }
+
+    // 3. Re-derive canonical Archive_Key from expectedContext
+    let derivedArchiveKey;
+    try {
+      derivedArchiveKey = buildArchiveKey({
+        eventType,
+        sourceRecordKey,
+        evaluationStage,
+        revisionNumber: Number(revisionNumber),
+        supersededByRevision: supersededByRevision ? Number(supersededByRevision) : undefined,
+        stableEventId
+      });
+    } catch (err) {
       throw new RevisionArchiveError(
         'ARCHIVE_GATE_EVIDENCE_INVALID',
-        `Archive evidence eventType (${evidence.eventType}) does not match expected (${expectedContext.eventType}).`
+        `Failed to canonically derive Archive_Key from expected context: ${err.message}`,
+        err
       );
+    }
+
+    if (derivedArchiveKey !== archiveKey) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `expectedContext.archiveKey ("${archiveKey}") does not match canonically derived Archive_Key ("${derivedArchiveKey}").`
+      );
+    }
+
+    if (derivedArchiveKey !== evidence.archiveKey) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Evidence archiveKey ("${evidence.archiveKey}") does not match canonically derived Archive_Key ("${derivedArchiveKey}").`
+      );
+    }
+
+    // 4. Exact evidence field matching
+    if (evidence.archiveKey !== archiveKey) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Evidence archiveKey ("${evidence.archiveKey}") does not match expectedContext.archiveKey ("${archiveKey}").`
+      );
+    }
+
+    if (evidence.snapshotHash !== snapshotHash.trim()) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Evidence snapshotHash ("${evidence.snapshotHash}") does not match expected snapshotHash ("${snapshotHash}").`
+      );
+    }
+
+    if (evidence.sourceRecordKey !== sourceRecordKey) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Archive evidence sourceRecordKey (${evidence.sourceRecordKey}) does not match expected (${sourceRecordKey}).`
+      );
+    }
+
+    if (evidence.evaluationStage !== evaluationStage) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Archive evidence evaluationStage (${evidence.evaluationStage}) does not match expected (${evaluationStage}).`
+      );
+    }
+
+    if (Number(evidence.revisionNumber) !== Number(revisionNumber)) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Archive evidence revisionNumber (${evidence.revisionNumber}) does not match expected (${revisionNumber}).`
+      );
+    }
+
+    if (evidence.eventType !== eventType) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_GATE_EVIDENCE_INVALID',
+        `Archive evidence eventType (${evidence.eventType}) does not match expected (${eventType}).`
+      );
+    }
+
+    if (eventType === ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED) {
+      if (Number(evidence.supersededByRevision) !== Number(supersededByRevision)) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EVIDENCE_INVALID',
+          `Archive evidence supersededByRevision (${evidence.supersededByRevision}) does not match expected (${supersededByRevision}).`
+        );
+      }
+    }
+
+    if (sourceRecordId !== undefined && sourceRecordId !== null && sourceRecordId !== '') {
+      if (!isStrictPositiveInteger(sourceRecordId)) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EVIDENCE_INVALID',
+          `expectedContext.sourceRecordId must be a positive integer, received: ${sourceRecordId}.`
+        );
+      }
+      if (evidence.sourceRecordId === null || evidence.sourceRecordId === undefined || Number(evidence.sourceRecordId) !== Number(sourceRecordId)) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EVIDENCE_INVALID',
+          `Archive evidence sourceRecordId (${evidence.sourceRecordId}) does not match expected (${sourceRecordId}).`
+        );
+      }
+    }
+
+    if (employeeCode !== undefined && employeeCode !== null) {
+      if (evidence.employeeCode !== employeeCode) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EVIDENCE_INVALID',
+          `Archive evidence employeeCode (${evidence.employeeCode}) does not match expected (${employeeCode}).`
+        );
+      }
+    }
+
+    if (fiscalYear !== undefined && fiscalYear !== null) {
+      if (evidence.fiscalYear !== fiscalYear) {
+        throw new RevisionArchiveError(
+          'ARCHIVE_GATE_EVIDENCE_INVALID',
+          `Archive evidence fiscalYear (${evidence.fiscalYear}) does not match expected (${fiscalYear}).`
+        );
+      }
     }
 
     return true;

@@ -54,7 +54,14 @@ export class RevisionArchiveKintoneRepository {
     }
 
     this.kintoneApi = kintoneApi;
-    this.appId = REVISION_ARCHIVE_APP_ID;
+  }
+
+  get appId() {
+    return REVISION_ARCHIVE_APP_ID;
+  }
+
+  set appId(_value) {
+    // Target is immutably locked to App 798. Post-construction mutation attempt is ineffective.
   }
 
   /**
@@ -71,7 +78,7 @@ export class RevisionArchiveKintoneRepository {
     }
 
     const query = `Archive_Key = "${escapeKintoneQueryValue(archiveKey)}" limit 5`;
-    const res = await this.kintoneApi.getRecords(this.appId, query);
+    const res = await this.kintoneApi.getRecords(REVISION_ARCHIVE_APP_ID, query);
     const records = res?.records || [];
 
     return records.map(rec => this._normalizeRecord(rec));
@@ -90,7 +97,7 @@ export class RevisionArchiveKintoneRepository {
       );
     }
 
-    const res = await this.kintoneApi.addRecord(this.appId, recordPayload);
+    const res = await this.kintoneApi.addRecord(REVISION_ARCHIVE_APP_ID, recordPayload);
     if (!res || (!res.id && !res.$id)) {
       throw new RevisionArchiveRepositoryError(
         'ARCHIVE_CREATE_FAILED',
