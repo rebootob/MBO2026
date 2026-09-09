@@ -209,3 +209,37 @@ test('Repository Immutability: exposes no update or delete operations', () => {
   assert.equal(typeof repo.deleteRecord, 'undefined');
   assert.equal(typeof repo.updateRecord, 'undefined');
 });
+
+test('Repository: post-construction appId reassignment cannot redirect find or create away from App 798', async () => {
+  let capturedGetAppId = null;
+  let capturedAddAppId = null;
+
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      capturedGetAppId = appId;
+      return { records: [] };
+    },
+    addRecord: async (appId, payload) => {
+      capturedAddAppId = appId;
+      return { id: 100, revision: 1 };
+    }
+  };
+
+  const repo = new RevisionArchiveKintoneRepository(mockApi);
+  assert.equal(repo.appId, 798);
+
+  // Attempt post-construction mutation
+  repo.appId = 799;
+
+  // Verify property remains 798
+  assert.equal(repo.appId, 798);
+
+  // findByArchiveKey must still invoke getRecords with 798
+  await repo.findByArchiveKey('TEST_KEY');
+  assert.equal(capturedGetAppId, 798);
+
+  // createArchiveRecord must still invoke addRecord with 798
+  await repo.createArchiveRecord({ Archive_Key: { value: 'TEST_KEY' } });
+  assert.equal(capturedAddAppId, 798);
+});
+

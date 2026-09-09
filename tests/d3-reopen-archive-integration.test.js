@@ -166,13 +166,27 @@ test('Controlled Reopen Gate: mutation blocked if archive evidence is missing, f
     sourceRecordKey: 'FY2026-EMP100',
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
-    eventType: 'EVALUATION_REVISION_CREATED'
+    eventType: 'EVALUATION_REVISION_CREATED',
+    supersededByRevision: 2,
+    archiveKey: 'FY2026-EMP100|OBJECTIVE|R1|EVALUATION_REVISION_CREATED|TO_R2',
+    snapshotHash: realEvidence.snapshotHash
   };
 
   // Missing evidence
   assert.throws(
     () => RevisionArchiveService.assertArchiveBeforeChangeGate(null, requiredContext),
     /ARCHIVE_GATE_EVIDENCE_INVALID/
+  );
+
+  // Incomplete broad context only fails closed
+  assert.throws(
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(realEvidence, {
+      sourceRecordKey: 'FY2026-EMP100',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      eventType: 'EVALUATION_REVISION_CREATED'
+    }),
+    /ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED/
   );
 
   // Fake plain object evidence
@@ -184,7 +198,8 @@ test('Controlled Reopen Gate: mutation blocked if archive evidence is missing, f
     eventType: 'EVALUATION_REVISION_CREATED',
     sourceRecordKey: 'FY2026-EMP100',
     evaluationStage: 'OBJECTIVE',
-    revisionNumber: 1
+    revisionNumber: 1,
+    supersededByRevision: 2
   };
   assert.throws(
     () => RevisionArchiveService.assertArchiveBeforeChangeGate(fakeEvidence, requiredContext),
@@ -310,8 +325,22 @@ test('Route Reassignment Gate: route change blocked before verified service-issu
     sourceRecordKey: 'FY2026-EMP100',
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
-    eventType: 'ROUTE_REASSIGNMENT_PRECHANGE'
+    eventType: 'ROUTE_REASSIGNMENT_PRECHANGE',
+    stableEventId: 'evt-1',
+    archiveKey: 'FY2026-EMP100|OBJECTIVE|R1|ROUTE_REASSIGNMENT_PRECHANGE|evt-1',
+    snapshotHash: realEvidence.snapshotHash
   };
+
+  // Incomplete broad context fails closed
+  assert.throws(
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(realEvidence, {
+      sourceRecordKey: 'FY2026-EMP100',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      eventType: 'ROUTE_REASSIGNMENT_PRECHANGE'
+    }),
+    /ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED/
+  );
 
   // Simulating in-flight route modification attempt without archive evidence
   let routeModified = false;
