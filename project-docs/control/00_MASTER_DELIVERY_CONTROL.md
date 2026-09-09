@@ -21,7 +21,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline is revision 70. Closed work remains durable unless proven regression or Owner change request. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED** and is not equivalent to engineering closure. |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Architecture is locked through `OWNER_DEC_D3_008`; readiness plan plus `D3-IMP-01` through `D3-IMP-04` are **PASS / CLOSED**; no current implementation package is authorized; live business-date provider remains a deployment blocker. |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Architecture is locked through `OWNER_DEC_D3_008`; readiness plan plus `D3-IMP-01` through `D3-IMP-05` are **PASS / CLOSED**; no current implementation package is authorized; live business-date provider remains a deployment blocker. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | Runtime/UAT activity exists but full business UAT closure is not established. |
@@ -65,6 +65,10 @@ D3-IMP-04-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-04-R2 = PASS / CLOSED
 D3-IMP-04_FINAL_REVIEW_HEAD = 077acd29534d28523b349aee7edc4d4a0148122a
 D3-IMP-04_FINAL_EVIDENCE_HEAD = d803ae60b42d97cde070d4efef41d5a2c8f836af
+D3-IMP-05 = PASS / CLOSED
+D3-IMP-05-R1 = PASS / CLOSED
+D3-IMP-05_FINAL_REVIEWED_IMPLEMENTATION_HEAD = 556165b8d467444d70c275ed388bfed2508010c9
+D3-IMP-05_FINAL_REVIEWED_EVIDENCE_HEAD = 077da72c4147993333c6cb3c8a77d661abf0ebe3
 D3_IMPLEMENTATION_MODE = BOUNDED PACKAGE AUTHORIZATION ONLY
 CURRENT_D3_IMPLEMENTATION_PACKAGE = NONE
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
@@ -191,6 +195,47 @@ DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 ```
 
+### D3-IMP-05 delivered capability
+
+Local-only native-process compatibility now exists for:
+- exact 19-state / 40-action D3 V1 Process Management payload definition;
+- deterministic topology-filtered forward paths for `M1_ONLY`, `M1_G1`, `M1_M2_G1`, `M1_G1_G2`, and `M1_M2_G1_G2`;
+- G2 states `04B GM Level 2 Objective Review`, `09B GM Level 2 Mid-Year Review`, and `14B GM Level 2 Final Evaluation`;
+- explicit M1-only bypass paths without requiring G1/G2;
+- D3 process capability gating while preserving the legacy no-capability G2 fail-closed path and generic ANY support;
+- exact sequential App794 snapshot field authority for M2/M1/G1/G2 with exact one user and `ALL` rule;
+- R1 complete-active-route fail-closed validation, including future active slots and exact user-code shape;
+- duplicate active sequential appraiser rejection while retaining topology identity independent of appraiser count;
+- compatibility with accepted post-self-elision effective topology compaction;
+- zero Kintone/process write/deployment execution.
+
+Accepted D3-IMP-05-R1 verification evidence:
+
+```text
+D3_PROCESS_VALIDATION_TESTS = 58 / 58 PASS
+D3_WORKFLOW_PAYLOAD_TESTS = 42 / 42 PASS
+WORKFLOW_VALIDATOR_TESTS = 3 / 3 PASS
+D3_IMP_01_TESTS = 40 / 40 PASS
+D3_IMP_02_TESTS = 68 / 68 PASS
+D3_IMP_03_TESTS = 86 / 86 PASS
+D3_IMP_04_TESTS = 103 / 103 PASS
+COMBINED_PRIOR_PACKAGE_REGRESSION_TESTS = 300 / 300 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+PROCESS_READS = 0
+PROCESS_WRITES = 0
+APP794_WRITES = 0
+APP795_WRITES = 0
+APP796_WRITES = 0
+APP798_WRITES = 0
+APP800_WRITES = 0
+SCHEMA_LIVE_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+```
+
 The pre-existing repository-wide Node test-harness non-exit remains documented and is not represented as a full-suite PASS.
 
 ## Recommended implementation sequence
@@ -200,8 +245,8 @@ D3-IMP-01 = PASS / CLOSED
 D3-IMP-02 = PASS / CLOSED
 D3-IMP-03 = PASS / CLOSED
 D3-IMP-04 = PASS / CLOSED
-D3-IMP-05 = NEXT RECOMMENDED / NOT AUTHORIZED
-D3-IMP-06 = NOT AUTHORIZED
+D3-IMP-05 = PASS / CLOSED
+D3-IMP-06 = NEXT RECOMMENDED / NOT AUTHORIZED
 D3-PREFLIGHT-READONLY = NOT AUTHORIZED
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
