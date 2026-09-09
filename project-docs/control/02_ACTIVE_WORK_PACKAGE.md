@@ -8,97 +8,83 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-01
-ACTIVE_WORK_PACKAGE_STATUS = ACTIVE / OWNER AUTHORIZED
-OWNER_AUTHORIZATION = APPROVED
-OWNER_AUTHORIZATION_TEXT = อนุมัติ D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests Only ตาม readiness plan
-STARTING_HEAD = ea9e780942df18698567f4a2ae06c3a30f2f2671
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE_STATUS = NONE
+OWNER_AUTHORIZATION = NONE CURRENT
 
-PREVIOUS_CLOSED_WORK_PACKAGE = D3-IMPLEMENTATION-READINESS-PLAN
-PREVIOUS_CLOSED_RESULT = PASS / CLOSED / EVIDENCE-GROUNDED
+LAST_CLOSED_WORK_PACKAGE = D3-IMP-01
+LAST_CLOSED_RESULT = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+LAST_REVIEWED_IMPLEMENTATION_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
+
+NEXT_RECOMMENDED_GATE = D3-IMP-02
+NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-## D3-IMP-01 objective
+## D3-IMP-01 closure record
 
-Implement pure deterministic D3 V1 domain contracts and focused automated tests for:
-
-- Model A effective-dated route-version selection;
-- canonical ordinal route-pattern normalization for all five supported topologies;
-- exact one-user-per-active-slot and ALL-only D3 V1 validation;
-- own-MBO self-elision preserving canonical business order;
-- explicit HR scorer-plan resolution for frozen `K_expected` 1 or 2;
-- deterministic canonical snapshot JSON serialization and SHA-256 hashing.
-
-This package is local-core only. It does not activate D3 runtime behavior in App794/App795/App798.
-
-## Exact source allow-list
+Owner authorization:
 
 ```text
-src/services/routing-service.js                         [only if required; legacy runtime behavior must remain backward-compatible]
-src/evaluation/appraiser-normalizer.js                 [only if adapter extraction is demonstrably required]
-src/services/d3-route-version-resolver.js              [new]
-src/services/d3-route-viability-service.js             [new]
-src/services/d3-snapshot-serializer.js                 [new]
-src/config/d3-route-contract.js                        [new, if needed]
+อนุมัติ D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests Only ตาม readiness plan
 ```
 
-## Exact test allow-list
+Starting implementation base:
 
 ```text
-tests/routing-service.test.js                          [only focused D3 extension if required]
-tests/d3-route-version-resolver.test.js                [new]
-tests/d3-route-viability-service.test.js               [new]
-tests/d3-snapshot-serializer.test.js                   [new]
-tests/core-794-795-796-integration.test.js             [targeted extension only if required]
+ea9e780942df18698567f4a2ae06c3a30f2f2671
 ```
 
-## Acceptance contract
+Final reviewed implementation head:
 
 ```text
-ALL_FIVE_TOPOLOGY_PATTERNS = REQUIRED
-BOTH_THREE_APPRAISER_PATTERNS_DISTINCT = REQUIRED
-USERS_PER_ACTIVE_SLOT = EXACTLY_1
-D3_V1_APPROVAL_RULE = ALL_ONLY
-SELF_ELISION_MATRIX = REQUIRED
-ZERO_SURVIVORS = SELF_APPROVAL_ROUTE_CONFLICT
-K_EXPECTED_SUPPORTED = 1 OR 2
-SCORER_PLAN = EXPLICIT_HR_CONFIGURATION_ONLY
-SCORER_DEFAULT = NONE
-MISSING_SCORER_PLAN = SCORER_PLAN_NOT_CONFIGURED
-K2_SCORERS = DISTINCT
-NO_EFFECTIVE_ROUTE = FAIL_CLOSED
-AMBIGUOUS_EFFECTIVE_ROUTE = FAIL_CLOSED
-FUTURE_ACTIVE_VERSION_BEFORE_EFFECTIVE_FROM = ZERO_EFFECT
-SNAPSHOT_SERIALIZATION = DETERMINISTIC_CANONICAL_JSON
-SNAPSHOT_HASH = SHA-256
+a2832b29bc391efc1773e0214ae072529f53ca2d
 ```
 
-## Prohibited operations in this package
+Accepted changed-file boundary:
 
 ```text
-CONFIG_SCHEMA_SPEC_CHANGES = NO
-APP794_FIELD_CREATION = NO
-APP795_SCHEMA_MIGRATION = NO
-APP798_RUNTIME_ARCHIVE_IMPLEMENTATION = NO
-MAIN_MBO_RUNTIME_INTEGRATION = NO
-PROCESS_MANAGEMENT_CHANGES = NO
+project-docs/control/02_ACTIVE_WORK_PACKAGE.md
+src/config/d3-route-contract.js
+src/services/d3-route-version-resolver.js
+src/services/d3-route-viability-service.js
+src/services/d3-snapshot-serializer.js
+tests/d3-route-version-resolver.test.js
+tests/d3-route-viability-service.test.js
+tests/d3-snapshot-serializer.test.js
+```
+
+No schema, main runtime integration, Process Management, Kintone read/write or deployment changes were included.
+
+## Verification evidence
+
+```text
+D3_FOCUSED_TESTS = PASS
+CORE_794_795_796_INTEGRATION_SPOT_CHECK = PASS
+MBO_EXPORT_IMPORT_DIAGNOSTIC = PASS / EXIT_CODE_0
+MBO_EXPORT_SERVICE_FOCUSED_TESTS = 16 PASS / 0 FAIL
+TRACKED_WORKTREE_AFTER_VERIFY = CLEAN
+SOURCE_CHANGES_DURING_VERIFY = 0
+TEST_CHANGES_DURING_VERIFY = 0
+DOC_CHANGES_DURING_VERIFY = 0
+COMMITS_CREATED_DURING_VERIFY = 0
+PUSHES_DURING_VERIFY = 0
 KINTONE_READS = 0
 KINTONE_WRITES = 0
-PROCESS_TRANSITIONS = 0
-DATA_BACKFILL = 0
-DEPLOYMENT = 0
-PRODUCTION_CUTOVER = 0
+SCHEMA_WRITES = 0
+PROCESS_WRITES = 0
+DEPLOYMENTS = 0
 ```
 
-## Review / stop rule
+Repository-wide `npm test` did not produce a normal final summary because the Node test process remained alive in the pre-existing legacy `tests/create-handler-form-state.test.js` path. That file was not changed by D3-IMP-01 and predates this package. This is retained as a documented legacy test-harness limitation; it is not recorded as a full-suite PASS and it is not treated as a D3-IMP-01 regression.
 
-Substantive changes require fresh-fetch independent Control Plane review before `PASS / CLOSED`.
+## Closure verdict
 
-Stop and do not widen scope if:
+```text
+D3-IMP-01 = PASS / CLOSED
+CODE_CORRECTIVE_REQUIRED = NO
+REIMPLEMENTATION_REQUIRED = NO
+LEGACY_TEST_HARNESS_NON_EXIT = PRE-EXISTING / OUTSIDE D3-IMP-01 DIFF / NON-BLOCKING FOR THIS PACKAGE
+```
 
-- required behavior needs `config/schema-spec.js`, `src/main-mbo-app.js`, Kintone scripts, live/sandbox data, Process Management, deployment, or another file outside the allow-list;
-- architecture truth conflicts with a locked D3 decision;
-- test evidence shows regression outside the package.
-
-No subsequent D3 package is authorized by this contract.
+No subsequent D3 package is authorized by this closure.
