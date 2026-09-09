@@ -37,7 +37,6 @@ export class RevisionArchiveKintoneRepository {
   /**
    * @param {object} kintoneApi - Injected Kintone API adapter ({ getRecords, addRecord })
    * @param {object} [options] - Configuration options
-   * @param {number} [options.appId=798] - Target archive app ID (default 798)
    */
   constructor(kintoneApi, options = {}) {
     if (!kintoneApi || typeof kintoneApi.getRecords !== 'function' || typeof kintoneApi.addRecord !== 'function') {
@@ -47,8 +46,15 @@ export class RevisionArchiveKintoneRepository {
       );
     }
 
+    if (options && 'appId' in options) {
+      throw new RevisionArchiveRepositoryError(
+        'ARCHIVE_APP_ID_OVERRIDE_FORBIDDEN',
+        'Caller-selectable appId is forbidden. RevisionArchiveKintoneRepository is locked to App 798.'
+      );
+    }
+
     this.kintoneApi = kintoneApi;
-    this.appId = Number(options.appId) || REVISION_ARCHIVE_APP_ID;
+    this.appId = REVISION_ARCHIVE_APP_ID;
   }
 
   /**
