@@ -13,9 +13,10 @@ CANONICAL_BRANCH = ai/antigravity-wp002c
 CONTROL_MODEL = MBO CONTROL TRUTH V3
 
 ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-03
+LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-04
 LAST_CLOSED_CONTROL_PACKAGE_STATUS = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-LAST_REVIEWED_IMPLEMENTATION_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
+LAST_REVIEWED_IMPLEMENTATION_HEAD = 077acd29534d28523b349aee7edc4d4a0148122a
+LAST_REVIEWED_EVIDENCE_HEAD = d803ae60b42d97cde070d4efef41d5a2c8f836af
 
 D3_IMPLEMENTATION_READINESS_PLAN = COMPLETE
 D3_IMP_01 = PASS / CLOSED
@@ -23,11 +24,14 @@ D3_IMP_02 = PASS / CLOSED
 D3_IMP_02_R2 = PASS / CLOSED
 D3_IMP_03 = PASS / CLOSED
 D3_IMP_03_R2 = PASS / CLOSED
+D3_IMP_04 = PASS / CLOSED
+D3_IMP_04_R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3_IMP_04_R2 = PASS / CLOSED
 
 D3_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
 APP794_FIELD_CREATION_AUTHORIZED = NO
 APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
-APP798_BEHAVIOR_IMPLEMENTATION_AUTHORIZED = NO
+APP798_BEHAVIOR_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
 SOURCE_CODE_CHANGES_AUTHORIZED = NO CURRENT PACKAGE
 TEST_CHANGES_AUTHORIZED = NO CURRENT PACKAGE
 DEPLOYMENT_AUTHORIZED = NO
@@ -36,7 +40,7 @@ KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 
-NEXT_RECOMMENDED_GATE = D3-IMP-04
+NEXT_RECOMMENDED_GATE = D3-IMP-05
 NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
@@ -47,7 +51,7 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 |---|---|
 | D1 | **PASS / CLOSED / DURABLE**; accepted live App794 revision 70 |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE**; Owner runtime UAT **IN PROGRESS / PAUSED** |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan, `D3-IMP-01`, `D3-IMP-02`, and `D3-IMP-03` are **PASS / CLOSED**; no current package authorized; live business-date provider remains a pre-deployment blocker |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan and `D3-IMP-01` through `D3-IMP-04` are **PASS / CLOSED**; no current package authorized; live business-date provider remains a pre-deployment blocker |
 | D4 | **IN PROGRESS / NOT ACTIVE** |
 | D5 | **IN PROGRESS / NOT ACTIVE** |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** |
@@ -119,6 +123,14 @@ D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-03-R2 = PASS / CLOSED
 D3-IMP-03_FINAL_REVIEW_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
 D3-IMP-03_SCOPE_LEAK = NONE FOUND
+
+D3-IMP-04 = PASS / CLOSED
+D3-IMP-04-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3-IMP-04-R2 = PASS / CLOSED
+D3-IMP-04_FINAL_REVIEW_HEAD = 077acd29534d28523b349aee7edc4d4a0148122a
+D3-IMP-04_FINAL_EVIDENCE_HEAD = d803ae60b42d97cde070d4efef41d5a2c8f836af
+D3-IMP-04_SCOPE_LEAK = NONE FOUND
+
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
@@ -136,7 +148,17 @@ Accepted D3-IMP-03 capability:
 - App794 five-field route/provenance binding with post-self-elision effective scorer ordinals;
 - fail-closed immutable bound-stage reuse and stage-boundary archive prerequisite contract;
 - explicit-only business-date source lock with no record/current-clock/legacy fallback;
-- no App798 runtime implementation or live deployment in this package.
+- no live App798 or deployment execution in this package.
+
+Accepted D3-IMP-04 capability:
+- App798 immutable event-scoped archive service/repository boundary for stage completion, revision creation and route reassignment pre-change;
+- deterministic Archive_Key and canonical D3 snapshot SHA-256;
+- exact idempotency, create/read-back verification and uncertain-write recovery without blind duplicate creation;
+- App798 target hard-locked to 798 with no update/delete operation;
+- service-issued archive evidence with exact-event binding to Archive_Key and Snapshot_Hash;
+- reopen evidence binds old revision to exact superseding revision; reassignment evidence binds exact Stable_Event_ID;
+- explicit `{ userCode }` actor and explicit/injected timestamp authority only;
+- source identity, K/scorer/appraiser snapshot coherence and archive-before-change fail-closed gates.
 
 Verification evidence recorded by execution and accepted by independent source/diff review:
 
@@ -150,12 +172,21 @@ D3_IMP_03_CORE_INTEGRATION_TESTS = 1 / 1 PASS
 D3_IMP_03_COMBINED_FOCUSED_TESTS = 86 / 86 PASS
 D3_IMP_03_ALL_D3_TESTS = 156 / 156 PASS
 
+D3_IMP_04_R2_SERVICE_TESTS = 76 / 76 PASS
+D3_IMP_04_R2_REPOSITORY_TESTS = 9 / 9 PASS
+D3_IMP_04_R2_IDEMPOTENCY_TESTS = 14 / 14 PASS
+D3_IMP_04_R2_REOPEN_INTEGRATION_TESTS = 4 / 4 PASS
+D3_IMP_04_R2_COMBINED = 103 / 103 PASS
+D3_IMP_04_R2_ALL_D3_REGRESSION = 297 / 297 PASS
+
 KINTONE_READS = 0
 KINTONE_WRITES = 0
 NETWORK_CALLS = 0
 SCHEMA_LIVE_WRITES = 0
 PROCESS_WRITES = 0
-APP798_WRITES = 0
+APP798_LIVE_READS = 0
+APP798_LIVE_WRITES = 0
+APP794_WRITES = 0
 DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 ```
@@ -168,8 +199,8 @@ The pre-existing repository-wide Node test-harness non-exit remains documented f
 D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests       PASS / CLOSED
 D3-IMP-02 Local Schema Target + Guarded Migration Tooling                PASS / CLOSED
 D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration  PASS / CLOSED
-D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service           NEXT RECOMMENDED / NOT AUTHORIZED
-D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only     NOT AUTHORIZED
+D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service           PASS / CLOSED
+D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only     NEXT RECOMMENDED / NOT AUTHORIZED
 D3-IMP-06 App800 HR Versioned Routing Self-Service                       NOT AUTHORIZED
 D3-PREFLIGHT-READONLY                                                     NOT AUTHORIZED
 D3-SBX-MIGRATION-01                                                       NOT AUTHORIZED
@@ -199,6 +230,6 @@ Do not equate engineering closure with Owner runtime UAT closure.
 
 ## 7. Execution boundary
 
-No current active package authorizes source changes, tests/builds, config/schema changes, App794 field creation, App795 migration, App798 behavior implementation, deployment, Kintone reads/writes, process transitions or data backfill.
+No current active package authorizes source changes, tests/builds, config/schema changes, App794 field creation, App795 migration, App798 live behavior execution, deployment, Kintone reads/writes, process transitions or data backfill.
 
 A next substantive gate requires fresh explicit Owner authorization.
