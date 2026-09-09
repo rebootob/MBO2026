@@ -9,17 +9,22 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = NONE
-CURRENT_EXECUTION = NONE
-OWNER_AUTHORIZED_CURRENT_PACKAGE = NO
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PRE1-R1
+OWNER_AUTHORIZED = YES
+MODE = DOCS/EVIDENCE-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
+R1_EXECUTION_COMPLETE = YES
+INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
+PRE1_CLOSED = NO
+R1_BASE_HEAD = 576938c2994ebfb4893780a2699c47139634fd42
+ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
+ROUTE_MANIFEST_CANONICALIZATION = ECMASCRIPT_JSON_STRINGIFY_MANIFEST_ROWS_UTF8_NO_TRAILING_NEWLINE
 
-LAST_CLOSED_PLAN_PACKAGE = D3-SBX-MIGRATION-01-PRE1
-LAST_CLOSED_CORRECTIVE = D3-SBX-MIGRATION-01-PRE1-R1
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-PRE1-CLOSE
-
-D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-PRE1-CLOSE = PASS / CLOSED / DOCS-ONLY
+ALLOWED = correct PRE1 planning/control/evidence documents only
+ALLOWED = establish deterministic manifest-hash provenance
+ALLOWED = add explicit App795 schema-executor and record-seed-executor blockers
+ALLOWED = align machine executionBlockedUntil with human plan
+ALLOWED = update document index routing for PRE1/R1 evidence
+ALLOWED = synchronize current control docs
 
 KINTONE_READ_AUTHORIZED = NO
 KINTONE_WRITE_AUTHORIZED = NO
@@ -33,26 +38,25 @@ D3-SBX-MIGRATION-01_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-## PRE1 closure evidence retained
+## Owner authorization
 
-```text
-EXACT_ROUTE_COUNT = 20
-ROUTE_DISTRIBUTION = 17 x M1_G1 + 3 x M1_ONLY
-ROUTE_MANIFEST_SHA256 = b51fb7f4e81953c48858409a1ceb8ea948c0a2e0eb384ad3aabc9b6640d7a04b
-SCORER_PROPOSAL = M1_G1->[1,2], M1_ONLY->[1] / NOT OWNER-HR APPROVED
-```
+Exact Owner authorization:
 
-## Remaining prerequisites before any migration write
+`อนุมัติ D3-SBX-MIGRATION-01-PRE1-R1 Manifest Integrity + Complete Migration-Tooling Blocker Corrective แบบ DOCS/EVIDENCE-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT`
 
-1. Explicit Owner/HR approval of exact scorer mapping.
-2. Implement/review a guarded App795 staged schema migration executor under a separate bounded authorization.
-3. Implement/review a guarded exact 20-row App795 revision-checked seed/read-back executor under a separate bounded authorization.
-4. Implement/review an App794 D3 provenance field migration executor.
-5. Explicitly resolve the existing App794 record provenance/backfill policy; no guessing.
-6. Perform a fresh write-time backup and drift check before any future write authorization/execution.
+## R1 corrective requirements
 
-App795 HR ACL remains prepared/deferred and is not part of migration authorization. `LIVE_BUSINESS_DATE_PROVIDER` remains an unresolved deployment blocker.
+1. Define exact canonical bytes for the 20-route array and record a reproducible SHA-256.
+2. Preserve the former `b51fb7...` value only as non-authoritative legacy provenance.
+3. Record that `d3-migrate-routing-schema.js` is a DRY-RUN planner, not a live App795 schema executor.
+4. Record that App795 record seed tooling is planning-only and not a reviewed live executor.
+5. Add both App795 executor prerequisites to the migration blocker contract.
+6. Retain the App794 provenance executor prerequisite and make the unresolved existing-record provenance/backfill policy machine-blocking.
+7. Keep scorer proposal non-authoritative until explicit Owner/HR approval.
+8. Keep ACL change deferred and preserve `admin-form` non-HR boundary.
+9. Route PRE1/R1/manifest artifacts from `AI_DOCUMENT_INDEX.md`.
+10. Do not implement any executor or perform any live operation.
 
 ## Current boundary
 
-There is no active work package. The next permitted action is Owner selection or explicit authorization of a separately bounded local guarded executor implementation/review gate. Do not auto-start migration, deployment, UAT or cutover.
+`D3-SBX-MIGRATION-01` remains NOT AUTHORIZED. R1 must receive an independent Control Plane review before PRE1 can close or any next implementation package can be proposed.

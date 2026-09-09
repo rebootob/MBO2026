@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-09 ICT
+Updated: 2026-09-10 ICT
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -52,6 +52,12 @@ Primary durable decision/evidence documents:
 - `project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md`
 - `project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md`
 - `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md` — evidence-grounded implementation sequence, exact planned boundaries and live-preflight/deployment gates; does not itself authorize implementation.
+
+D3 sandbox-migration planning/evidence:
+
+- `project-docs/D3_SBX_MIGRATION_01_PRE1.md` — exact 20-route migration/scorer/ACL plan derived from accepted preflight evidence.
+- `project-docs/D3_SBX_MIGRATION_01_PRE1_R1.md` — manifest-integrity and complete migration-tooling blocker corrective.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` — machine-readable 20-route manifest, deterministic route-array integrity contract, and execution blocker list.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
