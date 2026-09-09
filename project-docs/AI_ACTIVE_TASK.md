@@ -1,137 +1,50 @@
-# AI ACTIVE TASK — D3-DECISION-008-SYNC-R2 EXECUTED
+# AI ACTIVE TASK — MBO2026
 
-Mode: **CONTROL-DOC CORRECTIVE / DOCUMENTATION-ONLY / AWAITING CONTROL PLANE REVIEW**  
-Branch: `ai/antigravity-wp002c`  
 Updated: 2026-09-09 ICT
 
-## Current truth
+> Convenience execution-packet view only. Exact active authorization is owned by `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`.
+
+## Current task state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-DECISION-008-SYNC-R2
-ACTIVE_WORK_PACKAGE_TITLE = Authority Provenance Corrective for D3-008 Control Sync
-WORK_PACKAGE_TYPE = CONTROL-DOC CORRECTIVE / DOCUMENTATION-ONLY
-OWNER_AUTHORIZATION = APPROVED / EXPLICIT
-STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
+ACTIVE_TASK = NONE
+ACTIVE_WORK_PACKAGE = NONE
+LAST_CLOSED_PACKAGE = MBO-CONTROL-GOVERNANCE-CONSOLIDATION
+LAST_CLOSED_RESULT = PASS / CLOSED / SAME-RUN CONTROL-PLANE VERIFIED
+NEXT_ACTION = READ AI_CONTROL_CENTER.md AND WAIT FOR OWNER SELECTION OF NEXT BOUNDED GATE
+```
 
-PARENT_D3_DECISION_008_SYNC = PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d
-D3-DECISION-008-SYNC-R1 = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
-SNAPSHOT_METADATA_PATH_DECISION = LOCKED
+No source, schema, test, build, deployment, Kintone read/write, process transition or data-backfill work is authorized by this file.
 
+## How to use this file
+
+When a substantive package becomes active, this file may contain a human-readable execution packet summarizing:
+
+- package objective;
+- exact allowed files/operations;
+- required evidence/tests;
+- stop conditions;
+- expected review handoff.
+
+It must not widen or contradict `control/02_ACTIVE_WORK_PACKAGE.md`.
+
+If no package is active, keep this file short and route readers to the authoritative control sources rather than copying project state here.
+
+## Current authority routing
+
+1. `project-docs/AI_CONTROL_CENTER.md` — current project/gate truth.
+2. `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` — exact active authorization or NONE.
+3. `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` — D1-D7 scoreboard.
+4. `project-docs/AI_DOCUMENT_INDEX.md` — exact decision/baseline/evidence routing.
+5. `project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md` — control-truth and review-loop policy.
+
+## Permanent boundary
+
+```text
 D3_IMPLEMENTATION_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
-
-NEXT_PERMITTED_ACTION = CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R2
 ```
 
-## R2 Owner-authorized corrective scope
-
-The original `D3-DECISION-008-SYNC` Owner approval covered exactly four control documents:
-
-```text
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-```
-
-R1 was executed after the original sync without explicit Owner authorization. R1 is therefore not an accepted work package and must not be used as authorization precedent.
-
-R2 is explicitly Owner-authorized to reconcile exactly these six current control documents:
-
-```text
-project-docs/CHAT_HANDOFF.md
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-project-docs/AI_DOCUMENT_INDEX.md
-```
-
-R2 may correct provenance/current-state wording only. It may not reopen architecture or authorize implementation. R2 does not retroactively authorize R1.
-
-## Locked D3 routing architecture
-
-```text
-DECISION_D3_001 = LOCKED / OWNER APPROVED
-DECISION_D3_002 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_003 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_005 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_006 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_007 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
-
-OWNER_DEC_D3_008_VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
-```
-
-## Current D3 target contract
-
-```text
-WORKFLOW_APPRAISER_COUNT = 1..4
-USERS_PER_SEQUENTIAL_SLOT = EXACTLY 1
-NATIVE_ASSIGNEE_RULE = ALL
-CURRENT_LIVE_STANDARD_ROUTE = M1_G1 / 2 APPRAISERS
-D3_TARGET_ROUTE_CAPABILITY = 1..4 APPRAISERS
-
-EFFECTIVE_DATED_ROUTING_MODEL = MODEL_A_VERSIONED_ROWS_IN_APP795
-ROUTING_KEY_UNIQUE = NO
-VERSION_KEY_UNIQUE = YES
-ROUTE_VERSION_HAS_NO_EFFECT_BEFORE_EFFECTIVE_FROM = YES
-RESOLVER = READ_ONLY_DATE_INTERVAL
-
-APP794_NEW_LOGICAL_FIELDS = 5
-Frozen_Profile_Code
-K_expected_Snapshot
-Effective_Routing_Key
-Effective_Route_Version_Key
-Effective_Scorer_Slots_Snapshot
-APP794_EFFECTIVE_ROUTING_KEY_REQUIRED = YES
-APP794_BOUND_STAGE_AUTHORITY_AFTER_RESOLUTION = YES
-
-APP798_RUNTIME_ROUTING_AUTHORITY = NO
-APP798_EVENT_SCOPED_HISTORY = YES
-EVENT_TYPE_1 = STAGE_COMPLETION_SNAPSHOT
-EVENT_TYPE_2 = EVALUATION_REVISION_CREATED
-EVENT_TYPE_3 = ROUTE_REASSIGNMENT_PRECHANGE
-ARCHIVE_KEY_IDEMPOTENT_EVENT_IDENTITY = YES
-ARCHIVE_HASH_CONFLICT = FAIL_CLOSED
-ARCHIVE_ACTOR_NOT_RESOLVED = FAIL_CLOSED
-```
-
-The legacy six-slot stage-specific App794 physical persistence model remains superseded for D3 V1 where it conflicts with D3-008.
-
-## Project stage status
-
-```text
-D1 = PASS / CLOSED / DURABLE
-D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED
-D3 = ARCHITECTURE / DESIGN ACTIVE
-D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / CONTROL_PROVENANCE_CORRECTIVE_AWAITING_REVIEW
-D3_IMPLEMENTATION_AUTHORIZED = NO
-PRODUCTION_READY = NO
-```
-
-## Current execution boundary
-
-This active task does **not** authorize:
-
-```text
-SOURCE CODE CHANGE
-TEST CHANGE
-CONFIG OR SCHEMA CHANGE
-APP794 FIELD CREATION
-APP795 MODEL A MIGRATION
-APP798 ARCHIVE IMPLEMENTATION
-BUILD
-DEPLOYMENT
-KINTONE READ/WRITE
-PROCESS TRANSITION
-DATA BACKFILL
-IMPLEMENTATION-READINESS START
-```
-
-No next D3 work package may be treated as started until R2 receives independent Control Plane review and the Owner separately authorizes the next bounded gate.
+Read the Control Center for any newer state before relying on these boundary reminders.
