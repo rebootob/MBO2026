@@ -9,26 +9,25 @@ Updated: 2026-09-09 ICT
 ```text
 ACTIVE_TASK = NONE
 ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_PACKAGE = MBO-CONTROL-GOVERNANCE-CONSOLIDATION
-LAST_CLOSED_RESULT = PASS / CLOSED / SAME-RUN CONTROL-PLANE VERIFIED
-NEXT_ACTION = READ AI_CONTROL_CENTER.md AND WAIT FOR OWNER SELECTION OF NEXT BOUNDED GATE
+LAST_CLOSED_PACKAGE = D3-IMPLEMENTATION-READINESS-PLAN
+LAST_CLOSED_RESULT = PASS / CLOSED / EVIDENCE-GROUNDED
+D3_IMPLEMENTATION_READINESS_PLAN = COMPLETE
+D3_IMPLEMENTATION_AUTHORIZED = NO
+NEXT_RECOMMENDED_GATE = D3-IMP-01
+NEXT_ACTION = WAIT FOR OWNER SELECTION OR EXACT AUTHORIZATION OF NEXT BOUNDED GATE
 ```
 
+Readiness plan:
+
+`project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md`
+
+Recommended first future gate:
+
+`D3-IMP-01 — Local Core Routing / Scorer / Snapshot Contracts + Tests Only`
+
+This recommendation is not an authorization.
+
 No source, schema, test, build, deployment, Kintone read/write, process transition or data-backfill work is authorized by this file.
-
-## How to use this file
-
-When a substantive package becomes active, this file may contain a human-readable execution packet summarizing:
-
-- package objective;
-- exact allowed files/operations;
-- required evidence/tests;
-- stop conditions;
-- expected review handoff.
-
-It must not widen or contradict `control/02_ACTIVE_WORK_PACKAGE.md`.
-
-If no package is active, keep this file short and route readers to the authoritative control sources rather than copying project state here.
 
 ## Current authority routing
 
@@ -43,8 +42,7 @@ If no package is active, keep this file short and route readers to the authorita
 ```text
 D3_IMPLEMENTATION_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
+KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 ```
-
-Read the Control Center for any newer state before relying on these boundary reminders.
