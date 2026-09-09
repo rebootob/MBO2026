@@ -128,3 +128,20 @@ test('Model A: exact Routing_Key isolation', () => {
   assert.equal(resolved.routingKey, 'TMF1');
   assert.equal(resolved.versionKey, 'TMF1#v1');
 });
+
+test('Model A: resolver rejects timestamp input to avoid timezone-dependent routing', () => {
+  const records = [
+    route({ version: 1, from: '2026-04-01' })
+  ];
+
+  assert.throws(
+    () => resolveEffectiveRouteVersion({
+      records,
+      routingKey: 'TME1',
+      at: '2026-09-09T23:30:00+07:00'
+    }),
+    error =>
+      error instanceof D3RouteVersionResolutionError &&
+      error.code === 'INVALID_RESOLUTION_DATE'
+  );
+});
