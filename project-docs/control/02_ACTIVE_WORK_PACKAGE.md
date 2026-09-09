@@ -9,7 +9,7 @@ Updated: 2026-09-09 ICT
 
 ```text
 ACTIVE_WORK_PACKAGE = D3-IMP-05-R1
-ACTIVE_WORK_PACKAGE_STATUS = ACTIVE
+ACTIVE_WORK_PACKAGE_STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 TITLE = Full Active-Route Slot Integrity + Exact User Identity Corrective
 OWNER_AUTHORIZATION = อนุมัติ D3-IMP-05-R1 Full Active-Route Slot Integrity + Exact User Identity Corrective แบบ LOCAL-ONLY / ZERO KINTONE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
 STARTING_HEAD = bde8a7d52cd2eafa7999d0e6cee0e9ab7c5697f8
@@ -29,6 +29,7 @@ D3-IMP-04 = PASS / CLOSED
 D3-IMP-04-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-04-R2 = PASS / CLOSED
 D3-IMP-05 = PARTIAL PASS / SUPERSEDED BY ACCEPTED R1 CORRECTIVE
+D3-IMP-05-R1 = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -420,8 +421,37 @@ ACTIVE_WORK_PACKAGE = D3-IMP-05-R1
 TITLE = Full Active-Route Slot Integrity + Exact User Identity Corrective
 OWNER_AUTHORIZATION = อนุมัติ D3-IMP-05-R1 Full Active-Route Slot Integrity + Exact User Identity Corrective แบบ LOCAL-ONLY / ZERO KINTONE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
 STARTING_HEAD = bde8a7d52cd2eafa7999d0e6cee0e9ab7c5697f8
-STATUS = IN_PROGRESS / LOCAL_IMPLEMENTATION
+STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 CANONICAL_BRANCH = ai/antigravity-wp002c
+```
+
+Capabilities implemented in D3-IMP-05-R1:
+- Canonical topology-to-active-slot map (`D3_ACTIVE_ROUTE_SLOTS`) and authority field mapping (`D3_SLOT_FIELD_MAP`) exported in `src/validation/validation-engine.js`:
+  - `M1_ONLY`: `['M1']`
+  - `M1_G1`: `['M1', 'G1']`
+  - `M1_M2_G1`: `['M2', 'M1', 'G1']`
+  - `M1_G1_G2`: `['M1', 'G1', 'G2']`
+  - `M1_M2_G1_G2`: `['M2', 'M1', 'G1', 'G2']`
+- Full active-route fail-closed preflight in `validateWorkflowAction`: validates the COMPLETE ACTIVE route snapshot for the topology up-front before accepting any D3 workflow action (e.g. `M1_G1_G2` initial submit at `01 Draft Objective` immediately fails if future slot G2 is missing or invalid).
+- Exact User Identity Contract: active approver slots must contain an array of length exactly 1, containing a valid Kintone user object with `code` of type string, non-empty, and not whitespace-only (rejects `[]`, `[{}]`, `[{ code: "" }]`, `[{ code: "   " }]`, `[{ name: "User" }]`, `[{ code: null }]`, `[{ code: 123 }]`, `["u1"]`, and >1 users).
+- Approval Rule Contract: every active slot must have `Approval_Rule === "ALL"` (rejects blank, ANY, ONE, all, and padded whitespace).
+- Distinct Active User Integrity: enforces that no two active sequential approver slots in the route have the same user code (fails closed on M2=u1 and M1=u1, M1=u1 and G1=u1, G1=u1 and G2=u1; does not apply to `Requester_User`).
+- Deduplication: uses a local `Set` of validated slot keys to ensure full-route preflight slot validation does not duplicate errors with later action-specific checks.
+- Inactive slots non-requirement: slots inactive for a given topology (e.g., M2/G1/G2 in `M1_ONLY`, M2/G2 in `M1_G1`, G2 in `M1_M2_G1`, M2 in `M1_G1_G2`) are not required.
+
+Verification evidence:
+```text
+D3_PROCESS_VALIDATION_TESTS = 58 / 58 PASS (130ms)
+D3_WORKFLOW_PAYLOAD_TESTS = 42 / 42 PASS (114ms)
+WORKFLOW_VALIDATOR_TESTS = 3 / 3 PASS (89ms)
+
+D3_IMP_01_TESTS = 40 / 40 PASS (201ms)
+D3_IMP_02_TESTS = 68 / 68 PASS (127ms)
+D3_IMP_03_TESTS = 86 / 86 PASS (212ms)
+D3_IMP_04_TESTS = 103 / 103 PASS (233ms)
+COMBINED_REGRESSION_TESTS = 300 / 300 PASS
+
+PRE_EXISTING_LEGACY_TEST_HARNESS_NON_EXIT = create-handler-form-state.test.js (documented pre-existing non-exit)
 
 KINTONE_READS = 0
 KINTONE_WRITES = 0
