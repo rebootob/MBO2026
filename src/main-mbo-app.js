@@ -684,7 +684,7 @@ if (typeof kintone !== 'undefined') {
 
         // Step 5: D3 Model A Route Resolution with Canonical K & Explicit Business Date
         // LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
-        const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate || record?.Resolution_Business_Date?.value;
+        const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
         if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
           throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED). Live business date provider is unresolved and blocks deployment.');
         }

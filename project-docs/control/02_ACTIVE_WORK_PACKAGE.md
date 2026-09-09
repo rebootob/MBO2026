@@ -8,8 +8,8 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-03-R1
-ACTIVE_WORK_PACKAGE_STATUS = IN_PROGRESS
+ACTIVE_WORK_PACKAGE = D3-IMP-03-R2
+ACTIVE_WORK_PACKAGE_STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
 LAST_CLOSED_WORK_PACKAGE = D3-IMP-02
@@ -19,6 +19,8 @@ LAST_REVIEWED_IMPLEMENTATION_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
 D3-IMP-02-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-02-R2 = PASS / CLOSED
 D3-IMP-03 = INDEPENDENT CONTROL PLANE REVIEWED / 3 BLOCKING FINDINGS -> R1 AUTHORIZED
+D3-IMP-03-R1 = INDEPENDENT CONTROL PLANE REVIEWED / 1 REMAINING DEFECT -> R2 AUTHORIZED
+D3-IMP-03-R2 = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -168,3 +170,43 @@ Three blocking findings corrected:
    - Zero silent repair in `extractD3BoundSnapshot`.
    - Full validation checks active rules explicitly `'ALL'`, inactive slots empty, unique approvers, distinct K=2 scorers, no self-scoring.
    - Employee reset/change safety clears 5 D3 provenance fields.
+
+## D3-IMP-03-R2 corrective package
+
+Owner-authorized package:
+
+```text
+D3-IMP-03-R2 = Explicit Business-Date Source Lock + Final Test Evidence
+SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
+Capabilities and locks implemented:
+- Explicit Business-Date Source Lock in `src/main-mbo-app.js`:
+  - Removed unauthorized `record?.Resolution_Business_Date?.value` fallback completely.
+  - Runtime sources locked strictly to explicit injected `authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate`.
+  - Zero reading of business date from App794 record fields.
+  - Fail closed with `RESOLUTION_BUSINESS_DATE_REQUIRED` if explicit injected date is missing.
+  - Zero legacy query fallback to `Active in ("Active")`.
+  - Record `Resolution_Business_Date` cannot satisfy or alter route version selection.
+  - Explicit injected date remains authoritative even if record contains a different date value.
+
+Verification evidence:
+```text
+D3_RUNTIME_ROUTE_BINDING_TESTS = 48 / 48 PASS
+ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
+CORE_INTEGRATION_TESTS = 1 / 1 PASS
+D3_IMP_01_TESTS = 40 / 40 PASS
+D3_IMP_02_TESTS = 68 / 68 PASS
+COMBINED_FOCUSED_TESTS = 86 / 86 PASS
+ALL_D3_TESTS = 156 / 156 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+APP798_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+```
