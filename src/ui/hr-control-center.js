@@ -1,4 +1,5 @@
 import { MboKintoneAuthAdapter } from './mbo-kintone-auth-adapter.js';
+export { renderHrRoutingManagerHtml, bindHrRoutingManagerEvents } from './hr-routing-manager.js';
 
 /**
  * MBO 2026 — Secure HR Control Center UI Component & Runtime

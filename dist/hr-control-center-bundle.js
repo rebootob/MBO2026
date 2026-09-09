@@ -453,6 +453,2093 @@
     }
   };
 
+  // src/config/d3-route-contract.js
+  var D3RouteContractError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3RouteContractError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  var D3_ROUTE_PATTERNS = Object.freeze({
+    PATTERN_1_M1: Object.freeze({
+      topology: "M1_ONLY",
+      sourceSlots: Object.freeze(["M1"])
+    }),
+    PATTERN_2_M1_G1: Object.freeze({
+      topology: "M1_G1",
+      sourceSlots: Object.freeze(["M1", "G1"])
+    }),
+    PATTERN_3A_M2_M1_G1: Object.freeze({
+      topology: "M1_M2_G1",
+      sourceSlots: Object.freeze(["M2", "M1", "G1"])
+    }),
+    PATTERN_3B_M1_G1_G2: Object.freeze({
+      topology: "M1_G1_G2",
+      sourceSlots: Object.freeze(["M1", "G1", "G2"])
+    }),
+    PATTERN_4_M2_M1_G1_G2: Object.freeze({
+      topology: "M1_M2_G1_G2",
+      sourceSlots: Object.freeze(["M2", "M1", "G1", "G2"])
+    })
+  });
+  var D3_SLOT_DEFINITIONS = Object.freeze({
+    M1: Object.freeze({
+      approverField: "Manager_Level1_Approvers",
+      legacyApproverField: "Manager_User",
+      approvalRuleField: "Manager_Level1_Approval_Rule"
+    }),
+    M2: Object.freeze({
+      approverField: "Manager_Level2_Approvers",
+      legacyApproverField: "First_Manager_User",
+      approvalRuleField: "Manager_Level2_Approval_Rule"
+    }),
+    G1: Object.freeze({
+      approverField: "GM_Level1_Approvers",
+      legacyApproverField: "GM_User",
+      approvalRuleField: "GM_Level1_Approval_Rule"
+    }),
+    G2: Object.freeze({
+      approverField: "GM_Level2_Approvers",
+      legacyApproverField: null,
+      approvalRuleField: "GM_Level2_Approval_Rule"
+    })
+  });
+  function unwrapD3Field(value) {
+    if (value && typeof value === "object" && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, "value")) {
+      return value.value;
+    }
+    return value;
+  }
+  function readD3String(value) {
+    const raw = unwrapD3Field(value);
+    if (raw === null || raw === void 0) return "";
+    return String(raw).trim();
+  }
+  function normalizeUserIdentity(rawUser, fieldCode) {
+    if (typeof rawUser === "string") {
+      const code = rawUser.trim();
+      if (!code || rawUser !== code) {
+        throw new D3RouteContractError(
+          "INVALID_APPRAISER_IDENTITY",
+          `Blank user identity in ${fieldCode}.`
+        );
+      }
+      return { code };
+    }
+    if (rawUser && typeof rawUser === "object") {
+      const rawCode = String(rawUser.code ?? rawUser.value ?? "");
+      const code = rawCode.trim();
+      if (!code || rawCode !== code) {
+        throw new D3RouteContractError(
+          "INVALID_APPRAISER_IDENTITY",
+          `Missing Kintone user code in ${fieldCode}.`
+        );
+      }
+      return { ...rawUser, code };
+    }
+    throw new D3RouteContractError(
+      "INVALID_APPRAISER_IDENTITY",
+      `Unsupported user identity in ${fieldCode}.`
+    );
+  }
+  function readD3UserList(value, fieldCode = "USER_SELECT") {
+    const raw = unwrapD3Field(value);
+    if (raw === null || raw === void 0 || raw === "") return [];
+    if (!Array.isArray(raw)) {
+      throw new D3RouteContractError(
+        "INVALID_SLOT_USER_SHAPE",
+        `${fieldCode} must be a USER_SELECT array.`
+      );
+    }
+    return raw.map((user) => normalizeUserIdentity(user, fieldCode));
+  }
+  function readSlotUsers(routeVersion, slotId) {
+    const def = D3_SLOT_DEFINITIONS[slotId];
+    const primary = routeVersion?.[def.approverField];
+    if (primary !== void 0) {
+      return readD3UserList(primary, def.approverField);
+    }
+    if (def.legacyApproverField && routeVersion?.[def.legacyApproverField] !== void 0) {
+      return readD3UserList(
+        routeVersion[def.legacyApproverField],
+        def.legacyApproverField
+      );
+    }
+    return [];
+  }
+  function readSlotRule(routeVersion, slotId) {
+    const def = D3_SLOT_DEFINITIONS[slotId];
+    return readD3String(routeVersion?.[def.approvalRuleField]);
+  }
+  function parseD3ScorerPrioritySlots(value) {
+    let raw = unwrapD3Field(value);
+    if (raw === null || raw === void 0 || raw === "") {
+      throw new D3RouteContractError(
+        "SCORER_PLAN_NOT_CONFIGURED",
+        "Scorer_Priority_Slots is missing or blank."
+      );
+    }
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        throw new D3RouteContractError(
+          "SCORER_PLAN_NOT_CONFIGURED",
+          "Scorer_Priority_Slots is blank."
+        );
+      }
+      if (trimmed.startsWith("[")) {
+        try {
+          raw = JSON.parse(trimmed);
+        } catch {
+          throw new D3RouteContractError(
+            "INVALID_SCORER_PLAN",
+            "Scorer_Priority_Slots contains malformed JSON."
+          );
+        }
+      } else {
+        raw = trimmed.split(",").map((item) => item.trim());
+      }
+    }
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new D3RouteContractError(
+        "INVALID_SCORER_PLAN",
+        "Scorer_Priority_Slots must be a non-empty ordered list."
+      );
+    }
+    const slots = raw.map((item) => {
+      const candidate = unwrapD3Field(item);
+      const parsed = Number(candidate);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 4) {
+        throw new D3RouteContractError(
+          "INVALID_SCORER_PLAN",
+          `Invalid scorer priority slot: ${String(candidate)}.`
+        );
+      }
+      return parsed;
+    });
+    if (new Set(slots).size !== slots.length) {
+      throw new D3RouteContractError(
+        "INVALID_SCORER_PLAN",
+        "Scorer priority slots must be distinct."
+      );
+    }
+    return slots;
+  }
+  function getD3RoutePattern(routePattern) {
+    const pattern = readD3String(routePattern);
+    const contract = D3_ROUTE_PATTERNS[pattern];
+    if (!contract) {
+      throw new D3RouteContractError(
+        "UNKNOWN_ROUTE_PATTERN",
+        `Unsupported D3 route pattern: ${pattern || "BLANK"}.`
+      );
+    }
+    return { pattern, ...contract };
+  }
+  function normalizeD3RouteVersion(routeVersion) {
+    if (!routeVersion || typeof routeVersion !== "object") {
+      throw new D3RouteContractError(
+        "ROUTE_VERSION_NOT_PROVIDED",
+        "Route version object is required."
+      );
+    }
+    const { pattern, topology, sourceSlots } = getD3RoutePattern(
+      routeVersion.Route_Pattern
+    );
+    const declaredTopology = readD3String(routeVersion.Routing_Topology);
+    if (declaredTopology && declaredTopology !== topology) {
+      throw new D3RouteContractError(
+        "ROUTE_PATTERN_TOPOLOGY_MISMATCH",
+        `Route pattern ${pattern} requires ${topology}, received ${declaredTopology}.`
+      );
+    }
+    const activeSlotIds = new Set(sourceSlots);
+    const slotState = {};
+    const allConfiguredCodes = [];
+    for (const slotId of Object.keys(D3_SLOT_DEFINITIONS)) {
+      const users = readSlotUsers(routeVersion, slotId);
+      const rule = readSlotRule(routeVersion, slotId);
+      if (rule && rule !== "ALL") {
+        throw new D3RouteContractError(
+          "D3_V1_APPROVAL_RULE_NOT_ALL",
+          `${slotId} approval rule must be ALL in D3 V1.`
+        );
+      }
+      if (activeSlotIds.has(slotId)) {
+        if (users.length !== 1) {
+          throw new D3RouteContractError(
+            "D3_V1_SLOT_USER_COUNT_INVALID",
+            `${slotId} must contain exactly one Kintone user in D3 V1.`,
+            { slotId, count: users.length }
+          );
+        }
+        if (rule !== "ALL") {
+          throw new D3RouteContractError(
+            "D3_V1_APPROVAL_RULE_NOT_ALL",
+            `${slotId} approval rule must be explicitly ALL in D3 V1.`
+          );
+        }
+        allConfiguredCodes.push(users[0].code);
+      } else if (users.length !== 0) {
+        throw new D3RouteContractError(
+          "INACTIVE_ROUTE_SLOT_POPULATED",
+          `${slotId} must be empty for route pattern ${pattern}.`
+        );
+      }
+      slotState[slotId] = { users, rule };
+    }
+    if (new Set(allConfiguredCodes).size !== allConfiguredCodes.length) {
+      throw new D3RouteContractError(
+        "DUPLICATE_APPRAISER_IDENTITY",
+        "The same Kintone user cannot occupy more than one D3 V1 sequential slot."
+      );
+    }
+    const routingKey = readD3String(routeVersion.Routing_Key);
+    const versionKey = readD3String(routeVersion.Version_Key);
+    const versionNumberRaw = readD3String(routeVersion.Version_Number);
+    const versionNumber = Number(versionNumberRaw);
+    if (!routingKey) {
+      throw new D3RouteContractError(
+        "ROUTING_KEY_REQUIRED",
+        "Routing_Key is required for a D3 route version."
+      );
+    }
+    if (!versionKey) {
+      throw new D3RouteContractError(
+        "INVALID_ROUTE_VERSION_IDENTITY",
+        "Version_Key is required for a D3 route version."
+      );
+    }
+    if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+      throw new D3RouteContractError(
+        "INVALID_ROUTE_VERSION_NUMBER",
+        `Version_Number must be a positive integer, received ${versionNumberRaw || "BLANK"}.`
+      );
+    }
+    const businessSlots = sourceSlots.map((slotId, index) => {
+      const def = D3_SLOT_DEFINITIONS[slotId];
+      return {
+        ordinal: index + 1,
+        sourceOrdinal: index + 1,
+        sourceSlot: slotId,
+        targetSlot: slotId,
+        fieldCode: def.approverField,
+        approvalRule: "ALL",
+        user: slotState[slotId].users[0]
+      };
+    });
+    return {
+      routingKey,
+      versionKey,
+      versionNumber,
+      routePattern: pattern,
+      topology,
+      businessSlots
+    };
+  }
+  function compactedPatternFor(routeContract, removedOrdinal) {
+    const remainingCount = routeContract.businessSlots.length - 1;
+    if (remainingCount === 0) {
+      throw new D3RouteContractError(
+        "SELF_APPROVAL_ROUTE_CONFLICT",
+        "Self-elision leaves zero surviving appraisers."
+      );
+    }
+    if (remainingCount === 1) return "PATTERN_1_M1";
+    if (remainingCount === 2) return "PATTERN_2_M1_G1";
+    if (remainingCount === 3 && routeContract.routePattern === "PATTERN_4_M2_M1_G1_G2") {
+      return removedOrdinal <= 2 ? "PATTERN_3B_M1_G1_G2" : "PATTERN_3A_M2_M1_G1";
+    }
+    throw new D3RouteContractError(
+      "SELF_ELISION_PATTERN_UNRESOLVED",
+      "Unable to derive a valid compacted D3 route pattern."
+    );
+  }
+  function applyD3SelfElision(routeContract, employeeUserCode, isOwnMbo = false) {
+    if (!routeContract || !Array.isArray(routeContract.businessSlots)) {
+      throw new D3RouteContractError(
+        "INVALID_ROUTE_CONTRACT",
+        "Normalized route contract is required."
+      );
+    }
+    if (!isOwnMbo) {
+      return {
+        ...routeContract,
+        businessSlots: routeContract.businessSlots.map((slot) => ({ ...slot })),
+        selfAppraiserElided: false,
+        removedSourceOrdinal: null
+      };
+    }
+    const employeeCode = String(employeeUserCode ?? "");
+    if (!employeeCode || employeeCode !== employeeCode.trim()) {
+      throw new D3RouteContractError(
+        "MISSING_DEDICATED_USER_CODE",
+        "Exact nonblank Kintone user code is required for own-MBO self-elision."
+      );
+    }
+    const removed = routeContract.businessSlots.find(
+      (slot) => slot.user.code === employeeCode
+    );
+    if (!removed) {
+      return {
+        ...routeContract,
+        businessSlots: routeContract.businessSlots.map((slot) => ({ ...slot })),
+        selfAppraiserElided: false,
+        removedSourceOrdinal: null
+      };
+    }
+    const survivors = routeContract.businessSlots.filter(
+      (slot) => slot.user.code !== employeeCode
+    );
+    if (survivors.length === 0) {
+      throw new D3RouteContractError(
+        "SELF_APPROVAL_ROUTE_CONFLICT",
+        "Self-elision leaves zero surviving appraisers."
+      );
+    }
+    const effectivePattern = routeContract.businessSlots.length === survivors.length ? routeContract.routePattern : compactedPatternFor(routeContract, removed.sourceOrdinal);
+    const effectiveDefinition = D3_ROUTE_PATTERNS[effectivePattern];
+    const compactedSlots = survivors.map((slot, index) => ({
+      ...slot,
+      ordinal: index + 1,
+      targetSlot: effectiveDefinition.sourceSlots[index],
+      targetFieldCode: D3_SLOT_DEFINITIONS[effectiveDefinition.sourceSlots[index]].approverField
+    }));
+    return {
+      ...routeContract,
+      routePattern: effectivePattern,
+      topology: effectiveDefinition.topology,
+      businessSlots: compactedSlots,
+      selfAppraiserElided: true,
+      removedSourceOrdinal: removed.sourceOrdinal
+    };
+  }
+
+  // src/services/d3-route-viability-service.js
+  var D3RouteViabilityError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3RouteViabilityError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  function failFromContract(error) {
+    if (error instanceof D3RouteContractError) {
+      throw new D3RouteViabilityError(error.code, error.message.replace(/^[^:]+:\s*/, ""), error.details);
+    }
+    throw error;
+  }
+  function normalizeKExpected(value) {
+    const raw = unwrapD3Field(value);
+    const parsed = Number(raw);
+    if (parsed !== 1 && parsed !== 2) {
+      throw new D3RouteViabilityError(
+        "INVALID_K_EXPECTED",
+        `K_expected must be exactly 1 or 2, received ${String(raw)}.`
+      );
+    }
+    return parsed;
+  }
+  function exactEmployeeCode(value, required) {
+    const code = String(value ?? "");
+    if (!required && !code) return "";
+    if (!code || code !== code.trim()) {
+      throw new D3RouteViabilityError(
+        "MISSING_DEDICATED_USER_CODE",
+        "Exact nonblank Kintone user code is required for own-MBO evaluation."
+      );
+    }
+    return code;
+  }
+  function evaluateD3RouteViability({
+    routeVersion,
+    kExpected,
+    employeeUserCode = "",
+    isOwnMbo = false,
+    scorerPrioritySlots
+  }) {
+    const requiredK = normalizeKExpected(kExpected);
+    let configuredRoute;
+    try {
+      configuredRoute = normalizeD3RouteVersion(routeVersion);
+    } catch (error) {
+      failFromContract(error);
+    }
+    const employeeCode = exactEmployeeCode(employeeUserCode, isOwnMbo);
+    let effectiveRoute;
+    try {
+      effectiveRoute = applyD3SelfElision(
+        configuredRoute,
+        employeeCode,
+        isOwnMbo
+      );
+    } catch (error) {
+      failFromContract(error);
+    }
+    if (effectiveRoute.businessSlots.length < requiredK) {
+      throw new D3RouteViabilityError(
+        "INSUFFICIENT_EFFECTIVE_APPRAISERS",
+        `Surviving workflow appraisers (${effectiveRoute.businessSlots.length}) are fewer than K_expected (${requiredK}).`
+      );
+    }
+    let prioritySlots;
+    try {
+      prioritySlots = parseD3ScorerPrioritySlots(
+        scorerPrioritySlots !== void 0 ? scorerPrioritySlots : routeVersion?.Scorer_Priority_Slots
+      );
+    } catch (error) {
+      failFromContract(error);
+    }
+    for (const priority of prioritySlots) {
+      if (priority > configuredRoute.businessSlots.length) {
+        throw new D3RouteViabilityError(
+          "INVALID_SCORER_PLAN",
+          `Scorer priority slot ${priority} does not exist in the configured route.`
+        );
+      }
+    }
+    const survivingCodes = new Set(
+      effectiveRoute.businessSlots.map((slot) => slot.user.code)
+    );
+    const authorizedCandidates = [];
+    for (const sourceOrdinal of prioritySlots) {
+      const configuredSlot = configuredRoute.businessSlots.find(
+        (slot) => slot.sourceOrdinal === sourceOrdinal
+      );
+      if (!configuredSlot || !survivingCodes.has(configuredSlot.user.code)) {
+        continue;
+      }
+      if (!authorizedCandidates.some((item) => item.user.code === configuredSlot.user.code)) {
+        authorizedCandidates.push(configuredSlot);
+      }
+    }
+    if (authorizedCandidates.length < requiredK) {
+      throw new D3RouteViabilityError(
+        "SCORING_ROUTE_INCOMPLETE_AFTER_SELF_ELISION",
+        `Surviving HR-authorized scorers (${authorizedCandidates.length}) are fewer than K_expected (${requiredK}).`,
+        {
+          prioritySlots,
+          survivingCandidateCodes: authorizedCandidates.map((item) => item.user.code)
+        }
+      );
+    }
+    const selected = authorizedCandidates.slice(0, requiredK);
+    if (requiredK === 2 && selected[0].user.code === selected[1].user.code) {
+      throw new D3RouteViabilityError(
+        "DUPLICATE_SCORER_IDENTITY",
+        "K=2 requires two distinct scorer identities."
+      );
+    }
+    if (isOwnMbo && selected.some((slot) => slot.user.code === employeeCode)) {
+      throw new D3RouteViabilityError(
+        "SELF_SCORING_CONFLICT",
+        "Target employee cannot score their own MBO."
+      );
+    }
+    const weights = requiredK === 1 ? [100] : [50, 50];
+    const activeScorers = selected.map((configuredSlot, index) => {
+      const effectiveSlot = effectiveRoute.businessSlots.find(
+        (slot) => slot.user.code === configuredSlot.user.code
+      );
+      return {
+        scorerRank: index + 1,
+        sourceOrdinal: configuredSlot.sourceOrdinal,
+        effectiveOrdinal: effectiveSlot?.ordinal ?? null,
+        user: configuredSlot.user,
+        weight: weights[index]
+      };
+    });
+    return {
+      status: "PASS",
+      code: "VIABLE",
+      configuredRoute,
+      effectiveRoute,
+      kExpected: requiredK,
+      scorerPrioritySlots: prioritySlots,
+      activeScorers,
+      scorerWeights: weights,
+      routeVersionKey: configuredRoute.versionKey,
+      routingKey: configuredRoute.routingKey
+    };
+  }
+
+  // src/config/constants.js
+  var BUSINESS_STAGES = {
+    NEW_RECORD: "NEW_RECORD",
+    OBJECTIVE_INPUT: "OBJECTIVE_INPUT",
+    MIDYEAR_INPUT: "MIDYEAR_INPUT",
+    SELF_EVALUATION: "SELF_EVALUATION",
+    READ_ONLY: "READ_ONLY",
+    CONFIGURATION_ERROR: "CONFIGURATION_ERROR"
+  };
+  var STATUS_TO_STAGE_MAP = {
+    "01 Draft Objective": BUSINESS_STAGES.OBJECTIVE_INPUT,
+    "02 First Manager Objective Review": BUSINESS_STAGES.READ_ONLY,
+    "03 Manager Objective Review": BUSINESS_STAGES.READ_ONLY,
+    "04 GM Objective Review": BUSINESS_STAGES.READ_ONLY,
+    "05 Objective Approved": BUSINESS_STAGES.READ_ONLY,
+    "06 Employee Mid-Year": BUSINESS_STAGES.MIDYEAR_INPUT,
+    "07 First Manager Mid-Year Review": BUSINESS_STAGES.READ_ONLY,
+    "08 Manager Mid-Year Review": BUSINESS_STAGES.READ_ONLY,
+    "09 GM Mid-Year Review": BUSINESS_STAGES.READ_ONLY,
+    "10 Mid-Year Completed": BUSINESS_STAGES.READ_ONLY,
+    "11 Employee Self Evaluation": BUSINESS_STAGES.SELF_EVALUATION,
+    "12 First Manager Final Evaluation": BUSINESS_STAGES.READ_ONLY,
+    "13 Manager Final Evaluation": BUSINESS_STAGES.READ_ONLY,
+    "14 GM Final Evaluation": BUSINESS_STAGES.READ_ONLY,
+    "15 HR Final Check": BUSINESS_STAGES.READ_ONLY,
+    "16 Completed": BUSINESS_STAGES.READ_ONLY
+  };
+
+  // src/validation/validation-engine.js
+  var D3_PROCESS_CAPABILITY_ID = "D3_V1_19_STATE_40_ACTION";
+  var D3_ACTIVE_ROUTE_SLOTS = {
+    M1_ONLY: ["M1"],
+    M1_G1: ["M1", "G1"],
+    M1_M2_G1: ["M2", "M1", "G1"],
+    M1_G1_G2: ["M1", "G1", "G2"],
+    M1_M2_G1_G2: ["M2", "M1", "G1", "G2"]
+  };
+  var D3_SLOT_FIELD_MAP = {
+    M2: { approverField: "Manager_Level2_Approvers", ruleField: "Manager_Level2_Approval_Rule" },
+    M1: { approverField: "Manager_Level1_Approvers", ruleField: "Manager_Level1_Approval_Rule" },
+    G1: { approverField: "GM_Level1_Approvers", ruleField: "GM_Level1_Approval_Rule" },
+    G2: { approverField: "GM_Level2_Approvers", ruleField: "GM_Level2_Approval_Rule" }
+  };
+
+  // src/services/hr-routing-management-service.js
+  var HrRoutingManagementServiceError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "HrRoutingManagementServiceError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  var ROUTING_ROLES = Object.freeze({
+    HR: "hr",
+    ADMIN_FORM: "admin-form"
+  });
+  var ROUTING_PERMISSIONS = Object.freeze({
+    VIEW: "VIEW",
+    PREVIEW: "PREVIEW",
+    VALIDATE: "VALIDATE",
+    CREATE_DRAFT: "CREATE_DRAFT",
+    EDIT_DRAFT: "EDIT_DRAFT",
+    PUBLISH: "PUBLISH",
+    SUPERSEDE: "SUPERSEDE"
+  });
+  var ROUTING_STATUSES = Object.freeze({
+    DRAFT: "DRAFT",
+    ACTIVE: "ACTIVE",
+    SUPERSEDED: "SUPERSEDED",
+    CANCELLED: "CANCELLED"
+  });
+  var TOPOLOGIES = Object.freeze({
+    M1_ONLY: "M1_ONLY",
+    M1_G1: "M1_G1",
+    M1_M2_G1: "M1_M2_G1",
+    M1_G1_G2: "M1_G1_G2",
+    M1_M2_G1_G2: "M1_M2_G1_G2"
+  });
+  var TOPOLOGY_TO_PATTERN_MAP = Object.freeze({
+    [TOPOLOGIES.M1_ONLY]: "PATTERN_1_M1",
+    [TOPOLOGIES.M1_G1]: "PATTERN_2_M1_G1",
+    [TOPOLOGIES.M1_M2_G1]: "PATTERN_3A_M2_M1_G1",
+    [TOPOLOGIES.M1_G1_G2]: "PATTERN_3B_M1_G1_G2",
+    [TOPOLOGIES.M1_M2_G1_G2]: "PATTERN_4_M2_M1_G1_G2"
+  });
+  var TOPOLOGY_CONFIGS = Object.freeze({
+    [TOPOLOGIES.M1_ONLY]: Object.freeze({
+      slots: Object.freeze(["M1"]),
+      label: "M1 Only (1 Appraiser)"
+    }),
+    [TOPOLOGIES.M1_G1]: Object.freeze({
+      slots: Object.freeze(["M1", "G1"]),
+      label: "M1 + G1 (2 Appraisers)"
+    }),
+    [TOPOLOGIES.M1_M2_G1]: Object.freeze({
+      slots: Object.freeze(["M1", "M2", "G1"]),
+      label: "M1 + M2 + G1 (3 Appraisers)"
+    }),
+    [TOPOLOGIES.M1_G1_G2]: Object.freeze({
+      slots: Object.freeze(["M1", "G1", "G2"]),
+      label: "M1 + G1 + G2 (3 Appraisers)"
+    }),
+    [TOPOLOGIES.M1_M2_G1_G2]: Object.freeze({
+      slots: Object.freeze(["M1", "M2", "G1", "G2"]),
+      label: "M1 + M2 + G1 + G2 (4 Appraisers)"
+    })
+  });
+  function hasHrCapability(principal) {
+    try {
+      const norm = validatePrincipal(principal);
+      return norm.groups.some((g) => g.toLowerCase() === ROUTING_ROLES.HR.toLowerCase());
+    } catch (_) {
+      return false;
+    }
+  }
+  function hasAdminFormCapability(principal) {
+    try {
+      const norm = validatePrincipal(principal);
+      return norm.groups.some((g) => g.toLowerCase() === ROUTING_ROLES.ADMIN_FORM.toLowerCase());
+    } catch (_) {
+      return false;
+    }
+  }
+  function validateRoutingDraft(draft, { existingVersions = [], principal = { userCode: "system", groups: ["hr"] } } = {}) {
+    const errors = [];
+    try {
+      const candidate = buildCandidateRecordFromDraft(draft);
+      HrRoutingManagementService.validateRouteCandidate({
+        principal,
+        routeCandidate: candidate,
+        existingRecords: existingVersions
+      });
+      return { isValid: true, errors: [], candidate };
+    } catch (err) {
+      errors.push(err.message);
+      return { isValid: false, errors, candidate: null };
+    }
+  }
+  function previewRoutingPlan({ principal, draft, existingVersions = [] }) {
+    const candidate = buildCandidateRecordFromDraft(draft);
+    const activeSlots = (TOPOLOGY_CONFIGS[draft.topology]?.slots || ["M1"]).map((slot) => ({
+      role: slot,
+      userCode: draft.slots?.[slot] || ""
+    }));
+    const validation = validateRoutingDraft(draft, { existingVersions, principal });
+    return {
+      isValid: validation.isValid,
+      topology: draft.topology,
+      activeSlots,
+      scorerSlots: draft.scorerSlots || { midYear: "M1", final1: "M1", final2: "" },
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID,
+      inFlightImpact: "NONE (ZERO)",
+      warnings: validation.isValid ? [] : validation.errors,
+      planPayload: validation.isValid ? candidate : null
+    };
+  }
+  function buildCandidateRecordFromDraft(draft = {}) {
+    const topology = draft.topology || TOPOLOGIES.M1_ONLY;
+    const pattern = draft.routePattern || TOPOLOGY_TO_PATTERN_MAP[topology] || "PATTERN_1_M1";
+    const record = {
+      Routing_Key: { value: draft.routingKey || "" },
+      Route_Pattern: { value: pattern },
+      Routing_Topology: { value: topology },
+      Effective_From: { value: draft.effectiveFrom || "" },
+      Effective_To: { value: draft.effectiveTo || "" },
+      Remark: { value: draft.businessReason || draft.remark || "" },
+      Scorer_Priority_Slots: {
+        value: draft.scorerPrioritySlots || (draft.scorerSlots ? [draft.scorerSlots.midYear, draft.scorerSlots.final1, draft.scorerSlots.final2].filter(Boolean).join(",") : "M1")
+      }
+    };
+    const slots = draft.slots || {};
+    const slotMapping = {
+      M1: { approver: "Manager_Level1_Approvers", rule: "Manager_Level1_Approval_Rule" },
+      M2: { approver: "Manager_Level2_Approvers", rule: "Manager_Level2_Approval_Rule" },
+      G1: { approver: "GM_Level1_Approvers", rule: "GM_Level1_Approval_Rule" },
+      G2: { approver: "GM_Level2_Approvers", rule: "GM_Level2_Approval_Rule" }
+    };
+    for (const [slot, { approver, rule }] of Object.entries(slotMapping)) {
+      const code = slots[slot];
+      if (code) {
+        record[approver] = { value: [{ code }] };
+        record[rule] = { value: "ALL" };
+      } else {
+        record[approver] = { value: [] };
+        record[rule] = { value: "ALL" };
+      }
+    }
+    return record;
+  }
+  function validatePrincipal(principal) {
+    if (!principal || typeof principal !== "object") {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_PRINCIPAL_REQUIRED",
+        "Security principal is required for routing management."
+      );
+    }
+    const { userCode, groups } = principal;
+    if (typeof userCode !== "string" || !userCode.trim() || userCode !== userCode.trim()) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_PRINCIPAL_INVALID",
+        "Principal userCode must be a non-empty string without leading or trailing whitespace."
+      );
+    }
+    if (!Array.isArray(groups) || !groups.every((g) => typeof g === "string" && g.trim().length > 0)) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_PRINCIPAL_INVALID",
+        "Principal groups must be an array of non-empty strings."
+      );
+    }
+    return {
+      userCode: userCode.trim(),
+      groups: groups.map((g) => g.trim())
+    };
+  }
+  function checkRoutingAuthorization(principal, action) {
+    const norm = validatePrincipal(principal);
+    const isHr = norm.groups.includes(ROUTING_ROLES.HR);
+    const isAdminForm = norm.groups.includes(ROUTING_ROLES.ADMIN_FORM);
+    switch (action) {
+      case ROUTING_PERMISSIONS.VIEW:
+      case ROUTING_PERMISSIONS.PREVIEW:
+      case ROUTING_PERMISSIONS.VALIDATE:
+        if (!isHr && !isAdminForm) {
+          throw new HrRoutingManagementServiceError(
+            "ROUTING_AUTHORIZATION_DENIED",
+            `Principal ${norm.userCode} lacks view/preview authorization (requires hr or admin-form).`
+          );
+        }
+        return true;
+      case ROUTING_PERMISSIONS.CREATE_DRAFT:
+      case ROUTING_PERMISSIONS.EDIT_DRAFT:
+      case ROUTING_PERMISSIONS.PUBLISH:
+      case ROUTING_PERMISSIONS.SUPERSEDE:
+        if (!isHr) {
+          throw new HrRoutingManagementServiceError(
+            "ROUTING_HR_AUTHORIZATION_REQUIRED",
+            `Principal ${norm.userCode} lacks HR business authorization for action: ${action}. admin-form alone is not authorized.`
+          );
+        }
+        return true;
+      default:
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_UNKNOWN_ACTION",
+          `Unknown routing authorization action: ${action}.`
+        );
+    }
+  }
+  function validateDateString(dateStr, fieldName = "Date") {
+    const clean = String(dateStr ?? "").trim();
+    if (!clean) return "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_INVALID_DATE_FORMAT",
+        `${fieldName} must be formatted as YYYY-MM-DD (received: "${clean}").`
+      );
+    }
+    const d = /* @__PURE__ */ new Date(`${clean}T00:00:00.000Z`);
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== clean) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_INVALID_DATE_CALENDAR",
+        `${fieldName} is not a valid calendar date: "${clean}".`
+      );
+    }
+    return clean;
+  }
+  function validateEffectiveInterval(effectiveFrom, effectiveTo) {
+    const from = validateDateString(effectiveFrom, "Effective_From");
+    if (!from) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_EFFECTIVE_FROM_REQUIRED",
+        "Effective_From is required for routing versions."
+      );
+    }
+    const to = effectiveTo ? validateDateString(effectiveTo, "Effective_To") : "";
+    if (to && to < from) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_INVALID_EFFECTIVE_INTERVAL",
+        `Effective_To ("${to}") cannot precede Effective_From ("${from}").`
+      );
+    }
+    return { effectiveFrom: from, effectiveTo: to };
+  }
+  function validateBusinessReason(reason) {
+    if (reason === null || reason === void 0 || typeof reason !== "string" || !reason.trim()) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_BUSINESS_REASON_REQUIRED",
+        "Non-empty business reason (Remark) is required for routing mutations."
+      );
+    }
+    return reason.trim();
+  }
+  function deriveNextVersionNumber(existingVersions, routingKey) {
+    const matching = (existingVersions || []).filter((v) => {
+      const rk = readD3String(v?.Routing_Key);
+      return rk === routingKey;
+    });
+    if (matching.length === 0) {
+      return 1;
+    }
+    const numbers = [];
+    for (const v of matching) {
+      const rawNum = readD3String(v?.Version_Number);
+      const num = Number(rawNum);
+      if (!Number.isInteger(num) || num < 1) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_VERSION_HISTORY_INCOMPLETE",
+          `Version history for Routing_Key "${routingKey}" contains invalid Version_Number "${rawNum}".`
+        );
+      }
+      numbers.push(num);
+    }
+    const max = Math.max(...numbers);
+    return max + 1;
+  }
+  function generateCanonicalVersionKey(routingKey, versionNumber) {
+    if (!routingKey || typeof routingKey !== "string" || !routingKey.trim()) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_KEY_REQUIRED",
+        "Routing_Key is required to generate Version_Key."
+      );
+    }
+    if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_INVALID_VERSION_NUMBER",
+        `Version_Number must be a positive integer, received: ${versionNumber}.`
+      );
+    }
+    return `${routingKey.trim()}#v${versionNumber}`;
+  }
+  function checkIntervalOverlap(candidateFrom, candidateTo, existingActiveVersions, currentVersionKey = "") {
+    const fromA = candidateFrom;
+    const toA = candidateTo || "9999-12-31";
+    for (const v of existingActiveVersions || []) {
+      const vKey = readD3String(v?.Version_Key);
+      if (currentVersionKey && vKey === currentVersionKey) {
+        continue;
+      }
+      const status = readD3String(v?.Version_Status);
+      if (status !== "ACTIVE") {
+        continue;
+      }
+      const fromB = readD3String(v?.Effective_From);
+      const toB = readD3String(v?.Effective_To) || "9999-12-31";
+      if (!fromB) continue;
+      if (fromA <= toB && fromB <= toA) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_EFFECTIVE_INTERVAL_OVERLAP",
+          `Proposed effective interval [${fromA}..${candidateTo || "open"}] overlaps with active version "${vKey}" [${fromB}..${v?.Effective_To ? readD3String(v.Effective_To) : "open"}].`
+        );
+      }
+    }
+  }
+  var HrRoutingManagementService = class _HrRoutingManagementService {
+    /**
+     * Filter and view version history for a Routing_Key.
+     * Authorized for both 'hr' and 'admin-form'.
+     */
+    static getRoutingVersionHistory({ principal, records = [], routingKey }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.VIEW);
+      const cleanRoutingKey = String(routingKey ?? "").trim();
+      if (!cleanRoutingKey) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_KEY_REQUIRED",
+          "Routing_Key is required to view version history."
+        );
+      }
+      const versions = records.filter((r) => readD3String(r?.Routing_Key) === cleanRoutingKey).map((r) => ({
+        routingKey: readD3String(r.Routing_Key),
+        versionKey: readD3String(r.Version_Key),
+        versionNumber: Number(readD3String(r.Version_Number)),
+        versionStatus: readD3String(r.Version_Status),
+        routePattern: readD3String(r.Route_Pattern),
+        routingTopology: readD3String(r.Routing_Topology),
+        effectiveFrom: readD3String(r.Effective_From),
+        effectiveTo: readD3String(r.Effective_To),
+        scorerPrioritySlots: readD3String(r.Scorer_Priority_Slots),
+        remark: readD3String(r.Remark),
+        recordRevision: r?.$revision?.value !== void 0 ? String(r.$revision.value) : r?.$revision ? String(r.$revision) : null,
+        rawRecord: r
+      })).sort((a, b) => (b.versionNumber || 0) - (a.versionNumber || 0));
+      return {
+        routingKey: cleanRoutingKey,
+        totalVersions: versions.length,
+        versions
+      };
+    }
+    /**
+     * Validate a route version candidate against all D3 V1 invariants.
+     * Authorized for both 'hr' and 'admin-form'.
+     */
+    static validateRouteCandidate({
+      principal,
+      routeCandidate,
+      kExpected = 1,
+      existingRecords = [],
+      processCapabilityId = D3_PROCESS_CAPABILITY_ID
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.VALIDATE);
+      if (processCapabilityId !== D3_PROCESS_CAPABILITY_ID) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_PROCESS_CAPABILITY_REQUIRED",
+          `Exact process capability "${D3_PROCESS_CAPABILITY_ID}" is required (received: "${processCapabilityId || "BLANK"}").`
+        );
+      }
+      if (!routeCandidate || typeof routeCandidate !== "object") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_CANDIDATE_REQUIRED",
+          "Route candidate object is required for validation."
+        );
+      }
+      const rawPattern = readD3String(routeCandidate.Route_Pattern);
+      const patternInfo = getD3RoutePattern(rawPattern);
+      const topology = patternInfo.topology;
+      const declaredTopology = readD3String(routeCandidate.Routing_Topology);
+      if (declaredTopology && declaredTopology !== topology) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTE_PATTERN_TOPOLOGY_MISMATCH",
+          `Pattern ${rawPattern} requires topology ${topology}, found "${declaredTopology}".`
+        );
+      }
+      const activeSlotKeys = D3_ACTIVE_ROUTE_SLOTS[topology] || [];
+      const seenCodes = /* @__PURE__ */ new Map();
+      for (const slotKey of activeSlotKeys) {
+        const { approverField, ruleField } = D3_SLOT_FIELD_MAP[slotKey];
+        const rawUsers = unwrapD3Field(routeCandidate[approverField]);
+        const users = Array.isArray(rawUsers) ? rawUsers : [];
+        if (users.length === 0) {
+          throw new HrRoutingManagementServiceError(
+            "D3_V1_SLOT_USER_COUNT_INVALID",
+            `Active slot ${slotKey} (${approverField}) is empty. Exactly 1 user is required.`
+          );
+        }
+        if (users.length > 1) {
+          throw new HrRoutingManagementServiceError(
+            "D3_V1_SLOT_USER_COUNT_INVALID",
+            `Active slot ${slotKey} (${approverField}) must have exactly 1 user (found ${users.length}).`
+          );
+        }
+        const u = users[0];
+        const isObj = typeof u === "object" && u !== null && !Array.isArray(u);
+        const code = isObj ? u.code : void 0;
+        const isStr = typeof code === "string";
+        const isNonEmpty = isStr && code.length > 0;
+        const isNotWs = isStr && code.trim().length > 0;
+        if (!isObj || !isStr || !isNonEmpty || !isNotWs) {
+          throw new HrRoutingManagementServiceError(
+            "INVALID_APPRAISER_IDENTITY",
+            `Slot ${slotKey} must contain a valid Kintone user object with exact non-empty code.`
+          );
+        }
+        const rawRule = unwrapD3Field(routeCandidate[ruleField]);
+        const rule = String(rawRule ?? "");
+        if (rule !== "ALL") {
+          throw new HrRoutingManagementServiceError(
+            "D3_V1_APPROVAL_RULE_NOT_ALL",
+            `Active slot ${slotKey} rule (${ruleField}) must be strictly ALL (found "${rule}").`
+          );
+        }
+        if (seenCodes.has(code)) {
+          const prior = seenCodes.get(code);
+          throw new HrRoutingManagementServiceError(
+            "DUPLICATE_APPRAISER_IDENTITY",
+            `Duplicate appraiser user "${code}" in active slots (${prior} and ${slotKey}).`
+          );
+        }
+        seenCodes.set(code, slotKey);
+      }
+      const { effectiveFrom, effectiveTo } = validateEffectiveInterval(
+        routeCandidate.Effective_From,
+        routeCandidate.Effective_To
+      );
+      let viability;
+      try {
+        viability = evaluateD3RouteViability({
+          routeVersion: routeCandidate,
+          kExpected,
+          scorerPrioritySlots: routeCandidate.Scorer_Priority_Slots
+        });
+      } catch (err) {
+        if (err instanceof D3RouteViabilityError || err instanceof D3RouteContractError) {
+          throw new HrRoutingManagementServiceError(err.code, err.message.replace(/^[^:]+:\s*/, ""));
+        }
+        throw err;
+      }
+      return {
+        isValid: true,
+        topology,
+        routePattern: rawPattern,
+        effectiveFrom,
+        effectiveTo,
+        activeSlotKeys,
+        viability
+      };
+    }
+    /**
+     * Create a DRAFT route plan.
+     * Strictly HR-only. Local mutation plan only.
+     */
+    static createDraftRoutePlan({
+      principal,
+      records = [],
+      draftInput = {},
+      processCapabilityId = D3_PROCESS_CAPABILITY_ID,
+      kExpected = 1
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.CREATE_DRAFT);
+      const reason = validateBusinessReason(draftInput.Remark);
+      const routingKey = String(draftInput.Routing_Key ?? "").trim();
+      if (!routingKey) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_KEY_REQUIRED",
+          "Routing_Key is required to create a DRAFT route."
+        );
+      }
+      const versionNumber = deriveNextVersionNumber(records, routingKey);
+      const versionKey = generateCanonicalVersionKey(routingKey, versionNumber);
+      const patternInfo = getD3RoutePattern(draftInput.Route_Pattern);
+      const candidate = {
+        ...draftInput,
+        Routing_Key: routingKey,
+        Version_Key: versionKey,
+        Version_Number: versionNumber,
+        Version_Status: "DRAFT",
+        Route_Pattern: patternInfo.pattern,
+        Routing_Topology: patternInfo.topology,
+        Remark: reason
+      };
+      _HrRoutingManagementService.validateRouteCandidate({
+        principal,
+        routeCandidate: candidate,
+        kExpected,
+        existingRecords: records,
+        processCapabilityId
+      });
+      return {
+        status: "PLAN_CREATED",
+        operation: "CREATE_DRAFT",
+        current: null,
+        proposed: candidate,
+        mutationsPlanned: [
+          {
+            app: 795,
+            action: "INSERT_DRAFT",
+            record: candidate
+          }
+        ],
+        noMutationExecuted: true
+      };
+    }
+    /**
+     * Edit an existing DRAFT route plan.
+     * Strictly HR-only. Local mutation plan only.
+     */
+    static editDraftRoutePlan({
+      principal,
+      records = [],
+      versionKey,
+      expectedRevision,
+      draftInput = {},
+      processCapabilityId = D3_PROCESS_CAPABILITY_ID,
+      kExpected = 1
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.EDIT_DRAFT);
+      if (expectedRevision === void 0 || expectedRevision === null || String(expectedRevision).trim() === "") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_REVISION_REQUIRED",
+          "Explicit expected revision is required to edit a DRAFT route."
+        );
+      }
+      const cleanVk = String(versionKey ?? "").trim();
+      const existing = (records || []).find((r) => readD3String(r?.Version_Key) === cleanVk);
+      if (!existing) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_VERSION_NOT_FOUND",
+          `Route version with Version_Key "${cleanVk}" was not found.`
+        );
+      }
+      const actualRev = existing.$revision?.value !== void 0 ? String(existing.$revision.value) : existing.$revision ? String(existing.$revision) : "";
+      if (actualRev && actualRev !== String(expectedRevision).trim()) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_REVISION_CONFLICT",
+          `Revision conflict: expected revision ${expectedRevision}, actual revision ${actualRev}.`
+        );
+      }
+      const status = readD3String(existing.Version_Status);
+      if (status !== "DRAFT") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_LIFECYCLE_IMMUTABLE",
+          `Only DRAFT versions can be edited. Version "${cleanVk}" is in status "${status}".`
+        );
+      }
+      const reason = validateBusinessReason(draftInput.Remark);
+      const patternInfo = getD3RoutePattern(draftInput.Route_Pattern || existing.Route_Pattern);
+      const updated = {
+        ...existing,
+        ...draftInput,
+        Routing_Key: readD3String(existing.Routing_Key),
+        Version_Key: cleanVk,
+        Version_Number: Number(readD3String(existing.Version_Number)),
+        Version_Status: "DRAFT",
+        Route_Pattern: patternInfo.pattern,
+        Routing_Topology: patternInfo.topology,
+        Remark: reason
+      };
+      _HrRoutingManagementService.validateRouteCandidate({
+        principal,
+        routeCandidate: updated,
+        kExpected,
+        existingRecords: records,
+        processCapabilityId
+      });
+      return {
+        status: "PLAN_CREATED",
+        operation: "EDIT_DRAFT",
+        current: existing,
+        proposed: updated,
+        mutationsPlanned: [
+          {
+            app: 795,
+            action: "UPDATE_DRAFT",
+            versionKey: cleanVk,
+            expectedRevision: String(expectedRevision).trim(),
+            record: updated
+          }
+        ],
+        noMutationExecuted: true
+      };
+    }
+    /**
+     * Delete a route version.
+     * HISTORICAL_ROUTE_DELETE is NEVER permitted.
+     */
+    static deleteRoutePlan() {
+      throw new HrRoutingManagementServiceError(
+        "ROUTING_DELETE_FORBIDDEN",
+        "Historical route versions can NEVER be deleted. Version immutability is strictly enforced."
+      );
+    }
+    /**
+     * Create a Publish route plan.
+     * Strictly HR-only. Local mutation plan only.
+     */
+    static createPublishRoutePlan({
+      principal,
+      records = [],
+      versionKey,
+      expectedRevision,
+      businessReason,
+      processCapabilityId = D3_PROCESS_CAPABILITY_ID,
+      kExpected = 1
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.PUBLISH);
+      const reason = validateBusinessReason(businessReason);
+      if (expectedRevision === void 0 || expectedRevision === null || String(expectedRevision).trim() === "") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_REVISION_REQUIRED",
+          "Explicit expected revision is required to publish a route version."
+        );
+      }
+      const cleanVk = String(versionKey ?? "").trim();
+      const existing = (records || []).find((r) => readD3String(r?.Version_Key) === cleanVk);
+      if (!existing) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_VERSION_NOT_FOUND",
+          `Route version with Version_Key "${cleanVk}" was not found.`
+        );
+      }
+      const actualRev = existing.$revision?.value !== void 0 ? String(existing.$revision.value) : existing.$revision ? String(existing.$revision) : "";
+      if (actualRev && actualRev !== String(expectedRevision).trim()) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_REVISION_CONFLICT",
+          `Revision conflict: expected revision ${expectedRevision}, actual revision ${actualRev}.`
+        );
+      }
+      const status = readD3String(existing.Version_Status);
+      if (status !== "DRAFT") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_LIFECYCLE_IMMUTABLE",
+          `Only DRAFT versions can be published. Version "${cleanVk}" is in status "${status}".`
+        );
+      }
+      const candidate = {
+        ...existing,
+        Version_Status: "ACTIVE",
+        Remark: reason
+      };
+      const validInfo = _HrRoutingManagementService.validateRouteCandidate({
+        principal,
+        routeCandidate: candidate,
+        kExpected,
+        existingRecords: records,
+        processCapabilityId
+      });
+      const routingKey = readD3String(candidate.Routing_Key);
+      const activeForRk = (records || []).filter((r) => readD3String(r?.Routing_Key) === routingKey && readD3String(r?.Version_Status) === "ACTIVE");
+      checkIntervalOverlap(validInfo.effectiveFrom, validInfo.effectiveTo, activeForRk, cleanVk);
+      return {
+        status: "PLAN_CREATED",
+        operation: "PUBLISH_VERSION",
+        current: existing,
+        proposed: candidate,
+        mutationsPlanned: [
+          {
+            app: 795,
+            action: "PUBLISH_RECORD",
+            versionKey: cleanVk,
+            expectedRevision: String(expectedRevision).trim(),
+            record: candidate
+          }
+        ],
+        noMutationExecuted: true
+      };
+    }
+    /**
+     * Create a Supersession route plan.
+     * Strictly HR-only. Closes active interval and promotes new version.
+     */
+    static createSupersedeRoutePlan({
+      principal,
+      records = [],
+      activeVersionKey,
+      expectedActiveRevision,
+      newVersionKey,
+      expectedNewRevision,
+      effectiveToDate,
+      businessReason,
+      processCapabilityId = D3_PROCESS_CAPABILITY_ID,
+      kExpected = 1
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.SUPERSEDE);
+      const reason = validateBusinessReason(businessReason);
+      if (!expectedActiveRevision || !expectedNewRevision) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_REVISION_REQUIRED",
+          "Both expectedActiveRevision and expectedNewRevision are required for supersession."
+        );
+      }
+      const cleanActiveVk = String(activeVersionKey ?? "").trim();
+      const cleanNewVk = String(newVersionKey ?? "").trim();
+      const activeRec = (records || []).find((r) => readD3String(r?.Version_Key) === cleanActiveVk);
+      if (!activeRec) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_VERSION_NOT_FOUND",
+          `Active version "${cleanActiveVk}" was not found.`
+        );
+      }
+      const newRec = (records || []).find((r) => readD3String(r?.Version_Key) === cleanNewVk);
+      if (!newRec) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_VERSION_NOT_FOUND",
+          `New version "${cleanNewVk}" was not found.`
+        );
+      }
+      if (readD3String(activeRec.Version_Status) !== "ACTIVE") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_LIFECYCLE_IMMUTABLE",
+          `Target to supersede "${cleanActiveVk}" must be ACTIVE (status is "${readD3String(activeRec.Version_Status)}").`
+        );
+      }
+      if (readD3String(newRec.Version_Status) !== "DRAFT") {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_LIFECYCLE_IMMUTABLE",
+          `New version "${cleanNewVk}" must be DRAFT to activate via supersession (status is "${readD3String(newRec.Version_Status)}").`
+        );
+      }
+      const closeDate = validateDateString(effectiveToDate, "Effective_To");
+      if (!closeDate) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_EFFECTIVE_TO_REQUIRED",
+          "Explicit Effective_To date is required to close the superseded version."
+        );
+      }
+      const activeFrom = readD3String(activeRec.Effective_From);
+      if (closeDate < activeFrom) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_INVALID_EFFECTIVE_INTERVAL",
+          `Superseded Effective_To (${closeDate}) cannot precede Effective_From (${activeFrom}).`
+        );
+      }
+      const supersededRec = {
+        ...activeRec,
+        Version_Status: "SUPERSEDED",
+        Effective_To: closeDate,
+        Remark: `${readD3String(activeRec.Remark) || ""}
+[SUPERSEDED]: ${reason}`.trim()
+      };
+      const activatedRec = {
+        ...newRec,
+        Version_Status: "ACTIVE",
+        Remark: reason
+      };
+      const validInfo = _HrRoutingManagementService.validateRouteCandidate({
+        principal,
+        routeCandidate: activatedRec,
+        kExpected,
+        existingRecords: records,
+        processCapabilityId
+      });
+      const routingKey = readD3String(activeRec.Routing_Key);
+      const activeVersions = (records || []).filter((r) => readD3String(r?.Routing_Key) === routingKey && readD3String(r?.Version_Status) === "ACTIVE").map((r) => readD3String(r?.Version_Key) === cleanActiveVk ? supersededRec : r);
+      checkIntervalOverlap(validInfo.effectiveFrom, validInfo.effectiveTo, activeVersions, cleanNewVk);
+      return {
+        status: "PLAN_CREATED",
+        operation: "SUPERSEDE_VERSION",
+        current: {
+          activeVersion: activeRec,
+          newVersion: newRec
+        },
+        proposed: {
+          supersededVersion: supersededRec,
+          activatedVersion: activatedRec
+        },
+        mutationsPlanned: [
+          {
+            app: 795,
+            action: "SUPERSEDE_RECORD",
+            versionKey: cleanActiveVk,
+            expectedRevision: String(expectedActiveRevision).trim(),
+            updates: {
+              Version_Status: "SUPERSEDED",
+              Effective_To: closeDate,
+              Remark: supersededRec.Remark
+            }
+          },
+          {
+            app: 795,
+            action: "ACTIVATE_RECORD",
+            versionKey: cleanNewVk,
+            expectedRevision: String(expectedNewRevision).trim(),
+            updates: {
+              Version_Status: "ACTIVE",
+              Remark: activatedRec.Remark
+            }
+          }
+        ],
+        noMutationExecuted: true
+      };
+    }
+    /**
+     * Before / After Preview Generator.
+     * Authorized for both 'hr' and 'admin-form'.
+     */
+    static generateRoutePreview({
+      principal,
+      currentVersion = null,
+      proposedVersion = null,
+      routingKey = "",
+      hypotheticalRecords = [],
+      employeeUserCode = "",
+      isOwnMbo = false
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.PREVIEW);
+      const formatVersionSummary = (v) => {
+        if (!v) return null;
+        const pattern = readD3String(v.Route_Pattern);
+        const topology = readD3String(v.Routing_Topology) || (pattern ? D3_ROUTE_PATTERNS[pattern]?.topology : "");
+        const activeSlots = D3_ACTIVE_ROUTE_SLOTS[topology] || [];
+        const orderedAppraisers = activeSlots.map((slotKey) => {
+          const { approverField } = D3_SLOT_FIELD_MAP[slotKey];
+          const users = unwrapD3Field(v[approverField]) || [];
+          const code = Array.isArray(users) && users[0] ? users[0].code : "";
+          return { slot: slotKey, userCode: code };
+        });
+        return {
+          versionKey: readD3String(v.Version_Key),
+          versionNumber: Number(readD3String(v.Version_Number)),
+          status: readD3String(v.Version_Status),
+          routePattern: pattern,
+          topology,
+          orderedAppraisers,
+          scorerPriorities: readD3String(v.Scorer_Priority_Slots),
+          effectiveFrom: readD3String(v.Effective_From),
+          effectiveTo: readD3String(v.Effective_To)
+        };
+      };
+      const cur = formatVersionSummary(currentVersion);
+      const prop = formatVersionSummary(proposedVersion);
+      const differences = {
+        topologyChanged: cur && prop ? cur.topology !== prop.topology : false,
+        appraiserChanges: [],
+        scorerChanges: cur && prop ? cur.scorerPriorities !== prop.scorerPriorities : false,
+        dateChanges: {
+          fromChanged: cur && prop ? cur.effectiveFrom !== prop.effectiveFrom : false,
+          toChanged: cur && prop ? cur.effectiveTo !== prop.effectiveTo : false
+        },
+        statusChanged: cur && prop ? cur.status !== prop.status : false
+      };
+      if (cur && prop) {
+        const allSlots = Array.from(/* @__PURE__ */ new Set([
+          ...cur.orderedAppraisers.map((a) => a.slot),
+          ...prop.orderedAppraisers.map((a) => a.slot)
+        ]));
+        for (const slot of allSlots) {
+          const cCode = cur.orderedAppraisers.find((a) => a.slot === slot)?.userCode || "(none)";
+          const pCode = prop.orderedAppraisers.find((a) => a.slot === slot)?.userCode || "(none)";
+          if (cCode !== pCode) {
+            differences.appraiserChanges.push({ slot, from: cCode, to: pCode });
+          }
+        }
+      }
+      const futureImpact = {
+        routingKeyAffected: routingKey || (prop ? prop.versionKey?.split("#")[0] : ""),
+        effectiveIntervalAffected: prop ? `[${prop.effectiveFrom}..${prop.effectiveTo || "open"}]` : "N/A",
+        resolutionTiming: "Future explicit resolution points only (Effective_From <= T <= Effective_To)",
+        inFlightApp794Impact: "NONE",
+        hypotheticalEvaluationsPreview: Array.isArray(hypotheticalRecords) && hypotheticalRecords.length > 0 ? hypotheticalRecords.map((r) => ({
+          id: r.$id?.value || r.id || "N/A",
+          employeeCode: r.Employee_Code?.value || r.employeeCode || "N/A",
+          source: "Supplied preview data only"
+        })) : "Zero live reads performed; no exact live record counts claimed."
+      };
+      let selfElisionPreview = null;
+      if (prop && employeeUserCode) {
+        selfElisionPreview = _HrRoutingManagementService.generateSelfElisionPreview({
+          principal,
+          routeCandidate: proposedVersion,
+          employeeUserCode,
+          isOwnMbo
+        });
+      }
+      return {
+        currentVersion: cur,
+        proposedVersion: prop,
+        differences,
+        futureImpact,
+        selfElisionPreview
+      };
+    }
+    /**
+     * Self-Elision Preview Generator.
+     * Authorized for both 'hr' and 'admin-form'.
+     */
+    static generateSelfElisionPreview({
+      principal,
+      routeCandidate,
+      employeeUserCode = "",
+      isOwnMbo = false,
+      kExpected = 1
+    }) {
+      checkRoutingAuthorization(principal, ROUTING_PERMISSIONS.PREVIEW);
+      if (!routeCandidate) {
+        throw new HrRoutingManagementServiceError(
+          "ROUTING_CANDIDATE_REQUIRED",
+          "Route candidate is required for self-elision preview."
+        );
+      }
+      try {
+        const viability = evaluateD3RouteViability({
+          routeVersion: routeCandidate,
+          kExpected,
+          employeeUserCode,
+          isOwnMbo
+        });
+        return {
+          isSelfElisionApplied: isOwnMbo,
+          targetEmployeeUserCode: employeeUserCode,
+          configuredTopology: viability.configuredRoute.topology,
+          effectiveTopology: viability.effectiveRoute.topology,
+          survivingAppraisers: viability.effectiveRoute.businessSlots.map((s) => ({
+            ordinal: s.ordinal,
+            slot: s.targetSlot,
+            userCode: s.user.code
+          })),
+          activeScorers: viability.activeScorers.map((s) => ({
+            rank: s.scorerRank,
+            userCode: s.user.code,
+            weight: s.weight
+          }))
+        };
+      } catch (err) {
+        if (err instanceof D3RouteViabilityError || err instanceof D3RouteContractError) {
+          return {
+            isSelfElisionApplied: isOwnMbo,
+            targetEmployeeUserCode: employeeUserCode,
+            conflict: true,
+            errorCode: err.code,
+            errorMessage: err.message.replace(/^[^:]+:\s*/, "")
+          };
+        }
+        throw err;
+      }
+    }
+  };
+
+  // src/ui/hr-routing-manager.js
+  function escapeHtml(str) {
+    if (str === null || str === void 0) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+  var TOPOLOGY_OPTIONS = [
+    { value: TOPOLOGIES.M1_ONLY, label: "M1 Only (1 Appraiser: M1)", slots: ["M1"] },
+    { value: TOPOLOGIES.M1_G1, label: "M1 + G1 (2 Appraisers: M1, G1)", slots: ["M1", "G1"] },
+    { value: TOPOLOGIES.M1_M2_G1, label: "M1 + M2 + G1 (3 Appraisers: M1, M2, G1)", slots: ["M1", "M2", "G1"] },
+    { value: TOPOLOGIES.M1_G1_G2, label: "M1 + G1 + G2 (3 Appraisers: M1, G1, G2)", slots: ["M1", "G1", "G2"] },
+    { value: TOPOLOGIES.M1_M2_G1_G2, label: "M1 + M2 + G1 + G2 (4 Appraisers: M1, M2, G1, G2)", slots: ["M1", "M2", "G1", "G2"] }
+  ];
+  function getRequiredSlotsForTopology(topology) {
+    const config = TOPOLOGY_CONFIGS[topology];
+    return config ? [...config.slots] : ["M1"];
+  }
+  function renderHrRoutingManagerHtml({
+    principal = null,
+    routes = [],
+    selectedRouteKey = "",
+    selectedTopology = TOPOLOGIES.M1_ONLY,
+    slotValues = {},
+    scorerValues = {},
+    effectiveFrom = "",
+    effectiveTo = "",
+    remark = "",
+    validationErrors = [],
+    previewResult = null,
+    activeTab = "routes"
+  } = {}) {
+    const isHr = hasHrCapability(principal);
+    const isAdminForm = hasAdminFormCapability(principal);
+    const hasAccess = isHr || isAdminForm;
+    if (!hasAccess) {
+      return `
+      <div class="hr-routing-panel hr-access-denied" style="padding: 1.5rem; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 6px; color: #9f1239;">
+        <h3 style="margin-top: 0;">Access Denied / \u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E23\u0E31\u0E1A\u0E2D\u0E19\u0E38\u0E0D\u0E32\u0E15</h3>
+        <p>\u0E04\u0E38\u0E13\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E40\u0E02\u0E49\u0E32\u0E16\u0E36\u0E07\u0E2A\u0E48\u0E27\u0E19\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23 Approval Routing (\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19\u0E2A\u0E21\u0E32\u0E0A\u0E34\u0E01\u0E02\u0E2D\u0E07\u0E01\u0E25\u0E38\u0E48\u0E21 <strong>hr</strong> \u0E2B\u0E23\u0E37\u0E2D <strong>admin-form</strong>)</p>
+      </div>
+    `;
+    }
+    const requiredSlots = getRequiredSlotsForTopology(selectedTopology);
+    const badgeStyle = (status) => {
+      switch (status) {
+        case ROUTING_STATUSES.ACTIVE:
+          return "background: #dcfce7; color: #15803d; border: 1px solid #86efac;";
+        case ROUTING_STATUSES.DRAFT:
+          return "background: #fef9c3; color: #854d0e; border: 1px solid #fde047;";
+        case ROUTING_STATUSES.SUPERSEDED:
+          return "background: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db;";
+        case ROUTING_STATUSES.CANCELLED:
+          return "background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;";
+        default:
+          return "background: #f3f4f6; color: #374151;";
+      }
+    };
+    const roleBanner = `
+    <div class="hr-routing-role-bar" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong>User:</strong> ${escapeHtml(principal?.userCode || "unknown")} |
+        <strong>Groups:</strong> ${escapeHtml((principal?.groups || []).join(", "))} |
+        <strong>Role Capability:</strong>
+        ${isHr ? '<span style="color: #047857; font-weight: 600;">[HR: Full Business Self-Service]</span>' : ""}
+        ${isAdminForm && !isHr ? '<span style="color: #b45309; font-weight: 600;">[Admin-Form: Read-Only / Diagnostics / Zero Business Mutations]</span>' : ""}
+        ${isHr && isAdminForm ? '<span style="color: #6d28d9; font-weight: 600;">[Dual-Role: Union of HR + Technical Administration]</span>' : ""}
+      </div>
+      <div>
+        <span class="badge" style="font-size: 0.75rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px;">D3-IMP-06 LOCAL-ONLY</span>
+      </div>
+    </div>
+  `;
+    const errorHtml = validationErrors.length > 0 ? `<div class="hr-routing-errors" style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 0.75rem 1rem; margin-bottom: 1rem; border-radius: 4px;">
+        <strong style="color: #991b1b;">Validation Errors / \u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14:</strong>
+        <ul style="margin: 0.5rem 0 0 1.25rem; color: #b91c1c; font-size: 0.875rem;">
+          ${validationErrors.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}
+        </ul>
+      </div>` : "";
+    const routesRows = routes.map((r) => {
+      const routeKey = escapeHtml(r.Routing_Key || r.routingKey || "");
+      const verNum = escapeHtml(r.Version_Number || r.versionNumber || "");
+      const verKey = escapeHtml(r.Version_Key || r.versionKey || "");
+      const topo = escapeHtml(r.Topology || r.topology || "");
+      const st = escapeHtml(r.Status || r.status || "");
+      const effFrom = escapeHtml(r.Effective_From || r.effectiveFrom || "");
+      const effTo = escapeHtml(r.Effective_To || r.effectiveTo || "-");
+      const rmk = escapeHtml(r.Remark || r.remark || "-");
+      const isSelected = selectedRouteKey === (r.Routing_Key || r.routingKey);
+      return `
+      <tr class="${isSelected ? "selected-route-row" : ""}" style="${isSelected ? "background: #f0fdf4;" : ""}">
+        <td><strong>${routeKey}</strong></td>
+        <td>v${verNum}</td>
+        <td><small>${verKey}</small></td>
+        <td><code>${topo}</code></td>
+        <td><span style="padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; ${badgeStyle(st)}">${st}</span></td>
+        <td>${effFrom}</td>
+        <td>${effTo}</td>
+        <td title="${rmk}">${rmk.length > 30 ? rmk.substring(0, 27) + "..." : rmk}</td>
+        <td>
+          <button type="button" class="btn-select-route" data-route-key="${routeKey}" style="padding: 2px 8px; font-size: 0.8rem; cursor: pointer;">Select</button>
+        </td>
+      </tr>
+    `;
+    }).join("");
+    const mutationControls = isHr ? `
+      <div class="hr-action-group" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <button type="button" id="hr-btn-create-draft" class="btn-primary" style="padding: 0.5rem 1rem; background: #0284c7; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">
+          \u{1F4BE} Create New Draft
+        </button>
+        <button type="button" id="hr-btn-save-draft" class="btn-secondary" style="padding: 0.5rem 1rem; background: #475569; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">
+          \u270F\uFE0F Update Draft
+        </button>
+        <button type="button" id="hr-btn-publish" class="btn-success" style="padding: 0.5rem 1rem; background: #16a34a; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">
+          \u{1F680} Publish Plan
+        </button>
+        <button type="button" id="hr-btn-supersede" class="btn-warning" style="padding: 0.5rem 1rem; background: #d97706; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">
+          \u{1F504} Supersede Plan
+        </button>
+      </div>
+    ` : `
+      <div class="hr-action-group admin-disabled" style="margin-top: 1rem; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 4px; padding: 0.75rem;">
+        <p style="margin: 0 0 0.5rem 0; font-size: 0.875rem; color: #92400e;">
+          \u{1F512} <strong>Business Mutation Notice:</strong> You are logged in as <strong>admin-form</strong> without HR membership. Business routing mutations (Create Draft, Edit Draft, Publish, Supersede) are strictly reserved for HR. Admin-Form may only preview, validate, and view diagnostics.
+        </p>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" disabled class="btn-disabled" title="HR role required (ROUTING_HR_AUTHORIZATION_REQUIRED)" style="padding: 0.5rem 1rem; background: #cbd5e1; color: #64748b; border: none; border-radius: 4px; cursor: not-allowed;">
+            Create New Draft (HR Only)
+          </button>
+          <button type="button" disabled class="btn-disabled" title="HR role required (ROUTING_HR_AUTHORIZATION_REQUIRED)" style="padding: 0.5rem 1rem; background: #cbd5e1; color: #64748b; border: none; border-radius: 4px; cursor: not-allowed;">
+            Publish Plan (HR Only)
+          </button>
+          <button type="button" disabled class="btn-disabled" title="HR role required (ROUTING_HR_AUTHORIZATION_REQUIRED)" style="padding: 0.5rem 1rem; background: #cbd5e1; color: #64748b; border: none; border-radius: 4px; cursor: not-allowed;">
+            Supersede Plan (HR Only)
+          </button>
+        </div>
+      </div>
+    `;
+    const previewHtml = previewResult ? `
+      <div class="hr-routing-preview-box" style="margin-top: 1.5rem; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 1rem;">
+        <h4 style="margin-top: 0; color: #166534;">\u{1F4CB} Routing Validation & Preview Result</h4>
+        <div style="font-size: 0.875rem; line-height: 1.6; color: #14532d;">
+          <div><strong>Status:</strong> ${previewResult.isValid ? "\u2705 VALID / PASS" : "\u274C INVALID"}</div>
+          <div><strong>Topology:</strong> <code>${escapeHtml(previewResult.topology)}</code></div>
+          <div><strong>Active Slots:</strong> ${previewResult.activeSlots?.map((s) => escapeHtml(s.role + ": " + s.userCode)).join(" \u2794 ") || "-"}</div>
+          <div><strong>Scorer Slots:</strong> Mid-Year: [${escapeHtml(previewResult.scorerSlots?.midYear || "")}], Final 1: [${escapeHtml(previewResult.scorerSlots?.final1 || "")}], Final 2: [${escapeHtml(previewResult.scorerSlots?.final2 || "")}]</div>
+          <div><strong>Process Capability:</strong> <code>${escapeHtml(previewResult.processCapabilityId || "")}</code></div>
+          <div><strong>In-Flight App 794 Impact:</strong> <span style="font-weight: 600; color: #047857;">${escapeHtml(previewResult.inFlightImpact || "NONE (ZERO)")}</span></div>
+          ${previewResult.warnings?.length > 0 ? `<div style="color: #b45309;">\u26A0\uFE0F Warnings: ${previewResult.warnings.map((w) => escapeHtml(w)).join(", ")}</div>` : ""}
+        </div>
+        ${previewResult.planPayload ? `
+          <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; font-size: 0.8rem; color: #15803d; font-weight: 600;">View Generated Mutation Plan Payload (Local JSON)</summary>
+            <pre style="background: #ffffff; padding: 0.75rem; border: 1px solid #dcfce7; border-radius: 4px; font-size: 0.75rem; overflow-x: auto; max-height: 200px;">${escapeHtml(JSON.stringify(previewResult.planPayload, null, 2))}</pre>
+          </details>
+        ` : ""}
+      </div>
+    ` : "";
+    return `
+    <div class="hr-routing-manager" style="background: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 1.5rem; margin-top: 1.5rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2 style="margin: 0; font-size: 1.25rem; color: #111827; display: flex; align-items: center; gap: 0.5rem;">
+          \u{1F9ED} App 800 HR Approval Routing Self-Service
+        </h2>
+        <span style="font-size: 0.8rem; color: #6b7280;">App 795 Routing Master Management</span>
+      </div>
+
+      ${roleBanner}
+      ${errorHtml}
+
+      <!-- Versioned Route Table -->
+      <div style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1rem; color: #374151; margin: 0 0 0.5rem 0;">Existing Versioned Routes / \u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E2A\u0E32\u0E22\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34</h3>
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 4px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+              <tr style="background: #f9fafb; border-bottom: 1px solid #e5e7eb; text-align: left;">
+                <th style="padding: 6px 10px;">Routing Key</th>
+                <th style="padding: 6px 10px;">Ver</th>
+                <th style="padding: 6px 10px;">Version Key</th>
+                <th style="padding: 6px 10px;">Topology</th>
+                <th style="padding: 6px 10px;">Status</th>
+                <th style="padding: 6px 10px;">Effective From</th>
+                <th style="padding: 6px 10px;">Effective To</th>
+                <th style="padding: 6px 10px;">Business Reason</th>
+                <th style="padding: 6px 10px;">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${routesRows || '<tr><td colspan="9" style="padding: 1rem; text-align: center; color: #9ca3af;">No route versions registered.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Editor / Configuration Panel -->
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 1.25rem;">
+        <h3 style="font-size: 1rem; color: #1e293b; margin: 0 0 1rem 0;">
+          Route Configuration & Plan Generator / \u0E01\u0E33\u0E2B\u0E19\u0E14\u0E04\u0E48\u0E32\u0E2A\u0E32\u0E22\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34
+        </h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <!-- Routing Key -->
+          <div>
+            <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">Routing Key (e.g. DEPT_ENG_SEC1):</label>
+            <input type="text" id="hr-route-key" class="hr-input" value="${escapeHtml(selectedRouteKey)}" placeholder="e.g. DEPT_ENG_SEC1" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+          </div>
+
+          <!-- Topology Selector -->
+          <div>
+            <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">Approval Topology (\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E0A\u0E31\u0E49\u0E19\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34):</label>
+            <select id="hr-topology-select" class="hr-select" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+              ${TOPOLOGY_OPTIONS.map((opt) => `
+                <option value="${escapeHtml(opt.value)}" ${selectedTopology === opt.value ? "selected" : ""}>
+                  ${escapeHtml(opt.label)}
+                </option>
+              `).join("")}
+            </select>
+          </div>
+
+          <!-- Effective Dates -->
+          <div>
+            <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">Effective From (YYYY-MM-DD):</label>
+            <input type="date" id="hr-effective-from" class="hr-input" value="${escapeHtml(effectiveFrom)}" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">Effective To (YYYY-MM-DD, Optional):</label>
+            <input type="date" id="hr-effective-to" class="hr-input" value="${escapeHtml(effectiveTo)}" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <!-- Dynamic Appraiser Slots -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem; margin-bottom: 1rem;">
+          <h4 style="margin: 0 0 0.75rem 0; font-size: 0.875rem; color: #334155;">Dynamic Appraiser Slots / \u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19\u0E15\u0E32\u0E21\u0E25\u0E33\u0E14\u0E31\u0E1A\u0E0A\u0E31\u0E49\u0E19</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+            <!-- M1 -->
+            <div id="slot-container-m1">
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Appraiser M1 User Code (Required):</label>
+              <input type="text" id="hr-slot-m1" class="hr-input slot-input" data-slot="M1" value="${escapeHtml(slotValues.M1 || "")}" placeholder="e.g. M1_USER" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <!-- M2 -->
+            <div id="slot-container-m2" style="${requiredSlots.includes("M2") ? "" : "display: none;"}">
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Appraiser M2 User Code:</label>
+              <input type="text" id="hr-slot-m2" class="hr-input slot-input" data-slot="M2" value="${escapeHtml(slotValues.M2 || "")}" placeholder="e.g. M2_USER" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <!-- G1 -->
+            <div id="slot-container-g1" style="${requiredSlots.includes("G1") ? "" : "display: none;"}">
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Appraiser G1 User Code:</label>
+              <input type="text" id="hr-slot-g1" class="hr-input slot-input" data-slot="G1" value="${escapeHtml(slotValues.G1 || "")}" placeholder="e.g. G1_USER" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+            </div>
+
+            <!-- G2 -->
+            <div id="slot-container-g2" style="${requiredSlots.includes("G2") ? "" : "display: none;"}">
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Appraiser G2 User Code:</label>
+              <input type="text" id="hr-slot-g2" class="hr-input slot-input" data-slot="G2" value="${escapeHtml(slotValues.G2 || "")}" placeholder="e.g. G2_USER" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Scorer Slots Configuration -->
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem; margin-bottom: 1rem;">
+          <h4 style="margin: 0 0 0.75rem 0; font-size: 0.875rem; color: #334155;">Scorer Slots / \u0E2A\u0E34\u0E17\u0E18\u0E34\u0E4C\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E04\u0E30\u0E41\u0E19\u0E19</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Mid-Year Scorer Slot:</label>
+              <select id="hr-scorer-midyear" class="hr-select" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+                ${requiredSlots.map((s) => `<option value="${escapeHtml(s)}" ${scorerValues.midYear === s ? "selected" : ""}>${escapeHtml(s)}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Final Scorer 1 Slot:</label>
+              <select id="hr-scorer-final1" class="hr-select" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+                ${requiredSlots.map((s) => `<option value="${escapeHtml(s)}" ${scorerValues.final1 === s ? "selected" : ""}>${escapeHtml(s)}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.2rem;">Final Scorer 2 Slot:</label>
+              <select id="hr-scorer-final2" class="hr-select" style="width: 100%; padding: 0.4rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+                <option value="">(None / No Final Scorer 2)</option>
+                ${requiredSlots.map((s) => `<option value="${escapeHtml(s)}" ${scorerValues.final2 === s ? "selected" : ""}>${escapeHtml(s)}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business Reason (Remark) -->
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">
+            Business Reason / \u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E41\u0E1B\u0E25\u0E07 (Mandatory Remark):
+          </label>
+          <textarea id="hr-route-remark" class="hr-textarea" rows="2" placeholder="\u0E23\u0E30\u0E1A\u0E38\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E17\u0E32\u0E07\u0E18\u0E38\u0E23\u0E01\u0E34\u0E08\u0E43\u0E19\u0E01\u0E32\u0E23\u0E2A\u0E23\u0E49\u0E32\u0E07/\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07\u0E40\u0E27\u0E2D\u0E23\u0E4C\u0E0A\u0E31\u0E19\u0E2A\u0E32\u0E22\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 \u0E40\u0E0A\u0E48\u0E19 \u0E1B\u0E23\u0E31\u0E1A\u0E1C\u0E31\u0E07\u0E2D\u0E07\u0E04\u0E4C\u0E01\u0E23 Q1/2026" style="width: 100%; padding: 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">${escapeHtml(remark)}</textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+          <button type="button" id="hr-btn-preview" class="btn-info" style="padding: 0.5rem 1.25rem; background: #0369a1; color: #fff; border: none; border-radius: 4px; font-weight: 600; cursor: pointer;">
+            \u{1F50D} Preview & Validate Plan
+          </button>
+          ${mutationControls}
+        </div>
+
+        <!-- Historical Route Note -->
+        <div style="margin-top: 1rem; font-size: 0.75rem; color: #64748b;">
+          \u{1F6E1}\uFE0F <strong>Safety Invariant:</strong> Historical route versions cannot be deleted. Deprecated routes must be superseded or cancelled to preserve audit trail integrity.
+        </div>
+      </div>
+
+      ${previewHtml}
+    </div>
+  `;
+  }
+  function bindHrRoutingManagerEvents({
+    containerElement,
+    principal,
+    service,
+    onPlanGenerated = () => {
+    },
+    initialData = {}
+  }) {
+    if (!containerElement) return;
+    let state = {
+      selectedRouteKey: initialData.selectedRouteKey || "",
+      selectedTopology: initialData.selectedTopology || TOPOLOGIES.M1_ONLY,
+      slotValues: initialData.slotValues || { M1: "" },
+      scorerValues: initialData.scorerValues || { midYear: "M1", final1: "M1", final2: "" },
+      effectiveFrom: initialData.effectiveFrom || "",
+      effectiveTo: initialData.effectiveTo || "",
+      remark: initialData.remark || "",
+      validationErrors: [],
+      previewResult: null,
+      routes: initialData.routes || []
+    };
+    const render = () => {
+      containerElement.innerHTML = renderHrRoutingManagerHtml({
+        principal,
+        routes: state.routes,
+        selectedRouteKey: state.selectedRouteKey,
+        selectedTopology: state.selectedTopology,
+        slotValues: state.slotValues,
+        scorerValues: state.scorerValues,
+        effectiveFrom: state.effectiveFrom,
+        effectiveTo: state.effectiveTo,
+        remark: state.remark,
+        validationErrors: state.validationErrors,
+        previewResult: state.previewResult
+      });
+      attachListeners();
+    };
+    const readFormState = () => {
+      const keyEl = containerElement.querySelector("#hr-route-key");
+      const topoEl = containerElement.querySelector("#hr-topology-select");
+      const effFromEl = containerElement.querySelector("#hr-effective-from");
+      const effToEl = containerElement.querySelector("#hr-effective-to");
+      const remarkEl = containerElement.querySelector("#hr-route-remark");
+      if (keyEl) state.selectedRouteKey = keyEl.value;
+      if (topoEl) state.selectedTopology = topoEl.value;
+      if (effFromEl) state.effectiveFrom = effFromEl.value;
+      if (effToEl) state.effectiveTo = effToEl.value;
+      if (remarkEl) state.remark = remarkEl.value;
+      const slots = {};
+      const slotInputs = containerElement.querySelectorAll(".slot-input");
+      slotInputs.forEach((input) => {
+        const slotName = input.getAttribute("data-slot");
+        if (slotName) slots[slotName] = input.value;
+      });
+      state.slotValues = slots;
+      const midEl = containerElement.querySelector("#hr-scorer-midyear");
+      const f1El = containerElement.querySelector("#hr-scorer-final1");
+      const f2El = containerElement.querySelector("#hr-scorer-final2");
+      state.scorerValues = {
+        midYear: midEl ? midEl.value : "M1",
+        final1: f1El ? f1El.value : "M1",
+        final2: f2El ? f2El.value : ""
+      };
+    };
+    const attachListeners = () => {
+      const topoEl = containerElement.querySelector("#hr-topology-select");
+      if (topoEl) {
+        topoEl.addEventListener("change", (e) => {
+          state.selectedTopology = e.target.value;
+          readFormState();
+          render();
+        });
+      }
+      const selectBtns = containerElement.querySelectorAll(".btn-select-route");
+      selectBtns.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const rKey = e.target.getAttribute("data-route-key");
+          const found = state.routes.find((r) => (r.Routing_Key || r.routingKey) === rKey);
+          if (found) {
+            state.selectedRouteKey = found.Routing_Key || found.routingKey || "";
+            state.selectedTopology = found.Topology || found.topology || TOPOLOGIES.M1_ONLY;
+            state.effectiveFrom = found.Effective_From || found.effectiveFrom || "";
+            state.effectiveTo = found.Effective_To || found.effectiveTo || "";
+            state.remark = found.Remark || found.remark || "";
+            render();
+          }
+        });
+      });
+      const previewBtn = containerElement.querySelector("#hr-btn-preview");
+      if (previewBtn) {
+        previewBtn.addEventListener("click", () => {
+          readFormState();
+          const draftInput = {
+            routingKey: state.selectedRouteKey,
+            topology: state.selectedTopology,
+            slots: state.slotValues,
+            scorerSlots: state.scorerValues,
+            effectiveFrom: state.effectiveFrom,
+            effectiveTo: state.effectiveTo,
+            businessReason: state.remark
+          };
+          const validation = validateRoutingDraft(draftInput, { existingVersions: state.routes });
+          state.validationErrors = validation.errors;
+          if (validation.isValid) {
+            const preview = previewRoutingPlan({
+              principal,
+              draft: draftInput,
+              existingVersions: state.routes
+            });
+            state.previewResult = preview;
+          } else {
+            state.previewResult = null;
+          }
+          render();
+        });
+      }
+      const createDraftBtn = containerElement.querySelector("#hr-btn-create-draft");
+      if (createDraftBtn) {
+        createDraftBtn.addEventListener("click", () => {
+          readFormState();
+          try {
+            const plan = service.planCreateDraft({
+              principal,
+              draft: {
+                routingKey: state.selectedRouteKey,
+                topology: state.selectedTopology,
+                slots: state.slotValues,
+                scorerSlots: state.scorerValues,
+                effectiveFrom: state.effectiveFrom,
+                effectiveTo: state.effectiveTo,
+                businessReason: state.remark
+              },
+              existingVersions: state.routes
+            });
+            state.validationErrors = [];
+            state.previewResult = {
+              isValid: true,
+              topology: state.selectedTopology,
+              activeSlots: plan.routeData.activeSlots,
+              scorerSlots: plan.routeData.scorerSlots,
+              processCapabilityId: plan.routeData.processCapabilityId,
+              planPayload: plan
+            };
+            onPlanGenerated(plan);
+            render();
+          } catch (err) {
+            state.validationErrors = [err.message];
+            render();
+          }
+        });
+      }
+      const saveDraftBtn = containerElement.querySelector("#hr-btn-save-draft");
+      if (saveDraftBtn) {
+        saveDraftBtn.addEventListener("click", () => {
+          readFormState();
+          try {
+            const plan = service.planEditDraft({
+              principal,
+              currentDraft: {
+                Routing_Key: state.selectedRouteKey,
+                Status: ROUTING_STATUSES.DRAFT
+              },
+              updates: {
+                topology: state.selectedTopology,
+                slots: state.slotValues,
+                scorerSlots: state.scorerValues,
+                effectiveFrom: state.effectiveFrom,
+                effectiveTo: state.effectiveTo,
+                businessReason: state.remark
+              },
+              existingVersions: state.routes
+            });
+            state.validationErrors = [];
+            state.previewResult = {
+              isValid: true,
+              topology: state.selectedTopology,
+              activeSlots: plan.routeData.activeSlots,
+              scorerSlots: plan.routeData.scorerSlots,
+              processCapabilityId: plan.routeData.processCapabilityId,
+              planPayload: plan
+            };
+            onPlanGenerated(plan);
+            render();
+          } catch (err) {
+            state.validationErrors = [err.message];
+            render();
+          }
+        });
+      }
+      const publishBtn = containerElement.querySelector("#hr-btn-publish");
+      if (publishBtn) {
+        publishBtn.addEventListener("click", () => {
+          readFormState();
+          try {
+            const plan = service.planPublishVersion({
+              principal,
+              versionToPublish: {
+                Routing_Key: state.selectedRouteKey,
+                Status: ROUTING_STATUSES.DRAFT,
+                Topology: state.selectedTopology,
+                Effective_From: state.effectiveFrom,
+                Effective_To: state.effectiveTo,
+                Remark: state.remark,
+                Appraiser_M1: [{ code: state.slotValues.M1 || "" }]
+              },
+              businessReason: state.remark,
+              existingVersions: state.routes
+            });
+            state.validationErrors = [];
+            state.previewResult = {
+              isValid: true,
+              topology: state.selectedTopology,
+              activeSlots: plan.publishedVersion.activeSlots,
+              scorerSlots: plan.publishedVersion.scorerSlots,
+              processCapabilityId: plan.processCapabilityId,
+              planPayload: plan
+            };
+            onPlanGenerated(plan);
+            render();
+          } catch (err) {
+            state.validationErrors = [err.message];
+            render();
+          }
+        });
+      }
+      const supersedeBtn = containerElement.querySelector("#hr-btn-supersede");
+      if (supersedeBtn) {
+        supersedeBtn.addEventListener("click", () => {
+          readFormState();
+          try {
+            const plan = service.planSupersedeVersion({
+              principal,
+              activeVersion: {
+                Routing_Key: state.selectedRouteKey,
+                Status: ROUTING_STATUSES.ACTIVE,
+                Version_Number: 1
+              },
+              newVersionDraft: {
+                routingKey: state.selectedRouteKey,
+                topology: state.selectedTopology,
+                slots: state.slotValues,
+                scorerSlots: state.scorerValues,
+                effectiveFrom: state.effectiveFrom,
+                effectiveTo: state.effectiveTo,
+                businessReason: state.remark
+              },
+              businessReason: state.remark,
+              existingVersions: state.routes
+            });
+            state.validationErrors = [];
+            state.previewResult = {
+              isValid: true,
+              topology: state.selectedTopology,
+              activeSlots: plan.newVersion.activeSlots,
+              scorerSlots: plan.newVersion.scorerSlots,
+              processCapabilityId: plan.processCapabilityId,
+              planPayload: plan
+            };
+            onPlanGenerated(plan);
+            render();
+          } catch (err) {
+            state.validationErrors = [err.message];
+            render();
+          }
+        });
+      }
+    };
+    render();
+    return {
+      getState: () => ({ ...state }),
+      setState: (newState) => {
+        state = { ...state, ...newState };
+        render();
+      }
+    };
+  }
+
   // src/ui/hr-control-center.js
   var DEFAULT_APP_IDS = Object.freeze({
     mboV2AppId: 794,
@@ -484,7 +2571,7 @@
     "MidYear_Attachment_1",
     "Final_Attachment_1"
   ]);
-  function escapeHtml(str) {
+  function escapeHtml2(str) {
     if (str === null || str === void 0) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
@@ -585,20 +2672,20 @@
     const depts = Array.from(new Set(allEvaluations.map((e) => e.Employee_Department?.value).filter(Boolean))).sort();
     const secs = Array.from(new Set(allEvaluations.map((e) => e.Employee_Section?.value).filter(Boolean))).sort();
     const statuses = Array.from(new Set(allEvaluations.map((e) => e.Status?.value).filter(Boolean))).sort();
-    const warningHtml = warnings.length > 0 ? warnings.map((w) => `<div class="hrcc-warning-box">\u26A0\uFE0F <strong>Warning:</strong> ${escapeHtml(w)}</div>`).join("") : "";
+    const warningHtml = warnings.length > 0 ? warnings.map((w) => `<div class="hrcc-warning-box">\u26A0\uFE0F <strong>Warning:</strong> ${escapeHtml2(w)}</div>`).join("") : "";
     const formatHealthText = (h, suffix = "") => {
       if (!h.available) return '<span style="color:red;">Unavailable / Access denied</span>';
-      return `${escapeHtml(h.count)}${suffix}`;
+      return `${escapeHtml2(h.count)}${suffix}`;
     };
-    const routingText = normHealth.routing.available ? `${escapeHtml(normHealth.routing.count)}/12` : '<span style="color:red;">Unavailable / Access denied</span>';
+    const routingText = normHealth.routing.available ? `${escapeHtml2(normHealth.routing.count)}/12` : '<span style="color:red;">Unavailable / Access denied</span>';
     const rowsHtml = filtered.map((e) => {
-      const id = escapeHtml(e.$id?.value || "");
-      const code = escapeHtml(e.Employee_Code?.value || "-");
-      const name = escapeHtml(e.Employee_Name?.value || e.Employee_Name_TH?.value || "-");
-      const deptVal = escapeHtml(e.Employee_Department?.value || "-");
-      const secVal = escapeHtml(e.Employee_Section?.value || "-");
-      const posVal = escapeHtml(e.Employee_Position?.value || "-");
-      const statusVal = escapeHtml(e.Status?.value || "-");
+      const id = escapeHtml2(e.$id?.value || "");
+      const code = escapeHtml2(e.Employee_Code?.value || "-");
+      const name = escapeHtml2(e.Employee_Name?.value || e.Employee_Name_TH?.value || "-");
+      const deptVal = escapeHtml2(e.Employee_Department?.value || "-");
+      const secVal = escapeHtml2(e.Employee_Section?.value || "-");
+      const posVal = escapeHtml2(e.Employee_Position?.value || "-");
+      const statusVal = escapeHtml2(e.Status?.value || "-");
       return `<tr>
       <td>${code}</td>
       <td>${name}</td>
@@ -620,7 +2707,7 @@
 
   <div class="hrcc-health-panel">
     <strong>System Health & Inventory:</strong>
-    App ${appIds.mboV2AppId} Count: ${escapeHtml(normHealth.app794Count)} |
+    App ${appIds.mboV2AppId} Count: ${escapeHtml2(normHealth.app794Count)} |
     App ${appIds.routingMasterAppId} Active Routings: ${routingText} |
     App ${appIds.scoringConfigMasterAppId} Published Configs: ${formatHealthText(normHealth.scoring)} |
     App ${appIds.hoshinMasterAppId} Ready Hoshins: ${formatHealthText(normHealth.hoshin)} |
@@ -642,28 +2729,28 @@
     <label>FY:
       <select id="hrcc-filter-fy" class="hrcc-select">
         <option value="">All FYs</option>
-        ${fys.map((f) => `<option value="${escapeHtml(f)}" ${filters.fy === f ? "selected" : ""}>${escapeHtml(f)}</option>`).join("")}
+        ${fys.map((f) => `<option value="${escapeHtml2(f)}" ${filters.fy === f ? "selected" : ""}>${escapeHtml2(f)}</option>`).join("")}
       </select>
     </label>
 
     <label>Department:
       <select id="hrcc-filter-dept" class="hrcc-select">
         <option value="">All Departments</option>
-        ${depts.map((d) => `<option value="${escapeHtml(d)}" ${filters.dept === d ? "selected" : ""}>${escapeHtml(d)}</option>`).join("")}
+        ${depts.map((d) => `<option value="${escapeHtml2(d)}" ${filters.dept === d ? "selected" : ""}>${escapeHtml2(d)}</option>`).join("")}
       </select>
     </label>
 
     <label>Section:
       <select id="hrcc-filter-sec" class="hrcc-select">
         <option value="">All Sections</option>
-        ${secs.map((s) => `<option value="${escapeHtml(s)}" ${filters.sec === s ? "selected" : ""}>${escapeHtml(s)}</option>`).join("")}
+        ${secs.map((s) => `<option value="${escapeHtml2(s)}" ${filters.sec === s ? "selected" : ""}>${escapeHtml2(s)}</option>`).join("")}
       </select>
     </label>
 
     <label>Status:
       <select id="hrcc-filter-status" class="hrcc-select">
         <option value="">All Statuses</option>
-        ${statuses.map((st) => `<option value="${escapeHtml(st)}" ${filters.status === st ? "selected" : ""}>${escapeHtml(st)}</option>`).join("")}
+        ${statuses.map((st) => `<option value="${escapeHtml2(st)}" ${filters.status === st ? "selected" : ""}>${escapeHtml2(st)}</option>`).join("")}
       </select>
     </label>
   </div>
@@ -860,7 +2947,7 @@
               try {
                 const res = await resetFn({ employeeCode: rawEmpCode });
                 if (res && res.status === "PASSWORD_RESET") {
-                  const safeCode = escapeHtml(res.employeeCode || rawEmpCode);
+                  const safeCode = escapeHtml2(res.employeeCode || rawEmpCode);
                   if (feedbackDiv) {
                     feedbackDiv.innerHTML = `<div style="background:#ecfdf5; border-left:4px solid #10b981; padding:0.75rem 1rem; border-radius:0.25rem; color:#065f46;">
                     \u2705 <strong>\u0E23\u0E35\u0E40\u0E0B\u0E47\u0E15\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19 MBO \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 / Reset MBO Password Successful:</strong><br>
@@ -872,13 +2959,13 @@
                   if (empCodeInput) empCodeInput.value = "";
                   if (empConfirmInput) empConfirmInput.value = "";
                 } else {
-                  const reason = escapeHtml(res?.reason || res?.status || "Unknown credential failure");
+                  const reason = escapeHtml2(res?.reason || res?.status || "Unknown credential failure");
                   if (feedbackDiv) {
                     feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u274C \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E23\u0E35\u0E40\u0E0B\u0E47\u0E15\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E48\u0E32\u0E19 MBO \u0E44\u0E14\u0E49: ${reason}</div>`;
                   }
                 }
               } catch (err) {
-                const errMsg = escapeHtml(err.message || "Technical error occurred");
+                const errMsg = escapeHtml2(err.message || "Technical error occurred");
                 if (feedbackDiv) {
                   feedbackDiv.innerHTML = `<div class="hrcc-warning-box">\u274C \u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E17\u0E32\u0E07\u0E40\u0E17\u0E04\u0E19\u0E34\u0E04: ${errMsg}</div>`;
                 }
@@ -892,7 +2979,7 @@
         };
         renderUI();
       } catch (err) {
-        headerSpace.innerHTML = `<div class="hrcc-container" style="color:red;">\u274C Error loading HR Control Center: ${escapeHtml(err.message)}</div>`;
+        headerSpace.innerHTML = `<div class="hrcc-container" style="color:red;">\u274C Error loading HR Control Center: ${escapeHtml2(err.message)}</div>`;
       }
       return event;
     };
