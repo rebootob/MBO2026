@@ -113,9 +113,42 @@ export function generateRoutingSchemaMigrationPlan({
   // 3. Backup prerequisite validation
   validateBackupPrerequisite(backupEvidence);
 
+  // 4. Current schema is REQUIRED
+  if (!currentSchema || typeof currentSchema !== 'object' || Array.isArray(currentSchema)) {
+    throw new Error('MIGRATION_CURRENT_SCHEMA_REQUIRED: currentSchema is required to compute schema diff.');
+  }
+
+  const currentFields = currentSchema.fields && typeof currentSchema.fields === 'object' && !Array.isArray(currentSchema.fields)
+    ? currentSchema.fields
+    : currentSchema;
+
+  if (!currentFields || typeof currentFields !== 'object' || Array.isArray(currentFields)) {
+    throw new Error('MIGRATION_CURRENT_SCHEMA_REQUIRED: currentSchema must provide a valid fields definition object.');
+  }
+
+  // Validate critical fields existence
+  const currentRk = currentFields.Routing_Key;
+  if (!currentRk || typeof currentRk !== 'object') {
+    throw new Error('MIGRATION_PLAN_ERROR: currentSchema must contain a definition for "Routing_Key".');
+  }
+
+  const currentEf = currentFields.Effective_From;
+  if (!currentEf || typeof currentEf !== 'object') {
+    throw new Error('MIGRATION_PLAN_ERROR: currentSchema must contain a definition for "Effective_From".');
+  }
+
+  // Validate critical type compatibility
+  if (currentRk.type !== 'SINGLE_LINE_TEXT') {
+    throw new Error(`INCOMPATIBLE_FIELD_TYPE: Routing_Key must have type SINGLE_LINE_TEXT (received "${currentRk.type}").`);
+  }
+
+  if (currentEf.type !== 'DATE') {
+    throw new Error(`INCOMPATIBLE_FIELD_TYPE: Effective_From must have type DATE (received "${currentEf.type}").`);
+  }
+
   const isDryRun = options.dryRun !== false;
 
-  // 4. Live execution check (disabled in D3-IMP-02)
+  // 5. Live execution check (disabled in D3-IMP-02)
   if (!isDryRun) {
     const requestConfig = {
       appId: targetAppId,
@@ -128,38 +161,50 @@ export function generateRoutingSchemaMigrationPlan({
     throw new Error('D3_SCHEMA_WRITE_BLOCKED: Live Kintone write execution is strictly disabled in D3-IMP-02.');
   }
 
-  // 5. Build field modifications diff
-  const modifications = [
-    {
+  // 6. Build TRUE field modifications diff from actual current properties
+  const modifications = [];
+
+  // Routing_Key: target is unique = false
+  const currentRkUnique = currentRk.unique === true;
+  if (currentRkUnique) {
+    modifications.push({
       fieldCode: 'Routing_Key',
       operation: 'MODIFY_FIELD_PROPERTIES',
-      current: { unique: true, required: true },
+      current: { unique: true, required: currentRk.required !== false },
       target: { unique: false, required: true },
       rationale: 'Model A requires non-unique business Routing_Key for versioned rows'
-    },
-    {
+    });
+  }
+
+  // Effective_From: target is required = true
+  const currentEfRequired = currentEf.required === true;
+  if (!currentEfRequired) {
+    modifications.push({
       fieldCode: 'Effective_From',
       operation: 'MODIFY_FIELD_PROPERTIES',
       current: { required: false },
       target: { required: true },
       rationale: 'Model A requires Effective_From date for all route versions'
-    }
-  ];
+    });
+  }
 
-  // 6. Build field additions diff
-  const additions = TARGET_APP795_NEW_FIELD_CODES.map(fieldCode => {
-    const spec = routingFields[fieldCode];
-    if (!spec) {
-      throw new Error(`MIGRATION_PLAN_ERROR: Target schema specification missing for field ${fieldCode}.`);
+  // 7. Build field additions diff for fields not yet present in currentSchema
+  const additions = [];
+  for (const fieldCode of TARGET_APP795_NEW_FIELD_CODES) {
+    if (!currentFields[fieldCode]) {
+      const spec = routingFields[fieldCode];
+      if (!spec) {
+        throw new Error(`MIGRATION_PLAN_ERROR: Target schema specification missing for field ${fieldCode}.`);
+      }
+      additions.push({
+        fieldCode,
+        operation: 'ADD_FIELD',
+        spec: { ...spec }
+      });
     }
-    return {
-      fieldCode,
-      operation: 'ADD_FIELD',
-      spec: { ...spec }
-    };
-  });
+  }
 
-  // 7. Post-write read-back verification contract
+  // 8. Post-write read-back verification contract
   const postWriteReadBackContract = {
     targetAppId: D3_MIGRATION_APP_ID,
     expectedPostMigrationRevision: Number(expectedRevision) + 1,
@@ -183,11 +228,20 @@ export function generateRoutingSchemaMigrationPlan({
     ]
   };
 
-  // 8. Deterministic Plan ID
+  // 9. Deterministic Plan ID includes actual currentSchemaEvidence
+  const currentSchemaEvidence = {
+    routingKeyUnique: currentRk.unique === true,
+    routingKeyType: currentRk.type,
+    effectiveFromRequired: currentEf.required === true,
+    effectiveFromType: currentEf.type,
+    existingFieldCodes: Object.keys(currentFields).sort()
+  };
+
   const planPayload = JSON.stringify({
     targetAppId,
     expectedRevision,
     backupSha256: backupEvidence.sha256,
+    currentSchemaEvidence,
     modifications,
     additions
   });
@@ -201,6 +255,7 @@ export function generateRoutingSchemaMigrationPlan({
     dryRun: true,
     executionMode: 'DRY_RUN_ONLY',
     backupEvidence: { ...backupEvidence },
+    currentSchemaEvidence,
     diffPreview: {
       modifiedFieldsCount: modifications.length,
       addedFieldsCount: additions.length,
@@ -213,6 +268,7 @@ export function generateRoutingSchemaMigrationPlan({
   };
 }
 
+// CLI dry-run preview if executed directly
 if (process.argv[1] && process.argv[1].endsWith('d3-migrate-routing-schema.js')) {
   const dummyBackup = {
     appId: 795,
@@ -222,10 +278,17 @@ if (process.argv[1] && process.argv[1].endsWith('d3-migrate-routing-schema.js'))
     artifactPath: 'scratch/app795-prewrite-backup.json',
     recordCount: 17
   };
+  const dummyCurrentSchema = {
+    fields: {
+      Routing_Key: { type: 'SINGLE_LINE_TEXT', label: 'Routing Key', required: true, unique: true },
+      Effective_From: { type: 'DATE', label: 'Effective From', required: false }
+    }
+  };
   const plan = generateRoutingSchemaMigrationPlan({
     targetAppId: 795,
     expectedRevision: 10,
     backupEvidence: dummyBackup,
+    currentSchema: dummyCurrentSchema,
     options: { dryRun: true }
   });
   console.log(JSON.stringify(plan, null, 2));

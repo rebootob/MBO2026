@@ -266,23 +266,86 @@ export function inspectD3Readiness({
           }
         }
       }
+
+      // Validate Scorer_Priority_Slots for each App 795 record
+      const rawScorer = record.Scorer_Priority_Slots;
+      const scorerVal = typeof rawScorer === 'object' && rawScorer !== null && 'value' in rawScorer
+        ? rawScorer.value
+        : rawScorer;
+
+      if (scorerVal === undefined || scorerVal === null || (typeof scorerVal === 'string' && !scorerVal.trim())) {
+        errors.push(`App795 Record [${i}] (${rk}): SCORER_PLAN_NOT_CONFIGURED: Scorer_Priority_Slots is missing or blank.`);
+      } else {
+        let slots;
+        if (Array.isArray(scorerVal)) {
+          slots = scorerVal;
+        } else if (typeof scorerVal === 'string') {
+          const trimmed = scorerVal.trim();
+          if (trimmed.startsWith('[')) {
+            try {
+              slots = JSON.parse(trimmed);
+            } catch {
+              errors.push(`App795 Record [${i}] (${rk}): INVALID_SCORER_PLAN: Scorer_Priority_Slots contains malformed JSON.`);
+            }
+          } else {
+            slots = trimmed.split(',').map(s => s.trim());
+          }
+        } else {
+          errors.push(`App795 Record [${i}] (${rk}): INVALID_SCORER_PLAN: Unsupported Scorer_Priority_Slots shape.`);
+        }
+
+        if (slots !== undefined) {
+          if (!Array.isArray(slots) || slots.length === 0) {
+            errors.push(`App795 Record [${i}] (${rk}): INVALID_SCORER_PLAN: Scorer priority slots must be a non-empty ordered array.`);
+          } else {
+            const patternDef = pat && D3_ROUTE_PATTERNS[pat] ? D3_ROUTE_PATTERNS[pat] : null;
+            const maxActive = patternDef ? patternDef.sourceSlots.length : 4;
+            const parsedSlots = [];
+            let valid = true;
+
+            for (const item of slots) {
+              const parsed = Number(item);
+              if (!Number.isInteger(parsed) || parsed < 1) {
+                errors.push(`App795 Record [${i}] (${rk}): INVALID_SCORER_PLAN: Scorer slot "${String(item)}" must be a positive integer.`);
+                valid = false;
+                break;
+              }
+              if (parsed > maxActive) {
+                errors.push(`App795 Record [${i}] (${rk}): INVALID_SCORER_PLAN: Scorer slot ${parsed} exceeds active route length (${maxActive}) for pattern ${pat || 'UNKNOWN'}.`);
+                valid = false;
+                break;
+              }
+              parsedSlots.push(parsed);
+            }
+
+            if (valid) {
+              if (new Set(parsedSlots).size !== parsedSlots.length) {
+                errors.push(`App795 Record [${i}] (${rk}): INVALID_SCORER_PLAN: Scorer priority slots must be distinct.`);
+              }
+            }
+          }
+        }
+      }
     }
   }
 
   const isReady = errors.length === 0;
+  const hasApp795Error = errors.some(e => e.startsWith('App795'));
+  const hasApp794Error = errors.some(e => e.startsWith('App794'));
+  const hasApp798Error = errors.some(e => e.startsWith('App798'));
 
   return {
     ready: isReady,
     app795: {
-      status: app795Checks.every(c => c.passed) ? 'PASS' : 'FAIL',
+      status: (app795Checks.every(c => c.passed) && !hasApp795Error) ? 'PASS' : 'FAIL',
       checks: app795Checks
     },
     app794: {
-      status: app794Checks.every(c => c.passed) ? 'PASS' : 'FAIL',
+      status: (app794Checks.every(c => c.passed) && !hasApp794Error) ? 'PASS' : 'FAIL',
       checks: app794Checks
     },
     app798: {
-      status: app798Checks.every(c => c.passed) ? 'PASS' : 'FAIL',
+      status: (app798Checks.every(c => c.passed) && !hasApp798Error) ? 'PASS' : 'FAIL',
       checks: app798Checks
     },
     errors,

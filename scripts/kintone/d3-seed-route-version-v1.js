@@ -65,27 +65,80 @@ export function deriveRoutePatternFromSlots(record) {
 }
 
 /**
- * Derives or formats explicit Scorer_Priority_Slots for the route pattern.
+ * Resolves and validates an explicit Scorer_Priority_Slots plan.
+ * FAILS CLOSED with SCORER_PLAN_NOT_CONFIGURED if no explicit plan is provided.
+ * Does NOT derive or synthesize scorer plans from Route_Pattern.
+ *
+ * @param {Object} params
+ * @param {Object} params.record - Source record
+ * @param {string} params.routingKey - Business routing key
+ * @param {string} params.routePattern - Derived route pattern
+ * @param {Object} [params.scorerPlanByRoutingKey] - Explicit mapping of routingKey -> scorer plan
+ * @returns {string} Deterministic JSON string representation of scorer priority slots
  */
-export function deriveScorerPrioritySlots(record, routePattern) {
-  if (record.Scorer_Priority_Slots) {
-    const raw = typeof record.Scorer_Priority_Slots === 'object' ? record.Scorer_Priority_Slots.value : record.Scorer_Priority_Slots;
-    if (raw) return typeof raw === 'string' ? raw : JSON.stringify(raw);
+export function resolveAndValidateScorerPlan({
+  record,
+  routingKey,
+  routePattern,
+  scorerPlanByRoutingKey = null
+}) {
+  // Source 1: explicit migration input mapping
+  let rawPlan = scorerPlanByRoutingKey?.[routingKey];
+
+  // Source 2: existing nonblank Scorer_Priority_Slots on source record
+  if (rawPlan === undefined || rawPlan === null || (typeof rawPlan === 'string' && !rawPlan.trim())) {
+    const fromRecord = record.Scorer_Priority_Slots;
+    rawPlan = typeof fromRecord === 'object' && fromRecord !== null && 'value' in fromRecord
+      ? fromRecord.value
+      : fromRecord;
   }
 
-  // Deterministic defaults matching the pattern's active slots
-  switch (routePattern) {
-    case 'PATTERN_1_M1':
-      return '[1]';
-    case 'PATTERN_2_M1_G1':
-      return '[1, 2]';
-    case 'PATTERN_3A_M2_M1_G1':
-    case 'PATTERN_3B_M1_G1_G2':
-    case 'PATTERN_4_M2_M1_G1_G2':
-      return '[1, 2]';
-    default:
-      throw new Error(`SEED_PLAN_ERROR: No default scorer plan for pattern ${routePattern}.`);
+  if (rawPlan === undefined || rawPlan === null || (typeof rawPlan === 'string' && !rawPlan.trim())) {
+    throw new Error(`SCORER_PLAN_NOT_CONFIGURED: Missing Scorer_Priority_Slots for Routing_Key "${routingKey}". Scorer plan cannot be inferred.`);
   }
+
+  // Parse raw plan
+  let slots;
+  if (Array.isArray(rawPlan)) {
+    slots = rawPlan;
+  } else if (typeof rawPlan === 'string') {
+    const trimmed = rawPlan.trim();
+    if (trimmed.startsWith('[')) {
+      try {
+        slots = JSON.parse(trimmed);
+      } catch {
+        throw new Error(`INVALID_SCORER_PLAN: Scorer_Priority_Slots contains malformed JSON for Routing_Key "${routingKey}".`);
+      }
+    } else {
+      slots = trimmed.split(',').map(s => s.trim());
+    }
+  } else {
+    throw new Error(`INVALID_SCORER_PLAN: Unsupported Scorer_Priority_Slots shape for Routing_Key "${routingKey}".`);
+  }
+
+  if (!Array.isArray(slots) || slots.length === 0) {
+    throw new Error(`INVALID_SCORER_PLAN: Scorer priority slots must be a non-empty ordered list for Routing_Key "${routingKey}".`);
+  }
+
+  const activePattern = D3_ROUTE_PATTERNS[routePattern];
+  const maxActiveSlot = activePattern ? activePattern.sourceSlots.length : 4;
+
+  const parsedSlots = slots.map(item => {
+    const parsed = Number(item);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+      throw new Error(`INVALID_SCORER_PLAN: Scorer slot "${String(item)}" must be a positive integer for Routing_Key "${routingKey}".`);
+    }
+    if (parsed > maxActiveSlot) {
+      throw new Error(`INVALID_SCORER_PLAN: Scorer slot ${parsed} exceeds active route slot count (${maxActiveSlot}) for pattern ${routePattern} on Routing_Key "${routingKey}".`);
+    }
+    return parsed;
+  });
+
+  if (new Set(parsedSlots).size !== parsedSlots.length) {
+    throw new Error(`INVALID_SCORER_PLAN: Scorer priority slots must be distinct for Routing_Key "${routingKey}".`);
+  }
+
+  return JSON.stringify(parsedSlots);
 }
 
 /**
@@ -96,13 +149,15 @@ export function deriveScorerPrioritySlots(record, routePattern) {
  * @param {string} params.effectiveFrom - Explicit Owner-authorized Effective_From date (YYYY-MM-DD)
  * @param {string} [params.effectiveTo] - Optional Effective_To date (YYYY-MM-DD)
  * @param {string} [params.status] - Version status (default: 'ACTIVE')
+ * @param {Object} [params.scorerPlanByRoutingKey] - Explicit scorer plan mapping by routing key
  * @returns {Object} Deterministic seed plan
  */
 export function generateV1RouteSeedPlan({
   records,
   effectiveFrom,
   effectiveTo = '',
-  status = 'ACTIVE'
+  status = 'ACTIVE',
+  scorerPlanByRoutingKey = null
 }) {
   if (!Array.isArray(records) || records.length === 0) {
     throw new Error('SEED_PLAN_ERROR: records array must be non-empty.');
@@ -157,7 +212,12 @@ export function generateV1RouteSeedPlan({
     }
 
     const routePattern = deriveRoutePatternFromSlots(record);
-    const scorerPrioritySlots = deriveScorerPrioritySlots(record, routePattern);
+    const scorerPrioritySlots = resolveAndValidateScorerPlan({
+      record,
+      routingKey: cleanRoutingKey,
+      routePattern,
+      scorerPlanByRoutingKey
+    });
 
     const versionKey = `${cleanRoutingKey}#v1`;
     const versionNumber = 1;

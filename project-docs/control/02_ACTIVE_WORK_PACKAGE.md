@@ -8,19 +8,19 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-02
+ACTIVE_WORK_PACKAGE = D3-IMP-02-R1
 ACTIVE_WORK_PACKAGE_STATUS = IN_PROGRESS
-OWNER_AUTHORIZATION = "อนุมัติ D3-IMP-02 Local Schema Target + Guarded Migration Tooling ตาม readiness plan แบบ LOCAL-ONLY / ZERO KINTONE"
-WORK_PACKAGE_TITLE = D3-IMP-02 — Local Schema Target + Guarded Migration Tooling
-WORK_PACKAGE_TYPE = LOCAL_SCHEMA_TARGET_AND_GUARDED_MIGRATION_TOOLING
+OWNER_AUTHORIZATION = "อนุมัติ D3-IMP-02-R1 Scorer Fail-Closed + Readiness Validation + True Schema Diff Corrective แบบ LOCAL-ONLY / ZERO KINTONE"
+WORK_PACKAGE_TITLE = D3-IMP-02-R1 — Scorer Fail-Closed + Readiness Validation + True Schema Diff Corrective
+WORK_PACKAGE_TYPE = CORRECTIVE_LOCAL_ONLY_ZERO_KINTONE
 
-STARTING_HEAD = 897c9cf936089901e46468984da1e36731ac866f
+STARTING_HEAD = 9aa8db06e6377c284b095517394408e648bde718
 CANONICAL_BRANCH = ai/antigravity-wp002c
 AUTHORIZATION_BOUNDARY = LOCAL_ONLY_ZERO_KINTONE
 
-LAST_CLOSED_WORK_PACKAGE = D3-IMP-01
-LAST_CLOSED_RESULT = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-LAST_REVIEWED_IMPLEMENTATION_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
+LAST_REVIEWED_WORK_PACKAGE = D3-IMP-02
+LAST_REVIEWED_RESULT = PARTIAL_PASS / CORRECTIVE_REQUIRED (R1)
+LAST_REVIEWED_IMPLEMENTATION_HEAD = 9aa8db06e6377c284b095517394408e648bde718
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -98,3 +98,33 @@ LEGACY_TEST_HARNESS_NON_EXIT = PRE-EXISTING / OUTSIDE D3-IMP-01 DIFF / NON-BLOCK
 ```
 
 No subsequent D3 package is authorized by this closure.
+
+## D3-IMP-02-R1 execution record
+
+Owner authorization:
+
+```text
+อนุมัติ D3-IMP-02-R1 Scorer Fail-Closed + Readiness Validation + True Schema Diff Corrective แบบ LOCAL-ONLY / ZERO KINTONE
+```
+
+Corrective scope addressed:
+
+1. **Finding 1 (Seed Planner - Inferred Scorer Removal)**:
+   - Removed `deriveScorerPrioritySlots()`.
+   - Added `resolveAndValidateScorerPlan()` which fails closed with `SCORER_PLAN_NOT_CONFIGURED` if explicit plan is absent.
+   - Enforces structural validity against active route length (`INVALID_SCORER_PLAN`).
+2. **Finding 2 (Readiness Inspector - Validate Scorer Plan)**:
+   - Updated `scripts/kintone/d3-inspect-readiness.js` to validate `Scorer_Priority_Slots` per record.
+   - Returns `ready: false` on missing or malformed plans.
+3. **Finding 3 (True Current-Schema Diff)**:
+   - Updated `scripts/kintone/d3-migrate-routing-schema.js` to require `currentSchema` (`MIGRATION_CURRENT_SCHEMA_REQUIRED`).
+   - Validates type compatibility (`INCOMPATIBLE_FIELD_TYPE`).
+   - Only emits modifications when properties actually differ from target.
+   - Embeds `currentSchemaEvidence` in deterministic `planId`.
+
+Verification evidence:
+- 38/38 schema & migration tests PASS
+- 78/78 combined D3 suite tests PASS
+- Kintone reads/writes: 0 / 0
+- Network calls: 0
+- Execution mode: LOCAL-ONLY / ZERO KINTONE
