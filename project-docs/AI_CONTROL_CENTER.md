@@ -1,63 +1,75 @@
 # MBO2026 — AI CONTROL CENTER
 
-Updated: 2026-09-09 ICT
+Updated: 2026-09-10 ICT
 
-> **PRIMARY CURRENT CONTROL TRUTH** for MBO2026. Fresh-fetch canonical branch before acting.
-> Latest explicit Owner decision remains highest authority.
+> **PRIMARY CURRENT CONTROL TRUTH** for MBO2026. Fresh-fetch canonical branch before acting. Latest explicit Owner decision remains highest authority.
 
 ## 1. Current project control state
 
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PRE1
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PRE1-R1
 OWNER_AUTHORIZED = YES
-MODE = PLAN-ONLY / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
-EXECUTION_COMPLETE = YES
+MODE = PLAN/DOCS-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT / ZERO SOURCE-IMPLEMENTATION
+R1_EXECUTION_COMPLETE = YES
 INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
 PRE1_CLOSED = NO
-PRE1_BASE_HEAD = a8c839db3d1160be2fce2880fd6c9cdc6b0e2aee
-MANIFEST_SHA256 = b51fb7f4e81953c48858409a1ceb8ea948c0a2e0eb384ad3aabc9b6640d7a04b
+R1_BASE_HEAD = 576938c2994ebfb4893780a2699c47139634fd42
+ROUTE_MANIFEST_SHA256 = b51fb7f4e81953c48858409a1ceb8ea948c0a2e0eb384ad3aabc9b6640d7a04b
 
 D3-IMP-01..06 = PASS / CLOSED
 D3-PREFLIGHT-READONLY = PASS / CLOSED
 D3-PREFLIGHT-READONLY-CLOSE = PASS / CLOSED
+D3-SBX-MIGRATION-01-PRE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
 
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
 D3-PROD-CUTOVER = NOT AUTHORIZED
 
-SOURCE_CODE_CHANGES_AUTHORIZED = NO
-TEST_CHANGES_AUTHORIZED = NO
-KINTONE_READS_EXECUTED_IN_PRE1 = 0
+KINTONE_READS_EXECUTED_IN_R1 = 0
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
 PROCESS_WRITES = 0
 DEPLOYMENTS = 0
+SOURCE_CHANGES = 0
+TEST_CHANGES = 0
+BUILD_CHANGES = 0
 AUTO_START_NEXT_WORK_PACKAGE = NO
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. PRE1 plan evidence
+## 2. PRE1 accepted plan evidence retained
 
 ```text
 PREFLIGHT_EVIDENCE_ZIP_SHA256 = cd6fd048a15faa5bdb490828463049b2890b654d49a517b91167bf3a8ee528ad
 EXACT_APP795_ROUTE_COUNT = 20
-ROUTE_MANIFEST_SHA256 = b51fb7f4e81953c48858409a1ceb8ea948c0a2e0eb384ad3aabc9b6640d7a04b
 ROUTE_DISTRIBUTION = 17 x M1_G1 + 3 x M1_ONLY
 VERSION_PLAN = <Routing_Key>#v1 / Version_Number 1 / ACTIVE
 EFFECTIVE_INTERVAL = PRESERVE 2026-04-01 THROUGH 2027-03-31
 APPROVAL_RULE_TARGET = ACTIVE ALL / INACTIVE BLANK
 ```
 
-Plan artifacts:
+Artifacts:
 
 - `project-docs/D3_SBX_MIGRATION_01_PRE1.md`
+- `project-docs/D3_SBX_MIGRATION_01_PRE1_R1.md`
 - `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json`
 
-## 3. PRE1 findings requiring explicit future decisions
+## 3. R1 findings corrected in contract
+
+```text
+APP795_D3_SCHEMA_MIGRATION_EXECUTOR = NOT IMPLEMENTED / NOT REVIEWED
+APP795_D3_RECORD_SEED_EXECUTOR = NOT IMPLEMENTED / NOT REVIEWED
+APP794_D3_PROVENANCE_MIGRATION_EXECUTOR = NOT REVIEWED
+APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
+```
+
+Machine `executionBlockedUntil` now includes all four tooling/policy prerequisites plus scorer approval and fresh pre-write backup/drift verification.
+
+## 4. Remaining business/security decisions
 
 ```text
 SCORER_MAPPING = PENDING OWNER/HR APPROVAL
@@ -65,14 +77,14 @@ CANDIDATE_M1_G1 = [1,2]
 CANDIDATE_M1_ONLY = [1]
 AUTO_INFER_SCORER_PLAN = FORBIDDEN
 
-APP795_HR_ACL_PLAN = PREPARED / RECOMMEND DEFER UNTIL SELF-SERVICE ACTIVATION
-APP794_D3_PROVENANCE_MIGRATION_EXECUTOR = NOT REVIEWED / TOOLING GAP
-APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
-FRESH_WRITE_TIME_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE ANY MIGRATION WRITE
+APP795_HR_ACL_PLAN = PREPARED / DEFERRED
+HR_ACL_CHANGE_DURING_MIGRATION = NO
+admin-form_IMPLICIT_HR_AUTHORITY = NO
+HISTORICAL_ROUTE_DELETE = FORBIDDEN
 ```
 
-## 4. Current gate boundary
+## 5. Current boundary
 
-The PRE1 execution only produced deterministic plan artifacts from already accepted evidence. It did not call Kintone or execute schema/data/process/deployment operations.
+R1 only corrects planning/control evidence. It does not implement executors and does not authorize any Kintone/schema/process/deployment operation.
 
-Next action: **independent Control Plane review of PRE1 evidence**. Do not authorize or start `D3-SBX-MIGRATION-01` automatically.
+Next action: **independent Control Plane review of D3-SBX-MIGRATION-01-PRE1-R1**. If R1 later passes, a separate Owner authorization is still required for any local guarded executor implementation package before migration write can be considered.
