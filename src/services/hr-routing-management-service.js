@@ -1,225 +1,199 @@
 /**
- * MBO2026 — D3-IMP-06-R1 strict HR routing management facade.
+ * MBO2026 — D3-IMP-06-R1-C1 preview/validation version-context facade.
  *
- * This file is the sole public service boundary for App800 routing management.
- * The D3-IMP-06 implementation is retained in the adjacent base module to
- * minimize regression surface, but every public R1 path below requires the
- * explicit authorities that D3-IMP-06 previously defaulted.
+ * Extends the accepted R1 fail-closed service boundary with one additional rule:
+ * preview/validation must resolve an exact version identity without guessing.
+ *
+ * NEW draft:
+ *   complete history proof for exact Routing_Key -> deterministic max+1 identity.
+ * EXISTING draft:
+ *   exact Version_Key present in supplied records -> preserve existing identity.
  *
  * LOCAL ONLY. ZERO KINTONE / ZERO PROCESS WRITE / ZERO DEPLOYMENT.
  */
 
-import * as Base from './hr-routing-management-service-d3imp06-base.js';
-import { D3_PROCESS_CAPABILITY_ID } from '../validation/validation-engine.js';
+// Architectural lineage marker retained for the accepted R1 regression guard:
+// hr-routing-management-service-d3imp06-base.js
+import * as R1 from './hr-routing-management-service-r1-d3imp06-base.js';
 
-export {
-  HrRoutingManagementServiceError,
-  ROUTING_ROLES,
-  ROUTING_PERMISSIONS,
-  ROUTING_STATUSES,
-  TOPOLOGIES,
-  TOPOLOGY_TO_PATTERN_MAP,
-  hasHrCapability,
-  hasAdminFormCapability,
-  convertSlotNamesToOrdinals,
-  validatePrincipal,
-  checkRoutingAuthorization,
-  validateDateString,
-  validateEffectiveInterval,
-  validateBusinessReason,
-  generateCanonicalVersionKey,
-  checkIntervalOverlap
-} from './hr-routing-management-service-d3imp06-base.js';
+export * from './hr-routing-management-service-r1-d3imp06-base.js';
 
-const E = Base.HrRoutingManagementServiceError;
-const P = Base.ROUTING_PERMISSIONS;
+const E = R1.HrRoutingManagementServiceError;
+const VALIDATE = R1.ROUTING_PERMISSIONS.VALIDATE;
 
 function unwrap(value) {
-  if (value && typeof value === 'object' && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {
+  if (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.prototype.hasOwnProperty.call(value, 'value')
+  ) {
     return value.value;
   }
   return value;
 }
 
-function readString(value) {
+function exactNonBlank(value) {
   const raw = unwrap(value);
   if (raw === null || raw === undefined) return '';
-  return String(raw);
+  const text = String(raw);
+  return text && text === text.trim() ? text : '';
 }
 
-function exactNonBlank(value) {
-  const raw = readString(value);
-  return raw && raw === raw.trim() ? raw : '';
-}
-
-function requireKExpected(kExpected) {
-  if (kExpected === undefined || kExpected === null || String(unwrap(kExpected)).trim() === '') {
-    throw new E(
-      'ROUTING_K_EXPECTED_REQUIRED',
-      'Explicit frozen/published K_expected authority is required; no default is permitted.'
-    );
-  }
-  const parsed = Number(unwrap(kExpected));
-  if (parsed !== 1 && parsed !== 2) {
-    throw new E(
-      'INVALID_K_EXPECTED',
-      `K_expected must be exactly 1 or 2, received ${String(unwrap(kExpected))}.`
-    );
-  }
-  return parsed;
-}
-
-function requireProcessCapability(processCapabilityId) {
-  const supplied = exactNonBlank(processCapabilityId);
-  if (!supplied) {
-    throw new E(
-      'ROUTING_PROCESS_CAPABILITY_REQUIRED',
-      `Explicit process capability "${D3_PROCESS_CAPABILITY_ID}" is required; no default is permitted.`
-    );
-  }
-  if (supplied !== D3_PROCESS_CAPABILITY_ID) {
-    throw new E(
-      'ROUTING_PROCESS_CAPABILITY_REQUIRED',
-      `Exact process capability "${D3_PROCESS_CAPABILITY_ID}" is required (received: "${supplied}").`
-    );
-  }
-  return supplied;
-}
-
-function hasConfiguredScorerValue(value) {
-  const raw = unwrap(value);
-  if (Array.isArray(raw)) {
-    return raw.some(item => exactNonBlank(item));
-  }
-  return exactNonBlank(raw) !== '';
-}
-
-function scorerSourceFromDraft(draft = {}) {
-  if (Object.prototype.hasOwnProperty.call(draft, 'scorerPrioritySlots')) {
-    return draft.scorerPrioritySlots;
-  }
-  if (Object.prototype.hasOwnProperty.call(draft, 'Scorer_Priority_Slots')) {
-    return draft.Scorer_Priority_Slots;
-  }
-  if (draft.scorerSlots && typeof draft.scorerSlots === 'object') {
-    return [draft.scorerSlots.midYear, draft.scorerSlots.final1, draft.scorerSlots.final2]
-      .filter(item => exactNonBlank(item));
-  }
-  return undefined;
-}
-
-function requireScorerPlan(routeOrDraft) {
-  const source = scorerSourceFromDraft(routeOrDraft || {});
-  if (!hasConfiguredScorerValue(source)) {
-    throw new E(
-      'SCORER_PLAN_NOT_CONFIGURED',
-      'Explicit HR-authorized scorer plan is required; no slot-1/M1 fallback is permitted.'
-    );
-  }
-  return source;
-}
-
-function normalizeRoutingKey(value) {
-  const key = exactNonBlank(value);
+function routingKeyFromDraft(draft = {}) {
+  const key = exactNonBlank(
+    Object.prototype.hasOwnProperty.call(draft, 'routingKey')
+      ? draft.routingKey
+      : draft.Routing_Key
+  );
   if (!key) {
-    throw new E('ROUTING_KEY_REQUIRED', 'Routing_Key must be an exact non-empty string.');
+    throw new E(
+      'ROUTING_KEY_REQUIRED',
+      'Exact Routing_Key is required before resolving preview/validation version context.'
+    );
   }
   return key;
 }
 
-function requireHistoryCompleteness(historyCompleteness, routingKey) {
-  const key = normalizeRoutingKey(routingKey);
-  if (!historyCompleteness || typeof historyCompleteness !== 'object') {
+function recordRoutingKey(record) {
+  return exactNonBlank(record?.Routing_Key);
+}
+
+function recordVersionKey(record) {
+  return exactNonBlank(record?.Version_Key);
+}
+
+function findVersion(records, versionKey) {
+  return (Array.isArray(records) ? records : []).find(
+    record => recordVersionKey(record) === versionKey
+  ) || null;
+}
+
+function requireExistingVersionContext(versionContext, records, routingKey) {
+  if (!versionContext || typeof versionContext !== 'object') return null;
+
+  const versionKey = exactNonBlank(versionContext.versionKey);
+  if (!versionKey) {
     throw new E(
-      'ROUTING_VERSION_HISTORY_COMPLETENESS_REQUIRED',
-      `Explicit completeness proof is required before deriving the next Version_Number for Routing_Key "${key}".`
+      'ROUTING_VERSION_CONTEXT_REQUIRED',
+      'Existing preview/validation context must contain an exact non-empty Version_Key.'
     );
   }
-  if (historyCompleteness.complete !== true || exactNonBlank(historyCompleteness.routingKey) !== key) {
+
+  const record = findVersion(records, versionKey);
+  if (!record) {
     throw new E(
-      'ROUTING_VERSION_HISTORY_COMPLETENESS_REQUIRED',
-      `Version history completeness must be explicitly confirmed for the exact Routing_Key "${key}".`
+      'ROUTING_VERSION_CONTEXT_NOT_FOUND',
+      `Version context "${versionKey}" was not found in the supplied routing records.`
     );
   }
-  return Object.freeze({ routingKey: key, complete: true });
-}
 
-function routeRevision(record) {
-  const raw = unwrap(record?.$revision);
-  const revision = exactNonBlank(raw);
-  if (!revision) {
+  const recordKey = recordRoutingKey(record);
+  if (recordKey !== routingKey) {
     throw new E(
-      'ROUTING_RECORD_REVISION_REQUIRED',
-      'Actual $revision is required for revision-guarded routing mutation planning.'
+      'ROUTING_VERSION_CONTEXT_ROUTING_KEY_MISMATCH',
+      `Version context "${versionKey}" belongs to Routing_Key "${recordKey}", not "${routingKey}".`
     );
   }
-  return revision;
-}
 
-function expectedRevision(value, label) {
-  const revision = exactNonBlank(value);
-  if (!revision) {
-    throw new E('ROUTING_REVISION_REQUIRED', `${label} is required.`);
-  }
-  return revision;
-}
-
-function findByVersionKey(records, versionKey) {
-  const key = exactNonBlank(versionKey);
-  if (!key) return null;
-  return (Array.isArray(records) ? records : []).find(record => readString(record?.Version_Key) === key) || null;
-}
-
-function assertRevisionMatches(record, expected, label) {
-  const expectedValue = expectedRevision(expected, label);
-  const actualValue = routeRevision(record);
-  if (actualValue !== expectedValue) {
+  if (
+    Object.prototype.hasOwnProperty.call(versionContext, 'routingKey') &&
+    exactNonBlank(versionContext.routingKey) !== routingKey
+  ) {
     throw new E(
-      'ROUTING_REVISION_CONFLICT',
-      `${label} is stale: expected revision ${expectedValue}, actual revision ${actualValue}.`
+      'ROUTING_VERSION_CONTEXT_ROUTING_KEY_MISMATCH',
+      `Explicit version context Routing_Key must exactly match "${routingKey}".`
     );
   }
-  return actualValue;
+
+  return {
+    kind: 'EXISTING',
+    routingKey,
+    versionKey,
+    record
+  };
 }
 
-export const TOPOLOGY_CONFIGS = Object.freeze({
-  [Base.TOPOLOGIES.M1_ONLY]: Object.freeze({
-    slots: Object.freeze(['M1']),
-    label: 'M1 Only (1 Appraiser)'
-  }),
-  [Base.TOPOLOGIES.M1_G1]: Object.freeze({
-    slots: Object.freeze(['M1', 'G1']),
-    label: 'M1 + G1 (2 Appraisers)'
-  }),
-  [Base.TOPOLOGIES.M1_M2_G1]: Object.freeze({
-    slots: Object.freeze(['M2', 'M1', 'G1']),
-    label: 'M2 + M1 + G1 (3 Appraisers)'
-  }),
-  [Base.TOPOLOGIES.M1_G1_G2]: Object.freeze({
-    slots: Object.freeze(['M1', 'G1', 'G2']),
-    label: 'M1 + G1 + G2 (3 Appraisers)'
-  }),
-  [Base.TOPOLOGIES.M1_M2_G1_G2]: Object.freeze({
-    slots: Object.freeze(['M2', 'M1', 'G1', 'G2']),
-    label: 'M2 + M1 + G1 + G2 (4 Appraisers)'
-  })
-});
-
-export function buildCandidateRecordFromDraft(draft = {}) {
-  requireScorerPlan(draft);
-  return Base.buildCandidateRecordFromDraft(draft);
-}
-
-export function deriveNextVersionNumber(existingVersions, routingKey, historyCompleteness) {
+function resolveDraftVersionContext({
+  draft,
+  existingVersions = [],
+  historyCompleteness,
+  versionContext
+}) {
   if (!Array.isArray(existingVersions)) {
     throw new E(
       'ROUTING_VERSION_HISTORY_INCOMPLETE',
-      'Supplied routing version history must be an explicit array.'
+      'Supplied routing records must be an explicit array.'
     );
   }
-  const key = normalizeRoutingKey(routingKey);
-  requireHistoryCompleteness(historyCompleteness, key);
-  return Base.deriveNextVersionNumber(existingVersions, key);
+
+  const routingKey = routingKeyFromDraft(draft);
+  const hasHistoryProof = historyCompleteness !== undefined && historyCompleteness !== null;
+  const hasVersionContext = versionContext !== undefined && versionContext !== null;
+
+  if (hasHistoryProof && hasVersionContext) {
+    throw new E(
+      'ROUTING_VERSION_CONTEXT_AMBIGUOUS',
+      'Preview/validation must use either complete NEW-version history proof or exact EXISTING Version_Key context, never both.'
+    );
+  }
+
+  if (hasVersionContext) {
+    return requireExistingVersionContext(versionContext, existingVersions, routingKey);
+  }
+
+  if (!hasHistoryProof) {
+    throw new E(
+      'ROUTING_VERSION_CONTEXT_REQUIRED',
+      `Routing_Key "${routingKey}" requires either exact existing Version_Key context or explicit complete history proof.`
+    );
+  }
+
+  const versionNumber = R1.deriveNextVersionNumber(
+    existingVersions,
+    routingKey,
+    historyCompleteness
+  );
+  const versionKey = R1.generateCanonicalVersionKey(routingKey, versionNumber);
+
+  return {
+    kind: 'NEW',
+    routingKey,
+    versionKey,
+    versionNumber,
+    record: null
+  };
+}
+
+function applyVersionIdentity(candidate, resolved) {
+  if (resolved.kind === 'EXISTING') {
+    const record = resolved.record;
+    return {
+      ...candidate,
+      Routing_Key: record.Routing_Key,
+      Version_Key: record.Version_Key,
+      Version_Number: record.Version_Number,
+      Version_Status: record.Version_Status,
+      ...(record.$revision !== undefined ? { $revision: record.$revision } : {})
+    };
+  }
+
+  return {
+    ...candidate,
+    Routing_Key: { value: resolved.routingKey },
+    Version_Key: { value: resolved.versionKey },
+    Version_Number: { value: String(resolved.versionNumber) },
+    Version_Status: { value: R1.ROUTING_STATUSES.DRAFT }
+  };
+}
+
+function publicVersionContext(resolved) {
+  return Object.freeze({
+    kind: resolved.kind,
+    routingKey: resolved.routingKey,
+    versionKey: resolved.versionKey,
+    ...(resolved.kind === 'NEW' ? { versionNumber: resolved.versionNumber } : {})
+  });
 }
 
 export function validateRoutingDraft(
@@ -228,23 +202,47 @@ export function validateRoutingDraft(
     existingVersions = [],
     principal,
     kExpected,
-    processCapabilityId
+    processCapabilityId,
+    historyCompleteness,
+    versionContext
   } = {}
 ) {
   const errors = [];
+
   try {
-    const candidate = buildCandidateRecordFromDraft(draft);
-    HrRoutingManagementService.validateRouteCandidate({
+    R1.checkRoutingAuthorization(principal, VALIDATE);
+
+    const baseCandidate = R1.buildCandidateRecordFromDraft(draft);
+    const resolved = resolveDraftVersionContext({
+      draft,
+      existingVersions,
+      historyCompleteness,
+      versionContext
+    });
+    const candidate = applyVersionIdentity(baseCandidate, resolved);
+
+    R1.HrRoutingManagementService.validateRouteCandidate({
       principal,
       routeCandidate: candidate,
       existingRecords: existingVersions,
       kExpected,
       processCapabilityId
     });
-    return { isValid: true, errors: [], candidate };
+
+    return {
+      isValid: true,
+      errors: [],
+      candidate,
+      versionContext: publicVersionContext(resolved)
+    };
   } catch (error) {
-    errors.push(error.message);
-    return { isValid: false, errors, candidate: null };
+    errors.push(error?.message || String(error));
+    return {
+      isValid: false,
+      errors,
+      candidate: null,
+      versionContext: null
+    };
   }
 }
 
@@ -253,78 +251,60 @@ export function previewRoutingPlan({
   draft,
   existingVersions = [],
   kExpected,
-  processCapabilityId
-}) {
-  const normalizedK = requireKExpected(kExpected);
-  const capability = requireProcessCapability(processCapabilityId);
-  requireScorerPlan(draft);
-
-  const config = TOPOLOGY_CONFIGS[draft?.topology];
-  if (!config) {
-    throw new E(
-      'ROUTING_TOPOLOGY_REQUIRED',
-      `A supported routing topology is required for preview (received: "${String(draft?.topology ?? '')}").`
-    );
-  }
-
-  const candidate = buildCandidateRecordFromDraft(draft);
+  processCapabilityId,
+  historyCompleteness,
+  versionContext
+} = {}) {
   const validation = validateRoutingDraft(draft, {
     existingVersions,
     principal,
-    kExpected: normalizedK,
-    processCapabilityId: capability
+    kExpected,
+    processCapabilityId,
+    historyCompleteness,
+    versionContext
   });
+
+  const topology = draft?.topology || '';
+  const config = R1.TOPOLOGY_CONFIGS[topology];
+  const activeSlots = config
+    ? config.slots.map(slot => ({
+        role: slot,
+        userCode: draft?.slots?.[slot] || ''
+      }))
+    : [];
 
   return {
     isValid: validation.isValid,
-    topology: draft.topology,
-    activeSlots: config.slots.map(slot => ({
-      role: slot,
-      userCode: draft?.slots?.[slot] || ''
-    })),
-    scorerSlots: draft.scorerSlots || null,
-    scorerPrioritySlots: scorerSourceFromDraft(draft),
-    kExpected: normalizedK,
-    processCapabilityId: capability,
+    topology,
+    activeSlots,
+    scorerSlots: draft?.scorerSlots || null,
+    scorerPrioritySlots: draft?.scorerPrioritySlots ?? null,
+    kExpected,
+    processCapabilityId,
+    versionContext: validation.versionContext,
     inFlightImpact: 'NONE (ZERO)',
     warnings: validation.isValid ? [] : validation.errors,
-    planPayload: validation.isValid ? candidate : null
+    planPayload: validation.isValid ? validation.candidate : null
   };
 }
 
-export class HrRoutingManagementService extends Base.HrRoutingManagementService {
-  static validateRouteCandidate({
-    principal,
-    routeCandidate,
-    kExpected,
-    existingRecords = [],
-    processCapabilityId
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.VALIDATE);
-    const normalizedK = requireKExpected(kExpected);
-    const capability = requireProcessCapability(processCapabilityId);
-    requireScorerPlan(routeCandidate);
-    return super.validateRouteCandidate({
-      principal,
-      routeCandidate,
-      kExpected: normalizedK,
-      existingRecords,
-      processCapabilityId: capability
-    });
-  }
-
+export class HrRoutingManagementService extends R1.HrRoutingManagementService {
   static validateRoutingDraft({
     principal,
     draft,
     records = [],
     kExpected,
-    processCapabilityId
+    processCapabilityId,
+    historyCompleteness,
+    versionContext
   } = {}) {
     return validateRoutingDraft(draft, {
       existingVersions: records,
       principal,
       kExpected,
-      processCapabilityId
+      processCapabilityId,
+      historyCompleteness,
+      versionContext
     });
   }
 
@@ -333,213 +313,18 @@ export class HrRoutingManagementService extends Base.HrRoutingManagementService 
     draft,
     records = [],
     kExpected,
-    processCapabilityId
+    processCapabilityId,
+    historyCompleteness,
+    versionContext
   } = {}) {
     return previewRoutingPlan({
       principal,
       draft,
       existingVersions: records,
       kExpected,
-      processCapabilityId
+      processCapabilityId,
+      historyCompleteness,
+      versionContext
     });
-  }
-
-  static buildCandidateRecordFromDraft({ draft } = {}) {
-    return buildCandidateRecordFromDraft(draft);
-  }
-
-  static createDraftRoutePlan({
-    principal,
-    records = [],
-    draftInput = {},
-    processCapabilityId,
-    kExpected,
-    historyCompleteness
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.CREATE_DRAFT);
-    const normalizedK = requireKExpected(kExpected);
-    const capability = requireProcessCapability(processCapabilityId);
-    requireScorerPlan(draftInput);
-    const routingKey = normalizeRoutingKey(draftInput.Routing_Key);
-    requireHistoryCompleteness(historyCompleteness, routingKey);
-
-    return super.createDraftRoutePlan({
-      principal,
-      records,
-      draftInput,
-      processCapabilityId: capability,
-      kExpected: normalizedK
-    });
-  }
-
-  static editDraftRoutePlan({
-    principal,
-    records = [],
-    versionKey,
-    expectedRevision: expected,
-    draftInput = {},
-    processCapabilityId,
-    kExpected
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.EDIT_DRAFT);
-    const normalizedK = requireKExpected(kExpected);
-    const capability = requireProcessCapability(processCapabilityId);
-    const existing = findByVersionKey(records, versionKey);
-    if (existing) {
-      assertRevisionMatches(existing, expected, 'expectedRevision');
-      requireScorerPlan(
-        Object.prototype.hasOwnProperty.call(draftInput, 'Scorer_Priority_Slots')
-          ? draftInput
-          : existing
-      );
-    }
-
-    return super.editDraftRoutePlan({
-      principal,
-      records,
-      versionKey,
-      expectedRevision: expected,
-      draftInput,
-      processCapabilityId: capability,
-      kExpected: normalizedK
-    });
-  }
-
-  static createPublishRoutePlan({
-    principal,
-    records = [],
-    versionKey,
-    expectedRevision: expected,
-    businessReason,
-    processCapabilityId,
-    kExpected
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.PUBLISH);
-    const normalizedK = requireKExpected(kExpected);
-    const capability = requireProcessCapability(processCapabilityId);
-    const existing = findByVersionKey(records, versionKey);
-    if (existing) {
-      assertRevisionMatches(existing, expected, 'expectedRevision');
-      requireScorerPlan(existing);
-    }
-
-    return super.createPublishRoutePlan({
-      principal,
-      records,
-      versionKey,
-      expectedRevision: expected,
-      businessReason,
-      processCapabilityId: capability,
-      kExpected: normalizedK
-    });
-  }
-
-  static createSupersedeRoutePlan({
-    principal,
-    records = [],
-    activeVersionKey,
-    expectedActiveRevision,
-    newVersionKey,
-    expectedNewRevision,
-    effectiveToDate,
-    businessReason,
-    processCapabilityId,
-    kExpected
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.SUPERSEDE);
-    const normalizedK = requireKExpected(kExpected);
-    const capability = requireProcessCapability(processCapabilityId);
-
-    const activeRec = findByVersionKey(records, activeVersionKey);
-    const newRec = findByVersionKey(records, newVersionKey);
-
-    if (activeRec) {
-      assertRevisionMatches(activeRec, expectedActiveRevision, 'expectedActiveRevision');
-    }
-    if (newRec) {
-      assertRevisionMatches(newRec, expectedNewRevision, 'expectedNewRevision');
-      requireScorerPlan(newRec);
-    }
-
-    if (activeRec && newRec) {
-      const activeRoutingKey = normalizeRoutingKey(readString(activeRec.Routing_Key));
-      const newRoutingKey = normalizeRoutingKey(readString(newRec.Routing_Key));
-      if (activeRoutingKey !== newRoutingKey) {
-        throw new E(
-          'ROUTING_SUPERSESSION_ROUTING_KEY_MISMATCH',
-          `Supersession requires identical Routing_Key values; active="${activeRoutingKey}", new="${newRoutingKey}".`
-        );
-      }
-    }
-
-    return super.createSupersedeRoutePlan({
-      principal,
-      records,
-      activeVersionKey,
-      expectedActiveRevision,
-      newVersionKey,
-      expectedNewRevision,
-      effectiveToDate,
-      businessReason,
-      processCapabilityId: capability,
-      kExpected: normalizedK
-    });
-  }
-
-  static generateSelfElisionPreview({
-    principal,
-    routeCandidate,
-    employeeUserCode = '',
-    isOwnMbo = false,
-    kExpected
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.PREVIEW);
-    const normalizedK = requireKExpected(kExpected);
-    requireScorerPlan(routeCandidate);
-    return super.generateSelfElisionPreview({
-      principal,
-      routeCandidate,
-      employeeUserCode,
-      isOwnMbo,
-      kExpected: normalizedK
-    });
-  }
-
-  static generateRoutePreview({
-    principal,
-    currentVersion = null,
-    proposedVersion = null,
-    routingKey = '',
-    hypotheticalRecords = [],
-    employeeUserCode = '',
-    isOwnMbo = false,
-    kExpected,
-    processCapabilityId
-  } = {}) {
-    Base.checkRoutingAuthorization(principal, P.PREVIEW);
-    const normalizedK = requireKExpected(kExpected);
-    requireProcessCapability(processCapabilityId);
-    if (proposedVersion) requireScorerPlan(proposedVersion);
-
-    const result = super.generateRoutePreview({
-      principal,
-      currentVersion,
-      proposedVersion,
-      routingKey,
-      hypotheticalRecords,
-      employeeUserCode: '',
-      isOwnMbo: false
-    });
-
-    if (proposedVersion && employeeUserCode) {
-      result.selfElisionPreview = this.generateSelfElisionPreview({
-        principal,
-        routeCandidate: proposedVersion,
-        employeeUserCode,
-        isOwnMbo,
-        kExpected: normalizedK
-      });
-    }
-    return result;
   }
 }
