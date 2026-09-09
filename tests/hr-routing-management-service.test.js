@@ -1,1065 +1,356 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import {
   HrRoutingManagementService,
   HrRoutingManagementServiceError,
-  ROUTING_ROLES,
-  ROUTING_PERMISSIONS,
-  ROUTING_STATUSES,
   TOPOLOGIES,
   TOPOLOGY_CONFIGS,
-  validatePrincipal,
-  checkRoutingAuthorization,
-  validateDateString,
-  validateEffectiveInterval,
-  validateBusinessReason,
+  buildCandidateRecordFromDraft,
   deriveNextVersionNumber,
-  generateCanonicalVersionKey,
-  checkIntervalOverlap,
-  hasHrCapability,
-  hasAdminFormCapability,
-  validateRoutingDraft,
-  previewRoutingPlan,
-  buildCandidateRecordFromDraft
+  validateRoutingDraft
 } from '../src/services/hr-routing-management-service.js';
-
 import { D3_PROCESS_CAPABILITY_ID } from '../src/validation/validation-engine.js';
 
-// Helper fixtures
-const PRINCIPAL_HR = { userCode: 'hr_user_01', groups: ['hr'] };
-const PRINCIPAL_ADMIN = { userCode: 'admin_user_01', groups: ['admin-form'] };
-const PRINCIPAL_DUAL = { userCode: 'dual_user_01', groups: ['hr', 'admin-form'] };
-const PRINCIPAL_UNAUTH = { userCode: 'sales_user_01', groups: ['sales'] };
+// Preserve and execute the accepted D3-IMP-06 matrix through a test-only
+// explicit-authority adapter. The production facade itself has no defaults.
+const legacySourceUrl = new URL('./hr-routing-management-service-d3imp06-matrix.source', import.meta.url);
+const generatedUrl = new URL('./.generated-hr-routing-management-service-d3imp06-matrix.mjs', import.meta.url);
+const legacySource = await fs.readFile(legacySourceUrl, 'utf8');
+const transformedLegacySource = legacySource.replaceAll(
+  '../src/services/hr-routing-management-service.js',
+  './helpers/hr-routing-management-service-d3imp06-test-adapter.js'
+);
+await fs.writeFile(generatedUrl, transformedLegacySource, 'utf8');
+try {
+  await import(`${generatedUrl.href}?r1=${Date.now()}`);
+} finally {
+  await fs.unlink(generatedUrl).catch(() => {});
+}
 
-function createSampleRouteRecord(overrides = {}) {
+const HR = Object.freeze({ userCode: 'hr_r1_owner_delegate', groups: ['hr'] });
+const ADMIN = Object.freeze({ userCode: 'admin_r1_diag', groups: ['admin-form'] });
+
+function routeRecord({
+  routingKey = 'KEY',
+  versionNumber = 1,
+  versionStatus = 'ACTIVE',
+  revision = '1',
+  effectiveFrom = '2026-01-01',
+  effectiveTo = '',
+  scorer = '1',
+  m1 = 'm1_user'
+} = {}) {
   return {
-    $id: { value: '101' },
-    $revision: { value: '1' },
-    Routing_Key: { value: 'DEPT_ENG_SEC1' },
-    Version_Key: { value: 'DEPT_ENG_SEC1#v1' },
-    Version_Number: { value: '1' },
-    Version_Status: { value: 'ACTIVE' },
+    $id: { value: String(versionNumber) },
+    $revision: { value: String(revision) },
+    Routing_Key: { value: routingKey },
+    Version_Key: { value: `${routingKey}#v${versionNumber}` },
+    Version_Number: { value: String(versionNumber) },
+    Version_Status: { value: versionStatus },
     Route_Pattern: { value: 'PATTERN_1_M1' },
     Routing_Topology: { value: 'M1_ONLY' },
-    Effective_From: { value: '2026-01-01' },
-    Effective_To: { value: '' },
-    Remark: { value: 'Initial baseline' },
-    Scorer_Priority_Slots: { value: '1' },
-    Manager_Level1_Approvers: { value: [{ code: 'user_m1' }] },
-    Manager_Level1_Approval_Rule: { value: 'ALL' },
-    ...overrides
+    Effective_From: { value: effectiveFrom },
+    Effective_To: { value: effectiveTo },
+    Remark: { value: 'R1 route' },
+    Scorer_Priority_Slots: { value: scorer },
+    Manager_Level1_Approvers: { value: [{ code: m1 }] },
+    Manager_Level1_Approval_Rule: { value: 'ALL' }
   };
 }
 
-// ----------------------------------------------------
-// Category 1: Principal & Role-Based Authorization (1..19)
-// ----------------------------------------------------
+function rawDraft(routingKey = 'KEY') {
+  return {
+    Routing_Key: routingKey,
+    Route_Pattern: 'PATTERN_1_M1',
+    Routing_Topology: 'M1_ONLY',
+    Effective_From: '2026-07-01',
+    Effective_To: '',
+    Remark: 'R1 explicit draft',
+    Scorer_Priority_Slots: { value: '1' },
+    Manager_Level1_Approvers: { value: [{ code: 'm1_user' }] },
+    Manager_Level1_Approval_Rule: { value: 'ALL' }
+  };
+}
 
-test('1. validatePrincipal rejects null or non-object principal', () => {
-  assert.throws(
-    () => validatePrincipal(null),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_REQUIRED'
-  );
-  assert.throws(
-    () => validatePrincipal('not-an-object'),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_REQUIRED'
-  );
-});
-
-test('2. validatePrincipal rejects invalid principal object', () => {
-  assert.throws(
-    () => validatePrincipal({}),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_INVALID'
-  );
-});
-
-test('3. validatePrincipal rejects anonymous principal without identity', () => {
-  assert.throws(
-    () => validatePrincipal({ userCode: '', groups: ['hr'] }),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_INVALID'
-  );
-});
-
-test('4. validatePrincipal requires userCode string', () => {
-  assert.throws(
-    () => validatePrincipal({ userCode: 12345, groups: ['hr'] }),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_INVALID'
-  );
-});
-
-test('5. validatePrincipal requires groups array', () => {
-  assert.throws(
-    () => validatePrincipal({ userCode: 'u1', groups: null }),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_INVALID'
-  );
-  assert.throws(
-    () => validatePrincipal({ userCode: 'u1', groups: [] }),
-    // Empty groups array is allowed by validatePrincipal as long as it is an array of non-empty strings
-  );
-});
-
-test('6. validatePrincipal rejects leading/trailing whitespace in userCode', () => {
-  assert.throws(
-    () => validatePrincipal({ userCode: ' u1 ', groups: ['hr'] }),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_INVALID'
-  );
-  assert.throws(
-    () => validatePrincipal({ userCode: 'u1\t', groups: ['hr'] }),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_PRINCIPAL_INVALID'
-  );
-});
-
-test('7. checkRoutingAuthorization allows HR for VIEW', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.VIEW), true);
-});
-
-test('8. checkRoutingAuthorization allows HR for PREVIEW', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.PREVIEW), true);
-});
-
-test('9. checkRoutingAuthorization allows HR for VALIDATE', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.VALIDATE), true);
-});
-
-test('10. checkRoutingAuthorization allows HR for CREATE_DRAFT', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.CREATE_DRAFT), true);
-});
-
-test('11. checkRoutingAuthorization allows HR for EDIT_DRAFT', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.EDIT_DRAFT), true);
-});
-
-test('12. checkRoutingAuthorization allows HR for PUBLISH', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.PUBLISH), true);
-});
-
-test('13. checkRoutingAuthorization allows HR for SUPERSEDE', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_HR, ROUTING_PERMISSIONS.SUPERSEDE), true);
-});
-
-test('14. checkRoutingAuthorization allows admin-form for VIEW', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_ADMIN, ROUTING_PERMISSIONS.VIEW), true);
-});
-
-test('15. checkRoutingAuthorization allows admin-form for PREVIEW', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_ADMIN, ROUTING_PERMISSIONS.PREVIEW), true);
-});
-
-test('16. checkRoutingAuthorization allows admin-form for VALIDATE', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_ADMIN, ROUTING_PERMISSIONS.VALIDATE), true);
-});
-
-test('17. checkRoutingAuthorization rejects admin-form for CREATE_DRAFT (ROUTING_HR_AUTHORIZATION_REQUIRED)', () => {
-  assert.throws(
-    () => checkRoutingAuthorization(PRINCIPAL_ADMIN, ROUTING_PERMISSIONS.CREATE_DRAFT),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_HR_AUTHORIZATION_REQUIRED'
-  );
-});
-
-test('18. checkRoutingAuthorization rejects admin-form for PUBLISH (ROUTING_HR_AUTHORIZATION_REQUIRED)', () => {
-  assert.throws(
-    () => checkRoutingAuthorization(PRINCIPAL_ADMIN, ROUTING_PERMISSIONS.PUBLISH),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_HR_AUTHORIZATION_REQUIRED'
-  );
-  assert.throws(
-    () => checkRoutingAuthorization(PRINCIPAL_ADMIN, ROUTING_PERMISSIONS.SUPERSEDE),
-    (err) => err instanceof HrRoutingManagementServiceError && err.code === 'ROUTING_HR_AUTHORIZATION_REQUIRED'
-  );
-});
-
-test('19. checkRoutingAuthorization allows dual-role (hr + admin-form) union of capabilities', () => {
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.VIEW), true);
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.PREVIEW), true);
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.VALIDATE), true);
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.CREATE_DRAFT), true);
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.EDIT_DRAFT), true);
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.PUBLISH), true);
-  assert.equal(checkRoutingAuthorization(PRINCIPAL_DUAL, ROUTING_PERMISSIONS.SUPERSEDE), true);
-});
-
-// ----------------------------------------------------
-// Category 2: 5 Topologies & Topology Discrimination (20..26)
-// ----------------------------------------------------
-
-test('20. M1_ONLY (PATTERN_1_M1) candidate validates correctly', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_1_M1' },
-    Routing_Topology: { value: 'M1_ONLY' }
+function strictValidate(candidate = routeRecord(), overrides = {}) {
+  return HrRoutingManagementService.validateRouteCandidate({
+    principal: HR,
+    routeCandidate: candidate,
+    kExpected: 1,
+    processCapabilityId: D3_PROCESS_CAPABILITY_ID,
+    ...overrides
   });
-  const res = HrRoutingManagementService.validateRouteCandidate({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate
-  });
-  assert.equal(res.isValid, true);
-  assert.equal(res.topology, 'M1_ONLY');
+}
+
+function expectCode(code) {
+  return error => error instanceof HrRoutingManagementServiceError && error.code === code;
+}
+
+// ---------------------------------------------------------------------------
+// D3-IMP-06-R1 targeted corrective tests
+// ---------------------------------------------------------------------------
+
+test('R1-01 canonical M2 topology sequence is M2 -> M1 -> G1', () => {
+  assert.deepEqual(TOPOLOGY_CONFIGS[TOPOLOGIES.M1_M2_G1].slots, ['M2', 'M1', 'G1']);
+  assert.equal(TOPOLOGY_CONFIGS[TOPOLOGIES.M1_M2_G1].label, 'M2 + M1 + G1 (3 Appraisers)');
 });
 
-test('21. M1_G1 (PATTERN_2_M1_G1) candidate validates correctly', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate
-  });
-  assert.equal(res.isValid, true);
-  assert.equal(res.topology, 'M1_G1');
+test('R1-02 canonical four-appraiser sequence is M2 -> M1 -> G1 -> G2', () => {
+  assert.deepEqual(TOPOLOGY_CONFIGS[TOPOLOGIES.M1_M2_G1_G2].slots, ['M2', 'M1', 'G1', 'G2']);
+  assert.equal(TOPOLOGY_CONFIGS[TOPOLOGIES.M1_M2_G1_G2].label, 'M2 + M1 + G1 + G2 (4 Appraisers)');
 });
 
-test('22. M1_M2_G1 (PATTERN_3A_M2_M1_G1) candidate validates correctly', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_3A_M2_M1_G1' },
-    Routing_Topology: { value: 'M1_M2_G1' },
-    Manager_Level2_Approvers: { value: [{ code: 'user_m2' }] },
-    Manager_Level2_Approval_Rule: { value: 'ALL' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate
-  });
-  assert.equal(res.isValid, true);
-  assert.equal(res.topology, 'M1_M2_G1');
-});
-
-test('23. M1_G1_G2 (PATTERN_3B_M1_G1_G2) candidate validates correctly', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_3B_M1_G1_G2' },
-    Routing_Topology: { value: 'M1_G1_G2' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' },
-    GM_Level2_Approvers: { value: [{ code: 'user_g2' }] },
-    GM_Level2_Approval_Rule: { value: 'ALL' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate
-  });
-  assert.equal(res.isValid, true);
-  assert.equal(res.topology, 'M1_G1_G2');
-});
-
-test('24. M1_M2_G1_G2 (PATTERN_4_M2_M1_G1_G2) candidate validates correctly', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_4_M2_M1_G1_G2' },
-    Routing_Topology: { value: 'M1_M2_G1_G2' },
-    Manager_Level2_Approvers: { value: [{ code: 'user_m2' }] },
-    Manager_Level2_Approval_Rule: { value: 'ALL' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' },
-    GM_Level2_Approvers: { value: [{ code: 'user_g2' }] },
-    GM_Level2_Approval_Rule: { value: 'ALL' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate
-  });
-  assert.equal(res.isValid, true);
-  assert.equal(res.topology, 'M1_M2_G1_G2');
-});
-
-test('25. M1_M2_G1 != M1_G1_G2 distinguished as distinct topologies with different slots', () => {
-  assert.notEqual(TOPOLOGIES.M1_M2_G1, TOPOLOGIES.M1_G1_G2);
-  const slotsA = TOPOLOGY_CONFIGS[TOPOLOGIES.M1_M2_G1].slots;
-  const slotsB = TOPOLOGY_CONFIGS[TOPOLOGIES.M1_G1_G2].slots;
-  assert.deepEqual(slotsA, ['M1', 'M2', 'G1']);
-  assert.deepEqual(slotsB, ['M1', 'G1', 'G2']);
-  assert.equal(slotsA.includes('M2'), true);
-  assert.equal(slotsB.includes('M2'), false);
-  assert.equal(slotsA.includes('G2'), false);
-  assert.equal(slotsB.includes('G2'), true);
-});
-
-test('26. Invalid topology or unknown pattern rejected', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'UNKNOWN_PATTERN' }
-  });
+test('R1-03 missing K_expected fails closed', () => {
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.name === 'D3RouteContractError' || err.code === 'D3_ROUTE_PATTERN_UNKNOWN'
+    () => HrRoutingManagementService.validateRouteCandidate({
+      principal: HR,
+      routeCandidate: routeRecord(),
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
+    }),
+    expectCode('ROUTING_K_EXPECTED_REQUIRED')
   );
 });
 
-// ----------------------------------------------------
-// Category 3: Slot Integrity & Appraiser Validation (27..34)
-// ----------------------------------------------------
-
-test('27. Exact one user per active slot enforced', () => {
-  const candidate = createSampleRouteRecord();
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.isValid, true);
-});
-
-test('28. Zero users in active slot rejected (D3_V1_SLOT_USER_COUNT_INVALID)', () => {
-  const candidate = createSampleRouteRecord({
-    Manager_Level1_Approvers: { value: [] }
-  });
+test('R1-04 missing process capability fails closed', () => {
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'D3_V1_SLOT_USER_COUNT_INVALID'
+    () => HrRoutingManagementService.validateRouteCandidate({
+      principal: HR,
+      routeCandidate: routeRecord(),
+      kExpected: 1
+    }),
+    expectCode('ROUTING_PROCESS_CAPABILITY_REQUIRED')
   );
 });
 
-test('29. Multiple users in active slot rejected (D3_V1_SLOT_USER_COUNT_INVALID)', () => {
-  const candidate = createSampleRouteRecord({
-    Manager_Level1_Approvers: { value: [{ code: 'user_m1' }, { code: 'user_extra' }] }
-  });
+test('R1-05 missing scorer plan fails closed with SCORER_PLAN_NOT_CONFIGURED', () => {
+  const candidate = routeRecord();
+  delete candidate.Scorer_Priority_Slots;
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'D3_V1_SLOT_USER_COUNT_INVALID'
+    () => strictValidate(candidate),
+    expectCode('SCORER_PLAN_NOT_CONFIGURED')
   );
 });
 
-test('30. Non-object or invalid user format rejected (INVALID_APPRAISER_IDENTITY)', () => {
-  const candidate = createSampleRouteRecord({
-    Manager_Level1_Approvers: { value: ['user_m1_string_not_object'] }
-  });
+test('R1-06 draft builder has no implicit slot-1/M1 scorer default', () => {
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'INVALID_APPRAISER_IDENTITY'
+    () => buildCandidateRecordFromDraft({
+      routingKey: 'KEY',
+      topology: TOPOLOGIES.M1_ONLY,
+      slots: { M1: 'm1_user' },
+      effectiveFrom: '2026-07-01',
+      businessReason: 'No scorer supplied'
+    }),
+    expectCode('SCORER_PLAN_NOT_CONFIGURED')
   );
 });
 
-test('31. Whitespace-only user code rejected (INVALID_APPRAISER_IDENTITY)', () => {
-  const candidate = createSampleRouteRecord({
-    Manager_Level1_Approvers: { value: [{ code: '   ' }] }
+test('R1-07 validateRoutingDraft never invents system/hr principal', () => {
+  const result = validateRoutingDraft({
+    routingKey: 'KEY',
+    topology: TOPOLOGIES.M1_ONLY,
+    slots: { M1: 'm1_user' },
+    scorerPrioritySlots: '1',
+    effectiveFrom: '2026-07-01',
+    businessReason: 'Explicit principal required'
+  }, {
+    kExpected: 1,
+    processCapabilityId: D3_PROCESS_CAPABILITY_ID
   });
+  assert.equal(result.isValid, false);
+  assert.ok(result.errors.some(message => message.includes('ROUTING_PRINCIPAL_REQUIRED')));
+});
+
+test('R1-08 empty supplied history cannot imply v1 without exact completeness proof', () => {
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'INVALID_APPRAISER_IDENTITY'
+    () => deriveNextVersionNumber([], 'KEY'),
+    expectCode('ROUTING_VERSION_HISTORY_COMPLETENESS_REQUIRED')
   );
 });
 
-test('32. Approval rule must be strictly ALL (D3_V1_APPROVAL_RULE_NOT_ALL)', () => {
-  const candidate = createSampleRouteRecord({
-    Manager_Level1_Approval_Rule: { value: 'ANY' }
-  });
+test('R1-09 history completeness proof must bind the exact Routing_Key', () => {
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'D3_V1_APPROVAL_RULE_NOT_ALL'
+    () => deriveNextVersionNumber([], 'KEY', { routingKey: 'OTHER', complete: true }),
+    expectCode('ROUTING_VERSION_HISTORY_COMPLETENESS_REQUIRED')
   );
 });
 
-test('33. Distinct appraiser user codes across active slots enforced', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    Manager_Level1_Approvers: { value: [{ code: 'user_m1' }] },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.isValid, true);
-});
-
-test('34. Duplicate appraiser user code in active slots rejected (DUPLICATE_APPRAISER_IDENTITY)', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    Manager_Level1_Approvers: { value: [{ code: 'user_same' }] },
-    GM_Level1_Approvers: { value: [{ code: 'user_same' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' }
-  });
-  assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'DUPLICATE_APPRAISER_IDENTITY'
+test('R1-10 complete exact empty history permits deterministic first version 1', () => {
+  assert.equal(
+    deriveNextVersionNumber([], 'KEY', { routingKey: 'KEY', complete: true }),
+    1
   );
 });
 
-// ----------------------------------------------------
-// Category 4: Lifecycle & Immutability (35..39)
-// ----------------------------------------------------
-
-test('35. DRAFT version is editable', () => {
+test('R1-11 complete exact history derives max + 1', () => {
   const records = [
-    createSampleRouteRecord({
-      Version_Key: { value: 'DEPT_ENG_SEC1#v2' },
-      Version_Number: { value: '2' },
-      Version_Status: { value: 'DRAFT' },
-      $revision: { value: '5' }
-    })
+    routeRecord({ versionNumber: 1 }),
+    routeRecord({ versionNumber: 3 }),
+    routeRecord({ versionNumber: 2 })
   ];
+  assert.equal(
+    deriveNextVersionNumber(records, 'KEY', { routingKey: 'KEY', complete: true }),
+    4
+  );
+});
 
-  const plan = HrRoutingManagementService.editDraftRoutePlan({
-    principal: PRINCIPAL_HR,
-    records,
-    versionKey: 'DEPT_ENG_SEC1#v2',
-    expectedRevision: '5',
-    draftInput: {
-      Remark: 'Updated draft reason',
-      Effective_From: '2026-02-01'
-    }
+test('R1-12 create draft requires explicit exact history completeness proof', () => {
+  assert.throws(
+    () => HrRoutingManagementService.createDraftRoutePlan({
+      principal: HR,
+      records: [],
+      draftInput: rawDraft('KEY'),
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
+    }),
+    expectCode('ROUTING_VERSION_HISTORY_COMPLETENESS_REQUIRED')
+  );
+});
+
+test('R1-13 create draft succeeds locally when all explicit authorities are supplied', () => {
+  const plan = HrRoutingManagementService.createDraftRoutePlan({
+    principal: HR,
+    records: [],
+    draftInput: rawDraft('KEY'),
+    kExpected: 1,
+    processCapabilityId: D3_PROCESS_CAPABILITY_ID,
+    historyCompleteness: { routingKey: 'KEY', complete: true }
   });
-
-  assert.equal(plan.status, 'PLAN_CREATED');
-  assert.equal(plan.operation, 'EDIT_DRAFT');
+  assert.equal(plan.operation, 'CREATE_DRAFT');
+  assert.equal(plan.proposed.Version_Number, 1);
   assert.equal(plan.noMutationExecuted, true);
 });
 
-test('36. ACTIVE version is immutable (edit rejected)', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'ACTIVE' }, $revision: { value: '1' } })];
-  assert.throws(
-    () => HrRoutingManagementService.editDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      records,
-      versionKey: 'DEPT_ENG_SEC1#v1',
-      expectedRevision: '1',
-      draftInput: { Remark: 'Try edit active' }
-    }),
-    (err) => err.code === 'ROUTING_LIFECYCLE_IMMUTABLE'
-  );
-});
-
-test('37. SUPERSEDED version is immutable (edit rejected)', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'SUPERSEDED' }, $revision: { value: '1' } })];
-  assert.throws(
-    () => HrRoutingManagementService.editDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      records,
-      versionKey: 'DEPT_ENG_SEC1#v1',
-      expectedRevision: '1',
-      draftInput: { Remark: 'Try edit superseded' }
-    }),
-    (err) => err.code === 'ROUTING_LIFECYCLE_IMMUTABLE'
-  );
-});
-
-test('38. CANCELLED version is immutable (edit rejected)', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'CANCELLED' }, $revision: { value: '1' } })];
-  assert.throws(
-    () => HrRoutingManagementService.editDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      records,
-      versionKey: 'DEPT_ENG_SEC1#v1',
-      expectedRevision: '1',
-      draftInput: { Remark: 'Try edit cancelled' }
-    }),
-    (err) => err.code === 'ROUTING_LIFECYCLE_IMMUTABLE'
-  );
-});
-
-test('39. Historical route delete is strictly FORBIDDEN (ROUTING_DELETE_FORBIDDEN)', () => {
-  assert.throws(
-    () => HrRoutingManagementService.deleteRoutePlan(),
-    (err) => err.code === 'ROUTING_DELETE_FORBIDDEN'
-  );
-});
-
-// ----------------------------------------------------
-// Category 5: Monotonic Versioning & Key Format (40..43)
-// ----------------------------------------------------
-
-test('40. Monotonic version increment (N+1) per Routing_Key', () => {
+test('R1-14 supersession rejects stale active revision', () => {
   const records = [
-    createSampleRouteRecord({ Version_Number: { value: '1' } }),
-    createSampleRouteRecord({ Version_Number: { value: '2' } }),
-    createSampleRouteRecord({ Version_Number: { value: '3' } })
-  ];
-  const nextVer = deriveNextVersionNumber(records, 'DEPT_ENG_SEC1');
-  assert.equal(nextVer, 4);
-});
-
-test('41. First version starts at 1 for empty history', () => {
-  const nextVer = deriveNextVersionNumber([], 'DEPT_NEW');
-  assert.equal(nextVer, 1);
-});
-
-test('42. Canonical Version_Key format (<Routing_Key>#v<Version_Number>)', () => {
-  const vk = generateCanonicalVersionKey('DEPT_ENG_SEC1', 5);
-  assert.equal(vk, 'DEPT_ENG_SEC1#v5');
-});
-
-test('43. Version key generation rejects empty key or non-integer version', () => {
-  assert.throws(
-    () => generateCanonicalVersionKey('', 1),
-    (err) => err.code === 'ROUTING_KEY_REQUIRED'
-  );
-  assert.throws(
-    () => generateCanonicalVersionKey('KEY', 0),
-    (err) => err.code === 'ROUTING_INVALID_VERSION_NUMBER'
-  );
-  assert.throws(
-    () => generateCanonicalVersionKey('KEY', 2.5),
-    (err) => err.code === 'ROUTING_INVALID_VERSION_NUMBER'
-  );
-});
-
-// ----------------------------------------------------
-// Category 6: Effective Dates & Intervals (44..49)
-// ----------------------------------------------------
-
-test('44. Effective_From is required', () => {
-  assert.throws(
-    () => validateEffectiveInterval('', '2026-12-31'),
-    (err) => err.code === 'ROUTING_EFFECTIVE_FROM_REQUIRED'
-  );
-});
-
-test('45. Effective_From format YYYY-MM-DD enforced', () => {
-  assert.throws(
-    () => validateEffectiveInterval('01/01/2026', ''),
-    (err) => err.code === 'ROUTING_INVALID_DATE_FORMAT'
-  );
-  assert.throws(
-    () => validateEffectiveInterval('2026-02-31', ''),
-    (err) => err.code === 'ROUTING_INVALID_DATE_CALENDAR'
-  );
-});
-
-test('46. Effective_To is optional (open-ended)', () => {
-  const res = validateEffectiveInterval('2026-01-01', '');
-  assert.equal(res.effectiveFrom, '2026-01-01');
-  assert.equal(res.effectiveTo, '');
-});
-
-test('47. Effective_To preceding Effective_From is rejected', () => {
-  assert.throws(
-    () => validateEffectiveInterval('2026-06-01', '2026-05-01'),
-    (err) => err.code === 'ROUTING_INVALID_EFFECTIVE_INTERVAL'
-  );
-});
-
-test('48. Active interval overlap is rejected (ROUTING_EFFECTIVE_INTERVAL_OVERLAP)', () => {
-  const activeExisting = [
-    createSampleRouteRecord({
-      Version_Key: { value: 'DEPT_ENG_SEC1#v1' },
-      Version_Status: { value: 'ACTIVE' },
-      Effective_From: { value: '2026-01-01' },
-      Effective_To: { value: '2026-06-30' }
-    })
-  ];
-
-  assert.throws(
-    () => checkIntervalOverlap('2026-05-01', '2026-12-31', activeExisting),
-    (err) => err.code === 'ROUTING_EFFECTIVE_INTERVAL_OVERLAP'
-  );
-});
-
-test('49. Future ACTIVE version has zero overlap before Effective_From', () => {
-  const activeExisting = [
-    createSampleRouteRecord({
-      Version_Key: { value: 'DEPT_ENG_SEC1#v1' },
-      Version_Status: { value: 'ACTIVE' },
-      Effective_From: { value: '2026-01-01' },
-      Effective_To: { value: '2026-06-30' }
-    })
-  ];
-
-  // Non-overlapping future interval
-  assert.doesNotThrow(() => {
-    checkIntervalOverlap('2026-07-01', '2026-12-31', activeExisting);
-  });
-});
-
-// ----------------------------------------------------
-// Category 7: Business Reason (Remark) (50..53)
-// ----------------------------------------------------
-
-test('50. Business reason (Remark) non-empty string required for create draft', () => {
-  assert.throws(
-    () => HrRoutingManagementService.createDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      draftInput: { Routing_Key: 'KEY', Remark: '' }
-    }),
-    (err) => err.code === 'ROUTING_BUSINESS_REASON_REQUIRED'
-  );
-  assert.throws(
-    () => HrRoutingManagementService.createDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      draftInput: { Routing_Key: 'KEY', Remark: '   ' }
-    }),
-    (err) => err.code === 'ROUTING_BUSINESS_REASON_REQUIRED'
-  );
-});
-
-test('51. Business reason non-empty string required for edit draft', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'DRAFT' }, $revision: { value: '1' } })];
-  assert.throws(
-    () => HrRoutingManagementService.editDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      records,
-      versionKey: 'DEPT_ENG_SEC1#v1',
-      expectedRevision: '1',
-      draftInput: { Remark: '' }
-    }),
-    (err) => err.code === 'ROUTING_BUSINESS_REASON_REQUIRED'
-  );
-});
-
-test('52. Business reason non-empty string required for publish', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'DRAFT' }, $revision: { value: '1' } })];
-  assert.throws(
-    () => HrRoutingManagementService.createPublishRoutePlan({
-      principal: PRINCIPAL_HR,
-      records,
-      versionKey: 'DEPT_ENG_SEC1#v1',
-      expectedRevision: '1',
-      businessReason: ''
-    }),
-    (err) => err.code === 'ROUTING_BUSINESS_REASON_REQUIRED'
-  );
-});
-
-test('53. Business reason non-empty string required for supersede', () => {
-  const records = [
-    createSampleRouteRecord({ Version_Key: { value: 'KEY#v1' }, Version_Status: { value: 'ACTIVE' }, $revision: { value: '1' } }),
-    createSampleRouteRecord({ Version_Key: { value: 'KEY#v2' }, Version_Status: { value: 'DRAFT' }, $revision: { value: '1' } })
+    routeRecord({ versionNumber: 1, versionStatus: 'ACTIVE', revision: '10', effectiveFrom: '2026-01-01' }),
+    routeRecord({ versionNumber: 2, versionStatus: 'DRAFT', revision: '20', effectiveFrom: '2026-07-01' })
   ];
   assert.throws(
     () => HrRoutingManagementService.createSupersedeRoutePlan({
-      principal: PRINCIPAL_HR,
+      principal: HR,
       records,
       activeVersionKey: 'KEY#v1',
-      expectedActiveRevision: '1',
+      expectedActiveRevision: '9',
       newVersionKey: 'KEY#v2',
-      expectedNewRevision: '1',
+      expectedNewRevision: '20',
       effectiveToDate: '2026-06-30',
-      businessReason: ''
+      businessReason: 'stale active',
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
     }),
-    (err) => err.code === 'ROUTING_BUSINESS_REASON_REQUIRED'
+    expectCode('ROUTING_REVISION_CONFLICT')
   );
 });
 
-// ----------------------------------------------------
-// Category 8: Scorer Priorities (54..59)
-// ----------------------------------------------------
-
-test('54. Scorer priority slots validated against route viability', () => {
-  const candidate = createSampleRouteRecord({ Scorer_Priority_Slots: { value: '1' } });
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.viability.code, 'VIABLE');
-});
-
-test('55. Mid-year scorer must map to active slot', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_1_M1' },
-    Routing_Topology: { value: 'M1_ONLY' },
-    Scorer_Priority_Slots: { value: '1' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.viability.code, 'VIABLE');
-});
-
-test('56. Final scorer 1 must map to active slot in multi-appraiser topology', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' },
-    Scorer_Priority_Slots: { value: '1,2' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.viability.code, 'VIABLE');
-});
-
-test('57. Final scorer 2 must map to active slot or empty', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_3B_M1_G1_G2' },
-    Routing_Topology: { value: 'M1_G1_G2' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' },
-    GM_Level2_Approvers: { value: [{ code: 'user_g2' }] },
-    GM_Level2_Approval_Rule: { value: 'ALL' },
-    Scorer_Priority_Slots: { value: '1,2,3' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.viability.code, 'VIABLE');
-});
-
-test('58. Invalid scorer slot not in topology triggers viability error', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_1_M1' },
-    Routing_Topology: { value: 'M1_ONLY' },
-    Scorer_Priority_Slots: { value: '9' }
-  });
+test('R1-15 supersession rejects stale new-draft revision', () => {
+  const records = [
+    routeRecord({ versionNumber: 1, versionStatus: 'ACTIVE', revision: '10', effectiveFrom: '2026-01-01' }),
+    routeRecord({ versionNumber: 2, versionStatus: 'DRAFT', revision: '20', effectiveFrom: '2026-07-01' })
+  ];
   assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate }),
-    (err) => err.code === 'INVALID_SCORER_PLAN' || err.code === 'D3_SCORER_SLOT_NOT_FOUND' || err.name === 'HrRoutingManagementServiceError'
+    () => HrRoutingManagementService.createSupersedeRoutePlan({
+      principal: HR,
+      records,
+      activeVersionKey: 'KEY#v1',
+      expectedActiveRevision: '10',
+      newVersionKey: 'KEY#v2',
+      expectedNewRevision: '19',
+      effectiveToDate: '2026-06-30',
+      businessReason: 'stale draft',
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
+    }),
+    expectCode('ROUTING_REVISION_CONFLICT')
   );
 });
 
-test('59. Single appraiser topology allows scorer fallback to sole appraiser', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_1_M1' },
-    Routing_Topology: { value: 'M1_ONLY' },
-    Scorer_Priority_Slots: { value: '1' }
-  });
-  const res = HrRoutingManagementService.validateRouteCandidate({ principal: PRINCIPAL_HR, routeCandidate: candidate });
-  assert.equal(res.viability.code, 'VIABLE');
-  assert.equal(res.viability.activeScorers.length, 1);
-  assert.equal(res.viability.activeScorers[0].user.code, 'user_m1');
+test('R1-16 supersession rejects cross-Routing_Key activation', () => {
+  const records = [
+    routeRecord({ routingKey: 'KEY_A', versionNumber: 1, versionStatus: 'ACTIVE', revision: '10', effectiveFrom: '2026-01-01' }),
+    routeRecord({ routingKey: 'KEY_B', versionNumber: 2, versionStatus: 'DRAFT', revision: '20', effectiveFrom: '2026-07-01' })
+  ];
+  assert.throws(
+    () => HrRoutingManagementService.createSupersedeRoutePlan({
+      principal: HR,
+      records,
+      activeVersionKey: 'KEY_A#v1',
+      expectedActiveRevision: '10',
+      newVersionKey: 'KEY_B#v2',
+      expectedNewRevision: '20',
+      effectiveToDate: '2026-06-30',
+      businessReason: 'cross-key forbidden',
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
+    }),
+    expectCode('ROUTING_SUPERSESSION_ROUTING_KEY_MISMATCH')
+  );
 });
 
-// ----------------------------------------------------
-// Category 9: Process Capability Invariant (60..62)
-// ----------------------------------------------------
-
-test('60. Exact process capability D3_V1_19_STATE_40_ACTION is enforced', () => {
-  const candidate = createSampleRouteRecord();
-  const res = HrRoutingManagementService.validateRouteCandidate({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate,
+test('R1-17 supersession succeeds only with matching exact revisions and Routing_Key', () => {
+  const records = [
+    routeRecord({ versionNumber: 1, versionStatus: 'ACTIVE', revision: '10', effectiveFrom: '2026-01-01' }),
+    routeRecord({ versionNumber: 2, versionStatus: 'DRAFT', revision: '20', effectiveFrom: '2026-07-01' })
+  ];
+  const plan = HrRoutingManagementService.createSupersedeRoutePlan({
+    principal: HR,
+    records,
+    activeVersionKey: 'KEY#v1',
+    expectedActiveRevision: '10',
+    newVersionKey: 'KEY#v2',
+    expectedNewRevision: '20',
+    effectiveToDate: '2026-06-30',
+    businessReason: 'valid guarded supersession',
+    kExpected: 1,
     processCapabilityId: D3_PROCESS_CAPABILITY_ID
   });
-  assert.equal(res.isValid, true);
-});
-
-test('61. Blank process capability rejected (ROUTING_PROCESS_CAPABILITY_REQUIRED)', () => {
-  const candidate = createSampleRouteRecord();
-  assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({
-      principal: PRINCIPAL_HR,
-      routeCandidate: candidate,
-      processCapabilityId: ''
-    }),
-    (err) => err.code === 'ROUTING_PROCESS_CAPABILITY_REQUIRED'
-  );
-});
-
-test('62. Mismatched process capability rejected (ROUTING_PROCESS_CAPABILITY_REQUIRED)', () => {
-  const candidate = createSampleRouteRecord();
-  assert.throws(
-    () => HrRoutingManagementService.validateRouteCandidate({
-      principal: PRINCIPAL_HR,
-      routeCandidate: candidate,
-      processCapabilityId: 'D3_V0_LEGACY_14_STATE'
-    }),
-    (err) => err.code === 'ROUTING_PROCESS_CAPABILITY_REQUIRED'
-  );
-});
-
-// ----------------------------------------------------
-// Category 10: Before/After Preview Generation (63..69)
-// ----------------------------------------------------
-
-test('63. Preview generator shows before vs after topology', () => {
-  const current = createSampleRouteRecord({ Routing_Topology: { value: 'M1_ONLY' } });
-  const proposed = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    GM_Level1_Approvers: { value: [{ code: 'user_g1' }] }
-  });
-
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_HR,
-    currentVersion: current,
-    proposedVersion: proposed
-  });
-
-  assert.equal(preview.differences.topologyChanged, true);
-  assert.equal(preview.currentVersion.topology, 'M1_ONLY');
-  assert.equal(preview.proposedVersion.topology, 'M1_G1');
-});
-
-test('64. Preview generator shows before vs after appraisers', () => {
-  const current = createSampleRouteRecord({
-    Manager_Level1_Approvers: { value: [{ code: 'user_old_m1' }] }
-  });
-  const proposed = createSampleRouteRecord({
-    Manager_Level1_Approvers: { value: [{ code: 'user_new_m1' }] }
-  });
-
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_HR,
-    currentVersion: current,
-    proposedVersion: proposed
-  });
-
-  assert.equal(preview.differences.appraiserChanges.length, 1);
-  assert.equal(preview.differences.appraiserChanges[0].from, 'user_old_m1');
-  assert.equal(preview.differences.appraiserChanges[0].to, 'user_new_m1');
-});
-
-test('65. Preview generator shows before vs after scorer slots', () => {
-  const current = createSampleRouteRecord({ Scorer_Priority_Slots: { value: '1' } });
-  const proposed = createSampleRouteRecord({ Scorer_Priority_Slots: { value: '1,2' } });
-
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_HR,
-    currentVersion: current,
-    proposedVersion: proposed
-  });
-
-  assert.equal(preview.differences.scorerChanges, true);
-});
-
-test('66. Preview generator shows before vs after effective dates', () => {
-  const current = createSampleRouteRecord({ Effective_From: { value: '2026-01-01' } });
-  const proposed = createSampleRouteRecord({ Effective_From: { value: '2026-07-01' } });
-
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_HR,
-    currentVersion: current,
-    proposedVersion: proposed
-  });
-
-  assert.equal(preview.differences.dateChanges.fromChanged, true);
-});
-
-test('67. Preview generator shows effective interval and resolution timing', () => {
-  const proposed = createSampleRouteRecord({
-    Effective_From: { value: '2026-07-01' },
-    Effective_To: { value: '2026-12-31' }
-  });
-
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_HR,
-    proposedVersion: proposed
-  });
-
-  assert.equal(preview.futureImpact.effectiveIntervalAffected, '[2026-07-01..2026-12-31]');
-  assert.ok(preview.futureImpact.resolutionTiming.includes('Future explicit resolution points only'));
-});
-
-test('68. Preview generator indicates inFlightApp794Impact: NONE', () => {
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_HR,
-    proposedVersion: createSampleRouteRecord()
-  });
-
-  assert.equal(preview.futureImpact.inFlightApp794Impact, 'NONE');
-});
-
-test('69. Preview generator does not read live App794 records (zero live reads claimed)', () => {
-  const preview = HrRoutingManagementService.generateRoutePreview({
-    principal: PRINCIPAL_ADMIN,
-    proposedVersion: createSampleRouteRecord()
-  });
-
-  assert.equal(
-    preview.futureImpact.hypotheticalEvaluationsPreview,
-    'Zero live reads performed; no exact live record counts claimed.'
-  );
-});
-
-// ----------------------------------------------------
-// Category 11: Self-Elision Preview (70..73)
-// ----------------------------------------------------
-
-test('70. Self-elision preview calculates surviving slots for employeeUserCode', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    Manager_Level1_Approvers: { value: [{ code: 'user_emp' }] }, // Employee is M1
-    GM_Level1_Approvers: { value: [{ code: 'user_boss' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' },
-    Scorer_Priority_Slots: { value: 'M1,G1' }
-  });
-
-  const preview = HrRoutingManagementService.generateSelfElisionPreview({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate,
-    employeeUserCode: 'user_emp',
-    isOwnMbo: true
-  });
-
-  assert.equal(preview.isSelfElisionApplied, true);
-  assert.equal(preview.configuredTopology, 'M1_G1');
-  assert.equal(preview.effectiveTopology, 'M1_ONLY'); // G1 promoted to M1
-  assert.equal(preview.survivingAppraisers.length, 1);
-  assert.equal(preview.survivingAppraisers[0].userCode, 'user_boss');
-});
-
-test('71. Self-elision preview detects appraiser-skipped state', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
-    Manager_Level1_Approvers: { value: [{ code: 'user_emp' }] },
-    GM_Level1_Approvers: { value: [{ code: 'user_boss' }] },
-    GM_Level1_Approval_Rule: { value: 'ALL' },
-    Scorer_Priority_Slots: { value: 'M1,G1' }
-  });
-
-  const preview = HrRoutingManagementService.generateSelfElisionPreview({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate,
-    employeeUserCode: 'user_emp',
-    isOwnMbo: true
-  });
-
-  assert.equal(preview.isSelfElisionApplied, true);
-  assert.equal(preview.survivingAppraisers[0].slot, 'M1');
-  assert.equal(preview.survivingAppraisers[0].userCode, 'user_boss');
-});
-
-test('72. Self-elision preview detects unviable route conflict (sole appraiser elision)', () => {
-  const candidate = createSampleRouteRecord({
-    Route_Pattern: { value: 'PATTERN_1_M1' },
-    Routing_Topology: { value: 'M1_ONLY' },
-    Manager_Level1_Approvers: { value: [{ code: 'user_sole' }] }
-  });
-
-  const preview = HrRoutingManagementService.generateSelfElisionPreview({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate,
-    employeeUserCode: 'user_sole',
-    isOwnMbo: true
-  });
-
-  assert.equal(preview.conflict, true);
-  assert.ok(preview.errorCode.includes('VIABILITY') || preview.errorCode.includes('ELISION') || preview.errorMessage.length > 0);
-});
-
-test('73. Self-elision preview works with both hr and admin-form roles', () => {
-  const candidate = createSampleRouteRecord();
-
-  const previewHr = HrRoutingManagementService.generateSelfElisionPreview({
-    principal: PRINCIPAL_HR,
-    routeCandidate: candidate,
-    employeeUserCode: 'user_m1',
-    isOwnMbo: false
-  });
-  assert.equal(previewHr.isSelfElisionApplied, false);
-
-  const previewAdmin = HrRoutingManagementService.generateSelfElisionPreview({
-    principal: PRINCIPAL_ADMIN,
-    routeCandidate: candidate,
-    employeeUserCode: 'user_m1',
-    isOwnMbo: false
-  });
-  assert.equal(previewAdmin.isSelfElisionApplied, false);
-});
-
-// ----------------------------------------------------
-// Category 13: Zero-Touch & Safety (80..87)
-// ----------------------------------------------------
-
-test('80. Zero live Kintone API calls in service execution', () => {
-  // Service has no network imports or kintone client
-  assert.equal(typeof HrRoutingManagementService.createDraftRoutePlan, 'function');
-  assert.equal(typeof HrRoutingManagementService.createPublishRoutePlan, 'function');
-  assert.equal(typeof HrRoutingManagementService.createSupersedeRoutePlan, 'function');
-});
-
-test('81. Zero live Kintone record mutations performed', () => {
-  const records = [createSampleRouteRecord()];
-  const initialRecords = JSON.parse(JSON.stringify(records));
-
-  HrRoutingManagementService.createDraftRoutePlan({
-    principal: PRINCIPAL_HR,
-    records,
-    draftInput: {
-      Routing_Key: 'DEPT_ENG_SEC1',
-      Route_Pattern: 'PATTERN_1_M1',
-      Effective_From: '2026-01-01',
-      Remark: 'Plan only',
-      Manager_Level1_Approvers: { value: [{ code: 'user_m1' }] },
-      Manager_Level1_Approval_Rule: { value: 'ALL' },
-      Scorer_Priority_Slots: { value: 'M1' }
-    }
-  });
-
-  // Source records must be completely unmodified
-  assert.deepEqual(records, initialRecords);
-});
-
-test('82. Zero process writes performed', () => {
-  // All plans generated report noMutationExecuted: true
-  const plan = HrRoutingManagementService.createDraftRoutePlan({
-    principal: PRINCIPAL_HR,
-    records: [],
-    draftInput: {
-      Routing_Key: 'DEPT_ENG_SEC1',
-      Route_Pattern: 'PATTERN_1_M1',
-      Effective_From: '2026-01-01',
-      Remark: 'Plan only',
-      Manager_Level1_Approvers: { value: [{ code: 'user_m1' }] },
-      Manager_Level1_Approval_Rule: { value: 'ALL' },
-      Scorer_Priority_Slots: { value: 'M1' }
-    }
-  });
+  assert.equal(plan.operation, 'SUPERSEDE_VERSION');
+  assert.equal(plan.mutationsPlanned.length, 2);
   assert.equal(plan.noMutationExecuted, true);
 });
 
-test('83. Zero deployment calls executed', () => {
-  assert.ok(true, 'Service executes exclusively within bounded local memory');
-});
-
-test('84. Pure local plan generation only', () => {
-  const plan = HrRoutingManagementService.createDraftRoutePlan({
-    principal: PRINCIPAL_HR,
-    records: [],
-    draftInput: {
-      Routing_Key: 'DEPT_ENG_SEC1',
-      Route_Pattern: 'PATTERN_1_M1',
-      Effective_From: '2026-01-01',
-      Remark: 'Local test',
-      Manager_Level1_Approvers: { value: [{ code: 'user_m1' }] },
-      Manager_Level1_Approval_Rule: { value: 'ALL' },
-      Scorer_Priority_Slots: { value: 'M1' }
-    }
+test('R1-18 admin-form retains preview/validate but no HR mutation authority', () => {
+  const candidate = routeRecord();
+  const validation = HrRoutingManagementService.validateRouteCandidate({
+    principal: ADMIN,
+    routeCandidate: candidate,
+    kExpected: 1,
+    processCapabilityId: D3_PROCESS_CAPABILITY_ID
   });
-  assert.equal(plan.status, 'PLAN_CREATED');
-  assert.equal(plan.mutationsPlanned.length, 1);
-});
-
-test('85. Plan returns structured mutation instructions without executing', () => {
-  const records = [
-    createSampleRouteRecord({
-      Routing_Key: { value: 'KEY' },
-      Version_Key: { value: 'KEY#v1' },
-      Version_Status: { value: 'ACTIVE' },
-      Effective_From: { value: '2026-01-01' },
-      Effective_To: { value: '' },
-      $revision: { value: '2' }
-    }),
-    createSampleRouteRecord({
-      Routing_Key: { value: 'KEY' },
-      Version_Key: { value: 'KEY#v2' },
-      Version_Status: { value: 'DRAFT' },
-      Effective_From: { value: '2026-07-01' },
-      Effective_To: { value: '' },
-      $revision: { value: '3' }
-    })
-  ];
-
-  const plan = HrRoutingManagementService.createSupersedeRoutePlan({
-    principal: PRINCIPAL_HR,
-    records,
-    activeVersionKey: 'KEY#v1',
-    expectedActiveRevision: '2',
-    newVersionKey: 'KEY#v2',
-    expectedNewRevision: '3',
-    effectiveToDate: '2026-06-30',
-    businessReason: 'Promote v2'
-  });
-
-  assert.equal(plan.operation, 'SUPERSEDE_VERSION');
-  assert.equal(plan.mutationsPlanned.length, 2);
-  assert.equal(plan.mutationsPlanned[0].action, 'SUPERSEDE_RECORD');
-  assert.equal(plan.mutationsPlanned[1].action, 'ACTIVATE_RECORD');
-});
-
-test('86. Optimistic concurrency via revision matching', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'DRAFT' }, $revision: { value: '10' } })];
-
-  const plan = HrRoutingManagementService.editDraftRoutePlan({
-    principal: PRINCIPAL_HR,
-    records,
-    versionKey: 'DEPT_ENG_SEC1#v1',
-    expectedRevision: '10',
-    draftInput: { Remark: 'Valid revision' }
-  });
-
-  assert.equal(plan.status, 'PLAN_CREATED');
-});
-
-test('87. Revision conflict rejected (ROUTING_REVISION_CONFLICT)', () => {
-  const records = [createSampleRouteRecord({ Version_Status: { value: 'DRAFT' }, $revision: { value: '11' } })];
-
+  assert.equal(validation.isValid, true);
   assert.throws(
-    () => HrRoutingManagementService.editDraftRoutePlan({
-      principal: PRINCIPAL_HR,
-      records,
-      versionKey: 'DEPT_ENG_SEC1#v1',
-      expectedRevision: '10', // Stale revision
-      draftInput: { Remark: 'Stale update' }
+    () => HrRoutingManagementService.createDraftRoutePlan({
+      principal: ADMIN,
+      records: [],
+      draftInput: rawDraft('KEY'),
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID,
+      historyCompleteness: { routingKey: 'KEY', complete: true }
     }),
-    (err) => err.code === 'ROUTING_REVISION_CONFLICT'
+    expectCode('ROUTING_HR_AUTHORIZATION_REQUIRED')
   );
+});
+
+test('R1-19 internal D3-IMP-06 base is imported only by the strict public facade', async () => {
+  const srcRoot = fileURLToPath(new URL('../src/', import.meta.url));
+  const marker = 'hr-routing-management-service-d3imp06-base.js';
+  const importers = [];
+
+  async function walk(dir) {
+    for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile() && entry.name.endsWith('.js') && !entry.name.includes('d3imp06-base')) {
+        const text = await fs.readFile(full, 'utf8');
+        if (text.includes(marker)) importers.push(path.relative(srcRoot, full).replaceAll('\\', '/'));
+      }
+    }
+  }
+
+  await walk(srcRoot);
+  assert.deepEqual(importers, ['services/hr-routing-management-service.js']);
 });

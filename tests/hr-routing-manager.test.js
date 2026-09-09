@@ -1,255 +1,235 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 
 import {
   renderHrRoutingManagerHtml,
   bindHrRoutingManagerEvents,
-  escapeHtml,
   TOPOLOGY_OPTIONS,
   getRequiredSlotsForTopology
 } from '../src/ui/hr-routing-manager.js';
-
 import {
-  TOPOLOGIES,
-  ROUTING_STATUSES,
-  HrRoutingManagementService
+  HrRoutingManagementService,
+  TOPOLOGIES
 } from '../src/services/hr-routing-management-service.js';
+import { D3_PROCESS_CAPABILITY_ID } from '../src/validation/validation-engine.js';
 
-import { renderHrControlCenterHtml, DEFAULT_APP_IDS } from '../src/ui/hr-control-center.js';
-
-// Mock DOM element helper for event testing
-function createMockElement() {
-  const listeners = {};
-  const queryMap = {};
-  const elem = {
-    innerHTML: '',
-    value: '',
-    disabled: false,
-    textContent: '',
-    style: {},
-    attributes: {},
-    setAttribute(k, v) { this.attributes[k] = String(v); },
-    getAttribute(k) { return this.attributes[k] !== undefined ? this.attributes[k] : null; },
-    addEventListener(event, fn) {
-      if (!listeners[event]) listeners[event] = [];
-      listeners[event].push(fn);
-    },
-    async trigger(event) {
-      if (listeners[event]) {
-        for (const fn of listeners[event]) {
-          await fn({ target: elem });
-        }
-      }
-    },
-    querySelector(selector) {
-      if (queryMap[selector]) return queryMap[selector];
-      const newChild = createMockElement();
-      queryMap[selector] = newChild;
-      return newChild;
-    },
-    querySelectorAll(selector) {
-      return [];
-    }
-  };
-  return elem;
+// Preserve the accepted D3-IMP-06 UI matrix, updating only the two canonical
+// M2 sequence expectations that R1 intentionally corrects.
+const legacySourceUrl = new URL('./hr-routing-manager-d3imp06-matrix.source', import.meta.url);
+const generatedUrl = new URL('./.generated-hr-routing-manager-d3imp06-matrix.mjs', import.meta.url);
+let legacySource = await fs.readFile(legacySourceUrl, 'utf8');
+legacySource = legacySource
+  .replace("['M1', 'M2', 'G1']", "['M2', 'M1', 'G1']")
+  .replace("['M1', 'M2', 'G1', 'G2']", "['M2', 'M1', 'G1', 'G2']");
+await fs.writeFile(generatedUrl, legacySource, 'utf8');
+try {
+  await import(`${generatedUrl.href}?r1=${Date.now()}`);
+} finally {
+  await fs.unlink(generatedUrl).catch(() => {});
 }
 
-const PRINCIPAL_HR = { userCode: 'hr_lead_01', groups: ['hr'] };
-const PRINCIPAL_ADMIN = { userCode: 'admin_tech_01', groups: ['admin-form'] };
-const PRINCIPAL_DUAL = { userCode: 'dual_lead_01', groups: ['hr', 'admin-form'] };
-const PRINCIPAL_UNAUTH = { userCode: 'unauth_01', groups: ['standard-users'] };
+const HR = Object.freeze({ userCode: 'hr_ui_r1', groups: ['hr'] });
+const ADMIN = Object.freeze({ userCode: 'admin_ui_r1', groups: ['admin-form'] });
 
-const SAMPLE_ROUTES = [
-  {
-    Routing_Key: 'DEPT_ENG_SEC1',
-    Version_Number: 1,
-    Version_Key: 'DEPT_ENG_SEC1#v1',
-    Topology: 'M1_ONLY',
-    Status: 'ACTIVE',
-    Effective_From: '2026-01-01',
-    Effective_To: '',
-    Remark: 'Initial baseline for Eng'
-  },
-  {
-    Routing_Key: 'DEPT_ENG_SEC1',
-    Version_Number: 2,
-    Version_Key: 'DEPT_ENG_SEC1#v2',
-    Topology: 'M1_G1',
-    Status: 'DRAFT',
-    Effective_From: '2026-07-01',
-    Effective_To: '',
-    Remark: 'Promotion of second appraiser'
-  }
-];
-
-// ----------------------------------------------------
-// UI Test Matrix: Items 74..79
-// ----------------------------------------------------
-
-test('74. UI: Role-based control visibility (HR sees Create/Edit/Publish/Supersede actions; Admin-Form sees view/preview/diagnostics only)', () => {
-  const htmlHr = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_HR,
-    routes: SAMPLE_ROUTES
-  });
-
-  assert.ok(htmlHr.includes('id="hr-btn-create-draft"'), 'HR must see Create New Draft button');
-  assert.ok(htmlHr.includes('id="hr-btn-save-draft"'), 'HR must see Update Draft button');
-  assert.ok(htmlHr.includes('id="hr-btn-publish"'), 'HR must see Publish Plan button');
-  assert.ok(htmlHr.includes('id="hr-btn-supersede"'), 'HR must see Supersede Plan button');
-  assert.ok(htmlHr.includes('id="hr-btn-preview"'), 'HR must see Preview button');
-
-  const htmlAdmin = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_ADMIN,
-    routes: SAMPLE_ROUTES
-  });
-
-  assert.equal(htmlAdmin.includes('id="hr-btn-create-draft"'), false, 'Admin-Form must NOT see active Create Draft button');
-  assert.equal(htmlAdmin.includes('id="hr-btn-publish"'), false, 'Admin-Form must NOT see active Publish button');
-  assert.equal(htmlAdmin.includes('id="hr-btn-supersede"'), false, 'Admin-Form must NOT see active Supersede button');
-  assert.ok(htmlAdmin.includes('id="hr-btn-preview"'), 'Admin-Form can see Preview button');
-  assert.ok(htmlAdmin.includes('Admin-Form: Read-Only / Diagnostics / Zero Business Mutations'), 'Admin-Form capability indicator present');
-});
-
-test('75. UI: Admin-Form mutation buttons disabled/hidden with clear explanation', () => {
-  const htmlAdmin = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_ADMIN,
-    routes: SAMPLE_ROUTES
-  });
-
-  assert.ok(htmlAdmin.includes('admin-disabled'), 'Admin-disabled action group rendered');
-  assert.ok(htmlAdmin.includes('Business mutation requires HR role (ROUTING_HR_AUTHORIZATION_REQUIRED)'), 'Clear HR authorization required explanation present');
-  assert.ok(htmlAdmin.includes('Create New Draft (HR Only)'), 'Disabled button label clearly states HR Only');
-  assert.ok(htmlAdmin.includes('disabled'), 'Buttons in admin view must be disabled');
-});
-
-test('76. UI: Topology selector contains all 5 distinct topologies', () => {
-  assert.equal(TOPOLOGY_OPTIONS.length, 5);
-  const topologyValues = TOPOLOGY_OPTIONS.map(o => o.value);
-  assert.ok(topologyValues.includes(TOPOLOGIES.M1_ONLY), 'Must contain M1_ONLY');
-  assert.ok(topologyValues.includes(TOPOLOGIES.M1_G1), 'Must contain M1_G1');
-  assert.ok(topologyValues.includes(TOPOLOGIES.M1_M2_G1), 'Must contain M1_M2_G1');
-  assert.ok(topologyValues.includes(TOPOLOGIES.M1_G1_G2), 'Must contain M1_G1_G2');
-  assert.ok(topologyValues.includes(TOPOLOGIES.M1_M2_G1_G2), 'Must contain M1_M2_G1_G2');
-
-  const html = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_HR,
-    selectedTopology: TOPOLOGIES.M1_M2_G1
-  });
-
-  assert.ok(html.includes('value="M1_ONLY"'), 'Selector HTML includes M1_ONLY option');
-  assert.ok(html.includes('value="M1_G1"'), 'Selector HTML includes M1_G1 option');
-  assert.ok(html.includes('value="M1_M2_G1" selected'), 'Selector HTML selects M1_M2_G1');
-  assert.ok(html.includes('value="M1_G1_G2"'), 'Selector HTML includes M1_G1_G2 option');
-  assert.ok(html.includes('value="M1_M2_G1_G2"'), 'Selector HTML includes M1_M2_G1_G2 option');
-});
-
-test('77. UI: Dynamic slot inputs display/hide based on selected topology', () => {
-  // M1_ONLY: only M1 visible
-  const htmlM1Only = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_HR,
-    selectedTopology: TOPOLOGIES.M1_ONLY
-  });
-  assert.ok(htmlM1Only.includes('id="slot-container-m1"'));
-  assert.ok(htmlM1Only.includes('id="slot-container-m2" style="display: none;"'), 'M2 hidden for M1_ONLY');
-  assert.ok(htmlM1Only.includes('id="slot-container-g1" style="display: none;"'), 'G1 hidden for M1_ONLY');
-  assert.ok(htmlM1Only.includes('id="slot-container-g2" style="display: none;"'), 'G2 hidden for M1_ONLY');
-
-  // M1_M2_G1: M1, M2, G1 visible; G2 hidden
-  const htmlM1M2G1 = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_HR,
-    selectedTopology: TOPOLOGIES.M1_M2_G1
-  });
-  assert.ok(htmlM1M2G1.includes('id="slot-container-m1"'));
-  assert.ok(!htmlM1M2G1.includes('id="slot-container-m2" style="display: none;"'), 'M2 visible for M1_M2_G1');
-  assert.ok(!htmlM1M2G1.includes('id="slot-container-g1" style="display: none;"'), 'G1 visible for M1_M2_G1');
-  assert.ok(htmlM1M2G1.includes('id="slot-container-g2" style="display: none;"'), 'G2 hidden for M1_M2_G1');
-
-  // M1_G1_G2: M1, G1, G2 visible; M2 hidden
-  const htmlM1G1G2 = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_HR,
-    selectedTopology: TOPOLOGIES.M1_G1_G2
-  });
-  assert.ok(htmlM1G1G2.includes('id="slot-container-m2" style="display: none;"'), 'M2 hidden for M1_G1_G2');
-  assert.ok(!htmlM1G1G2.includes('id="slot-container-g1" style="display: none;"'), 'G1 visible for M1_G1_G2');
-  assert.ok(!htmlM1G1G2.includes('id="slot-container-g2" style="display: none;"'), 'G2 visible for M1_G1_G2');
-});
-
-test('78. UI: HTML injection prevention: all fields (Remark, keys, user codes, names) strictly escaped', () => {
-  const maliciousString = '<script>alert("xss")</script>&"\'';
-  const escaped = escapeHtml(maliciousString);
-  assert.equal(escaped.includes('<script>'), false);
-  assert.ok(escaped.includes('&lt;script&gt;'));
-  assert.ok(escaped.includes('&quot;'));
-  assert.ok(escaped.includes('&#039;'));
-  assert.ok(escaped.includes('&amp;'));
-
-  const html = renderHrRoutingManagerHtml({
-    principal: { userCode: '<malicious_user>', groups: ['hr'] },
-    routes: [
-      {
-        Routing_Key: '<xss_key>',
-        Version_Number: 1,
-        Version_Key: '<xss_vkey>',
-        Topology: '<xss_topo>',
-        Status: '<xss_status>',
-        Effective_From: '2026-01-01',
-        Effective_To: '2026-12-31',
-        Remark: '<script>evil()</script>'
+function createMockElement({ value = '', attributes = {} } = {}) {
+  const listeners = new Map();
+  return {
+    value,
+    attributes: { ...attributes },
+    addEventListener(event, fn) {
+      if (!listeners.has(event)) listeners.set(event, []);
+      listeners.get(event).push(fn);
+    },
+    getAttribute(name) {
+      return Object.prototype.hasOwnProperty.call(this.attributes, name) ? this.attributes[name] : null;
+    },
+    setAttribute(name, next) {
+      this.attributes[name] = String(next);
+    },
+    async trigger(event) {
+      for (const fn of [...(listeners.get(event) || [])]) {
+        await fn({ target: this });
       }
-    ],
-    selectedRouteKey: '<injected_key>',
-    remark: '<payload_remark>',
-    validationErrors: ['<script>error()</script>']
-  });
+    }
+  };
+}
 
-  assert.equal(html.includes('<script>'), false, 'Rendered HTML must never contain unescaped script tag');
-  assert.equal(html.includes('<malicious_user>'), false);
-  assert.ok(html.includes('&lt;malicious_user&gt;'));
-  assert.equal(html.includes('<xss_key>'), false);
-  assert.ok(html.includes('&lt;xss_key&gt;'));
-  assert.equal(html.includes('<xss_vkey>'), false);
-  assert.ok(html.includes('&lt;xss_vkey&gt;'));
-  assert.equal(html.includes('<payload_remark>'), false);
-  assert.ok(html.includes('&lt;payload_remark&gt;'));
-  assert.equal(html.includes('<script>error()</script>'), false);
-  assert.ok(html.includes('&lt;script&gt;error()&lt;/script&gt;'));
+function createMockContainer(initial = {}) {
+  const elements = new Map();
+  const slotElements = [];
+  const buttonLists = new Map([['.btn-select-route', []]]);
+  const container = {
+    innerHTML: '',
+    elements,
+    querySelector(selector) {
+      if (!elements.has(selector)) {
+        elements.set(selector, createMockElement({ value: initial[selector] ?? '' }));
+      }
+      return elements.get(selector);
+    },
+    querySelectorAll(selector) {
+      if (selector === '.slot-input') return slotElements;
+      return buttonLists.get(selector) || [];
+    },
+    addSlot(slot, value) {
+      const element = createMockElement({ value, attributes: { 'data-slot': slot } });
+      slotElements.push(element);
+      return element;
+    }
+  };
+  return container;
+}
+
+function createDraftUiContainer() {
+  const container = createMockContainer({
+    '#hr-route-key': 'KEY',
+    '#hr-topology-select': TOPOLOGIES.M1_ONLY,
+    '#hr-effective-from': '2026-07-01',
+    '#hr-effective-to': '',
+    '#hr-supersede-effective-to': '',
+    '#hr-route-remark': 'R1 UI create',
+    '#hr-scorer-midyear': 'M1',
+    '#hr-scorer-final1': 'M1',
+    '#hr-scorer-final2': ''
+  });
+  container.addSlot('M1', 'm1_user');
+  return container;
+}
+
+test('R1-UI-01 M2 route options expose canonical M2-first sequence', () => {
+  const m2Three = TOPOLOGY_OPTIONS.find(option => option.value === TOPOLOGIES.M1_M2_G1);
+  const m2Four = TOPOLOGY_OPTIONS.find(option => option.value === TOPOLOGIES.M1_M2_G1_G2);
+  assert.deepEqual(m2Three.slots, ['M2', 'M1', 'G1']);
+  assert.deepEqual(m2Four.slots, ['M2', 'M1', 'G1', 'G2']);
+  assert.match(m2Three.label, /^M2 \+ M1 \+ G1/);
+  assert.match(m2Four.label, /^M2 \+ M1 \+ G1 \+ G2/);
 });
 
-test('79. UI: Existing App800 Control Center features (monitoring, password reset, filters) remain intact', () => {
-  const html = renderHrControlCenterHtml({
-    evaluations: [
-      { $id: { value: '1' }, Employee_Code: { value: 'EMP001' }, Status: { value: 'COMPLETED' } }
-    ],
-    allEvaluations: [
-      { $id: { value: '1' }, Employee_Code: { value: 'EMP001' }, Status: { value: 'COMPLETED' } }
-    ],
-    health: { app794Count: 1, routing: { available: true, count: 12 }, scoring: { available: true, count: 8 }, hoshin: { available: true, count: 2 }, archive: { available: true, count: 0 } },
-    warnings: [],
-    filters: { fy: '', dept: '', sec: '', status: '' },
-    appIds: DEFAULT_APP_IDS
-  });
-
-  assert.ok(html.includes('MBO 2026 — HR Control Center'), 'Title intact');
-  assert.ok(html.includes('System Health & Inventory'), 'Health panel intact');
-  assert.ok(html.includes('Filters:'), 'Filters intact');
-  assert.ok(html.includes('Total Evaluations'), 'KPI grid intact');
-  assert.ok(html.includes('Pipeline Breakdown'), 'Pipeline breakdown intact');
-  assert.ok(html.includes('รีเซ็ตรหัสผ่าน MBO / Reset MBO Password'), 'Password reset intact');
-});
-
-test('UI helper: Unauthorized principal renders access denied banner', () => {
+test('R1-UI-02 rendered M2 topology places M2 before M1 and has no implicit scorer selection', () => {
   const html = renderHrRoutingManagerHtml({
-    principal: PRINCIPAL_UNAUTH
+    principal: HR,
+    selectedTopology: TOPOLOGIES.M1_M2_G1,
+    scorerValues: { midYear: '', final1: '', final2: '' }
   });
-
-  assert.ok(html.includes('Access Denied / ไม่ได้รับอนุญาต'));
-  assert.ok(html.includes('hr-access-denied'));
+  assert.ok(html.indexOf('id="slot-container-m2"') < html.indexOf('id="slot-container-m1"'));
+  assert.ok(html.includes('M2 + M1 + G1 (3 Appraisers: M2, M1, G1)'));
+  assert.ok(html.includes('(Select explicit scorer slot / ต้องระบุ)'));
 });
 
-test('UI helper: getRequiredSlotsForTopology returns correct slots for each topology', () => {
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_ONLY), ['M1']);
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_G1), ['M1', 'G1']);
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1), ['M1', 'M2', 'G1']);
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_G1_G2), ['M1', 'G1', 'G2']);
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1_G2), ['M1', 'M2', 'G1', 'G2']);
+test('R1-UI-03 getRequiredSlotsForTopology is canonical and has no unknown-topology M1 fallback', () => {
+  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1), ['M2', 'M1', 'G1']);
+  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1_G2), ['M2', 'M1', 'G1', 'G2']);
+  assert.deepEqual(getRequiredSlotsForTopology('UNKNOWN'), []);
+});
+
+test('R1-UI-04 preview event propagates the exact principal/K/process to validation and preview APIs', async () => {
+  const container = createDraftUiContainer();
+  const calls = [];
+  const service = {
+    validateRoutingDraft(args) {
+      calls.push(['validateRoutingDraft', args]);
+      return { isValid: true, errors: [], candidate: {} };
+    },
+    previewRoutingPlan(args) {
+      calls.push(['previewRoutingPlan', args]);
+      return {
+        isValid: true,
+        topology: args.draft.topology,
+        activeSlots: [{ role: 'M1', userCode: 'm1_user' }],
+        scorerSlots: args.draft.scorerSlots,
+        processCapabilityId: args.processCapabilityId,
+        kExpected: args.kExpected,
+        warnings: [],
+        planPayload: {}
+      };
+    }
+  };
+
+  bindHrRoutingManagerEvents({
+    containerElement: container,
+    principal: ADMIN,
+    service,
+    initialData: {
+      selectedRouteKey: 'KEY',
+      selectedTopology: TOPOLOGIES.M1_ONLY,
+      slotValues: { M1: 'm1_user' },
+      scorerValues: { midYear: 'M1', final1: 'M1', final2: '' },
+      effectiveFrom: '2026-07-01',
+      remark: 'preview',
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
+    }
+  });
+
+  await container.querySelector('#hr-btn-preview').trigger('click');
+  assert.equal(calls.length, 2);
+  for (const [, args] of calls) {
+    assert.strictEqual(args.principal, ADMIN);
+    assert.equal(args.principal.userCode, 'admin_ui_r1');
+    assert.deepEqual(args.principal.groups, ['admin-form']);
+    assert.equal(args.kExpected, 1);
+    assert.equal(args.processCapabilityId, D3_PROCESS_CAPABILITY_ID);
+  }
+});
+
+test('R1-UI-05 create event calls the real createDraftRoutePlan API and generates a local-only plan', async () => {
+  const container = createDraftUiContainer();
+  let generated = null;
+
+  bindHrRoutingManagerEvents({
+    containerElement: container,
+    principal: HR,
+    service: HrRoutingManagementService,
+    onPlanGenerated(plan) {
+      generated = plan;
+    },
+    initialData: {
+      selectedRouteKey: 'KEY',
+      selectedTopology: TOPOLOGIES.M1_ONLY,
+      slotValues: { M1: 'm1_user' },
+      scorerValues: { midYear: 'M1', final1: 'M1', final2: '' },
+      effectiveFrom: '2026-07-01',
+      effectiveTo: '',
+      remark: 'R1 UI create',
+      routes: [],
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID,
+      versionHistoryCompletenessByRoutingKey: { KEY: true }
+    }
+  });
+
+  await container.querySelector('#hr-btn-create-draft').trigger('click');
+  assert.ok(generated, 'real service plan must be generated');
+  assert.equal(generated.operation, 'CREATE_DRAFT');
+  assert.equal(generated.noMutationExecuted, true);
+  assert.equal(generated.proposed.Version_Key, 'KEY#v1');
+});
+
+test('R1-UI-06 create event never invents history completeness', async () => {
+  const container = createDraftUiContainer();
+  let generated = null;
+  const binding = bindHrRoutingManagerEvents({
+    containerElement: container,
+    principal: HR,
+    service: HrRoutingManagementService,
+    onPlanGenerated(plan) {
+      generated = plan;
+    },
+    initialData: {
+      selectedRouteKey: 'KEY',
+      selectedTopology: TOPOLOGIES.M1_ONLY,
+      slotValues: { M1: 'm1_user' },
+      scorerValues: { midYear: 'M1', final1: 'M1', final2: '' },
+      effectiveFrom: '2026-07-01',
+      remark: 'No proof',
+      routes: [],
+      kExpected: 1,
+      processCapabilityId: D3_PROCESS_CAPABILITY_ID
+    }
+  });
+
+  await container.querySelector('#hr-btn-create-draft').trigger('click');
+  assert.equal(generated, null);
+  assert.ok(binding.getState().validationErrors.some(message => message.includes('ROUTING_VERSION_HISTORY_COMPLETENESS_REQUIRED')));
 });
