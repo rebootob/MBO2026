@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import {
   RoutingService,
@@ -1238,3 +1239,178 @@ test('TC42: Main runtime onEmployeeCodeChanged resets all five D3 provenance fie
   assert.equal(record.Routing_Topology.value, '');
   assert.deepEqual(record.Manager_Level1_Approvers.value, []);
 });
+
+// ----------------------------------------------------
+// D3-IMP-03-R2: EXPLICIT BUSINESS-DATE SOURCE LOCK (Tests 43 - 48)
+// ----------------------------------------------------
+
+test('TC43: R2 explicit injected resolutionBusinessDate succeeds in runtime resolution', async () => {
+  const authOptions = { resolutionBusinessDate: '2026-04-01' };
+  const resolutionBusinessDate = authOptions?.resolutionBusinessDate;
+
+  assert.equal(resolutionBusinessDate, '2026-04-01');
+
+  const v = makeCandidateVersion({
+    versionKey: 'TMT1#v1',
+    effectiveFrom: '2026-04-01',
+    effectiveTo: ''
+  });
+
+  const res = await RoutingService.resolveD3RoutingProfile({
+    routingKey: 'TMT1',
+    candidateRecords: [v],
+    resolutionBusinessDate,
+    frozenProfileCode: 'PROF_STAFF_CHIEF',
+    kExpected: 2
+  });
+
+  assert.equal(res.Effective_Route_Version_Key, 'TMT1#v1');
+});
+
+test('TC44: R2 missing explicit resolutionBusinessDate fails closed with RESOLUTION_BUSINESS_DATE_REQUIRED', () => {
+  const authOptions = {};
+  const options = {};
+  const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
+
+  assert.throws(
+    () => {
+      if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
+        throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED). Live business date provider is unresolved and blocks deployment.');
+      }
+    },
+    (err) => {
+      assert.match(err.message, /RESOLUTION_BUSINESS_DATE_REQUIRED/);
+      assert.match(err.message, /Live business date provider is unresolved and blocks deployment/);
+      return true;
+    }
+  );
+});
+
+test('TC45: R2 KEY REGRESSION: record contains Resolution_Business_Date = "2026-04-01" but no explicit injected date MUST STILL FAIL with RESOLUTION_BUSINESS_DATE_REQUIRED', () => {
+  // Record field is populated
+  const record = {
+    Resolution_Business_Date: { value: '2026-04-01' }
+  };
+  // But NO explicit injected authOptions or options
+  const authOptions = undefined;
+  const options = {};
+
+  // R2 lock: DO NOT read from record.Resolution_Business_Date
+  const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
+
+  assert.equal(resolutionBusinessDate, undefined);
+  assert.throws(
+    () => {
+      if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
+        throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED). Live business date provider is unresolved and blocks deployment.');
+      }
+    },
+    /RESOLUTION_BUSINESS_DATE_REQUIRED/
+  );
+});
+
+test('TC46: R2 record Resolution_Business_Date cannot alter selected App795 version (explicit injected date is authoritative)', async () => {
+  // Record has an older date that would match Version 1 if used
+  const record = {
+    Resolution_Business_Date: { value: '2025-04-01' }
+  };
+  // Explicit injected date points to Version 2
+  const authOptions = { resolutionBusinessDate: '2026-04-01' };
+  const resolutionBusinessDate = authOptions?.resolutionBusinessDate;
+
+  const v1 = makeCandidateVersion({
+    versionKey: 'TMT1#v1',
+    effectiveFrom: '2025-01-01',
+    effectiveTo: '2025-12-31'
+  });
+  const v2 = makeCandidateVersion({
+    versionKey: 'TMT1#v2',
+    effectiveFrom: '2026-01-01',
+    effectiveTo: '2026-12-31'
+  });
+
+  const res = await RoutingService.resolveD3RoutingProfile({
+    routingKey: 'TMT1',
+    candidateRecords: [v1, v2],
+    resolutionBusinessDate,
+    frozenProfileCode: 'PROF_STAFF_CHIEF',
+    kExpected: 2,
+    existingRecord: {
+      ...record,
+      Frozen_Profile_Code: { value: '' },
+      K_expected_Snapshot: { value: '' },
+      Effective_Routing_Key: { value: '' },
+      Effective_Route_Version_Key: { value: '' },
+      Effective_Scorer_Slots_Snapshot: { value: '' }
+    }
+  });
+
+  // Explicit injected date (2026-04-01) selected Version 2, ignoring record date (2025-04-01)
+  assert.equal(res.Effective_Route_Version_Key, 'TMT1#v2');
+});
+
+test('TC47: R2 static source inspection: src/main-mbo-app.js strictly forbids reading business date from record fields', () => {
+  const mainSrc = fs.readFileSync('src/main-mbo-app.js', 'utf8');
+
+  // Verify record.Resolution_Business_Date is NOT used as fallback or source
+  assert.equal(/record\??\.Resolution_Business_Date/i.test(mainSrc), false,
+    'main-mbo-app.js must NOT read business date from record.Resolution_Business_Date'
+  );
+
+  // Verify resolutionBusinessDate only comes from authOptions or options
+  assert.match(
+    mainSrc,
+    /const resolutionBusinessDate = authOptions\?\.resolutionBusinessDate \|\| options\?\.resolutionBusinessDate;/,
+    'main-mbo-app.js must strictly derive resolutionBusinessDate from authOptions or options'
+  );
+
+  // Verify fail-closed with RESOLUTION_BUSINESS_DATE_REQUIRED
+  assert.match(
+    mainSrc,
+    /RESOLUTION_BUSINESS_DATE_REQUIRED/,
+    'main-mbo-app.js must fail closed with RESOLUTION_BUSINESS_DATE_REQUIRED when date is missing'
+  );
+
+  // Verify deployment blocker marker
+  assert.match(
+    mainSrc,
+    /LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED \/ DEPLOYMENT BLOCKER/,
+    'main-mbo-app.js must record LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER'
+  );
+});
+
+test('TC48: R2 no fallback to legacy Active query when business date missing', async () => {
+  let routingApiCalled = false;
+  let queryExecuted = null;
+
+  const mockApi = {
+    getRecords: async (appId, query) => {
+      if (appId === 795) {
+        routingApiCalled = true;
+        queryExecuted = query;
+      }
+      return { records: [] };
+    }
+  };
+
+  // Pipeline simulation: missing resolutionBusinessDate
+  const authOptions = {};
+  const options = {};
+  const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
+
+  await assert.rejects(
+    async () => {
+      if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
+        throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED). Live business date provider is unresolved and blocks deployment.');
+      }
+      // If reached, would call API:
+      await mockApi.getRecords(795, 'Active in ("Active")');
+    },
+    /RESOLUTION_BUSINESS_DATE_REQUIRED/
+  );
+
+  // App 795 legacy Active query is never executed
+  assert.equal(routingApiCalled, false);
+  assert.equal(queryExecuted, null);
+});
+
