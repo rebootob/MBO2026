@@ -8,7 +8,7 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-04
+ACTIVE_WORK_PACKAGE = D3-IMP-04-R1
 ACTIVE_WORK_PACKAGE_STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
@@ -21,6 +21,8 @@ D3-IMP-02-R2 = PASS / CLOSED
 D3-IMP-03 = PASS / CLOSED
 D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-03-R2 = PASS / CLOSED
+D3-IMP-04 = PARTIAL PASS / R1 REQUIRED
+D3-IMP-04-R1 = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -229,4 +231,51 @@ DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
+
+## D3-IMP-04-R1 execution record
+
+Owner-authorized package:
+
+```text
+ACTIVE_WORK_PACKAGE = D3-IMP-04-R1
+TITLE = Archive Trust Boundary + Full Evidence Verification Corrective
+OWNER_AUTHORIZATION = อนุมัติ D3-IMP-04-R1 Archive Trust Boundary + Full Evidence Verification Corrective แบบ LOCAL-ONLY / ZERO KINTONE / ZERO DEPLOYMENT
+STARTING_HEAD = d20cf0de8c9e000e1f29369285abd524d99096a0
+STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
+```
+
+Capabilities implemented in R1:
+- Finding 1: Target App ID hard-locked to 798 in `RevisionArchiveKintoneRepository`; caller-selectable `appId` in options strictly forbidden (`ARCHIVE_APP_ID_OVERRIDE_FORBIDDEN`), even if 798 is passed.
+- Finding 2: Unforgeable service-issued evidence branding via module-private `WeakSet` (`issuedArchiveEvidence`); fake plain objects, spread clones `{ ...evidence }`, and copied objects fail `validateArchiveEvidence` and `assertArchiveBeforeChangeGate` closed.
+- Finding 3: Single authoritative immutable comparator `compareArchiveRecordToExpected` across all 3 paths (`IDEMPOTENT_REPLAY`, `POST_CREATE_READBACK`, `UNCERTAIN_WRITE_RECOVERY`), comparing all immutable facts, snapshot JSON, hash, actor, reason, previous status, superseded revision, source record ID, and read-back timestamp.
+- Finding 4A: Strict actor contract accepting only `{ userCode: "<exact Kintone user code>" }`; rejects plain string, `{ code }`, display-name, blank, whitespace, and generic `"SYSTEM"`.
+- Finding 4B: Explicit time authority required; fallback to `new Date().toISOString()` removed. Accepts valid ISO-8601 with explicit timezone (Z or offset, canonicalized to UTC ISO) or explicitly injected service clock. Missing explicit time and clock fails closed with `ARCHIVE_TIMESTAMP_REQUIRED`.
+- Snapshot core-coherence hardening: verifies `Frozen_Profile_Code`, `K_expected_Snapshot` (1 or 2), non-empty `Workflow_Appraisers` (unique non-blank codes), non-empty `Scorers` (unique non-blank codes), `Scorers.length === K_expected`, and all scorers present in `Workflow_Appraisers`.
+
+Verification evidence:
+```text
+REVISION_ARCHIVE_SERVICE_TESTS = 44 / 44 PASS
+REVISION_ARCHIVE_REPOSITORY_TESTS = 8 / 8 PASS
+D3_ARCHIVE_IDEMPOTENCY_TESTS = 14 / 14 PASS
+D3_REOPEN_ARCHIVE_INTEGRATION_TESTS = 4 / 4 PASS
+COMBINED_D3_IMP_04_R1_TESTS = 70 / 70 PASS (184ms)
+
+D3_IMP_01_TESTS = 40 / 40 PASS (100ms)
+D3_IMP_02_TESTS = 68 / 68 PASS (123ms)
+D3_IMP_03_TESTS = 86 / 86 PASS (182ms)
+COMBINED_ALL_TESTS = 264 / 264 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+APP798_LIVE_READS = 0
+APP798_LIVE_WRITES = 0
+APP794_WRITES = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
 
