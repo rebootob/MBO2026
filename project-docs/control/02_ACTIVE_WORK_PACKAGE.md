@@ -8,19 +8,19 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-02-R1
+ACTIVE_WORK_PACKAGE = D3-IMP-02-R2
 ACTIVE_WORK_PACKAGE_STATUS = IN_PROGRESS
-OWNER_AUTHORIZATION = "อนุมัติ D3-IMP-02-R1 Scorer Fail-Closed + Readiness Validation + True Schema Diff Corrective แบบ LOCAL-ONLY / ZERO KINTONE"
-WORK_PACKAGE_TITLE = D3-IMP-02-R1 — Scorer Fail-Closed + Readiness Validation + True Schema Diff Corrective
+OWNER_AUTHORIZATION = "อนุมัติ D3-IMP-02-R2 Migration Completeness + Required-Field Readiness Hardening แบบ LOCAL-ONLY / ZERO KINTONE"
+WORK_PACKAGE_TITLE = D3-IMP-02-R2 — Migration Completeness + Required-Field Readiness Hardening
 WORK_PACKAGE_TYPE = CORRECTIVE_LOCAL_ONLY_ZERO_KINTONE
 
-STARTING_HEAD = 9aa8db06e6377c284b095517394408e648bde718
+STARTING_HEAD = c29e44f1a14b7d14877bad0333038e29f072b5cd
 CANONICAL_BRANCH = ai/antigravity-wp002c
 AUTHORIZATION_BOUNDARY = LOCAL_ONLY_ZERO_KINTONE
 
-LAST_REVIEWED_WORK_PACKAGE = D3-IMP-02
-LAST_REVIEWED_RESULT = PARTIAL_PASS / CORRECTIVE_REQUIRED (R1)
-LAST_REVIEWED_IMPLEMENTATION_HEAD = 9aa8db06e6377c284b095517394408e648bde718
+LAST_REVIEWED_WORK_PACKAGE = D3-IMP-02-R1
+LAST_REVIEWED_RESULT = PARTIAL_PASS / CORRECTIVE_REQUIRED (R2)
+LAST_REVIEWED_IMPLEMENTATION_HEAD = c29e44f1a14b7d14877bad0333038e29f072b5cd
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -125,6 +125,34 @@ Corrective scope addressed:
 Verification evidence:
 - 38/38 schema & migration tests PASS
 - 78/78 combined D3 suite tests PASS
+- Kintone reads/writes: 0 / 0
+- Network calls: 0
+- Execution mode: LOCAL-ONLY / ZERO KINTONE
+
+## D3-IMP-02-R2 execution record
+
+Owner authorization:
+
+```text
+อนุมัติ D3-IMP-02-R2 Migration Completeness + Required-Field Readiness Hardening แบบ LOCAL-ONLY / ZERO KINTONE
+```
+
+Corrective scope addressed:
+
+1. **Finding 1 (Migration Diff Completeness for Partially-Migrated Schemas)**:
+   - Full property diff across all 8 target App 795 fields (`Routing_Key`, `Version_Key`, `Version_Number`, `Version_Status`, `Route_Pattern`, `Scorer_Priority_Slots`, `Effective_From`, `Effective_To`).
+   - Missing fields => `ADD_FIELD`.
+   - Existing + compatible => No unnecessary modifications or additions.
+   - Existing + correctable mismatch (unique, required, minValue, missing options) => `MODIFY_FIELD_PROPERTIES`.
+   - Existing + incompatible type => fail closed (`INCOMPATIBLE_FIELD_TYPE`).
+   - Plan identity incorporates deterministic normalized `currentSchemaEvidence` for all target fields.
+2. **Finding 2 (Required-Field Readiness Hardening)**:
+   - Strict record-level validation for `Routing_Key`, `Version_Key` (`<Routing_Key>#v<N>`), `Version_Number` (positive integer matching suffix), `Version_Status` (explicit non-default from supported set), `Route_Pattern` (explicit non-default from 5 supported patterns), `Effective_From` (calendar integrity YYYY-MM-DD), and `Effective_To` (calendar integrity >= Effective_From).
+   - Preserved R1 scorer plan fail-closed semantics (`SCORER_PLAN_NOT_CONFIGURED`, `INVALID_SCORER_PLAN`).
+
+Verification evidence:
+- 68/68 schema & migration tests PASS (including 30 new R2 tests)
+- 108/108 combined D3 suite tests PASS
 - Kintone reads/writes: 0 / 0
 - Network calls: 0
 - Execution mode: LOCAL-ONLY / ZERO KINTONE

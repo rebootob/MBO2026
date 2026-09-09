@@ -132,18 +132,9 @@ export function generateRoutingSchemaMigrationPlan({
     throw new Error('MIGRATION_PLAN_ERROR: currentSchema must contain a definition for "Routing_Key".');
   }
 
-  const currentEf = currentFields.Effective_From;
-  if (!currentEf || typeof currentEf !== 'object') {
-    throw new Error('MIGRATION_PLAN_ERROR: currentSchema must contain a definition for "Effective_From".');
-  }
-
-  // Validate critical type compatibility
+  // Validate critical type compatibility for Routing_Key
   if (currentRk.type !== 'SINGLE_LINE_TEXT') {
     throw new Error(`INCOMPATIBLE_FIELD_TYPE: Routing_Key must have type SINGLE_LINE_TEXT (received "${currentRk.type}").`);
-  }
-
-  if (currentEf.type !== 'DATE') {
-    throw new Error(`INCOMPATIBLE_FIELD_TYPE: Effective_From must have type DATE (received "${currentEf.type}").`);
   }
 
   const isDryRun = options.dryRun !== false;
@@ -161,45 +152,192 @@ export function generateRoutingSchemaMigrationPlan({
     throw new Error('D3_SCHEMA_WRITE_BLOCKED: Live Kintone write execution is strictly disabled in D3-IMP-02.');
   }
 
-  // 6. Build TRUE field modifications diff from actual current properties
+  // 6. Build TRUE field additions and modifications diff across all D3 App795 target fields
   const modifications = [];
+  const additions = [];
 
-  // Routing_Key: target is unique = false
+  // 1) Routing_Key (target: unique = false, required = true)
   const currentRkUnique = currentRk.unique === true;
-  if (currentRkUnique) {
+  const currentRkRequired = currentRk.required === true;
+  if (currentRkUnique !== false || currentRkRequired !== true) {
     modifications.push({
       fieldCode: 'Routing_Key',
       operation: 'MODIFY_FIELD_PROPERTIES',
-      current: { unique: true, required: currentRk.required !== false },
+      current: { unique: currentRkUnique, required: currentRkRequired },
       target: { unique: false, required: true },
       rationale: 'Model A requires non-unique business Routing_Key for versioned rows'
     });
   }
 
-  // Effective_From: target is required = true
-  const currentEfRequired = currentEf.required === true;
-  if (!currentEfRequired) {
-    modifications.push({
-      fieldCode: 'Effective_From',
-      operation: 'MODIFY_FIELD_PROPERTIES',
-      current: { required: false },
-      target: { required: true },
-      rationale: 'Model A requires Effective_From date for all route versions'
+  // 2) Version_Key (target: SINGLE_LINE_TEXT, required = true, unique = true)
+  const currentVk = currentFields.Version_Key;
+  if (!currentVk) {
+    additions.push({
+      fieldCode: 'Version_Key',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Version_Key }
     });
+  } else {
+    if (currentVk.type !== 'SINGLE_LINE_TEXT') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Version_Key must have type SINGLE_LINE_TEXT (received "${currentVk.type}").`);
+    }
+    if (currentVk.required !== true || currentVk.unique !== true) {
+      modifications.push({
+        fieldCode: 'Version_Key',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { unique: currentVk.unique === true, required: currentVk.required === true },
+        target: { unique: true, required: true },
+        rationale: 'Model A requires required and unique Version_Key'
+      });
+    }
   }
 
-  // 7. Build field additions diff for fields not yet present in currentSchema
-  const additions = [];
-  for (const fieldCode of TARGET_APP795_NEW_FIELD_CODES) {
-    if (!currentFields[fieldCode]) {
-      const spec = routingFields[fieldCode];
-      if (!spec) {
-        throw new Error(`MIGRATION_PLAN_ERROR: Target schema specification missing for field ${fieldCode}.`);
-      }
-      additions.push({
-        fieldCode,
-        operation: 'ADD_FIELD',
-        spec: { ...spec }
+  // 3) Version_Number (target: NUMBER, required = true, minValue = '1')
+  const currentVn = currentFields.Version_Number;
+  if (!currentVn) {
+    additions.push({
+      fieldCode: 'Version_Number',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Version_Number }
+    });
+  } else {
+    if (currentVn.type !== 'NUMBER') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Version_Number must have type NUMBER (received "${currentVn.type}").`);
+    }
+    if (currentVn.required !== true || (String(currentVn.minValue) !== '1')) {
+      modifications.push({
+        fieldCode: 'Version_Number',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { required: currentVn.required === true, minValue: currentVn.minValue !== undefined ? String(currentVn.minValue) : '' },
+        target: { required: true, minValue: '1' },
+        rationale: 'Model A requires required positive integer Version_Number >= 1'
+      });
+    }
+  }
+
+  // 4) Version_Status (target: DROP_DOWN, required = true, options: [DRAFT, ACTIVE, CANCELLED, SUPERSEDED])
+  const currentVs = currentFields.Version_Status;
+  if (!currentVs) {
+    additions.push({
+      fieldCode: 'Version_Status',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Version_Status }
+    });
+  } else {
+    if (currentVs.type !== 'DROP_DOWN') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Version_Status must have type DROP_DOWN (received "${currentVs.type}").`);
+    }
+    const expectedStatusOptions = ['DRAFT', 'ACTIVE', 'CANCELLED', 'SUPERSEDED'];
+    const curStatusOpts = currentVs.options || {};
+    const hasAllStatusOpts = expectedStatusOptions.every(opt => Boolean(curStatusOpts[opt]));
+    if (currentVs.required !== true || !hasAllStatusOpts) {
+      modifications.push({
+        fieldCode: 'Version_Status',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { required: currentVs.required === true, options: curStatusOpts },
+        target: { required: true, options: routingFields.Version_Status.options },
+        rationale: 'Model A requires all lifecycle options for Version_Status'
+      });
+    }
+  }
+
+  // 5) Route_Pattern (target: DROP_DOWN, required = true, options: 5 canonical D3 V1 patterns)
+  const currentRp = currentFields.Route_Pattern;
+  if (!currentRp) {
+    additions.push({
+      fieldCode: 'Route_Pattern',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Route_Pattern }
+    });
+  } else {
+    if (currentRp.type !== 'DROP_DOWN') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Route_Pattern must have type DROP_DOWN (received "${currentRp.type}").`);
+    }
+    const expectedPatternOptions = [
+      'PATTERN_1_M1',
+      'PATTERN_2_M1_G1',
+      'PATTERN_3A_M2_M1_G1',
+      'PATTERN_3B_M1_G1_G2',
+      'PATTERN_4_M2_M1_G1_G2'
+    ];
+    const curPatOpts = currentRp.options || {};
+    const hasAllPatOpts = expectedPatternOptions.every(opt => Boolean(curPatOpts[opt]));
+    if (currentRp.required !== true || !hasAllPatOpts) {
+      modifications.push({
+        fieldCode: 'Route_Pattern',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { required: currentRp.required === true, options: curPatOpts },
+        target: { required: true, options: routingFields.Route_Pattern.options },
+        rationale: 'Model A requires all supported route pattern options for Route_Pattern'
+      });
+    }
+  }
+
+  // 6) Scorer_Priority_Slots (target: SINGLE_LINE_TEXT, required = true)
+  const currentSps = currentFields.Scorer_Priority_Slots;
+  if (!currentSps) {
+    additions.push({
+      fieldCode: 'Scorer_Priority_Slots',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Scorer_Priority_Slots }
+    });
+  } else {
+    if (currentSps.type !== 'SINGLE_LINE_TEXT') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Scorer_Priority_Slots must have type SINGLE_LINE_TEXT (received "${currentSps.type}").`);
+    }
+    if (currentSps.required !== true) {
+      modifications.push({
+        fieldCode: 'Scorer_Priority_Slots',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { required: currentSps.required === true },
+        target: { required: true },
+        rationale: 'Model A requires Scorer_Priority_Slots to be required'
+      });
+    }
+  }
+
+  // 7) Effective_From (target: DATE, required = true)
+  const currentEf = currentFields.Effective_From;
+  if (!currentEf) {
+    additions.push({
+      fieldCode: 'Effective_From',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Effective_From }
+    });
+  } else {
+    if (currentEf.type !== 'DATE') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Effective_From must have type DATE (received "${currentEf.type}").`);
+    }
+    if (currentEf.required !== true) {
+      modifications.push({
+        fieldCode: 'Effective_From',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { required: false },
+        target: { required: true },
+        rationale: 'Model A requires Effective_From date for all route versions'
+      });
+    }
+  }
+
+  // 8) Effective_To (target: DATE, required = false)
+  const currentEt = currentFields.Effective_To;
+  if (!currentEt) {
+    additions.push({
+      fieldCode: 'Effective_To',
+      operation: 'ADD_FIELD',
+      spec: { ...routingFields.Effective_To }
+    });
+  } else {
+    if (currentEt.type !== 'DATE') {
+      throw new Error(`INCOMPATIBLE_FIELD_TYPE: Effective_To must have type DATE (received "${currentEt.type}").`);
+    }
+    if (currentEt.required === true) {
+      modifications.push({
+        fieldCode: 'Effective_To',
+        operation: 'MODIFY_FIELD_PROPERTIES',
+        current: { required: true },
+        target: { required: false },
+        rationale: 'Effective_To must be optional for open-ended active route versions'
       });
     }
   }
@@ -228,12 +366,42 @@ export function generateRoutingSchemaMigrationPlan({
     ]
   };
 
-  // 9. Deterministic Plan ID includes actual currentSchemaEvidence
+  // 9. Deterministic Plan ID includes actual currentSchemaEvidence across all target fields
+  const TARGET_APP795_ALL_TARGET_FIELDS = [
+    'Routing_Key',
+    'Version_Key',
+    'Version_Number',
+    'Version_Status',
+    'Route_Pattern',
+    'Scorer_Priority_Slots',
+    'Effective_From',
+    'Effective_To'
+  ];
+
+  const targetFieldEvidence = {};
+  for (const fieldCode of TARGET_APP795_ALL_TARGET_FIELDS) {
+    const f = currentFields[fieldCode];
+    if (!f || typeof f !== 'object') {
+      targetFieldEvidence[fieldCode] = { exists: false };
+    } else {
+      targetFieldEvidence[fieldCode] = {
+        exists: true,
+        type: f.type || '',
+        required: f.required === true,
+        unique: f.unique === true,
+        minValue: f.minValue !== undefined ? String(f.minValue) : '',
+        options: f.options && typeof f.options === 'object' ? Object.keys(f.options).sort() : []
+      };
+    }
+  }
+
   const currentSchemaEvidence = {
     routingKeyUnique: currentRk.unique === true,
+    routingKeyRequired: currentRk.required === true,
     routingKeyType: currentRk.type,
-    effectiveFromRequired: currentEf.required === true,
-    effectiveFromType: currentEf.type,
+    effectiveFromRequired: currentEf ? currentEf.required === true : false,
+    effectiveFromType: currentEf ? currentEf.type : '',
+    targetFieldEvidence,
     existingFieldCodes: Object.keys(currentFields).sort()
   };
 

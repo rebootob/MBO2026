@@ -60,6 +60,27 @@ function extractString(value) {
 }
 
 /**
+ * Validates strict YYYY-MM-DD date string with calendar integrity.
+ */
+export function isValidCalendarDate(dateStr) {
+  if (typeof dateStr !== 'string') return false;
+  const trimmed = dateStr.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmed);
+  if (!match) return false;
+
+  const year = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  const day = parseInt(match[3], 10);
+
+  if (month < 1 || month > 12) return false;
+  const isLeapYear = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+  const daysInMonth = [0, 31, isLeapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (day < 1 || day > daysInMonth[month]) return false;
+
+  return true;
+}
+
+/**
  * Inspects App 795, App 794, and App 798 schema specifications and optional records.
  *
  * @param {Object} [params]
@@ -213,24 +234,89 @@ export function inspectD3Readiness({
       const et = extractString(record.Effective_To);
       const pat = extractString(record.Route_Pattern);
 
+      const rawVn = typeof record.Version_Number === 'object' && record.Version_Number !== null && 'value' in record.Version_Number
+        ? record.Version_Number.value
+        : record.Version_Number;
+      const strVn = rawVn !== null && rawVn !== undefined ? String(rawVn).trim() : '';
+
+      const rawStatus = typeof record.Version_Status === 'object' && record.Version_Status !== null && 'value' in record.Version_Status
+        ? record.Version_Status.value
+        : record.Version_Status;
+      const status = rawStatus !== null && rawStatus !== undefined ? String(rawStatus).trim() : '';
+
+      // 1. Routing_Key
       if (!rk) {
         errors.push(`App795 Record [${i}]: Missing Routing_Key.`);
       }
 
-      if (vk && !/^.+#[vV]\d+$/.test(vk)) {
-        errors.push(`App795 Record [${i}] (${rk}): Version_Key "${vk}" does not match <Routing_Key>#v<N> pattern.`);
+      // 2. Version_Key
+      let vkMatch = null;
+      if (!vk) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Missing Version_Key.`);
+      } else {
+        vkMatch = /^(.+)#v(\d+)$/.exec(vk);
+        if (!vkMatch) {
+          errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Version_Key "${vk}" does not match <Routing_Key>#v<N> format.`);
+        } else if (rk && vkMatch[1] !== rk) {
+          errors.push(`App795 Record [${i}] (${rk}): Version_Key routing prefix "${vkMatch[1]}" does not match Routing_Key "${rk}".`);
+        }
       }
 
-      if (ef && et && et < ef) {
-        errors.push(`App795 Record [${i}] (${rk}): Effective_To (${et}) is earlier than Effective_From (${ef}).`);
+      // 3. Version_Number
+      if (!strVn) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Missing Version_Number.`);
+      } else {
+        const parsedVn = Number(strVn);
+        if (!Number.isInteger(parsedVn) || parsedVn < 1) {
+          errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Version_Number "${strVn}" must be a positive integer >= 1.`);
+        } else if (vkMatch && String(parsedVn) !== vkMatch[2]) {
+          errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Version_Number (${parsedVn}) does not agree with Version_Key suffix (#v${vkMatch[2]}).`);
+        }
       }
 
-      // Interval overlap check for ACTIVE versions
-      const status = extractString(record.Version_Status) || 'ACTIVE';
-      if (status === 'ACTIVE' && ef) {
+      // 4. Version_Status (Required, no default)
+      const VALID_STATUSES = ['DRAFT', 'ACTIVE', 'CANCELLED', 'SUPERSEDED'];
+      if (!status) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Missing Version_Status.`);
+      } else if (!VALID_STATUSES.includes(status)) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Invalid Version_Status "${status}". Accepted values: ${VALID_STATUSES.join(', ')}.`);
+      }
+
+      // 5. Route_Pattern (Required, must be one of 5 supported patterns)
+      const VALID_PATTERNS = [
+        'PATTERN_1_M1',
+        'PATTERN_2_M1_G1',
+        'PATTERN_3A_M2_M1_G1',
+        'PATTERN_3B_M1_G1_G2',
+        'PATTERN_4_M2_M1_G1_G2'
+      ];
+      if (!pat) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Missing Route_Pattern.`);
+      } else if (!VALID_PATTERNS.includes(pat)) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Unknown Route_Pattern "${pat}".`);
+      }
+
+      // 6. Effective_From (Required, calendar valid YYYY-MM-DD)
+      if (!ef) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Missing Effective_From.`);
+      } else if (!isValidCalendarDate(ef)) {
+        errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Effective_From "${ef}" is not a valid calendar date (YYYY-MM-DD).`);
+      }
+
+      // 7. Effective_To (Optional, if present calendar valid and >= Effective_From)
+      if (et) {
+        if (!isValidCalendarDate(et)) {
+          errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Effective_To "${et}" is not a valid calendar date (YYYY-MM-DD).`);
+        } else if (ef && isValidCalendarDate(ef) && et < ef) {
+          errors.push(`App795 Record [${i}] (${rk || 'UNKNOWN'}): Effective_To (${et}) is earlier than Effective_From (${ef}).`);
+        }
+      }
+
+      // 8. Interval overlap check for ACTIVE versions only
+      if (status === 'ACTIVE' && ef && isValidCalendarDate(ef)) {
         const intervals = intervalsByRoutingKey.get(rk) || [];
         const curFrom = ef;
-        const curTo = et || '9999-12-31';
+        const curTo = et && isValidCalendarDate(et) ? et : '9999-12-31';
 
         for (const existing of intervals) {
           if (curFrom <= existing.to && curTo >= existing.from) {
