@@ -202,44 +202,130 @@ const mockApiFn = async (url, methodOrParams, optionalParams) => {
       }]
     };
   }
-  if (params?.app === 795 || (params?.query && params.query.includes('Section'))) {
+  if (params?.app === 795 || (params?.query && params.query.includes('Routing_Key'))) {
     app795QueryCount++;
-    return {
-      records: [{
-        $id: { value: '701' },
-        Section: { value: 'Software Engineering' },
-        Requester_User: { value: [{ code: 'f1' }, { code: '0118' }] },
-        Manager_Level1_Approvers: { value: [{ code: '0119' }] },
-        Manager_Level1_Approval_Rule: { value: 'ANY' },
-        Manager_Level2_Approvers: { value: [] },
-        Manager_Level2_Approval_Rule: { value: 'ANY' },
-        GM_Level1_Approvers: { value: [{ code: '0120' }] },
-        GM_Level1_Approval_Rule: { value: 'ANY' },
-        GM_Level2_Approvers: { value: [] },
-        GM_Level2_Approval_Rule: { value: 'ANY' },
-        Has_Manager_Level2: { value: 'NO' },
-        Has_GM_Level2: { value: 'NO' },
-        Routing_Topology: { value: 'DIRECT' },
-        First_Manager_User: { value: [{ code: '0119' }] },
-        Manager_User: { value: [{ code: '0119' }] },
-        GM_User: { value: [{ code: '0120' }] }
-      }]
-    };
+    const query = String(params?.query || '');
+
+    // D3 executive-direct route: DGM -> President, exactly M1_ONLY.
+    if (query.includes('POSITION_DGM')) {
+      return {
+        records: [{
+          $id: { value: '702' },
+          Routing_Key: { value: 'POSITION_DGM' },
+          Version_Key: { value: 'POSITION_DGM#v1' },
+          Version_Number: { value: '1' },
+          Version_Status: { value: 'ACTIVE' },
+          Effective_From: { value: '2026-04-01' },
+          Effective_To: { value: '' },
+          Route_Pattern: { value: 'PATTERN_1_M1' },
+          Scorer_Priority_Slots: { value: '[1]' },
+
+          Requester_User: { value: [{ code: 'vassana' }] },
+
+          Manager_Level1_Approvers: { value: [{ code: 'somcai_president' }] },
+          Manager_Level1_Approval_Rule: { value: 'ALL' },
+
+          Manager_Level2_Approvers: { value: [] },
+          Manager_Level2_Approval_Rule: { value: '' },
+
+          GM_Level1_Approvers: { value: [] },
+          GM_Level1_Approval_Rule: { value: '' },
+
+          GM_Level2_Approvers: { value: [] },
+          GM_Level2_Approval_Rule: { value: '' },
+
+          Has_Manager_Level2: { value: 'NO' },
+          Has_GM_Level2: { value: 'NO' },
+          Routing_Topology: { value: 'M1_ONLY' },
+
+          First_Manager_User: { value: [] },
+          Manager_User: { value: [{ code: 'somcai_president' }] },
+          GM_User: { value: [] }
+        }]
+      };
+    }
+
+    // Normal STAFF/CHIEF route for Software Engineering.
+    if (query.includes('Software Engineering')) {
+      return {
+        records: [{
+          $id: { value: '701' },
+          Routing_Key: { value: 'Software Engineering' },
+          Version_Key: { value: 'Software Engineering#v1' },
+          Version_Number: { value: '1' },
+          Version_Status: { value: 'ACTIVE' },
+          Effective_From: { value: '2026-04-01' },
+          Effective_To: { value: '' },
+          Route_Pattern: { value: 'PATTERN_2_M1_G1' },
+          Scorer_Priority_Slots: { value: '[1,2]' },
+
+          Section: { value: 'Software Engineering' },
+          Requester_User: { value: [{ code: 'f1' }, { code: '0118' }] },
+
+          Manager_Level1_Approvers: { value: [{ code: '0119' }] },
+          Manager_Level1_Approval_Rule: { value: 'ALL' },
+
+          Manager_Level2_Approvers: { value: [] },
+          Manager_Level2_Approval_Rule: { value: '' },
+
+          GM_Level1_Approvers: { value: [{ code: '0120' }] },
+          GM_Level1_Approval_Rule: { value: 'ALL' },
+
+          GM_Level2_Approvers: { value: [] },
+          GM_Level2_Approval_Rule: { value: '' },
+
+          Has_Manager_Level2: { value: 'NO' },
+          Has_GM_Level2: { value: 'NO' },
+          Routing_Topology: { value: 'M1_G1' },
+
+          First_Manager_User: { value: [] },
+          Manager_User: { value: [{ code: '0119' }] },
+          GM_User: { value: [{ code: '0120' }] }
+        }]
+      };
+    }
+
+    return { records: [] };
   }
+
   if (params?.app === 796 || (params?.query && params.query.includes('Profile_Code'))) {
-    return {
-      records: [{
-        $id: { value: '801' },
-        Profile_Code: { value: 'STAFF_OPERATIONAL' },
-        Config_Status: { value: 'PUBLISHED' },
-        Fiscal_Year: { value: 'FY2026' },
-        PartA_Weight: { value: '70' },
-        PartB_Weight: { value: '30' },
-        Part_A_Scoring_Mode: { value: 'WEIGHTED_SUM' },
-        Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
-        Configuration_Hash: { value: 'abc123hash' }
-      }]
-    };
+    const query = String(params?.query || '');
+
+    if (query.includes('PROF_DGM')) {
+      return {
+        records: [{
+          $id: { value: '802' },
+          Profile_Code: { value: 'PROF_DGM' },
+          Config_Status: { value: 'PUBLISHED' },
+          Fiscal_Year: { value: 'FY2026' },
+          Expected_Appraiser_Count: { value: '1' },
+          PartA_Weight: { value: '70' },
+          PartB_Weight: { value: '30' },
+          Part_A_Scoring_Mode: { value: 'WEIGHTED_SUM' },
+          Competency_Set_Code: { value: 'COMP_SET_MANAGEMENT_V1' },
+          Configuration_Hash: { value: 'dgm-abc123hash' }
+        }]
+      };
+    }
+
+    if (query.includes('PROF_STAFF_CHIEF')) {
+      return {
+        records: [{
+          $id: { value: '801' },
+          Profile_Code: { value: 'PROF_STAFF_CHIEF' },
+          Config_Status: { value: 'PUBLISHED' },
+          Fiscal_Year: { value: 'FY2026' },
+          Expected_Appraiser_Count: { value: '2' },
+          PartA_Weight: { value: '70' },
+          PartB_Weight: { value: '30' },
+          Part_A_Scoring_Mode: { value: 'WEIGHTED_SUM' },
+          Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
+          Configuration_Hash: { value: 'abc123hash' }
+        }]
+      };
+    }
+
+    return { records: [] };
   }
   if (params?.app === 794 && params?.id !== undefined) {
     singleRecordGetCount++;
@@ -339,7 +425,7 @@ globalThis.kintone = {
 };
 
 test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-mbo-app Kintone event handler path', async () => {
-  const { setMboLoginGate } = await import('../src/main-mbo-app.js');
+  const { setMboLoginGate, setResolutionBusinessDateForTests } = await import('../src/main-mbo-app.js');
 
   let sessionMutations = 0;
   let recordWrites = 0;
@@ -349,6 +435,7 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
     logout: async () => { sessionMutations++; }
   };
   setMboLoginGate(mockGate);
+  setResolutionBusinessDateForTests('2026-06-15');
 
   const recordShowHandler = registeredHandlers.get('app.record.detail.show');
   assert.ok(recordShowHandler, 'Registered event handler for app.record.detail.show must exist');
@@ -432,6 +519,8 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
     'Employee_Start_Date', 'Department_Hoshin', 'Section_Hoshin', 'Record_Key',
     'Manager_Level1_Approvers', 'Manager_Level2_Approvers', 'GM_Level1_Approvers',
     'GM_Level2_Approvers', 'Has_Manager_Level2', 'Has_GM_Level2', 'Routing_Topology',
+    'Frozen_Profile_Code', 'K_expected_Snapshot', 'Effective_Routing_Key',
+    'Effective_Route_Version_Key', 'Effective_Scorer_Slots_Snapshot',
     'First_Manager_User', 'Manager_User', 'GM_User', 'Requester_User', 'Profile_Code',
     'PartA_Weight', 'PartB_Weight', 'Part_A_Scoring_Mode', 'Competency_Set_Code',
     'Configuration_Hash'
@@ -741,6 +830,11 @@ test('REAL_MAIN_MBO_APP_RECORD_SHOW_INTEGRATION_TEST: Executes registered main-m
       Has_Manager_Level2: { value: '' },
       Has_GM_Level2: { value: '' },
       Routing_Topology: { value: '' },
+      Frozen_Profile_Code: { value: '' },
+      K_expected_Snapshot: { value: '' },
+      Effective_Routing_Key: { value: '' },
+      Effective_Route_Version_Key: { value: '' },
+      Effective_Scorer_Slots_Snapshot: { value: '' },
       First_Manager_User: { value: [] },
       Manager_User: { value: [] },
       GM_User: { value: [] },

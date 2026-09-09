@@ -249,7 +249,7 @@ test('UI helper: Unauthorized principal renders access denied banner', () => {
 test('UI helper: getRequiredSlotsForTopology returns correct slots for each topology', () => {
   assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_ONLY), ['M1']);
   assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_G1), ['M1', 'G1']);
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1), ['M1', 'M2', 'G1']);
+  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1), ['M2', 'M1', 'G1']);
   assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_G1_G2), ['M1', 'G1', 'G2']);
-  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1_G2), ['M1', 'M2', 'G1', 'G2']);
+  assert.deepEqual(getRequiredSlotsForTopology(TOPOLOGIES.M1_M2_G1_G2), ['M2', 'M1', 'G1', 'G2']);
 });

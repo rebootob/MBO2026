@@ -22,6 +22,28 @@ const createMockElement = () => ({
   querySelectorAll: () => []
 });
 
+const TEST_RESOLUTION_BUSINESS_DATE = '2026-06-15';
+
+function loadBundleForDeterministicBusinessDate() {
+  let bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+
+  const marker = /\b(?:let|var)\s+testResolutionBusinessDate\s*=\s*null\s*;/g;
+  const matches = bundleCode.match(marker) || [];
+
+  assert.equal(
+    matches.length,
+    1,
+    'compiled bundle must contain exactly one internal testResolutionBusinessDate declaration'
+  );
+
+  bundleCode = bundleCode.replace(
+    matches[0],
+    matches[0].replace('null', `'${TEST_RESOLUTION_BUSINESS_DATE}'`)
+  );
+
+  return bundleCode;
+}
+
 test('Create Handler Form State Corrective: Authenticated Create Autoload uses event.record authority with 0 kintone.app.record.get/set calls', async () => {
   let recordGetCalls = 0;
   let recordSetCalls = 0;
@@ -81,6 +103,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
           return {
             records: [{
               emp_text: { value: '0113' },
+              MBO_Kintone_User: { value: [] },
               Text: { value: 'Somchai Jaidee' },
               Text_0: { value: 'สมชาย ใจดี' },
               Drop_down_0: { value: 'General Admin' },
@@ -96,17 +119,25 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
           return {
             records: [{
               Section_Name: { value: 'General Admin Section 1' },
+              Routing_Key: { value: 'POSITION_GM' },
+              Version_Key: { value: 'POSITION_GM#v1' },
+              Version_Number: { value: '1' },
+              Version_Status: { value: 'ACTIVE' },
+              Effective_From: { value: '2026-04-01' },
+              Effective_To: { value: '' },
+              Route_Pattern: { value: 'PATTERN_1_M1' },
+              Scorer_Priority_Slots: { value: '[1]' },
               Requester_User: { value: [{ code: 's1' }] },
               Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
-              Manager_Level1_Approval_Rule: { value: 'ANY' },
-              GM_Level1_Approvers: { value: [{ code: 'g1' }] },
-              GM_Level1_Approval_Rule: { value: 'ANY' },
+              Manager_Level1_Approval_Rule: { value: 'ALL' },
+              GM_Level1_Approvers: { value: [] },
+              GM_Level1_Approval_Rule: { value: '' },
               Has_Manager_Level2: { value: 'NO' },
               Has_GM_Level2: { value: 'NO' },
-              Routing_Topology: { value: 'SINGLE_MANAGER' },
-              First_Manager_User: { value: [{ code: 'm1' }] },
+              Routing_Topology: { value: 'M1_ONLY' },
+              First_Manager_User: { value: [] },
               Manager_User: { value: [{ code: 'm1' }] },
-              GM_User: { value: [{ code: 'g1' }] }
+              GM_User: { value: [] }
             }]
           };
         }
@@ -114,6 +145,9 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
           return {
             records: [{
               Profile_Code: { value: 'PROF_GM' },
+              Fiscal_Year: { value: 'FY2026' },
+              Config_Status: { value: 'PUBLISHED' },
+              Expected_Appraiser_Count: { value: '1' },
               PartA_Weight: { value: '70' },
               PartB_Weight: { value: '30' },
               Part_A_Scoring_Mode: { value: 'ACHIEVEMENT_DIRECT' },
@@ -152,7 +186,7 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
   globalThis.sessionStorage = storageObj;
 
   // Import compiled dist bundle to test real production bundle execution
-  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+  const bundleCode = loadBundleForDeterministicBusinessDate();
   new Function(bundleCode)();
 
   assert.equal(typeof eventCallback, 'function', 'app.record.create.show event listener must be registered');
@@ -177,6 +211,11 @@ test('Create Handler Form State Corrective: Authenticated Create Autoload uses e
     Has_Manager_Level2: { value: '' },
     Has_GM_Level2: { value: '' },
     Routing_Topology: { value: '' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     First_Manager_User: { value: [] },
     Manager_User: { value: [] },
     GM_User: { value: [] },
@@ -291,7 +330,21 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
           };
         }
         if (app === 53) {
-          // App 53 lookup returns empty (Employee not found)
+          const query = String(params?.query || '');
+
+          // Shared-login eligibility is a separate fail-closed gate.
+          // Explicitly prove that employee 9999 has no dedicated Kintone user.
+          if (query.includes('Number_0 = 1')) {
+            return {
+              records: [{
+                emp_text: { value: '9999' },
+                MBO_Kintone_User: { value: [] }
+              }]
+            };
+          }
+
+          // Preserve the original purpose of this test:
+          // the subsequent Employee lookup must fail as not found.
           return { records: [] };
         }
         return { records: [] };
@@ -322,7 +375,7 @@ test('Create Handler Form State Corrective: Lookup failure path remains fail-clo
   globalThis.localStorage = storageObj2;
   globalThis.sessionStorage = storageObj2;
 
-  const bundleCode = fs.readFileSync('dist/mbo-employee-app.js', 'utf8');
+  const bundleCode = loadBundleForDeterministicBusinessDate();
   new Function(bundleCode)();
 
   const record = { Employee_Code: { value: '' } };

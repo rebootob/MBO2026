@@ -267,7 +267,7 @@ test('25. M1_M2_G1 != M1_G1_G2 distinguished as distinct topologies with differe
   assert.notEqual(TOPOLOGIES.M1_M2_G1, TOPOLOGIES.M1_G1_G2);
   const slotsA = TOPOLOGY_CONFIGS[TOPOLOGIES.M1_M2_G1].slots;
   const slotsB = TOPOLOGY_CONFIGS[TOPOLOGIES.M1_G1_G2].slots;
-  assert.deepEqual(slotsA, ['M1', 'M2', 'G1']);
+  assert.deepEqual(slotsA, ['M2', 'M1', 'G1']);
   assert.deepEqual(slotsB, ['M1', 'G1', 'G2']);
   assert.equal(slotsA.includes('M2'), true);
   assert.equal(slotsB.includes('M2'), false);

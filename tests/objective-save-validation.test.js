@@ -126,7 +126,12 @@ globalThis.document = {
   getElementById: () => null
 };
 
-const { getActiveUiInstance, syncRecordToKintone, setMboLoginGate } = await import('../src/main-mbo-app.js');
+const {
+  getActiveUiInstance,
+  syncRecordToKintone,
+  setMboLoginGate,
+  setResolutionBusinessDateForTests
+} = await import('../src/main-mbo-app.js');
 
 function createMockRecord(overrides = {}) {
   const base = {
@@ -142,6 +147,11 @@ function createMockRecord(overrides = {}) {
     Competency_Set_Code: { value: 'COMP_SET_OPERATIONAL_V1' },
     Configuration_Hash: { value: 'hash0118' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] },
     Manager_User: { value: [{ code: 'm1' }] },
     GM_User: { value: [{ code: 'g1' }] },
@@ -188,6 +198,7 @@ function createBlankFormStateRecord(overrides = {}) {
 }
 
 function setupMockKintoneApis() {
+  setResolutionBusinessDateForTests('2026-06-15');
   setMboLoginGate({
     getEmployeeCode: () => '0118',
     requireLogin: () => '0118',
@@ -217,15 +228,23 @@ function setupMockKintoneApis() {
         return {
           records: [{
             Section_Code: { value: 'TMS1' },
+            Routing_Key: { value: 'TMS1' },
+            Version_Key: { value: 'TMS1#v1' },
+            Version_Number: { value: '1' },
+            Version_Status: { value: 'ACTIVE' },
+            Effective_From: { value: '2026-04-01' },
+            Effective_To: { value: '' },
+            Route_Pattern: { value: 'PATTERN_2_M1_G1' },
+            Scorer_Priority_Slots: { value: '[1,2]' },
             Requester_User: { value: [{ code: 's1' }] },
             Manager_Level1_Approvers: { value: [{ code: 'm1' }] },
             Manager_Level1_Approval_Rule: { value: 'ALL' },
             Manager_Level2_Approvers: { value: [] },
-            Manager_Level2_Approval_Rule: { value: 'ANY' },
+            Manager_Level2_Approval_Rule: { value: '' },
             GM_Level1_Approvers: { value: [{ code: 'g1' }] },
             GM_Level1_Approval_Rule: { value: 'ALL' },
             GM_Level2_Approvers: { value: [] },
-            GM_Level2_Approval_Rule: { value: 'ANY' },
+            GM_Level2_Approval_Rule: { value: '' },
             Has_Manager_Level2: { value: 'NO' },
             Has_GM_Level2: { value: 'NO' },
             Routing_Topology: { value: 'M1_G1' },
@@ -240,6 +259,7 @@ function setupMockKintoneApis() {
           records: [{
             Profile_Code: { value: 'PROF_STAFF_CHIEF' },
             Fiscal_Year: { value: 'FY2026' },
+            Expected_Appraiser_Count: { value: '2' },
             PartA_Weight: { value: '70' },
             PartB_Weight: { value: '30' },
             Part_A_Scoring_Mode: { value: 'DIFFICULTY_ACHIEVEMENT_MATRIX' },
@@ -852,6 +872,11 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
   const validRecordM1G1 = createMockRecord({
     Status: { value: '01 Draft Objective' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] },
     Manager_User: { value: [{ code: 'm1' }] },
     GM_User: { value: [{ code: 'g1' }] }
@@ -932,6 +957,11 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
   const approveRecordManager = createMockRecord({
     Status: { value: '03 Manager Objective Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] },
     Manager_User: { value: [{ code: 'm1' }] },
     GM_User: { value: [{ code: 'g1' }] }
@@ -946,6 +976,11 @@ test('M10L-D-R12B: Workflow action validation enforces fail-closed topology & as
   const returnRecordManager = createMockRecord({
     Status: { value: '03 Manager Objective Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] },
     Manager_User: { value: [{ code: 'm1' }] },
     GM_User: { value: [{ code: 'g1' }] }
@@ -1024,6 +1059,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status04EmptyRequester = createMockRecord({
     Status: { value: '04 GM Objective Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [] },
     GM_User: { value: [{ code: 'g1' }] }
   });
@@ -1037,6 +1077,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status04PopulatedRequester = createMockRecord({
     Status: { value: '04 GM Objective Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] },
     GM_User: { value: [{ code: 'g1' }] }
   });
@@ -1051,6 +1096,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status05EmptyRequester = createMockRecord({
     Status: { value: '05 Objective Approved' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [] }
   });
   const failStatus05 = {
@@ -1063,6 +1113,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status05PopulatedRequester = createMockRecord({
     Status: { value: '05 Objective Approved' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] }
   });
   const passStatus05 = {
@@ -1076,6 +1131,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status09EmptyRequester = createMockRecord({
     Status: { value: '09 GM Mid-Year Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [] },
     GM_User: { value: [{ code: 'g1' }] }
   });
@@ -1089,6 +1149,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status09PopulatedRequester = createMockRecord({
     Status: { value: '09 GM Mid-Year Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] },
     GM_User: { value: [{ code: 'g1' }] }
   });
@@ -1103,6 +1168,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status10EmptyRequester = createMockRecord({
     Status: { value: '10 Mid-Year Completed' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [] }
   });
   const failStatus10 = {
@@ -1115,6 +1185,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const status10PopulatedRequester = createMockRecord({
     Status: { value: '10 Mid-Year Completed' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [{ code: 's1' }] }
   });
   const passStatus10 = {
@@ -1128,6 +1203,11 @@ test('M10L-D-R12B-R1: Topology whitelist and complete Requester_User handoff fai
   const returnEmptyRequester = createMockRecord({
     Status: { value: '08 Manager Mid-Year Review' },
     Routing_Topology: { value: 'M1_G1' },
+    Frozen_Profile_Code: { value: '' },
+    K_expected_Snapshot: { value: '' },
+    Effective_Routing_Key: { value: '' },
+    Effective_Route_Version_Key: { value: '' },
+    Effective_Scorer_Slots_Snapshot: { value: '' },
     Requester_User: { value: [] },
     Manager_User: { value: [{ code: 'm1' }] }
   });

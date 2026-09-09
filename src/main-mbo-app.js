@@ -61,6 +61,26 @@ const kintoneApiWrapper = {
  */
 let mboLoginGate = null;
 
+// D3 testability-only deterministic business-date injection.
+// Default remains null so production continues to fail closed until a
+// LIVE_BUSINESS_DATE_PROVIDER is explicitly designed and authorized.
+let testResolutionBusinessDate = null;
+
+export function setResolutionBusinessDateForTests(value) {
+  if (value === null) {
+    testResolutionBusinessDate = null;
+    return;
+  }
+
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    throw new Error(
+      'TEST_RESOLUTION_BUSINESS_DATE_INVALID: Expected YYYY-MM-DD or null.'
+    );
+  }
+
+  testResolutionBusinessDate = value;
+}
+
 /**
  * Allows test injection of a mock gate. Never self-authorize live cutover.
  * @param {MboKintoneLoginGate|null} gate
@@ -973,7 +993,19 @@ if (typeof kintone !== 'undefined') {
         }
       }
 
-      return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, res.context, { isCrossEmployeeDetailAuthorized });
+      return setupRecordUiWithAuth(
+        event,
+        record,
+        isCreate,
+        isEdit,
+        isDetail,
+        uiHost,
+        res.context,
+        {
+          isCrossEmployeeDetailAuthorized,
+          resolutionBusinessDate: testResolutionBusinessDate
+        }
+      );
     };
 
     const res = resolveRuntimeEmployeeSelfContext(uiHost);
