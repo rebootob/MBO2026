@@ -8,7 +8,7 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-04-R1
+ACTIVE_WORK_PACKAGE = D3-IMP-04-R2
 ACTIVE_WORK_PACKAGE_STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
@@ -21,8 +21,9 @@ D3-IMP-02-R2 = PASS / CLOSED
 D3-IMP-03 = PASS / CLOSED
 D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-03-R2 = PASS / CLOSED
-D3-IMP-04 = PARTIAL PASS / R1 REQUIRED
-D3-IMP-04-R1 = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
+D3-IMP-04 = PARTIAL PASS / R2 REQUIRED
+D3-IMP-04-R1 = PARTIAL PASS / R2 REQUIRED
+D3-IMP-04-R2 = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -276,6 +277,23 @@ PROCESS_WRITES = 0
 DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
+## D3-IMP-04-R2 execution record
+
+```text
+ACTIVE_WORK_PACKAGE = D3-IMP-04-R2
+TITLE = Exact Event Evidence Binding + Source Identity Hardening
+OWNER_AUTHORIZATION = อนุมัติ D3-IMP-04-R2 Exact Event Evidence Binding + Source Identity Hardening แบบ LOCAL-ONLY / ZERO KINTONE / ZERO DEPLOYMENT
+STARTING_HEAD = fdd135ee9de67eb6f8ae35cbcf8432c8a486835c
+STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
+```
+
+Capabilities implemented in R2:
+- Finding 1: Exact Event Evidence Binding in `assertArchiveBeforeChangeGate`: requires complete `expectedContext` (`sourceRecordKey`, `evaluationStage`, `revisionNumber`, `eventType`, `archiveKey`, `snapshotHash`; plus `supersededByRevision` for reopen and `stableEventId` for route reassignment). Re-derives canonical `Archive_Key` via `buildArchiveKey()` and validates exact equality against expectedContext and evidence. Broad context fails closed with `ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED`.
+- Finding 2: Source Identity Hardening: `Employee_Code` and `Fiscal_Year` must be non-empty exact strings without leading/trailing whitespace, matching snapshot exactly. `Source_Record_ID` is validated for strict positive integer (Case A: matching request and snapshot, Case B: valid snapshot ID when request omitted, Case C: both omitted permitted; rejects 0, negative, non-integer, non-numeric, never produces NaN).
+- App 798 Post-Construction Hard Lock: Repository defines `appId` getter and ineffective setter; operations directly target `REVISION_ARCHIVE_APP_ID` (798) so caller assignments (e.g. `repo.appId = 799`) cannot redirect operations.
+- Evidence preserves source identity: `sourceRecordId`, `employeeCode`, `fiscalYear` preserved in verified evidence and validated by mutation gate when supplied.
 ```
 
 
