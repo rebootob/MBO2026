@@ -97,9 +97,11 @@ function createInMemoryKintoneAdapter() {
   };
 }
 
+const TEST_DEFAULT_CLOCK = () => '2026-04-01T12:00:00.000Z';
+
 test('Idempotency: no existing key -> creates exactly one row', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
   const snap = makeValidLogicalSnapshot();
 
   const res = await service.archiveStageCompletion({
@@ -109,7 +111,7 @@ test('Idempotency: no existing key -> creates exactly one row', async () => {
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap
   });
 
@@ -119,9 +121,9 @@ test('Idempotency: no existing key -> creates exactly one row', async () => {
   assert.equal(adapter.store.size, 1);
 });
 
-test('Idempotency: exact logical replay returns idempotent success and creates ZERO new rows', async () => {
+test('TC26: Idempotency: exact logical replay returns idempotent success and creates ZERO new rows', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
   const snap = makeValidLogicalSnapshot();
 
   const params = {
@@ -131,7 +133,7 @@ test('Idempotency: exact logical replay returns idempotent success and creates Z
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap,
     archivedAt: '2026-04-01T10:00:00.000Z'
   };
@@ -161,9 +163,261 @@ test('Idempotency: exact logical replay returns idempotent success and creates Z
   assert.equal(adapter.store.size, 1);
 });
 
-test('Idempotency: same key + different Snapshot_Hash -> fails closed with ARCHIVE_IDEMPOTENCY_CONFLICT', async () => {
+test('TC27: Idempotency: same key + different Fiscal_Year conflicts', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
+
+  // Tamper persisted record Fiscal_Year
+  const stored = [...adapter.store.values()][0];
+  stored.Fiscal_Year = { value: 'FY2025' };
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC28: Idempotency: same key + different Employee_Code conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
+
+  const stored = [...adapter.store.values()][0];
+  stored.Employee_Code = { value: 'EMP999' };
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC29: Idempotency: same key + different Event_Type conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
+
+  const stored = [...adapter.store.values()][0];
+  stored.Event_Type = { value: 'TAMPERED_EVENT' };
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC30: Idempotency: same key + different reason conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  const params = {
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    oldRevisionNumber: 1,
+    newRevisionNumber: 2,
+    actor: { userCode: 'hr_admin' },
+    logicalSnapshot: snap
+  };
+
+  await service.archiveEvaluationRevisionCreated({ ...params, reason: 'First business reason approved' });
+
+  await assert.rejects(
+    async () => service.archiveEvaluationRevisionCreated({ ...params, reason: 'Second completely different reason' }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC31: Idempotency: same key + different Previous_Status conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
+
+  const stored = [...adapter.store.values()][0];
+  stored.Previous_Status = { value: 'TAMPERED_PREVIOUS_STATUS' };
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC32: Idempotency: same key + different Superseded_By_Revision conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveEvaluationRevisionCreated({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    oldRevisionNumber: 1,
+    newRevisionNumber: 2,
+    actor: { userCode: 'hr_admin' },
+    reason: 'HR Reopen approved',
+    logicalSnapshot: snap
+  });
+
+  const stored = [...adapter.store.values()][0];
+  stored.Superseded_By_Revision = { value: '9' }; // Tampered revision
+
+  await assert.rejects(
+    async () => service.archiveEvaluationRevisionCreated({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      oldRevisionNumber: 1,
+      newRevisionNumber: 2,
+      actor: { userCode: 'hr_admin' },
+      reason: 'HR Reopen approved',
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC33: Idempotency: same key + different Source_Record_ID conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
+
+  const stored = [...adapter.store.values()][0];
+  stored.Source_Record_ID = { value: '9999' }; // Tampered record ID
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC34: Idempotency: same key + different Snapshot_Hash conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   const snap1 = makeValidLogicalSnapshot({
     business: { Objectives: [{ title: 'Obj A', weight: 100 }] }
@@ -179,7 +433,7 @@ test('Idempotency: same key + different Snapshot_Hash -> fails closed with ARCHI
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr'
+    actor: { userCode: 'somchai_mgr' }
   };
 
   // First call succeeds
@@ -199,9 +453,46 @@ test('Idempotency: same key + different Snapshot_Hash -> fails closed with ARCHI
   assert.equal(adapter.store.size, 1);
 });
 
-test('Idempotency: same key + different actor -> fails closed with ARCHIVE_IDEMPOTENCY_CONFLICT', async () => {
+test('TC35: Idempotency: same key + different Snapshot_JSON conflicts', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+  const snap = makeValidLogicalSnapshot();
+
+  await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
+
+  const stored = [...adapter.store.values()][0];
+  stored.Snapshot_JSON = { value: '{"tampered":true}' };
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC36: Idempotency: same key + different actor conflicts', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
   const snap = makeValidLogicalSnapshot();
 
   const params = {
@@ -214,35 +505,14 @@ test('Idempotency: same key + different actor -> fails closed with ARCHIVE_IDEMP
     logicalSnapshot: snap
   };
 
-  await service.archiveStageCompletion({ ...params, actor: 'user_one' });
+  await service.archiveStageCompletion({ ...params, actor: { userCode: 'user_one' } });
 
   await assert.rejects(
-    async () => service.archiveStageCompletion({ ...params, actor: 'user_two' }),
-    /ARCHIVE_IDEMPOTENCY_CONFLICT/
-  );
-});
-
-test('Idempotency: same key + different reason -> fails closed with ARCHIVE_IDEMPOTENCY_CONFLICT', async () => {
-  const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
-  const snap = makeValidLogicalSnapshot();
-
-  const params = {
-    sourceRecordKey: 'FY2026-EMP100',
-    employeeCode: 'EMP100',
-    fiscalYear: 'FY2026',
-    evaluationStage: 'OBJECTIVE',
-    oldRevisionNumber: 1,
-    newRevisionNumber: 2,
-    actor: 'hr_admin',
-    logicalSnapshot: snap
-  };
-
-  await service.archiveEvaluationRevisionCreated({ ...params, reason: 'First business reason approved' });
-
-  await assert.rejects(
-    async () => service.archiveEvaluationRevisionCreated({ ...params, reason: 'Second completely different reason' }),
-    /ARCHIVE_IDEMPOTENCY_CONFLICT/
+    async () => service.archiveStageCompletion({ ...params, actor: { userCode: 'user_two' } }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
   );
 });
 
@@ -268,7 +538,7 @@ test('Idempotency: multiple existing rows for exact key -> fails closed with ARC
   await adapter.addRecord(798, dupPayload);
   await adapter.addRecord(798, dupPayload); // Duplicate row in storage
 
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveStageCompletion({
@@ -277,7 +547,7 @@ test('Idempotency: multiple existing rows for exact key -> fails closed with ARC
       fiscalYear: 'FY2026',
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
-      actor: 'mgr',
+      actor: { userCode: 'mgr' },
       logicalSnapshot: snap
     }),
     (err) => {
@@ -289,7 +559,7 @@ test('Idempotency: multiple existing rows for exact key -> fails closed with ARC
 
 test('Immutability: retry never mutates existing App 798 row', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
   const snap = makeValidLogicalSnapshot();
 
   const originalTimestamp = '2026-04-01T08:00:00.000Z';
@@ -300,7 +570,7 @@ test('Immutability: retry never mutates existing App 798 row', async () => {
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap,
     archivedAt: originalTimestamp
   });
@@ -313,7 +583,7 @@ test('Immutability: retry never mutates existing App 798 row', async () => {
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap,
     archivedAt: '2026-04-01T12:00:00.000Z'
   });

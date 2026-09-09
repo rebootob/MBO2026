@@ -26,7 +26,7 @@ test('Repository: requires injected API adapter with getRecords and addRecord', 
   );
 });
 
-test('Repository: sets target App ID to 798 by default and does not change without option', () => {
+test('Repository: sets target App ID to 798 and rejects caller-selectable appId overrides', () => {
   const repo = new RevisionArchiveKintoneRepository({
     getRecords: async () => ({ records: [] }),
     addRecord: async () => ({ id: 1 })
@@ -34,6 +34,32 @@ test('Repository: sets target App ID to 798 by default and does not change witho
 
   assert.equal(repo.appId, 798);
   assert.equal(REVISION_ARCHIVE_APP_ID, 798);
+
+  // options.appId=799 rejected
+  assert.throws(
+    () => new RevisionArchiveKintoneRepository(
+      { getRecords: async () => {}, addRecord: async () => {} },
+      { appId: 799 }
+    ),
+    (err) => {
+      assert.equal(err instanceof RevisionArchiveRepositoryError, true);
+      assert.equal(err.code, 'ARCHIVE_APP_ID_OVERRIDE_FORBIDDEN');
+      return true;
+    }
+  );
+
+  // options.appId=798 also rejected as caller-selectable override
+  assert.throws(
+    () => new RevisionArchiveKintoneRepository(
+      { getRecords: async () => {}, addRecord: async () => {} },
+      { appId: 798 }
+    ),
+    (err) => {
+      assert.equal(err instanceof RevisionArchiveRepositoryError, true);
+      assert.equal(err.code, 'ARCHIVE_APP_ID_OVERRIDE_FORBIDDEN');
+      return true;
+    }
+  );
 });
 
 test('Repository: findByArchiveKey queries exact Archive_Key with escaping and normalizes fields', async () => {

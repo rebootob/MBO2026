@@ -97,6 +97,8 @@ function createInMemoryKintoneAdapter() {
   };
 }
 
+const TEST_DEFAULT_CLOCK = () => '2026-04-01T12:00:00.000Z';
+
 // ----------------------------------------------------
 // 1. EVENT TAXONOMY
 // ----------------------------------------------------
@@ -151,7 +153,7 @@ test('TC04: Event taxonomy: unsupported event type rejected', () => {
 
 test('TC05: Event taxonomy: no date-boundary archive event exists', () => {
   const repo = new RevisionArchiveKintoneRepository(createInMemoryKintoneAdapter());
-  const service = new RevisionArchiveService(repo);
+  const service = new RevisionArchiveService(repo, { clock: TEST_DEFAULT_CLOCK });
 
   assert.equal(typeof service.archiveOnEffectiveDate, 'undefined');
   assert.equal(typeof service.archiveOnDateChange, 'undefined');
@@ -285,7 +287,7 @@ test('TC13: Snapshot: canonical D3 serializer used and produces deterministic JS
   const directHash = hashD3Snapshot(snap);
 
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   const res = await service.archiveStageCompletion({
     sourceRecordKey: 'FY2026-EMP100',
@@ -294,7 +296,7 @@ test('TC13: Snapshot: canonical D3 serializer used and produces deterministic JS
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'hr_admin',
+    actor: { userCode: 'hr_admin' },
     logicalSnapshot: snap
   });
 
@@ -309,7 +311,7 @@ test('TC14: Snapshot: transient top-level metadata excluded from stored Snapshot
   });
 
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await service.archiveStageCompletion({
     sourceRecordKey: 'FY2026-EMP100',
@@ -318,7 +320,7 @@ test('TC14: Snapshot: transient top-level metadata excluded from stored Snapshot
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'hr_admin',
+    actor: { userCode: 'hr_admin' },
     logicalSnapshot: snap
   });
 
@@ -333,7 +335,7 @@ test('TC15: Snapshot: source identity mismatch fails closed', async () => {
   });
 
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveStageCompletion({
@@ -342,7 +344,7 @@ test('TC15: Snapshot: source identity mismatch fails closed', async () => {
       fiscalYear: 'FY2026',
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
-      actor: 'hr_admin',
+      actor: { userCode: 'hr_admin' },
       logicalSnapshot: snap
     }),
     (err) => {
@@ -358,7 +360,7 @@ test('TC16: Snapshot: stage mismatch fails closed', async () => {
   });
 
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveStageCompletion({
@@ -367,7 +369,7 @@ test('TC16: Snapshot: stage mismatch fails closed', async () => {
       fiscalYear: 'FY2026',
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
-      actor: 'hr_admin',
+      actor: { userCode: 'hr_admin' },
       logicalSnapshot: snap
     }),
     (err) => {
@@ -383,7 +385,7 @@ test('TC17: Snapshot: revision number mismatch fails closed', async () => {
   });
 
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveStageCompletion({
@@ -392,7 +394,7 @@ test('TC17: Snapshot: revision number mismatch fails closed', async () => {
       fiscalYear: 'FY2026',
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
-      actor: 'hr_admin',
+      actor: { userCode: 'hr_admin' },
       logicalSnapshot: snap
     }),
     (err) => {
@@ -402,14 +404,312 @@ test('TC17: Snapshot: revision number mismatch fails closed', async () => {
   );
 });
 
+test('TC_COH_01: Snapshot Coherence: K_expected=1 accepted with 1 scorer', async () => {
+  const snap = makeValidLogicalSnapshot({
+    profile: {
+      Frozen_Profile_Code: 'PROF_STAFF',
+      K_expected_Snapshot: 1
+    },
+    route: {
+      Workflow_Appraisers: [{ code: 'mgr_somchai' }]
+    },
+    scoring: {
+      Scorers: [{ code: 'mgr_somchai', weight: 100 }]
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'hr_admin' },
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.verified, true);
+});
+
+test('TC_COH_02: Snapshot Coherence: K_expected=2 accepted with 2 scorers', async () => {
+  const snap = makeValidLogicalSnapshot({
+    profile: {
+      Frozen_Profile_Code: 'PROF_STAFF',
+      K_expected_Snapshot: 2
+    },
+    route: {
+      Workflow_Appraisers: [{ code: 'mgr_somchai' }, { code: 'gm_somrudee' }]
+    },
+    scoring: {
+      Scorers: [
+        { code: 'mgr_somchai', weight: 50 },
+        { code: 'gm_somrudee', weight: 50 }
+      ]
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'hr_admin' },
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.verified, true);
+});
+
+test('TC_COH_03: Snapshot Coherence: K_expected=0, 3, or non-integer rejected', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  for (const invalidK of [0, 3, 1.5, '2', null, undefined]) {
+    const snap = makeValidLogicalSnapshot({
+      profile: {
+        Frozen_Profile_Code: 'PROF_STAFF',
+        K_expected_Snapshot: invalidK
+      }
+    });
+
+    await assert.rejects(
+      async () => service.archiveStageCompletion({
+        sourceRecordKey: 'FY2026-EMP100',
+        employeeCode: 'EMP100',
+        fiscalYear: 'FY2026',
+        evaluationStage: 'OBJECTIVE',
+        revisionNumber: 1,
+        actor: { userCode: 'hr_admin' },
+        logicalSnapshot: snap
+      }),
+      (err) => {
+        assert.equal(err.code, 'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH');
+        return true;
+      }
+    );
+  }
+});
+
+test('TC_COH_04: Snapshot Coherence: empty Workflow_Appraisers rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    route: {
+      Workflow_Appraisers: []
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_05: Snapshot Coherence: missing appraiser code rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    route: {
+      Workflow_Appraisers: [{ code: '' }, { code: 'gm_somrudee' }]
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_06: Snapshot Coherence: duplicate appraiser rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    route: {
+      Workflow_Appraisers: [{ code: 'mgr_somchai' }, { code: 'mgr_somchai' }]
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_07: Snapshot Coherence: empty Scorers rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    scoring: {
+      Scorers: []
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_08: Snapshot Coherence: scorer count != K rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    profile: {
+      Frozen_Profile_Code: 'PROF_STAFF',
+      K_expected_Snapshot: 2
+    },
+    scoring: {
+      Scorers: [{ code: 'mgr_somchai', weight: 100 }] // Only 1 scorer for K=2
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_09: Snapshot Coherence: duplicate scorer rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    scoring: {
+      Scorers: [
+        { code: 'mgr_somchai', weight: 50 },
+        { code: 'mgr_somchai', weight: 50 }
+      ]
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_10: Snapshot Coherence: scorer not in workflow route rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    scoring: {
+      Scorers: [
+        { code: 'mgr_somchai', weight: 50 },
+        { code: 'unknown_appraiser_999', weight: 50 }
+      ]
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
+test('TC_COH_11: Snapshot Coherence: previousStatus vs snapshot Previous_Status mismatch rejected', async () => {
+  const snap = makeValidLogicalSnapshot({
+    stage: {
+      Previous_Status: '05 Objective Approved'
+    }
+  });
+
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      previousStatus: '01 Goal Draft', // Mismatch with snapshot '05 Objective Approved'
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH/
+  );
+});
+
 // ----------------------------------------------------
-// 4. ACTOR AND REASON CONTRACT
+// 4. ACTOR, TIMESTAMP & REASON CONTRACT
 // ----------------------------------------------------
 
-test('TC18: Actor: exact actor user code mapped to USER_SELECT format [{ code }]', async () => {
+test('TC18: Actor: { userCode: "hr_admin" } accepted and mapped to USER_SELECT format [{ code }]', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await service.archiveStageCompletion({
     sourceRecordKey: 'FY2026-EMP100',
@@ -426,11 +726,12 @@ test('TC18: Actor: exact actor user code mapped to USER_SELECT format [{ code }]
   assert.deepEqual(stored.Archived_By.value, [{ code: 'somchai_mgr' }]);
 });
 
-test('TC19: Actor: missing actor fails closed with ARCHIVE_ACTOR_NOT_RESOLVED', async () => {
+test('TC19: Actor: plain string, { code }, display-name-only, blank, and SYSTEM rejected', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
+  // Plain string
   await assert.rejects(
     async () => service.archiveStageCompletion({
       sourceRecordKey: 'FY2026-EMP100',
@@ -438,17 +739,25 @@ test('TC19: Actor: missing actor fails closed with ARCHIVE_ACTOR_NOT_RESOLVED', 
       fiscalYear: 'FY2026',
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
-      actor: '',
+      actor: 'hr_admin',
       logicalSnapshot: snap
     }),
     /ARCHIVE_ACTOR_NOT_RESOLVED/
   );
-});
 
-test('TC20: Actor: display-name-only or generic SYSTEM actor rejected', async () => {
-  const snap = makeValidLogicalSnapshot();
-  const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  // { code: 'hr_admin' }
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { code: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_ACTOR_NOT_RESOLVED/
+  );
 
   // Display name only
   await assert.rejects(
@@ -464,7 +773,7 @@ test('TC20: Actor: display-name-only or generic SYSTEM actor rejected', async ()
     /ARCHIVE_ACTOR_NOT_RESOLVED/
   );
 
-  // Generic SYSTEM free text
+  // Blank / whitespace userCode
   await assert.rejects(
     async () => service.archiveStageCompletion({
       sourceRecordKey: 'FY2026-EMP100',
@@ -472,17 +781,168 @@ test('TC20: Actor: display-name-only or generic SYSTEM actor rejected', async ()
       fiscalYear: 'FY2026',
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
-      actor: 'SYSTEM',
+      actor: { userCode: '   ' },
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_ACTOR_NOT_RESOLVED/
+  );
+
+  // Generic SYSTEM userCode
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'SYSTEM' },
       logicalSnapshot: snap
     }),
     /ARCHIVE_ACTOR_NOT_RESOLVED/
   );
 });
 
-test('TC21: Reason: blank reopen reason fails closed with ARCHIVE_REASON_REQUIRED', async () => {
+test('TC_TIME_01: Timestamp: explicit valid ISO timestamp accepted', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
   const service = new RevisionArchiveService(adapter);
+
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'hr_admin' },
+    archivedAt: '2026-05-01T10:30:00.000Z',
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.archivedAt, '2026-05-01T10:30:00.000Z');
+  const stored = [...adapter.store.values()][0];
+  assert.equal(stored.Archived_At.value, '2026-05-01T10:30:00.000Z');
+});
+
+test('TC_TIME_02: Timestamp: injected clock accepted', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, {
+    clock: () => '2026-06-01T08:00:00.000Z'
+  });
+
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'hr_admin' },
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.archivedAt, '2026-06-01T08:00:00.000Z');
+});
+
+test('TC_TIME_03: Timestamp: missing explicit time + missing clock fails closed with ARCHIVE_TIMESTAMP_REQUIRED', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter); // No clock injected
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_TIMESTAMP_REQUIRED');
+      return true;
+    }
+  );
+});
+
+test('TC_TIME_04: Timestamp: date-only, timezone-less datetime, and invalid string fail closed with ARCHIVE_INVALID_TIMESTAMP', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter);
+
+  // Date-only
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      archivedAt: '2026-04-01',
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_INVALID_TIMESTAMP/
+  );
+
+  // Timezone-less datetime
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      archivedAt: '2026-04-01T12:00:00',
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_INVALID_TIMESTAMP/
+  );
+
+  // Invalid timestamp
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'hr_admin' },
+      archivedAt: 'NOT_A_DATE',
+      logicalSnapshot: snap
+    }),
+    /ARCHIVE_INVALID_TIMESTAMP/
+  );
+});
+
+test('TC_TIME_05: Timestamp: offset datetime canonicalizes deterministically to UTC ISO', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter);
+
+  // 19:00:00 +07:00 is 12:00:00.000Z
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'hr_admin' },
+    archivedAt: '2026-04-01T19:00:00+07:00',
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.archivedAt, '2026-04-01T12:00:00.000Z');
+});
+
+test('TC21: Reason: blank reopen reason fails closed with ARCHIVE_REASON_REQUIRED', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveEvaluationRevisionCreated({
@@ -492,7 +952,7 @@ test('TC21: Reason: blank reopen reason fails closed with ARCHIVE_REASON_REQUIRE
       evaluationStage: 'OBJECTIVE',
       oldRevisionNumber: 1,
       newRevisionNumber: 2,
-      actor: 'hr_admin',
+      actor: { userCode: 'hr_admin' },
       reason: '   ', // Blank
       logicalSnapshot: snap
     }),
@@ -503,7 +963,7 @@ test('TC21: Reason: blank reopen reason fails closed with ARCHIVE_REASON_REQUIRE
 test('TC22: Reason: blank reassignment reason fails closed with ARCHIVE_REASON_REQUIRED', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveRouteReassignmentPrechange({
@@ -513,7 +973,7 @@ test('TC22: Reason: blank reassignment reason fails closed with ARCHIVE_REASON_R
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
       stableEventId: 'reassign-001',
-      actor: 'hr_admin',
+      actor: { userCode: 'hr_admin' },
       reason: '', // Blank
       logicalSnapshot: snap
     }),
@@ -524,7 +984,7 @@ test('TC22: Reason: blank reassignment reason fails closed with ARCHIVE_REASON_R
 test('TC23: Reason: stage completion defaults to canonical deterministic reason when omitted', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await service.archiveStageCompletion({
     sourceRecordKey: 'FY2026-EMP100',
@@ -533,7 +993,7 @@ test('TC23: Reason: stage completion defaults to canonical deterministic reason 
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap
   });
 
@@ -542,13 +1002,13 @@ test('TC23: Reason: stage completion defaults to canonical deterministic reason 
 });
 
 // ----------------------------------------------------
-// 5. STAGE COMPLETION EVIDENCE & ARCHIVE-BEFORE-CHANGE GATE
+// 5. SERVICE-ISSUED EVIDENCE & ARCHIVE-BEFORE-CHANGE GATE
 // ----------------------------------------------------
 
-test('TC24: Stage completion: verified completion returns structured archive evidence', async () => {
+test('TC24: Evidence: real service evidence validates and unforgeable brand rejects fake or cloned objects', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   const res = await service.archiveStageCompletion({
     sourceRecordKey: 'FY2026-EMP100',
@@ -557,101 +1017,138 @@ test('TC24: Stage completion: verified completion returns structured archive evi
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap
   });
 
-  assert.equal(res.verified, true);
-  assert.equal(res.archiveKey, 'FY2026-EMP100|OBJECTIVE|R1|STAGE_COMPLETION');
-  assert.equal(res.eventType, 'STAGE_COMPLETION_SNAPSHOT');
-  assert.equal(res.idempotentReplay, false);
-  assert.equal(res.recovered, false);
-  assert.equal(res.archivedBy, 'somchai_mgr');
+  // 1. Real service-issued evidence validates
   assert.equal(RevisionArchiveService.validateArchiveEvidence(res), true);
-});
 
-test('TC25: Stage completion: unverified archive cannot pass Archive-Before-Change gate', () => {
-  assert.throws(
-    () => RevisionArchiveService.assertArchiveBeforeChangeGate(null),
-    /ARCHIVE_GATE_EVIDENCE_INVALID/
-  );
-
-  assert.throws(
-    () => RevisionArchiveService.assertArchiveBeforeChangeGate({ archiveVerified: true }),
-    /ARCHIVE_GATE_EVIDENCE_INVALID/
-  );
-
-  const validEvidence = {
+  // 2. Fake plain object fails
+  const fakeEvidence = {
     verified: true,
     serviceVersion: 'D3_V1',
     archiveKey: 'FY2026-EMP100|OBJECTIVE|R1|STAGE_COMPLETION',
-    snapshotHash: 'sha256...',
+    snapshotHash: res.snapshotHash,
     eventType: 'STAGE_COMPLETION_SNAPSHOT',
-    evaluationStage: 'OBJECTIVE',
-    sourceRecordKey: 'FY2026-EMP100',
-    revisionNumber: 1
+    evaluationStage: 'OBJECTIVE'
   };
+  assert.equal(RevisionArchiveService.validateArchiveEvidence(fakeEvidence), false);
 
-  assert.equal(RevisionArchiveService.assertArchiveBeforeChangeGate(validEvidence, {
+  // 3. Spread clone fails
+  const spreadClone = { ...res };
+  assert.equal(RevisionArchiveService.validateArchiveEvidence(spreadClone), false);
+
+  // 4. Manually copied fields fail
+  const copied = Object.assign({}, res);
+  assert.equal(RevisionArchiveService.validateArchiveEvidence(copied), false);
+
+  // 5. ABC gate rejects fake evidence
+  assert.throws(
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(fakeEvidence),
+    /ARCHIVE_GATE_EVIDENCE_INVALID/
+  );
+  assert.throws(
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(spreadClone),
+    /ARCHIVE_GATE_EVIDENCE_INVALID/
+  );
+
+  // 6. Real evidence passes matching ABC gate
+  assert.equal(RevisionArchiveService.assertArchiveBeforeChangeGate(res, {
     sourceRecordKey: 'FY2026-EMP100',
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1
   }), true);
 
-  // Mismatched context fails closed
+  // 7. Real evidence with wrong expected context fails
   assert.throws(
-    () => RevisionArchiveService.assertArchiveBeforeChangeGate(validEvidence, {
-      sourceRecordKey: 'FY2026-OTHER'
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(res, {
+      sourceRecordKey: 'FY2026-WRONG_KEY'
     }),
     /ARCHIVE_GATE_EVIDENCE_INVALID/
   );
 });
 
 // ----------------------------------------------------
-// 6. READ-BACK & UNCERTAIN WRITE SAFETY
+// 6. POST-CREATE READ-BACK & UNCERTAIN WRITE SAFETY
 // ----------------------------------------------------
 
-test('TC26: Read-back: read-back hash mismatch fails closed with ARCHIVE_READBACK_VERIFICATION_FAILED', async () => {
+test('TC_READBACK_01: Post-Create Read-back: complete exact read-back passes', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
-  // Sabotage read-back to return tampered hash
-  const originalGetRecords = adapter.getRecords;
-  adapter.getRecords = async (appId, query) => {
-    const res = await originalGetRecords(appId, query);
-    if (res.records.length > 0) {
-      return {
-        records: [{
-          ...res.records[0],
-          Snapshot_Hash: { value: 'TAMPERED_HASH' }
-        }]
-      };
-    }
-    return res;
-  };
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'somchai_mgr' },
+    logicalSnapshot: snap
+  });
 
-  const service = new RevisionArchiveService(adapter);
-
-  await assert.rejects(
-    async () => service.archiveStageCompletion({
-      sourceRecordKey: 'FY2026-EMP100',
-      employeeCode: 'EMP100',
-      fiscalYear: 'FY2026',
-      evaluationStage: 'OBJECTIVE',
-      revisionNumber: 1,
-      sourceRecordId: 101,
-      actor: 'somchai_mgr',
-      logicalSnapshot: snap
-    }),
-    /ARCHIVE_READBACK_VERIFICATION_FAILED/
-  );
+  assert.equal(res.verified, true);
+  assert.equal(res.idempotentReplay, false);
 });
 
-test('TC27: Uncertain write safety: create transport uncertainty + exact row found on recovery -> recovered success', async () => {
+test('TC_READBACK_02: Post-Create Read-back: field mismatches fail closed with ARCHIVE_READBACK_VERIFICATION_FAILED', async () => {
+  const fieldsToTest = [
+    { field: 'Snapshot_Hash', tampered: { value: 'TAMPERED_HASH' } },
+    { field: 'Fiscal_Year', tampered: { value: 'FY9999' } },
+    { field: 'Employee_Code', tampered: { value: 'EMP_TAMPERED' } },
+    { field: 'Event_Type', tampered: { value: 'TAMPERED_EVENT' } },
+    { field: 'Reason', tampered: { value: 'TAMPERED_REASON' } },
+    { field: 'Previous_Status', tampered: { value: 'TAMPERED_STATUS' } },
+    { field: 'Source_Record_ID', tampered: { value: '9999' } },
+    { field: 'Archived_At', tampered: { value: '2099-01-01T00:00:00.000Z' } },
+    { field: 'Archived_By', tampered: { value: [{ code: 'tampered_actor' }] } }
+  ];
+
+  for (const { field, tampered } of fieldsToTest) {
+    const snap = makeValidLogicalSnapshot();
+    const adapter = createInMemoryKintoneAdapter();
+
+    const originalGetRecords = adapter.getRecords;
+    adapter.getRecords = async (appId, query) => {
+      const res = await originalGetRecords(appId, query);
+      if (res.records.length > 0) {
+        return {
+          records: [{
+            ...res.records[0],
+            [field]: tampered
+          }]
+        };
+      }
+      return res;
+    };
+
+    const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+    await assert.rejects(
+      async () => service.archiveStageCompletion({
+        sourceRecordKey: 'FY2026-EMP100',
+        employeeCode: 'EMP100',
+        fiscalYear: 'FY2026',
+        evaluationStage: 'OBJECTIVE',
+        revisionNumber: 1,
+        sourceRecordId: 101,
+        actor: { userCode: 'somchai_mgr' },
+        logicalSnapshot: snap
+      }),
+      (err) => {
+        assert.equal(err.code, 'ARCHIVE_READBACK_VERIFICATION_FAILED');
+        return true;
+      }
+    );
+  }
+});
+
+test('TC_UNCERTAIN_01: Uncertain write safety: create transport uncertainty + exact row found on recovery -> recovered success', async () => {
   const snap = makeValidLogicalSnapshot();
   const adapter = createInMemoryKintoneAdapter();
 
-  // Simulate network uncertainty: addRecord succeeds on server, but throws on response
   let callCount = 0;
   const realAddRecord = adapter.addRecord;
   adapter.addRecord = async (appId, payload) => {
@@ -660,7 +1157,7 @@ test('TC27: Uncertain write safety: create transport uncertainty + exact row fou
     throw new Error('ETIMEDOUT: Connection reset after write acknowledged by Kintone');
   };
 
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   const res = await service.archiveStageCompletion({
     sourceRecordKey: 'FY2026-EMP100',
@@ -669,26 +1166,42 @@ test('TC27: Uncertain write safety: create transport uncertainty + exact row fou
     evaluationStage: 'OBJECTIVE',
     revisionNumber: 1,
     sourceRecordId: 101,
-    actor: 'somchai_mgr',
+    actor: { userCode: 'somchai_mgr' },
     logicalSnapshot: snap
   });
 
   assert.equal(res.verified, true);
   assert.equal(res.recovered, true);
   assert.equal(res.idempotentReplay, false);
-  assert.equal(callCount, 1);
+  assert.equal(callCount, 1); // Exact 1 create attempt, never blind second create
 });
 
-test('TC28: Uncertain write safety: create transport uncertainty + no provable row -> fails closed with ARCHIVE_TRANSPORT_UNCERTAIN', async () => {
+test('TC_UNCERTAIN_02: Uncertain write safety: recovery row with conflicting reason or event type -> ARCHIVE_IDEMPOTENCY_CONFLICT', async () => {
   const snap = makeValidLogicalSnapshot();
-  const adapter = {
-    getRecords: async () => ({ records: [] }), // Row never reached database
-    addRecord: async () => {
-      throw new Error('ECONNREFUSED: Network unreachable');
-    }
+  const adapter = createInMemoryKintoneAdapter();
+
+  // Populate conflicting existing row in store
+  adapter.store.set(1, {
+    $id: { value: '1' },
+    Archive_Key: { value: 'FY2026-EMP100|OBJECTIVE|R1|STAGE_COMPLETION' },
+    Source_Record_Key: { value: 'FY2026-EMP100' },
+    Fiscal_Year: { value: 'FY2026' },
+    Employee_Code: { value: 'EMP100' },
+    Evaluation_Stage: { value: 'OBJECTIVE' },
+    Revision_Number: { value: '1' },
+    Event_Type: { value: 'STAGE_COMPLETION_SNAPSHOT' },
+    Reason: { value: 'CONFLICTING_REASON' },
+    Snapshot_JSON: { value: '{}' },
+    Snapshot_Hash: { value: 'wrong_hash' },
+    Archived_By: { value: [{ code: 'somchai_mgr' }] },
+    Archived_At: { value: '2026-04-01T12:00:00.000Z' }
+  });
+
+  adapter.addRecord = async () => {
+    throw new Error('ETIMEDOUT');
   };
 
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   await assert.rejects(
     async () => service.archiveStageCompletion({
@@ -698,7 +1211,36 @@ test('TC28: Uncertain write safety: create transport uncertainty + no provable r
       evaluationStage: 'OBJECTIVE',
       revisionNumber: 1,
       sourceRecordId: 101,
-      actor: 'somchai_mgr',
+      actor: { userCode: 'somchai_mgr' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_IDEMPOTENCY_CONFLICT');
+      return true;
+    }
+  );
+});
+
+test('TC_UNCERTAIN_03: Uncertain write safety: create transport uncertainty + no provable row -> fails closed with ARCHIVE_TRANSPORT_UNCERTAIN', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = {
+    getRecords: async () => ({ records: [] }), // Row never reached database
+    addRecord: async () => {
+      throw new Error('ECONNREFUSED: Network unreachable');
+    }
+  };
+
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'somchai_mgr' },
       logicalSnapshot: snap
     }),
     (err) => {

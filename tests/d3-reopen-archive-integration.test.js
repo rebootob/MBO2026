@@ -92,13 +92,15 @@ function createInMemoryKintoneAdapter() {
   };
 }
 
+const TEST_DEFAULT_CLOCK = () => '2026-04-01T12:00:00.000Z';
+
 // ----------------------------------------------------
 // 1. CONTROLLED REOPEN ARCHIVE INTEGRATION
 // ----------------------------------------------------
 
 test('Controlled Reopen: archives complete old revision snapshot before mutation', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   const oldSnapshot = makeValidLogicalSnapshot({
     stage: {
@@ -117,7 +119,7 @@ test('Controlled Reopen: archives complete old revision snapshot before mutation
     newRevisionNumber: 2,
     sourceRecordId: 101,
     previousStatus: '05 Objective Approved',
-    actor: 'hr_superadmin',
+    actor: { userCode: 'hr_superadmin' },
     reason: 'Employee department transferred from TME1 to TMG2',
     logicalSnapshot: oldSnapshot
   });
@@ -142,8 +144,24 @@ test('Controlled Reopen: archives complete old revision snapshot before mutation
   assert.equal(storedSnapshot.stage.Evaluation_Stage, 'OBJECTIVE');
 });
 
-test('Controlled Reopen Gate: mutation blocked if archive evidence is missing or invalid', () => {
-  // Gate check before performing App 794 state mutation to Revision 2
+test('Controlled Reopen Gate: mutation blocked if archive evidence is missing, fake, or unverified', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  const realEvidence = await service.archiveEvaluationRevisionCreated({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    oldRevisionNumber: 1,
+    newRevisionNumber: 2,
+    sourceRecordId: 101,
+    previousStatus: '05 Objective Approved',
+    actor: { userCode: 'hr_superadmin' },
+    reason: 'Department transfer',
+    logicalSnapshot: makeValidLogicalSnapshot()
+  });
+
   const requiredContext = {
     sourceRecordKey: 'FY2026-EMP100',
     evaluationStage: 'OBJECTIVE',
@@ -157,25 +175,37 @@ test('Controlled Reopen Gate: mutation blocked if archive evidence is missing or
     /ARCHIVE_GATE_EVIDENCE_INVALID/
   );
 
-  // Fake or unverified evidence
-  assert.throws(
-    () => RevisionArchiveService.assertArchiveBeforeChangeGate({ verified: false }, requiredContext),
-    /ARCHIVE_GATE_EVIDENCE_INVALID/
-  );
-
-  // Evidence for wrong stage
-  const mismatchedStageEvidence = {
+  // Fake plain object evidence
+  const fakeEvidence = {
     verified: true,
     serviceVersion: 'D3_V1',
-    archiveKey: 'FY2026-EMP100|FINAL|R1|EVALUATION_REVISION_CREATED|TO_R2',
-    snapshotHash: 'sha-abc',
+    archiveKey: 'FY2026-EMP100|OBJECTIVE|R1|EVALUATION_REVISION_CREATED|TO_R2',
+    snapshotHash: realEvidence.snapshotHash,
     eventType: 'EVALUATION_REVISION_CREATED',
     sourceRecordKey: 'FY2026-EMP100',
-    evaluationStage: 'FINAL',
+    evaluationStage: 'OBJECTIVE',
     revisionNumber: 1
   };
   assert.throws(
-    () => RevisionArchiveService.assertArchiveBeforeChangeGate(mismatchedStageEvidence, requiredContext),
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(fakeEvidence, requiredContext),
+    /ARCHIVE_GATE_EVIDENCE_INVALID/
+  );
+
+  // Spread clone of real evidence fails
+  assert.throws(
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate({ ...realEvidence }, requiredContext),
+    /ARCHIVE_GATE_EVIDENCE_INVALID/
+  );
+
+  // Real service-issued evidence passes
+  assert.equal(RevisionArchiveService.assertArchiveBeforeChangeGate(realEvidence, requiredContext), true);
+
+  // Evidence for wrong stage fails closed
+  assert.throws(
+    () => RevisionArchiveService.assertArchiveBeforeChangeGate(realEvidence, {
+      ...requiredContext,
+      evaluationStage: 'FINAL'
+    }),
     /ARCHIVE_GATE_EVIDENCE_INVALID/
   );
 });
@@ -186,7 +216,7 @@ test('Controlled Reopen Gate: mutation blocked if archive evidence is missing or
 
 test('Route Reassignment: archives pre-change current route and preserves stable event ID', async () => {
   const adapter = createInMemoryKintoneAdapter();
-  const service = new RevisionArchiveService(adapter);
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
 
   const prechangeSnapshot = makeValidLogicalSnapshot({
     stage: {
@@ -194,9 +224,13 @@ test('Route Reassignment: archives pre-change current route and preserves stable
       Revision_Number: 1
     },
     route: {
-      Effective_Routing_Key: 'TME1',
-      Effective_Route_Version_Key: 'TME1#v1',
       Workflow_Appraisers: [{ code: 'old_mgr' }, { code: 'gm_1' }]
+    },
+    scoring: {
+      Scorers: [
+        { code: 'old_mgr', weight: 50 },
+        { code: 'gm_1', weight: 50 }
+      ]
     }
   });
 
@@ -210,7 +244,7 @@ test('Route Reassignment: archives pre-change current route and preserves stable
     revisionNumber: 1,
     stableEventId: stableId,
     sourceRecordId: 101,
-    actor: 'hr_manager',
+    actor: { userCode: 'hr_manager' },
     reason: 'Line manager changed from old_mgr to new_mgr per HR order 2026-08',
     logicalSnapshot: prechangeSnapshot
   });
@@ -233,7 +267,7 @@ test('Route Reassignment: archives pre-change current route and preserves stable
     revisionNumber: 1,
     stableEventId: stableId,
     sourceRecordId: 101,
-    actor: 'hr_manager',
+    actor: { userCode: 'hr_manager' },
     reason: 'Line manager changed from old_mgr to new_mgr per HR order 2026-08',
     logicalSnapshot: prechangeSnapshot
   });
@@ -243,7 +277,35 @@ test('Route Reassignment: archives pre-change current route and preserves stable
   assert.equal(adapter.store.size, 1);
 });
 
-test('Route Reassignment Gate: route change blocked before verified archive evidence', () => {
+test('Route Reassignment Gate: route change blocked before verified service-issued archive evidence', async () => {
+  const adapter = createInMemoryKintoneAdapter();
+  const service = new RevisionArchiveService(adapter, { clock: TEST_DEFAULT_CLOCK });
+
+  const prechangeSnapshot = makeValidLogicalSnapshot({
+    route: {
+      Workflow_Appraisers: [{ code: 'mgr_somchai' }, { code: 'gm_somrudee' }]
+    },
+    scoring: {
+      Scorers: [
+        { code: 'mgr_somchai', weight: 50 },
+        { code: 'gm_somrudee', weight: 50 }
+      ]
+    }
+  });
+
+  const realEvidence = await service.archiveRouteReassignmentPrechange({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    stableEventId: 'evt-1',
+    sourceRecordId: 101,
+    actor: { userCode: 'hr_manager' },
+    reason: 'Manager reassignment approved',
+    logicalSnapshot: prechangeSnapshot
+  });
+
   const gateContext = {
     sourceRecordKey: 'FY2026-EMP100',
     evaluationStage: 'OBJECTIVE',
@@ -265,18 +327,23 @@ test('Route Reassignment Gate: route change blocked before verified archive evid
   );
   assert.equal(routeModified, false);
 
-  // Attempt with verified evidence
-  const validEvidence = {
-    verified: true,
-    serviceVersion: 'D3_V1',
-    archiveKey: 'FY2026-EMP100|OBJECTIVE|R1|ROUTE_REASSIGNMENT_PRECHANGE|evt-1',
-    snapshotHash: 'sha-hash',
-    eventType: 'ROUTE_REASSIGNMENT_PRECHANGE',
-    sourceRecordKey: 'FY2026-EMP100',
-    evaluationStage: 'OBJECTIVE',
-    revisionNumber: 1
-  };
+  // Attempt with fake plain evidence
+  assert.throws(
+    () => attemptRouteChange({
+      verified: true,
+      serviceVersion: 'D3_V1',
+      archiveKey: 'FY2026-EMP100|OBJECTIVE|R1|ROUTE_REASSIGNMENT_PRECHANGE|evt-1',
+      snapshotHash: realEvidence.snapshotHash,
+      eventType: 'ROUTE_REASSIGNMENT_PRECHANGE',
+      sourceRecordKey: 'FY2026-EMP100',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1
+    }),
+    /ARCHIVE_GATE_EVIDENCE_INVALID/
+  );
+  assert.equal(routeModified, false);
 
-  attemptRouteChange(validEvidence);
+  // Attempt with verified service-issued evidence
+  attemptRouteChange(realEvidence);
   assert.equal(routeModified, true);
 });
