@@ -13,17 +13,19 @@ ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_WORK_PACKAGE_STATUS = NONE
 OWNER_AUTHORIZATION = NONE FOR NEW SUBSTANTIVE EXECUTION
 
-LAST_CLOSED_WORK_PACKAGE = MBO-CONTROL-GOVERNANCE-CONSOLIDATION
-LAST_CLOSED_WORK_PACKAGE_TYPE = DOCS-ONLY / GOVERNANCE CONSOLIDATION
-LAST_CLOSED_WORK_PACKAGE_RESULT = PASS / CLOSED / SAME-RUN CONTROL-PLANE VERIFIED
+LAST_CLOSED_WORK_PACKAGE = D3-IMPLEMENTATION-READINESS-PLAN
+LAST_CLOSED_WORK_PACKAGE_TYPE = EVIDENCE / PLANNING ONLY
+LAST_CLOSED_WORK_PACKAGE_RESULT = PASS / CLOSED / EVIDENCE-GROUNDED
 
-NEXT_PERMITTED_ACTION = OWNER_SELECTION_OF_NEXT_BOUNDED_GATE
+NEXT_RECOMMENDED_GATE = D3-IMP-01
+NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
 ## Current execution boundary
 
 ```text
+D3_IMPLEMENTATION_READINESS_PLAN = COMPLETE
 D3_IMPLEMENTATION_AUTHORIZED = NO
 APP794_FIELD_CREATION_AUTHORIZED = NO
 APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
@@ -41,7 +43,7 @@ PRODUCTION_READY = NO
 
 A new substantive operation requires a fresh explicit Owner authorization naming the bounded scope.
 
-## Recently closed control chain
+## Recently closed control / planning chain
 
 ```text
 D3-WP001-R4-R1 = PASS / CLOSED
@@ -50,9 +52,24 @@ D3-DECISION-008-SYNC = PASS / CLOSED
 D3-DECISION-008-SYNC-R1 = PASS / CLOSED AS CORRECTED BY R2
 D3-DECISION-008-SYNC-R2 = PASS / CLOSED
 MBO-CONTROL-GOVERNANCE-CONSOLIDATION = PASS / CLOSED
+D3-IMPLEMENTATION-READINESS-PLAN = PASS / CLOSED
 ```
 
-The Owner explicitly authorized the R1/R2 corrective chain in the controlling session. Earlier concurrent wording that marked R1 unauthorized is superseded and non-authoritative.
+## D3 readiness plan boundary
+
+The accepted plan is:
+
+`project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md`
+
+It defines a staged local-first sequence and does **not** pre-authorize any step.
+
+Recommended first future package:
+
+```text
+D3-IMP-01 — LOCAL CORE ROUTING / SCORER / SNAPSHOT CONTRACTS + TESTS ONLY
+```
+
+If later authorized, D3-IMP-01 must have zero Kintone reads/writes, zero schema/process writes and zero deployment. Subsequent packages require separate authorization according to the plan.
 
 ## Review rule now in force
 
@@ -68,9 +85,9 @@ A new corrective is opened only for a material defect, not to propagate a newer 
 
 ```text
 D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / IMPLEMENTATION_READINESS_NOT_STARTED
+D3_READINESS = IMPLEMENTATION_READINESS_PLAN_COMPLETE / IMPLEMENTATION_NOT_STARTED
 D3_IMPLEMENTATION_AUTHORIZED = NO
 OWNER_DEC_D3_008_VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
 ```
 
-The next D3 package, if selected by the Owner, must receive its own exact authorization. This file does not pre-authorize implementation-readiness, schema migration, implementation, deployment or Kintone changes.
+This file does not pre-authorize implementation-readiness execution, schema migration, source changes, tests, deployment or Kintone operations.
