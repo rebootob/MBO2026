@@ -8,19 +8,19 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-IMP-03-R2
-ACTIVE_WORK_PACKAGE_STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE_STATUS = NONE
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
-LAST_CLOSED_WORK_PACKAGE = D3-IMP-02
+LAST_CLOSED_WORK_PACKAGE = D3-IMP-03
 LAST_CLOSED_RESULT = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-LAST_REVIEWED_IMPLEMENTATION_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
+LAST_REVIEWED_IMPLEMENTATION_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
 
 D3-IMP-02-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-02-R2 = PASS / CLOSED
-D3-IMP-03 = INDEPENDENT CONTROL PLANE REVIEWED / 3 BLOCKING FINDINGS -> R1 AUTHORIZED
-D3-IMP-03-R1 = INDEPENDENT CONTROL PLANE REVIEWED / 1 REMAINING DEFECT -> R2 AUTHORIZED
-D3-IMP-03-R2 = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
+D3-IMP-03 = PASS / CLOSED
+D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3-IMP-03-R2 = PASS / CLOSED
 
 KINTONE_READS_AUTHORIZED = 0
 KINTONE_WRITES_AUTHORIZED = 0
@@ -31,7 +31,7 @@ DATA_BACKFILL_AUTHORIZED = 0
 DEPLOYMENTS_AUTHORIZED = 0
 
 NEXT_RECOMMENDED_GATE = D3-IMP-04
-NEXT_PERMITTED_ACTION = LOCAL_IMPLEMENTATION_AND_TESTS_ONLY
+NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
@@ -106,92 +106,37 @@ SCOPE_LEAK = NONE FOUND
 
 No later D3 package is authorized by this closure.
 
-## D3-IMP-03 execution record
+## D3-IMP-03 closure record
 
-Owner-authorized package:
+Owner-authorized package chain:
 
 ```text
 D3-IMP-03 = Runtime App795 Resolution + App794 Bound Snapshot Integration
-SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
-```
-
-Capabilities implemented:
-- Pure Model A resolution integrated into RoutingService (`resolveD3RoutingProfile` and `resolveRoutingProfile`).
-- Exact candidate version selected by business date (Effective_From <= date <= Effective_To, Version_Status = ACTIVE).
-- In-flight stage immutability: existing bound stage remains bound even if candidate versions or dates change.
-- Stage boundary prerequisite: next-stage fresh route binding forbidden before verified prior-stage archive success.
-- Scorer viability evaluation via `evaluateD3RouteViability`: canonical normalization, own-MBO self-elision, explicit HR priority slots, frozen K.
-- App794 five mandatory provenance fields persisted natively: `Frozen_Profile_Code`, `K_expected_Snapshot`, `Effective_Routing_Key`, `Effective_Route_Version_Key`, `Effective_Scorer_Slots_Snapshot`.
-- Form state persistence read-back verification includes all five provenance fields.
-- Reused sequential route snapshot fields match effective post-self-elision route with rule 'ALL'.
-- ValidationEngine route/provenance readiness validation added (`validateD3RouteProvenance`).
-- Normal M1_G1 and executive direct DGM/GM/VP paths remain fully compatible.
-
-Verification evidence:
-```text
-D3_RUNTIME_ROUTE_BINDING_TESTS = 31 / 31 PASS
-ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
-CORE_INTEGRATION_TESTS = 1 / 1 PASS
-D3_IMP_01_TESTS = 33 / 33 PASS
-D3_IMP_02_TESTS = 68 / 68 PASS
-COMBINED_FOCUSED_TESTS = 119 / 119 PASS
-
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-NETWORK_CALLS = 0
-SCHEMA_LIVE_WRITES = 0
-PROCESS_WRITES = 0
-APP798_WRITES = 0
-DATA_BACKFILL = 0
-DEPLOYMENTS = 0
-```
-
-## D3-IMP-03-R1 corrective package
-
-Owner-authorized package:
-
-```text
 D3-IMP-03-R1 = Runtime Activation + Canonical K Authority + Bound Snapshot Fail-Closed Corrective
-SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
-LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+D3-IMP-03-R2 = Explicit Business-Date Source Lock + Final Test Evidence
 ```
 
-Three blocking findings corrected:
-1. Activate D3 Model A in Actual Main Runtime Path (`src/main-mbo-app.js`):
-   - Explicit `d3: true` passed to route resolution.
-   - Explicit `resolutionBusinessDate` input required; fails closed with `RESOLUTION_BUSINESS_DATE_REQUIRED` if missing.
-   - Zero fallback to legacy `Active in ("Active")`.
-2. Canonical K_expected Authority = App796 Scoring Config:
-   - Removed hardcoded duplicate K mapping from `src/profiles/runtime-profile-resolver.js`.
-   - Reordered `onLookupEmployee` pipeline: App 796 scoring config lookup runs before routing resolution and validates `Expected_Appraiser_Count` (1 or 2).
-   - `RoutingService.resolveD3RoutingProfile` requires `kExpected` from caller; fails closed if missing or invalid.
-3. Bound Snapshot Reuse Must Use Full Fail-Closed Validation:
-   - Tri-state classification: unbound (all 5 blank) -> fresh resolution; completely valid bound -> immutable reuse; partially populated / malformed -> fail closed (`D3_BOUND_SNAPSHOT_INVALID`).
-   - Zero silent repair in `extractD3BoundSnapshot`.
-   - Full validation checks active rules explicitly `'ALL'`, inactive slots empty, unique approvers, distinct K=2 scorers, no self-scoring.
-   - Employee reset/change safety clears 5 D3 provenance fields.
-
-## D3-IMP-03-R2 corrective package
-
-Owner-authorized package:
+Accepted final implementation head:
 
 ```text
-D3-IMP-03-R2 = Explicit Business-Date Source Lock + Final Test Evidence
-SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
-LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+3624d93e95f5eb9940a826a61108889d2c215a41
 ```
 
-Capabilities and locks implemented:
-- Explicit Business-Date Source Lock in `src/main-mbo-app.js`:
-  - Removed unauthorized `record?.Resolution_Business_Date?.value` fallback completely.
-  - Runtime sources locked strictly to explicit injected `authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate`.
-  - Zero reading of business date from App794 record fields.
-  - Fail closed with `RESOLUTION_BUSINESS_DATE_REQUIRED` if explicit injected date is missing.
-  - Zero legacy query fallback to `Active in ("Active")`.
-  - Record `Resolution_Business_Date` cannot satisfy or alter route version selection.
-  - Explicit injected date remains authoritative even if record contains a different date value.
+Accepted capability:
 
-Verification evidence:
+- Model A effective-dated App795 resolution is integrated into the explicit D3 runtime path.
+- normal D3 runtime activation is explicit (`d3: true`) and does not silently fall back to legacy `Active` authority.
+- `Frozen_Profile_Code` is resolved from the verified employee snapshot.
+- `K_expected` authority comes from the exact PUBLISHED App796 scoring configuration `Expected_Appraiser_Count`; duplicate hardcoded runtime K authority was removed.
+- own-MBO self-elision and explicit HR scorer-plan viability use accepted D3 pure contracts.
+- App794 binds the five mandatory D3 provenance fields and reuses sequential route snapshot fields with D3 V1 ALL-only semantics.
+- bound-stage reuse is tri-state and fail-closed: truly unbound may resolve fresh, valid bound snapshot remains immutable, partial/malformed D3 provenance fails with `D3_BOUND_SNAPSHOT_INVALID`.
+- next-stage fresh resolution remains forbidden before verified prior-stage archive success; App798 archive implementation remains outside D3-IMP-03.
+- employee identity change clears stale route/provenance/scoring snapshot state before fresh binding.
+- business-date source is locked to explicit injected runtime input only; App794 record fields, current clock, timezone inference, and legacy routing cannot supply it.
+
+Final verification evidence accepted from execution plus independent source/diff review:
+
 ```text
 D3_RUNTIME_ROUTE_BINDING_TESTS = 48 / 48 PASS
 ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
@@ -210,3 +155,17 @@ APP798_WRITES = 0
 DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 ```
+
+Independent Control Plane verdict:
+
+```text
+D3-IMP-03-R2 = PASS / CLOSED
+D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3-IMP-03 = PASS / CLOSED
+CODE_CORRECTIVE_REQUIRED = NO
+REIMPLEMENTATION_REQUIRED = NO
+SCOPE_LEAK = NONE FOUND
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
+No later D3 package is authorized by this closure.
