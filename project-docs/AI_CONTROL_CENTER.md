@@ -13,22 +13,24 @@ CANONICAL_BRANCH = ai/antigravity-wp002c
 CONTROL_MODEL = MBO CONTROL TRUTH V3
 
 ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-IMPLEMENTATION-READINESS-PLAN
-LAST_CLOSED_CONTROL_PACKAGE_STATUS = PASS / CLOSED / EVIDENCE-GROUNDED PLANNING
+LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-01
+LAST_CLOSED_CONTROL_PACKAGE_STATUS = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
 
 D3_IMPLEMENTATION_READINESS_PLAN = COMPLETE
-D3_IMPLEMENTATION_AUTHORIZED = NO
+D3_IMP_01 = PASS / CLOSED
+D3_IMP_01_VERIFY = SUFFICIENT EVIDENCE FOR PACKAGE CLOSURE / PRE-EXISTING LEGACY FULL-SUITE NON-EXIT DOCUMENTED
+D3_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
 APP794_FIELD_CREATION_AUTHORIZED = NO
 APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
 APP798_BEHAVIOR_IMPLEMENTATION_AUTHORIZED = NO
-SOURCE_CODE_CHANGES_AUTHORIZED = NO
-TEST_CHANGES_AUTHORIZED = NO
+SOURCE_CODE_CHANGES_AUTHORIZED = NO CURRENT PACKAGE
+TEST_CHANGES_AUTHORIZED = NO CURRENT PACKAGE
 DEPLOYMENT_AUTHORIZED = NO
 KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 
-NEXT_RECOMMENDED_GATE = D3-IMP-01
+NEXT_RECOMMENDED_GATE = D3-IMP-02
 NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
@@ -39,7 +41,7 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 |---|---|
 | D1 | **PASS / CLOSED / DURABLE**; accepted live App794 revision 70 |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE**; Owner runtime UAT **IN PROGRESS / PAUSED** |
-| D3 | **ARCHITECTURE / DESIGN ACTIVE**; routing architecture **LOCKED THROUGH OWNER_DEC_D3_008**; implementation-readiness **PLAN COMPLETE**; implementation **NOT AUTHORIZED** |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan complete; `D3-IMP-01` **PASS / CLOSED**; no current implementation package authorized |
 | D4 | **IN PROGRESS / NOT ACTIVE** |
 | D5 | **IN PROGRESS / NOT ACTIVE** |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** |
@@ -95,46 +97,41 @@ OLD_STAGE_SPECIFIC_SIX_SLOT_NATIVE_MODEL_D3_V1 = SUPERSEDED WHERE CONFLICTING
 
 Exact architecture and implementation sequence: `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md`.
 
-## 4. D3 implementation-readiness plan closure
+## 4. D3 implementation package status
 
 ```text
 D3-IMPLEMENTATION-READINESS-PLAN = PASS / CLOSED
-READINESS_PLAN_COMPLETE = YES
-LOCAL_FIRST_STRATEGY = YES
-LIVE_READONLY_PREFLIGHT_REQUIRED_BEFORE_WRITES = YES
-IMPLEMENTATION_SEQUENCE_DEFINED = YES
+D3-IMP-01 = PASS / CLOSED
+D3-IMP-01_FINAL_REVIEW_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
+D3-IMP-01_SCOPE_LEAK = NONE FOUND
+D3-IMP-01_KINTONE_READS = 0
+D3-IMP-01_KINTONE_WRITES = 0
+D3-IMP-01_SCHEMA_WRITES = 0
+D3-IMP-01_PROCESS_WRITES = 0
+D3-IMP-01_DEPLOYMENTS = 0
 ```
 
-Recommended sequence:
+Independent review accepted the package because the D3-focused suites and exact integration spot-checks completed successfully and the changed-file boundary remained entirely inside the authorized D3-IMP-01 allow-list.
+
+The repository-wide `npm test` run did **not** produce a normal final summary because the Node test process remained alive in the pre-existing legacy `tests/create-handler-form-state.test.js` path after preceding assertions completed. This file was not changed by D3-IMP-01 and predates the package. Diagnostic spot-checks confirmed `mbo-export-service` import exits normally and its focused service tests pass. Therefore this legacy harness non-exit is recorded as a pre-existing test-harness limitation, not as a D3-IMP-01 implementation regression. Do not rewrite history as `FULL_NPM_TEST = PASS`.
+
+## 5. Recommended sequence
 
 ```text
-D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests
-D3-IMP-02 Local Schema Target + Guarded Migration Tooling
-D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration
-D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service
-D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only
-D3-IMP-06 App800 HR Versioned Routing Self-Service
-D3-PREFLIGHT-READONLY
-D3-SBX-MIGRATION-01
-D3-SBX-DEPLOY-01
-D3-SBX-UAT
-D3-PROD-CUTOVER (separate future gate)
+D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests       PASS / CLOSED
+D3-IMP-02 Local Schema Target + Guarded Migration Tooling                NEXT RECOMMENDED / NOT AUTHORIZED
+D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration  NOT AUTHORIZED
+D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service           NOT AUTHORIZED
+D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only     NOT AUTHORIZED
+D3-IMP-06 App800 HR Versioned Routing Self-Service                       NOT AUTHORIZED
+D3-PREFLIGHT-READONLY                                                     NOT AUTHORIZED
+D3-SBX-MIGRATION-01                                                       NOT AUTHORIZED
+D3-SBX-DEPLOY-01                                                          NOT AUTHORIZED
+D3-SBX-UAT                                                                NOT AUTHORIZED
+D3-PROD-CUTOVER                                                           NOT AUTHORIZED
 ```
 
-No package in that sequence is pre-authorized by this plan.
-
-## 5. Control/governance closure
-
-```text
-D3-DECISION-008-SYNC = PASS / CLOSED
-D3-DECISION-008-SYNC-R1 = PASS / CLOSED AS CORRECTED BY R2
-D3-DECISION-008-SYNC-R2 = PASS / CLOSED
-MBO-CONTROL-GOVERNANCE-CONSOLIDATION = PASS / CLOSED
-CONTROL_TRUTH_SINGLE_SOURCE_MODEL = EFFECTIVE
-RECURSIVE_METADATA_REVIEW_LOOP = ELIMINATED BY POLICY
-```
-
-Substantive source/schema/security/test/migration/deploy/live changes require independent review. Metadata-only control transcription may close with same-run consistency verification.
+No later package is pre-authorized.
 
 ## 6. Durable prior-stage facts
 
