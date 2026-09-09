@@ -8,8 +8,8 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE
+ACTIVE_WORK_PACKAGE = D3-IMP-04
+ACTIVE_WORK_PACKAGE_STATUS = IN_PROGRESS
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
 LAST_CLOSED_WORK_PACKAGE = D3-IMP-03
@@ -30,8 +30,8 @@ PROCESS_WRITES_AUTHORIZED = 0
 DATA_BACKFILL_AUTHORIZED = 0
 DEPLOYMENTS_AUTHORIZED = 0
 
-NEXT_RECOMMENDED_GATE = D3-IMP-04
-NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
+NEXT_RECOMMENDED_GATE = D3-IMP-05
+NEXT_PERMITTED_ACTION = LOCAL_IMPLEMENTATION_AND_TESTS_ONLY
 AUTO_START_NEXT_WORK_PACKAGE = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
@@ -169,3 +169,64 @@ LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
 No later D3 package is authorized by this closure.
+
+## D3-IMP-04 execution record
+
+Owner-authorized package:
+
+```text
+D3-IMP-04 = App798 Archive / Reopen / Route-Reassignment Service
+SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
+OWNER_AUTHORIZATION = อนุมัติ D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service แบบ LOCAL-ONLY / ZERO KINTONE / ZERO DEPLOYMENT ตามขอบเขตที่เสนอ
+STARTING_HEAD = ae35c448081967e8821862b114820f76feea4d15
+STATUS = IN_PROGRESS
+```
+
+Capabilities implemented:
+- Deterministic archive-event construction across the 3 locked event types:
+  - `STAGE_COMPLETION_SNAPSHOT`: `<Source_Record_Key>|<Evaluation_Stage>|R<Revision_Number>|STAGE_COMPLETION`
+  - `EVALUATION_REVISION_CREATED`: `<Source_Record_Key>|<Evaluation_Stage>|R<OldRevision>|EVALUATION_REVISION_CREATED|TO_R<NewRevision>`
+  - `ROUTE_REASSIGNMENT_PRECHANGE`: `<Source_Record_Key>|<Evaluation_Stage>|R<Revision_Number>|ROUTE_REASSIGNMENT_PRECHANGE|<Stable_Event_ID>`
+- Date boundary archive events rejected; zero date-driven writes.
+- Canonical D3 snapshot serializer reused; SHA-256 computed deterministically.
+- Snapshot identity coherence validated before write attempt.
+- App 798 physical row mapping; zero new physical fields added.
+- Injected repository abstraction (`RevisionArchiveKintoneRepository`) with bounded `findByArchiveKey`, `createArchiveRecord`, and `readBackExactArchiveRecord`; zero update/delete capabilities.
+- Exact idempotency & retry contract:
+  - 0 existing -> create + read-back
+  - 1 existing matching -> idempotent success (`idempotentReplay: true`, 0 new rows)
+  - 1 existing conflicting -> fail closed (`ARCHIVE_IDEMPOTENCY_CONFLICT`)
+  - >1 existing -> fail closed (`ARCHIVE_DUPLICATE_KEY_CORRUPTION`)
+- Create + read-back verification:
+  - Verifies `Snapshot_Hash`, `Snapshot_JSON`, `Archived_By`, `Archive_Key`, `Archived_At`.
+  - Uncertain write handling: on transport error, checks if row was acknowledged before failing closed.
+- Archive-Before-Change gate helpers (`assertArchiveBeforeChangeGate`).
+- Exact actor user code resolution (prohibits blank, guessed, display-name-only, and "SYSTEM").
+- Exact business reason validation (required for reopen and reassignment; deterministic default for stage completion).
+
+Verification evidence:
+```text
+REVISION_ARCHIVE_SERVICE_TESTS = 28 / 28 PASS
+REVISION_ARCHIVE_REPOSITORY_TESTS = 8 / 8 PASS
+D3_ARCHIVE_IDEMPOTENCY_TESTS = 7 / 7 PASS
+D3_REOPEN_ARCHIVE_INTEGRATION_TESTS = 4 / 4 PASS
+COMBINED_D3_IMP_04_TESTS = 47 / 47 PASS (159ms)
+
+D3_IMP_01_TESTS = 40 / 40 PASS (113ms)
+D3_IMP_02_TESTS = 68 / 68 PASS (124ms)
+D3_IMP_03_TESTS = 86 / 86 PASS (216ms)
+COMBINED_ALL_TESTS = 241 / 241 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+APP798_LIVE_READS = 0
+APP798_LIVE_WRITES = 0
+APP794_WRITES = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
