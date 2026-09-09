@@ -8,8 +8,8 @@ Updated: 2026-09-09 ICT
 ## Current contract state
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE
+ACTIVE_WORK_PACKAGE = D3-IMP-03
+ACTIVE_WORK_PACKAGE_STATUS = IN_PROGRESS
 CANONICAL_BRANCH = ai/antigravity-wp002c
 
 LAST_CLOSED_WORK_PACKAGE = D3-IMP-02
@@ -27,8 +27,8 @@ PROCESS_WRITES_AUTHORIZED = 0
 DATA_BACKFILL_AUTHORIZED = 0
 DEPLOYMENTS_AUTHORIZED = 0
 
-NEXT_RECOMMENDED_GATE = D3-IMP-03
-NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
+NEXT_RECOMMENDED_GATE = D3-IMP-04
+NEXT_PERMITTED_ACTION = LOCAL_IMPLEMENTATION_AND_TESTS_ONLY
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
@@ -101,3 +101,43 @@ SCOPE_LEAK = NONE FOUND
 ```
 
 No later D3 package is authorized by this closure.
+
+## D3-IMP-03 execution record
+
+Owner-authorized package:
+
+```text
+D3-IMP-03 = Runtime App795 Resolution + App794 Bound Snapshot Integration
+SCOPE = LOCAL IMPLEMENTATION AND TESTS ONLY / ZERO KINTONE / ZERO DEPLOYMENT
+```
+
+Capabilities implemented:
+- Pure Model A resolution integrated into RoutingService (`resolveD3RoutingProfile` and `resolveRoutingProfile`).
+- Exact candidate version selected by business date (Effective_From <= date <= Effective_To, Version_Status = ACTIVE).
+- In-flight stage immutability: existing bound stage remains bound even if candidate versions or dates change.
+- Stage boundary prerequisite: next-stage fresh route binding forbidden before verified prior-stage archive success.
+- Scorer viability evaluation via `evaluateD3RouteViability`: canonical normalization, own-MBO self-elision, explicit HR priority slots, frozen K.
+- App794 five mandatory provenance fields persisted natively: `Frozen_Profile_Code`, `K_expected_Snapshot`, `Effective_Routing_Key`, `Effective_Route_Version_Key`, `Effective_Scorer_Slots_Snapshot`.
+- Form state persistence read-back verification includes all five provenance fields.
+- Reused sequential route snapshot fields match effective post-self-elision route with rule 'ALL'.
+- ValidationEngine route/provenance readiness validation added (`validateD3RouteProvenance`).
+- Normal M1_G1 and executive direct DGM/GM/VP paths remain fully compatible.
+
+Verification evidence:
+```text
+D3_RUNTIME_ROUTE_BINDING_TESTS = 31 / 31 PASS
+ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
+CORE_INTEGRATION_TESTS = 1 / 1 PASS
+D3_IMP_01_TESTS = 33 / 33 PASS
+D3_IMP_02_TESTS = 68 / 68 PASS
+COMBINED_FOCUSED_TESTS = 119 / 119 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+APP798_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+```
