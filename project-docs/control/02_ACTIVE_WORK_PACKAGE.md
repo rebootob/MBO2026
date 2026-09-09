@@ -356,8 +356,44 @@ ACTIVE_WORK_PACKAGE = D3-IMP-05
 TITLE = Native 19-State Process Compatibility — Local Payload Only
 OWNER_AUTHORIZATION = อนุมัติ D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only แบบ LOCAL-ONLY / ZERO KINTONE / ZERO PROCESS WRITE / ZERO DEPLOYMENT ตาม readiness plan
 STARTING_HEAD = c570d9b0ba461d871da7eddcd2d197c0eded0856
-STATUS = IN_PROGRESS / LOCAL_IMPLEMENTATION
+STATUS = EXECUTION COMPLETE / AWAITING CONTROL PLANE REVIEW
 CANONICAL_BRANCH = ai/antigravity-wp002c
+```
+
+Capabilities implemented in D3-IMP-05:
+- Pure local Kintone Process Management builder in `scripts/kintone/build-d3-workflow-payload.js`:
+  - 19 states (0..18) with exact Kintone key convention (`states["Not started"].name = "01 Draft Objective"`).
+  - Exact G2 states added: `04B GM Level 2 Objective Review`, `09B GM Level 2 Mid-Year Review`, `14B GM Level 2 Final Evaluation`.
+  - Requester states (01, 05, 06, 10, 11) map `Requester_User` with type `ONE`.
+  - D3 appraiser states (02, 03, 04, 04B, 07, 08, 09, 09B, 12, 13, 14, 14B) map sequential snapshot fields (`Manager_Level2_Approvers`, `Manager_Level1_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers`) with type `ALL` (zero ANY).
+  - HR Check (15) and Completed (16) preserve no-field-assignee semantics.
+  - 40 actions with deterministic `Routing_Topology` filterCond strings across 5 topologies (`M1_ONLY`, `M1_G1`, `M1_M2_G1`, `M1_G1_G2`, `M1_M2_G1_G2`).
+  - Zero network/Kintone imports, zero credentials, zero PUT/write execution path. Requires explicit caller `app` and `revision`.
+- Process capability and action validation in `src/validation/validation-engine.js`:
+  - Exported `D3_PROCESS_CAPABILITY_ID = 'D3_V1_19_STATE_40_ACTION'`.
+  - Fail-closed default: if `options.processCapabilityId !== D3_PROCESS_CAPABILITY_ID`, existing legacy behavior is preserved and G2 topologies remain blocked.
+  - When exact D3 capability is supplied:
+    - G2 topologies proceed and are validated through G2 states (04B, 09B, 14B) and actions.
+    - Uses new sequential snapshot fields only; strictly rejects fallback to deprecated route fields (`First_Manager_User`, `Manager_User`, `GM_User`).
+    - Enforces active appraiser slot invariant: exactly 1 user per slot and rule === ALL (fails closed on 0 users, >1 users, or rule ANY).
+    - G2 action safety: direct G1 completion rejected for G2 topologies; G1->G2 actions accepted for G2 and rejected for non-G2; G2 action requires exact G2 user; G2 state on non-G2 fails closed.
+    - M1_ONLY action safety: exact bypass accepted with capability; rejected for non-M1_ONLY topologies; Objective/Mid-Year bypass requires Requester_User; Final bypass does not invent GM requirement.
+    - M2 validation: M2 topologies must enter through M2; non-M2 topologies must submit directly to M1.
+
+Verification evidence:
+```text
+D3_WORKFLOW_PAYLOAD_TESTS = 42 / 42 PASS (130ms)
+D3_PROCESS_VALIDATION_TESTS = 23 / 23 PASS (117ms)
+COMBINED_D3_IMP_05_TESTS = 65 / 65 PASS
+
+WORKFLOW_VALIDATOR_TESTS = 3 / 3 PASS (90ms)
+D3_IMP_01_TESTS = 40 / 40 PASS (162ms)
+D3_IMP_02_TESTS = 68 / 68 PASS (164ms)
+D3_IMP_03_TESTS = 86 / 86 PASS (145ms)
+D3_IMP_04_TESTS = 103 / 103 PASS (188ms)
+COMBINED_REGRESSION_TESTS = 300 / 300 PASS
+
+PRE_EXISTING_LEGACY_TEST_HARNESS_NON_EXIT = create-handler-form-state.test.js (documented pre-existing non-exit)
 
 KINTONE_READS = 0
 KINTONE_WRITES = 0
@@ -375,3 +411,4 @@ DEPLOYMENTS = 0
 LOCAL_PROCESS_PAYLOAD_ONLY = YES
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
+
