@@ -1,198 +1,110 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-09 ICT.
+Updated: 2026-09-09 ICT
 
-## Fast startup
+> **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
-`fresh-fetch ai/antigravity-wp002c` -> `CHAT_HANDOFF.md` -> `AI_CONTROL_CENTER.md` -> `AI_ACTIVE_TASK.md` -> `control/00_MASTER_DELIVERY_CONTROL.md` -> `control/02_ACTIVE_WORK_PACKAGE.md` -> this index -> exact relevant evidence/source.
+## 1. Start here
 
-## Current canonical status
+For current state:
 
-```text
-D1 = PASS / CLOSED / DURABLE
-D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED
+1. `project-docs/AI_CONTROL_CENTER.md` — primary current control truth.
+2. `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` — exact active authorization/scope or NONE.
+3. `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` — D1-D7 stage scoreboard.
+4. `project-docs/AI_ACTIVE_TASK.md` — convenience execution packet only.
+5. This index — route to exact durable decisions/baselines/evidence.
 
-D3 = ARCHITECTURE / DESIGN ACTIVE
-D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / CONTROL_PROVENANCE_CORRECTIVE_AWAITING_REVIEW
-D3_IMPLEMENTATION_AUTHORIZED = NO
+Governance:
 
-ACTIVE_WORK_PACKAGE = D3-DECISION-008-SYNC-R2
-STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
-PARENT_D3_DECISION_008_SYNC = PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d
-D3-DECISION-008-SYNC-R1 = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
-SNAPSHOT_METADATA_PATH_DECISION = LOCKED
+- `project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md`
+- `project-docs/AI_HANDOFF_PROTOCOL.md`
+- `AGENTS.md`
 
-DEPLOYMENT_AUTHORIZED = NO
-KINTONE_WRITES_AUTHORIZED = NONE
-PRODUCTION_READY = NO
-NEXT_PERMITTED_ACTION = CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R2
-```
+## 2. Startup / routing references
 
-## Authority provenance — D3-008 control sync
+These are routing/reference surfaces, not independent live-status authority:
 
-```text
-ORIGINAL_OWNER_AUTHORIZED_SCOPE = 4 CONTROL DOCS
-ORIGINAL_D3_DECISION_008_SYNC_RESULT = PASS / CLOSED
-ORIGINAL_D3_DECISION_008_SYNC_HEAD = d62aa9b5f68a83e81f644648a2d004ad5b05585d
+- `project-docs/AI_START_HERE.md`
+- `project-docs/CHAT_HANDOFF.md`
+- `project-docs/NEW_CHAT_BOOTSTRAP_PROMPT.md`
+- `project-docs/00_MASTER_JOBLIST.md`
 
-R1_OWNER_AUTHORIZATION = NONE
-R1_RESULT = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-R1_RETROACTIVE_AUTHORIZATION = NO
+## 3. Delivery-control documents
 
-R2_OWNER_AUTHORIZATION = APPROVED / EXPLICIT
-R2_SCOPE = 6 CONTROL DOCS / DOCUMENTATION-ONLY AUTHORITY PROVENANCE CORRECTIVE
-R2_RETROACTIVE_AUTHORIZATION_OF_R1 = NO
-```
+- `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` — stage scoreboard.
+- `project-docs/control/01_FUNCTION_COMPLETION_MATRIX.md` — evidence-grounded function inventory/completion matrix.
+- `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` — exact active authorization contract.
+- `project-docs/control/03_RELEASE_EXIT_CHECKLIST.md` — release/cutover exit criteria.
 
-Original approved 4-doc scope:
+## 4. D3 routing/scoring decision chain
 
-```text
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-```
+Primary durable decision/evidence documents:
 
-R2 corrective scope:
+- `project-docs/D3_DECISION_SYNC_OWNER_ARCHITECTURE_ROUTING_DECISIONS.md` — D3-001/D3-002 decision sync foundation.
+- `project-docs/D3_WP001_VARIABLE_1_4_APPRAISER_PROCESS_COMPATIBILITY_DESIGN.md`
+- `project-docs/D3_WP001_R1_NATIVE_PROCESS_ROUTE_PATTERN_EFFECTIVE_DATED_ROUTING_CORRECTIVE.md`
+- `project-docs/D3_WP001_R2_EFFECTIVE_DATED_ROUTING_HR_SCORING_ROLE_DESIGN.md`
+- `project-docs/D3_WP001_R3_K_EXPECTED_ROUTE_VIABILITY_SELF_ELISION_SCORING_COMPATIBILITY_DESIGN.md`
+- `project-docs/D3_WP001_R3_R1_DGM_AUTHORITY_SCORER_FAIL_CLOSED_CORRECTIVE.md`
+- `project-docs/D3_DECISION_005_SINGLE_USER_ALL_ONLY_SYNC.md`
+- `project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md`
+- `project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md`
+- `project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md`
+- `project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md`
 
-```text
-project-docs/CHAT_HANDOFF.md
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-project-docs/AI_DOCUMENT_INDEX.md
-```
+For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in these historical work-package documents.
 
-Any R1 statement that the original Owner authorization covered six documents is invalid and must not be used as authority precedent.
+## 5. D3 architecture-redesign references
 
-## Current D3 locked decision chain
+Use selectively according to the current question:
 
-```text
-DECISION_D3_001 = LOCKED / OWNER APPROVED
-DECISION_D3_002 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_003 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_005 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_006 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_007 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_008_VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
-```
+- `project-docs/architecture-redesign/CONTROLLED_REOPEN_REVISION_DESIGN.md` — controlled reopen/revision business behavior.
+- `project-docs/architecture-redesign/REVISION_DATA_MODEL_DESIGN.md` — revision/archive model.
+- `project-docs/architecture-redesign/ROUTING_SNAPSHOT_DESIGN.md` — historical snapshot design; physical six-slot sections are partially superseded for D3 V1 where they conflict with D3-008.
+- `project-docs/architecture-redesign/GENERIC_ROUTING_ARCHITECTURE.md` — deferred generic/45-state reference, not D3 V1 implementation authority.
+- `project-docs/architecture-redesign/EVALUATION_PROFILE_ARCHITECTURE.md`
+- `project-docs/architecture-redesign/ANNUAL_EVALUATION_CYCLE_DESIGN.md`
+- `project-docs/architecture-redesign/ANNUAL_PLAN_CARRY_FORWARD_DESIGN.md`
+- `project-docs/architecture-redesign/BUSINESS_RULE_TRUTH_TABLE.md`
 
-## D3 current route/scoring contract
+Do not broad-read the full architecture-redesign directory unless the current gate requires it.
 
-```text
-WORKFLOW_APPRAISER_COUNT = 1..4
-USERS_PER_SEQUENTIAL_SLOT = EXACTLY 1
-NATIVE_ASSIGNEE_RULE = ALL
-ANY_SUPPORT_D3_V1 = NO / DEFERRED
-MULTI_USER_SLOT_D3_V1 = NO / DEFERRED
-45_STATE_GENERIC_ARCHITECTURE = DEFERRED
+## 6. Confirmed baselines
 
-SCORER_COUNT_SOURCE = FROZEN_EVALUATION_PROFILE_K_EXPECTED (1 or 2)
-SCORER_IDENTITY_CONTROL = HR
-SCORING_SET_RELATION = SCORING_APPRAISERS SUBSET_OR_EQUAL WORKFLOW_APPRAISERS
-SCORER_PLAN_DEFAULT = NONE
-MISSING_SCORER_PLAN = FAIL_CLOSED (SCORER_PLAN_NOT_CONFIGURED)
-FIRST_ACTOR_BECOMES_SCORER = PROHIBITED
-AUTO_LOWER_K_EXPECTED = FORBIDDEN
-RANDOM_SCORER_PROMOTION = FORBIDDEN
+`project-docs/CONFIRMED_BASELINE/` contains durable accepted baselines. Read only the baseline relevant to the current decision.
 
-CURRENT_LIVE_STANDARD_ROUTE = M1_G1 / 2 APPRAISERS
-D3_TARGET_ROUTE_CAPABILITY = 1..4 APPRAISERS
-```
+Important examples include:
 
-## D3-006 effective-dated routing authority
+- D1 identity/access baseline documents;
+- D2 export/Part A/Part B/formula/template baselines;
+- routing/workflow baseline documents.
+
+A baseline defines durable subject truth; it does not by itself authorize a new execution.
+
+## 7. D1 / D2 evidence
+
+D1 deployment/UAT evidence and D2 XLSX engineering evidence remain in `project-docs/` and `CONFIRMED_BASELINE/` under their package-specific names.
+
+Use the Control Center/Master Delivery to know whether the stage is currently closed, paused or active; use the evidence docs only to support the exact factual claim under review.
+
+## 8. Historical review archive
+
+- `project-docs/AI_REVIEW_PACKAGE.md` is a historical/standardized review archive containing many older package checkpoints and test counts.
+
+It is **not** current state authority. Never override current Control Center/Active WP truth with a status block from this historical package.
+
+## 9. Document-role rule
+
+A document may be authoritative for its subject without being authoritative for current project status.
+
+When in doubt:
 
 ```text
-EFFECTIVE_DATED_ROUTING_MODEL = MODEL_A_VERSIONED_ROWS_IN_APP795
-ROUTING_KEY_UNIQUE = NO
-VERSION_KEY_UNIQUE = YES
-ROUTE_VERSION_HAS_NO_EFFECT_BEFORE_EFFECTIVE_FROM = YES
-FUTURE_ACTIVE_VERSION = SCHEDULED_NOT_YET_EFFECTIVE
-RESOLVER = READ_ONLY_DATE_INTERVAL
-TIME_TRIGGERED_ACTIVATION_WRITE = NO
-OVERLAP = FAIL_CLOSED
-NO_EFFECTIVE_ROUTE = FAIL_CLOSED
-HISTORICAL_VERSION_RECORDS = PRESERVED
-LEGACY_ACTIVE_DUAL_AUTHORITY = NOT ALLOWED
-APP795_SCHEMA_MIGRATION_REQUIRED = YES
-APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
+CURRENT STATE -> AI_CONTROL_CENTER.md
+EXACT ACTIVE AUTHORIZATION -> control/02_ACTIVE_WORK_PACKAGE.md
+D1-D7 SCOREBOARD -> control/00_MASTER_DELIVERY_CONTROL.md
+SUBJECT CONTRACT -> locked decision/baseline/evidence document
+DOCUMENT LOCATION -> AI_DOCUMENT_INDEX.md
 ```
 
-## D3-008 route snapshot persistence authority
-
-```text
-App795 = effective-dated routing master for NEW resolution points
-App794 = current MBO transaction + currently bound active-stage route/provenance snapshot
-App798 = immutable event-scoped historical snapshot ledger
-App800 = HR control / administrative UI only
-
-APP794_NEW_LOGICAL_FIELDS = 5
-Frozen_Profile_Code
-K_expected_Snapshot
-Effective_Routing_Key
-Effective_Route_Version_Key
-Effective_Scorer_Slots_Snapshot
-APP794_EFFECTIVE_ROUTING_KEY_REQUIRED = YES
-APP794_BOUND_STAGE_AUTHORITY_AFTER_RESOLUTION = YES
-
-APP798_RUNTIME_ROUTING_AUTHORITY = NO
-APP798_EVENT_SCOPED_HISTORY = YES
-APP798_FULL_PROVENANCE = Snapshot_JSON + Snapshot_Hash
-EVENT_TYPE_1 = STAGE_COMPLETION_SNAPSHOT
-EVENT_TYPE_2 = EVALUATION_REVISION_CREATED
-EVENT_TYPE_3 = ROUTE_REASSIGNMENT_PRECHANGE
-ARCHIVE_KEY_IDEMPOTENT_EVENT_IDENTITY = YES
-ARCHIVE_HASH_CONFLICT = FAIL_CLOSED
-ARCHIVE_ACTOR_NOT_RESOLVED = FAIL_CLOSED
-```
-
-The older App794 Objective/Mid-Year/Final six-slot physical persistence model remains superseded for D3 V1 where it conflicts with D3-008.
-
-## D3 document chain
-
-```text
-D3-PRE1 chain = CLOSED via corrective chain
-D3-DECISION-SYNC chain = PASS / CLOSED
-D3-WP001-R3-R1 = PASS / CLOSED
-D3-DECISION-005-SYNC = PASS / CLOSED
-D3-DECISION-006-SYNC = PASS / CLOSED
-D3-WP001-R4 = PASS / CLOSED VIA R4-R1
-D3-WP001-R4-R1 = PASS / CLOSED
-D3-DECISION-008 = OWNER DECISION LOCKED
-D3-DECISION-008-SYNC = PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d
-D3-DECISION-008-SYNC-R1 = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-D3-DECISION-008-SYNC-R2 = EXECUTED / AWAITING CONTROL PLANE REVIEW
-```
-
-Primary D3 evidence:
-
-```text
-project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md
-project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md
-project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md
-project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
-project-docs/architecture-redesign/ROUTING_SNAPSHOT_DESIGN.md (PARTIALLY SUPERSEDED FOR D3 V1)
-```
-
-## Execution boundary
-
-Forbidden without separate explicit Owner authorization:
-
-- source changes;
-- tests/builds;
-- config/schema changes;
-- App794 field creation;
-- App795 Model A migration;
-- App798 archive behavior implementation;
-- deployment;
-- Kintone reads/writes;
-- process transitions;
-- data backfill;
-- auto-starting implementation-readiness work.
-
-Read `CHAT_HANDOFF.md`, `AI_CONTROL_CENTER.md`, `AI_ACTIVE_TASK.md`, `control/00_MASTER_DELIVERY_CONTROL.md`, and `control/02_ACTIVE_WORK_PACKAGE.md` before any next action.
+Do not copy mutable current-state blocks into this index during ordinary work-package closure.
