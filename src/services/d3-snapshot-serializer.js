@@ -32,6 +32,8 @@ export const D3_SNAPSHOT_SECTION_ALLOWLIST = Object.freeze([
   'computed'
 ]);
 
+export const D3_SNAPSHOT_REQUIRED_SECTIONS = D3_SNAPSHOT_SECTION_ALLOWLIST;
+
 const OMIT = Symbol('D3_SNAPSHOT_OMIT');
 
 function canonicalize(value, path = '$', inArray = false) {
@@ -110,10 +112,28 @@ export function buildD3SnapshotManifest(input) {
     snapshotSchemaVersion: D3_SNAPSHOT_SCHEMA_VERSION
   };
 
-  for (const section of D3_SNAPSHOT_SECTION_ALLOWLIST) {
-    if (input[section] !== undefined) {
-      manifest[section] = input[section];
+  for (const section of D3_SNAPSHOT_REQUIRED_SECTIONS) {
+    const sectionValue = input[section];
+
+    if (sectionValue === undefined) {
+      throw new D3SnapshotSerializationError(
+        'SNAPSHOT_SECTION_MISSING',
+        `Required snapshot section is missing: ${section}.`
+      );
     }
+
+    if (
+      sectionValue === null ||
+      typeof sectionValue !== 'object' ||
+      Array.isArray(sectionValue)
+    ) {
+      throw new D3SnapshotSerializationError(
+        'INVALID_SNAPSHOT_SECTION',
+        `Snapshot section ${section} must be a plain object.`
+      );
+    }
+
+    manifest[section] = sectionValue;
   }
 
   return manifest;
