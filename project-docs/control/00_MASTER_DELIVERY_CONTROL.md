@@ -21,7 +21,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline is revision 70. Closed work remains durable unless proven regression or Owner change request. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED** and is not equivalent to engineering closure. |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Architecture is locked through `OWNER_DEC_D3_008`; readiness plan, `D3-IMP-01`, and `D3-IMP-02` are **PASS / CLOSED**; no current implementation package is authorized. |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION IN PROGRESS BY BOUNDED PACKAGES** | Architecture is locked through `OWNER_DEC_D3_008`; readiness plan plus `D3-IMP-01`, `D3-IMP-02`, and `D3-IMP-03` are **PASS / CLOSED**; no current implementation package is authorized; live business-date provider remains a deployment blocker. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | Runtime/UAT activity exists but full business UAT closure is not established. |
@@ -56,8 +56,13 @@ D3-IMP-01_FINAL_REVIEW_HEAD = a2832b29bc391efc1773e0214ae072529f53ca2d
 D3-IMP-02 = PASS / CLOSED
 D3-IMP-02-R2 = PASS / CLOSED
 D3-IMP-02_FINAL_REVIEW_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
+D3-IMP-03 = PASS / CLOSED
+D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3-IMP-03-R2 = PASS / CLOSED
+D3-IMP-03_FINAL_REVIEW_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
 D3_IMPLEMENTATION_MODE = BOUNDED PACKAGE AUTHORIZATION ONLY
 CURRENT_D3_IMPLEMENTATION_PACKAGE = NONE
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 
 DECISION_D3_001 = LOCKED / OWNER APPROVED
 DECISION_D3_002 = LOCKED / OWNER APPROVED
@@ -96,7 +101,7 @@ Local-only schema/migration readiness now exists for:
 - record readiness checks for version identity, status, route pattern, effective dates, one-user/ALL route structure and scorer plans;
 - rollback/read-back planning with live write execution disabled.
 
-Accepted R2 verification evidence:
+Accepted D3-IMP-02 verification evidence:
 
 ```text
 SCHEMA_AND_MIGRATION_TESTS = 68 / 68 PASS
@@ -110,6 +115,39 @@ DATA_BACKFILL = 0
 DEPLOYMENTS = 0
 ```
 
+### D3-IMP-03 delivered capability
+
+Local-only runtime integration now exists for:
+- explicit activation of Model A App795 route-version resolution in the D3 runtime path;
+- exact effective version selection by explicit business date, with no legacy `Active` authority fallback;
+- App796 PUBLISHED `Expected_Appraiser_Count` as canonical runtime `K_expected` authority;
+- own-MBO self-elision and explicit scorer viability using the accepted pure D3 contracts;
+- App794 five mandatory provenance fields plus effective post-self-elision sequential route snapshot;
+- tri-state immutable bound-stage handling with malformed/partial provenance fail-closed;
+- next-stage fresh binding blocked until verified prior-stage archive success;
+- explicit-only business-date source lock; live business-date provider remains unresolved and blocks deployment, not local implementation closure.
+
+Accepted D3-IMP-03 verification evidence:
+
+```text
+D3_RUNTIME_ROUTE_BINDING_TESTS = 48 / 48 PASS
+ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
+CORE_INTEGRATION_TESTS = 1 / 1 PASS
+D3_IMP_01_TESTS = 40 / 40 PASS
+D3_IMP_02_TESTS = 68 / 68 PASS
+COMBINED_FOCUSED_TESTS = 86 / 86 PASS
+ALL_D3_TESTS = 156 / 156 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+APP798_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+```
+
 The pre-existing repository-wide Node test-harness non-exit remains documented and is not represented as a full-suite PASS.
 
 ## Recommended implementation sequence
@@ -117,8 +155,8 @@ The pre-existing repository-wide Node test-harness non-exit remains documented a
 ```text
 D3-IMP-01 = PASS / CLOSED
 D3-IMP-02 = PASS / CLOSED
-D3-IMP-03 = NEXT RECOMMENDED / NOT AUTHORIZED
-D3-IMP-04 = NOT AUTHORIZED
+D3-IMP-03 = PASS / CLOSED
+D3-IMP-04 = NEXT RECOMMENDED / NOT AUTHORIZED
 D3-IMP-05 = NOT AUTHORIZED
 D3-IMP-06 = NOT AUTHORIZED
 D3-PREFLIGHT-READONLY = NOT AUTHORIZED
@@ -145,6 +183,7 @@ DEPLOYMENT_AUTHORIZED = NO
 KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
 The next substantive package requires fresh explicit Owner authorization.
