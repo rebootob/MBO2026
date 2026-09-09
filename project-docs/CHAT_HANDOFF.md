@@ -8,13 +8,13 @@ Updated: 2026-09-09 ICT
 ## Receiving-chat route
 
 1. Fresh-fetch canonical branch `ai/antigravity-wp002c`.
-2. Read `project-docs/AI_CONTROL_CENTER.md` for current cross-project control truth.
+2. Read `project-docs/AI_CONTROL_CENTER.md` for current control truth.
 3. Read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` for exact active authorization/scope.
 4. Read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` for the D1-D7 scoreboard.
 5. Read `project-docs/AI_ACTIVE_TASK.md` for the convenience execution/review packet.
 6. Read `project-docs/AI_DOCUMENT_INDEX.md` only to locate exact durable decisions/baselines/evidence.
 7. Read `project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md` if authority precedence or review-loop behavior is unclear.
-8. Use `project-docs/MBO2026_CONTINUATION_CHECKPOINT_2026-09-09.md` as the accepted D3-IMP-06/R1 closure evidence checkpoint, not as a substitute for fresh current control truth.
+8. Use `project-docs/MBO2026_CONTINUATION_CHECKPOINT_2026-09-09.md` as the accepted D3-IMP-06 + D3-PREFLIGHT closure checkpoint, not as a substitute for fresh current control truth.
 9. Inspect exact source/tests/diff/live evidence only when the current gate requires it.
 
 ## Permanent roles
@@ -40,11 +40,37 @@ Latest explicit Owner decision
 
 ## Brief handoff
 
-D3 local implementation through `D3-IMP-06` is now **PASS / CLOSED**, including the accepted `D3-IMP-06-R1` corrective chain. No package is currently active.
+D3 local implementation through `D3-IMP-06` is **PASS / CLOSED**, including `D3-IMP-06-R1`.
 
-`D3-PREFLIGHT-READONLY` is the next recommended readiness gate but remains **NOT AUTHORIZED**. `LIVE_BUSINESS_DATE_PROVIDER` remains unresolved, so `PRODUCTION_READY = NO`.
+`D3-PREFLIGHT-READONLY` is also **PASS / CLOSED**. The accepted live audit established:
 
-Do not infer live-read, migration, deployment, UAT or production authorization from the D3-IMP-06 closure.
+```text
+APP794 = REV 70 / D3 provenance migration gap / process baseline 16 states, 31 actions
+APP795 = REV 11 / 20 rows / legacy schema / scorer plan absent
+APP796 = 8 published FY2026 configs / K authority present
+APP798 = 11 archive primitives present / 0 rows
+APP800 = REV 8
+HR_ADMIN_GROUP = hr ONLY
+```
+
+Key remaining preconditions:
+
+- live App795 has no `Scorer_Priority_Slots`; automatic inference is forbidden;
+- evidence-derived candidate mapping `M1_G1 -> [1,2]`, `M1_ONLY -> [1]` is **not yet Owner/HR authorized**;
+- App795 HR write ACL plan is required before App800 routing self-service activation;
+- `LIVE_BUSINESS_DATE_PROVIDER` remains unresolved, so `PRODUCTION_READY = NO`.
+
+No package is currently active.
+
+The next recommended gate is:
+
+```text
+D3-SBX-MIGRATION-01-PRE1
+MODE = PLAN-ONLY / ZERO WRITE
+AUTHORIZED = NO
+```
+
+Do not infer migration, schema write, Kintone write, process write, deployment, UAT or production authorization from the preflight closure.
 
 ## Permanent safety reminders
 

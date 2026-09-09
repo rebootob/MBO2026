@@ -12,77 +12,63 @@ CURRENT_EXECUTION = NONE
 
 LAST_CLOSED_SUBSTANTIVE_PACKAGE = D3-IMP-06
 LAST_CLOSED_CORRECTIVE = D3-IMP-06-R1
-LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-06-R1-CLOSE
+LAST_CLOSED_CONTROL_PACKAGE = D3-PREFLIGHT-READONLY-CLOSE
 LAST_REVIEWED_SUBSTANTIVE_HEAD = 64a4f80288aa03b01078a4d60bee59dac9924665
+D3_PREFLIGHT_BASE_HEAD = d5bcad85594d50a3239219e8a8e544654a5cc2b7
 
 D3-IMP-06 = PASS / CLOSED
 D3-IMP-06-R1 = PASS / CLOSED
-D3-IMP-06-R1-C1-T1-R2 = PASS / CLOSED
+D3-PREFLIGHT-READONLY = PASS / CLOSED
 
-NEXT_RECOMMENDED_GATE = D3-PREFLIGHT-READONLY
+NEXT_RECOMMENDED_GATE = D3-SBX-MIGRATION-01-PRE1
+NEXT_GATE_MODE = PLAN-ONLY / ZERO WRITE
 NEXT_GATE_AUTHORIZED = NO
 NEXT_ACTION = WAIT FOR EXPLICIT OWNER SELECTION/AUTHORIZATION
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
-D3-PREFLIGHT-READONLY = NOT AUTHORIZED
-DEPLOYMENT_AUTHORIZED = NO
 KINTONE_READS_AUTHORIZED = NONE
 KINTONE_WRITES_AUTHORIZED = NONE
 PROCESS_WRITES_AUTHORIZED = NONE
+SCHEMA_LIVE_WRITES_AUTHORIZED = NONE
+DEPLOYMENT_AUTHORIZED = NO
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## D3-IMP-06/R1 final accepted state
-
-Role model retained:
+## Accepted D3-PREFLIGHT live facts
 
 ```text
-APP800_ACCESS = hr OR admin-form
-ROUTING_VIEW_PREVIEW_VALIDATE = hr OR admin-form
-ROUTING_CREATE_EDIT_PUBLISH_SUPERSEDE = hr ONLY
-ADMIN_FORM_IMPLICIT_HR_AUTHORITY = NO
-DUAL_ROLE = UNION
-HISTORICAL_ROUTE_DELETE = NEVER
+EVIDENCE_ZIP_SHA256 = cd6fd048a15faa5bdb490828463049b2890b654d49a517b91167bf3a8ee528ad
+APP794 = REV 70 / 344 FIELDS / D3 PROVENANCE 5 FIELDS MISSING
+APP794_PROCESS = 16 STATES / 31 ACTIONS
+D3_PROCESS_TARGET = 19 STATES / 40 ACTIONS
+
+APP795 = REV 11 / 20 RECORDS COMPLETE
+APP795_ROUTING_KEY_UNIQUE = TRUE / TARGET FALSE
+APP795_VERSION_FIELDS = MISSING
+APP795_ROUTE_PATTERN = MISSING
+APP795_SCORER_PRIORITY_SLOTS = MISSING
+APP795_TOPOLOGY = 17 x M1_G1 + 3 x M1_ONLY
+APP795_CURRENT_INTERVAL = 2026-04-01 THROUGH 2027-03-31
+
+APP796 = 8 PUBLISHED FY2026 CONFIGS
+K_EXPECTED = 5 PROFILES K2 + 3 EXECUTIVE PROFILES K1
+
+APP798 = 11 ARCHIVE PRIMITIVES PRESENT / 0 RECORDS
+APP800 = REV 8
+HR_ADMIN_GROUP = hr ONLY
+admin-form = VALID USER / NOT HR_ADMIN_GROUP MEMBER
+REQUIRED_ROUTING_USERS = FOUND / VALID
 ```
 
-All six original independent-review findings are closed:
+## Required decisions before any sandbox migration write
 
-1. canonical M2-first sequence;
-2. explicit fail-closed K/scorer/process authority;
-3. explicit version-history completeness / exact existing version context;
-4. revision-guarded same-key supersession;
-5. real UI-to-service API integration with exact principal propagation;
-6. unauthorized dist artifact restored.
-
-Additional C1/T1/R2 evidence closure retained fail-closed semantics while aligning stale regression fixtures and adding a deterministic **test-only** business-date seam whose default remains `null`.
-
-## Accepted local evidence
-
-```text
-OBJECTIVE_SAVE_VALIDATION = 39 / 39 PASS
-HR_ROUTING_TARGETED_REGRESSION = 130 / 130 PASS
-CREATE_HANDLER_FORM_STATE = 2 / 2 PASS / CLEAN EXIT
-EMPLOYEE_MAIN_MBO_APP_INTEGRATION = 4 / 4 PASS / CLEAN EXIT
-INDIVIDUAL_REPOSITORY_TEST_FILE_MATRIX = 78 / 78 FILES PASS / CLEAN EXIT
-NPM_TEST_AGGREGATE = NODE HARNESS NON-EXIT / NOT USED AS FULL-SUITE PASS CLAIM
-```
-
-Execution remained fully local:
-
-```text
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-NETWORK_CALLS = 0
-PROCESS_READS = 0
-PROCESS_WRITES = 0
-SCHEMA_LIVE_WRITES = 0
-DATA_BACKFILL = 0
-DEPLOYMENTS = 0
-```
+1. **Scorer mapping:** live App795 has no `Scorer_Priority_Slots`; automatic inference remains prohibited. Evidence-derived candidate `M1_G1 -> [1,2]`, `M1_ONLY -> [1]` is not yet Owner/HR authorized.
+2. **App795 HR write ACL:** reviewed write-authority plan required before App800 self-service activation.
+3. **Live business date:** `LIVE_BUSINESS_DATE_PROVIDER` remains unresolved and blocks runtime deployment.
 
 ## Permanent boundary
 
-No current package authorizes source changes, test changes, build output, live schema/configuration changes, Kintone reads/writes, Process Management writes, migration, deployment, UAT execution or production cutover.
+No current package authorizes source/test/build changes, Kintone reads/writes, schema/process writes, migration, deployment, UAT execution or production cutover.
 
-`D3-PREFLIGHT-READONLY` is only the next recommended gate in the readiness sequence. It must not start without a fresh explicit Owner authorization.
+`D3-SBX-MIGRATION-01-PRE1` is only the next recommended bounded gate and must not start without a fresh explicit Owner authorization.

@@ -15,15 +15,15 @@ CONTROL_MODEL = MBO CONTROL TRUTH V3
 ACTIVE_WORK_PACKAGE = NONE
 LAST_CLOSED_SUBSTANTIVE_PACKAGE = D3-IMP-06
 LAST_CLOSED_CORRECTIVE = D3-IMP-06-R1
-LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-06-R1-CLOSE
+LAST_CLOSED_CONTROL_PACKAGE = D3-PREFLIGHT-READONLY-CLOSE
 D3_IMP_06_FINAL_REVIEWED_SUBSTANTIVE_HEAD = 64a4f80288aa03b01078a4d60bee59dac9924665
+D3_PREFLIGHT_BASE_HEAD = d5bcad85594d50a3239219e8a8e544654a5cc2b7
 
 D3-IMP-06 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
 D3-IMP-06-R1 = PASS / CLOSED
-D3-IMP-06-R1-C1 = PASS / CLOSED
-D3-IMP-06-R1-C1-T1-R2 = PASS / CLOSED
+D3-PREFLIGHT-READONLY = PASS / CLOSED
+D3-PREFLIGHT-READONLY-CLOSE = PASS / CLOSED / DOCS-ONLY
 
-D3-PREFLIGHT-READONLY = NOT AUTHORIZED
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
@@ -42,7 +42,8 @@ PROCESS_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 
-NEXT_RECOMMENDED_GATE = D3-PREFLIGHT-READONLY
+NEXT_RECOMMENDED_GATE = D3-SBX-MIGRATION-01-PRE1
+NEXT_GATE_MODE = PLAN-ONLY / ZERO WRITE
 NEXT_GATE_AUTHORIZED = NO
 NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_EXPLICIT_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -54,7 +55,7 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 |---|---|
 | D1 | **PASS / CLOSED / DURABLE**; accepted live App794 revision 70 |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE**; Owner runtime UAT **IN PROGRESS / PAUSED** |
-| D3 | **ARCHITECTURE LOCKED / LOCAL IMPLEMENTATION THROUGH D3-IMP-06 PASS / CLOSED**; live preflight/migration/deployment are not authorized |
+| D3 | **LOCAL IMPLEMENTATION + LIVE READ-ONLY PREFLIGHT PASS / CLOSED**; migration/deployment/UAT/cutover remain unauthorized |
 | D4 | **IN PROGRESS / NOT ACTIVE** |
 | D5 | **IN PROGRESS / NOT ACTIVE** |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** |
@@ -104,71 +105,99 @@ D3-IMP-05 = PASS / CLOSED
 D3-IMP-05-R1 = PASS / CLOSED
 D3-IMP-06 = PASS / CLOSED
 D3-IMP-06-R1 = PASS / CLOSED
+D3-PREFLIGHT-READONLY = PASS / CLOSED
 ```
 
-## 5. D3-IMP-06 / R1 accepted capability
+## 5. D3-PREFLIGHT-READONLY accepted live evidence
 
-The final accepted local App800 HR routing capability now enforces:
-
-- role separation: `hr` is business routing authority; `admin-form` is technical/diagnostic authority and does not inherit HR mutation authority;
-- preview/validation available to `hr` or `admin-form`; create/edit/publish/supersede business mutations are HR-only;
-- canonical M2-first sequence for `M1_M2_G1` and `M1_M2_G1_G2`;
-- explicit `K_expected`; only 1 or 2 are valid and no implicit K default exists;
-- explicit HR scorer plan; missing scorer configuration fails closed with no slot-1/M1 fallback;
-- explicit process capability; missing/wrong capability fails closed;
-- NEW preview/version creation requires explicit complete history proof for the exact `Routing_Key` before deriving `max + 1`;
-- EXISTING preview/validation requires exact version context and does not guess a version identity;
-- revision-guarded edit/publish/supersession behavior and same-`Routing_Key` supersession guard;
-- UI event binder uses the real bounded service API and propagates the exact principal/K/process/version context;
-- unauthorized `dist/hr-control-center-bundle.js` change was restored to the accepted pre-package artifact;
-- deterministic business-date injection exists as a **testability-only** seam whose default is `null`; no live business-date provider was introduced.
-
-## 6. Accepted D3-IMP-06/R1 evidence
-
-Final independently reviewed substantive HEAD:
+Owner-authorized mode:
 
 ```text
-64a4f80288aa03b01078a4d60bee59dac9924665
+READ-ONLY / KINTONE READS ALLOWED
+ZERO KINTONE WRITE
+ZERO SCHEMA WRITE
+ZERO PROCESS WRITE
+ZERO DEPLOYMENT
 ```
 
-Accepted local evidence from the Owner execution session:
+Evidence package:
 
 ```text
-OBJECTIVE_SAVE_VALIDATION = 39 / 39 PASS
-HR_ROUTING_TARGETED_REGRESSION = 130 / 130 PASS
-CREATE_HANDLER_FORM_STATE = 2 / 2 PASS / CLEAN EXIT
-EMPLOYEE_MAIN_MBO_APP_INTEGRATION = 4 / 4 PASS / CLEAN EXIT
-INDIVIDUAL_REPOSITORY_TEST_FILE_MATRIX = 78 / 78 FILES PASS / CLEAN EXIT
-NPM_TEST_AGGREGATE = NODE HARNESS NON-EXIT / NOT USED AS THE FULL-SUITE PASS CLAIM
-
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-NETWORK_CALLS = 0
-PROCESS_READS = 0
-PROCESS_WRITES = 0
-APP794_WRITES = 0
-APP795_WRITES = 0
-APP796_WRITES = 0
-APP798_WRITES = 0
-APP800_WRITES = 0
-SCHEMA_LIVE_WRITES = 0
-DATA_BACKFILL = 0
-DEPLOYMENTS = 0
+LIVE_EVIDENCE_ZIP_SHA256 = cd6fd048a15faa5bdb490828463049b2890b654d49a517b91167bf3a8ee528ad
+IDENTITY_EVIDENCE_SAFETY = GET_ONLY
 ```
 
-The aggregate Node harness non-exit is not rewritten as a monolithic `npm test` PASS. Closure is based on the complete individual test-file matrix plus the focused regression evidence above.
+Accepted live facts:
 
-## 7. Permanent deployment blocker retained
+```text
+APP794_REVISION = 70
+APP794_FIELD_COUNT = 344
+APP794_D3_PROVENANCE_5_FIELDS = MISSING / MIGRATION GAP
+APP794_PROCESS_BASELINE = 16 STATES / 31 ACTIONS
+D3_PROCESS_TARGET = 19 STATES / 40 ACTIONS
+
+APP795_REVISION = 11
+APP795_RECORDS = 20 / COMPLETE EXPORT
+APP795_ROUTING_KEY_UNIQUE = TRUE / TARGET FALSE
+APP795_VERSION_KEY = MISSING
+APP795_VERSION_NUMBER = MISSING
+APP795_VERSION_STATUS = MISSING
+APP795_ROUTE_PATTERN = MISSING
+APP795_SCORER_PRIORITY_SLOTS = MISSING / HARD MIGRATION PRECONDITION
+APP795_DERIVABLE_TOPOLOGY = 17 x M1_G1 + 3 x M1_ONLY
+APP795_EFFECTIVE_INTERVAL = 2026-04-01 THROUGH 2027-03-31 ON CURRENT 20 ROWS
+
+APP796_RECORDS = 8
+APP796_PUBLISHED_FY2026 = PASS
+APP796_K_EXPECTED = 5 PROFILES K2 + 3 EXECUTIVE PROFILES K1
+
+APP798_ARCHIVE_PRIMITIVES = 11 / PRESENT
+APP798_RECORDS = 0
+
+APP800_REVISION = 8
+HR_ADMIN_GROUP_MEMBER = hr ONLY
+admin-form = VALID USER / NOT HR_ADMIN_GROUP MEMBER
+REQUIRED_ROUTING_USER_CODES = FOUND / VALID
+```
+
+## 6. Explicit pre-migration blockers / decisions required
+
+### A. Scorer migration authority
+
+`Scorer_Priority_Slots` is absent from live App795 and **must not be inferred automatically**.
+
+Evidence-derived candidate only, **NOT YET OWNER/HR AUTHORIZED**:
+
+```text
+M1_G1 -> [1,2]
+M1_ONLY -> [1]
+```
+
+A future PRE1 package must produce the exact 20-route migration manifest and obtain explicit Owner/HR scorer mapping approval before any schema/data write.
+
+### B. App795 HR mutation ACL
+
+Live App795 ACL does not yet establish `HR_ADMIN_GROUP` write authority. Before App800 HR self-service activation, a reviewed ACL/authorization plan is required. UI authorization alone is insufficient.
+
+### C. Live business-date provider
 
 ```text
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
+The deterministic local test seam remains test-only and is not a production provider.
+
+## 7. Current safety boundary
+
+`D3-PREFLIGHT-READONLY` authorization is consumed and closed. No current package authorizes further live reads or any write.
+
+```text
+CURRENT_KINTONE_READ_AUTHORITY = NONE
+CURRENT_KINTONE_WRITE_AUTHORITY = NONE
+CURRENT_SCHEMA_WRITE_AUTHORITY = NONE
+CURRENT_PROCESS_WRITE_AUTHORITY = NONE
+CURRENT_DEPLOYMENT_AUTHORITY = NONE
 PRODUCTION_READY = NO
 ```
 
-The local deterministic test seam is not a production provider and does not authorize deployment.
-
-## 8. Next permitted control action
-
-No package is active after D3-IMP-06/R1 closure.
-
-The readiness sequence identifies `D3-PREFLIGHT-READONLY` as the next recommended gate, but it remains **NOT AUTHORIZED**. The Control Plane must wait for an explicit Owner selection/authorization before any Kintone read, migration, deployment, UAT or production action.
+The next recommended bounded gate is `D3-SBX-MIGRATION-01-PRE1` in **PLAN-ONLY / ZERO-WRITE** mode. It must not start without fresh explicit Owner authorization.
