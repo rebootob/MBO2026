@@ -294,6 +294,33 @@ Capabilities implemented in R2:
 - Finding 2: Source Identity Hardening: `Employee_Code` and `Fiscal_Year` must be non-empty exact strings without leading/trailing whitespace, matching snapshot exactly. `Source_Record_ID` is validated for strict positive integer (Case A: matching request and snapshot, Case B: valid snapshot ID when request omitted, Case C: both omitted permitted; rejects 0, negative, non-integer, non-numeric, never produces NaN).
 - App 798 Post-Construction Hard Lock: Repository defines `appId` getter and ineffective setter; operations directly target `REVISION_ARCHIVE_APP_ID` (798) so caller assignments (e.g. `repo.appId = 799`) cannot redirect operations.
 - Evidence preserves source identity: `sourceRecordId`, `employeeCode`, `fiscalYear` preserved in verified evidence and validated by mutation gate when supplied.
+
+Verification evidence:
+```text
+REVISION_ARCHIVE_SERVICE_TESTS = 76 / 76 PASS
+REVISION_ARCHIVE_REPOSITORY_TESTS = 9 / 9 PASS
+D3_ARCHIVE_IDEMPOTENCY_TESTS = 14 / 14 PASS
+D3_REOPEN_ARCHIVE_INTEGRATION_TESTS = 4 / 4 PASS
+COMBINED_D3_IMP_04_R2_TESTS = 103 / 103 PASS (178ms)
+
+D3_SNAPSHOT_SERIALIZER_TESTS = 7 / 7 PASS (94ms)
+D3_IMP_01_TESTS = 40 / 40 PASS (134ms)
+D3_IMP_02_TESTS = 68 / 68 PASS (140ms)
+D3_IMP_03_TESTS = 86 / 86 PASS (225ms)
+COMBINED_ALL_TESTS = 297 / 297 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+APP798_LIVE_READS = 0
+APP798_LIVE_WRITES = 0
+APP794_WRITES = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
+
 
 
