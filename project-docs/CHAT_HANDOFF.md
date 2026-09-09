@@ -1,149 +1,55 @@
 # MBO2026 — CHAT HANDOFF
 
-Updated: 2026-09-09 ICT. Repository truth wins. Fresh-fetch `ai/antigravity-wp002c` first.
+Updated: 2026-09-09 ICT
 
-## Current canonical checkpoint
+> **Convenience handoff pointer only. This file is NOT current project-status authority.**
+> Fresh-fetch `ai/antigravity-wp002c` before acting.
 
-```text
-ACTIVE_WORK_PACKAGE = D3-DECISION-008-SYNC-R2
-ACTIVE_WORK_PACKAGE_TITLE = Authority Provenance Corrective for D3-008 Control Sync
-WORK_PACKAGE_TYPE = CONTROL-DOC CORRECTIVE / DOCUMENTATION-ONLY
-OWNER_AUTHORIZATION = APPROVED / EXPLICIT
-STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
+## Receiving-chat route
 
-PARENT_D3_DECISION_008_SYNC = PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d
-D3-DECISION-008-SYNC-R1 = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
-SNAPSHOT_METADATA_PATH_DECISION = LOCKED
+1. Read `project-docs/AI_CONTROL_CENTER.md` for the primary current control truth and next gate.
+2. Read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` for exact active authorization/scope or NONE.
+3. Read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` for the D1-D7 scoreboard.
+4. Read `project-docs/AI_ACTIVE_TASK.md` only if an execution packet is active.
+5. Read `project-docs/AI_DOCUMENT_INDEX.md` to locate exact locked decisions/baselines/evidence.
+6. Read `project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md` if authority precedence or review-loop behavior is unclear.
+7. Inspect exact source/tests/diff/live evidence only when the current gate requires it.
 
-D3_IMPLEMENTATION_AUTHORIZED = NO
-APP794_FIELD_CREATION_AUTHORIZED = NO
-APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
-APP798_BEHAVIOR_IMPLEMENTATION_AUTHORIZED = NO
-SOURCE_CODE_CHANGES_AUTHORIZED = NO
-TEST_CHANGES_AUTHORIZED = NO
-DEPLOYMENT_AUTHORIZED = NO
-KINTONE_WRITES_AUTHORIZED = NONE
-PRODUCTION_READY = NO
-
-NEXT_PERMITTED_ACTION = CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R2
-CANONICAL_HEAD = FRESH-FETCH ai/antigravity-wp002c BEFORE ACTING
-```
-
-## Authority provenance corrective
-
-Authoritative provenance is:
+## Permanent roles
 
 ```text
-ORIGINAL_D3_DECISION_008_SYNC_OWNER_SCOPE = 4 CONTROL DOCS
-ORIGINAL_D3_DECISION_008_SYNC_RESULT = PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d
-R1_OWNER_AUTHORIZATION = NONE
-R1_RESULT = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-R2_OWNER_AUTHORIZATION = EXPLICIT / DOCUMENTATION-ONLY
-R2_SCOPE = 6 CONTROL DOCS TO REPAIR PROVENANCE + CURRENT-STATE CONSISTENCY
-R2_RETROACTIVE_AUTHORIZATION_OF_R1 = NO
+Owner = final human authority
+ChatGPT = Control Plane / Project Lead / Architect / Independent Reviewer
+Antigravity = LOW-CREDIT / BOUNDED Execution Plane only
+Claude / other agents = specialist / second opinion / STOP by default
 ```
 
-The original Owner-authorized sync covered exactly:
+## Authority precedence
 
 ```text
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
+Latest explicit Owner decision
+> accepted concrete Git/Kintone/runtime evidence
+> AI_CONTROL_CENTER.md
+> control/02_ACTIVE_WORK_PACKAGE.md
+> control/00_MASTER_DELIVERY_CONTROL.md
+> locked subject-specific decision/baseline/evidence
+> routing/reference/historical summaries
 ```
 
-R1 later modified `CHAT_HANDOFF.md`, `AI_DOCUMENT_INDEX.md`, `control/02_ACTIVE_WORK_PACKAGE.md`, and review-gate wording in other control docs without explicit Owner authorization. Any R1 statement claiming that the original Owner authorization covered six documents is invalid and must not be used as authorization precedent.
+## Permanent safety reminders
 
-R2 is explicitly Owner-authorized to reconcile these six control documents only:
+- No source/schema/test/build/deployment/Kintone write without exact bounded Owner authorization.
+- Never widen or reuse a consumed authorization.
+- Closed work reopens only for proven regression or explicit Owner change request.
+- Docs-only approval does not imply implementation/deployment authorization.
+- Do not auto-start the next work package.
 
-```text
-project-docs/CHAT_HANDOFF.md
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-project-docs/AI_DOCUMENT_INDEX.md
-```
+## Review behavior
 
-R2 does not reopen D3 architecture and does not retroactively authorize R1.
+Substantive work requires independent review.
 
-## Locked D3 routing architecture
+Metadata-only control transcription and routing-document maintenance may use same-run consistency verification and closure. Do not open recursive corrective packages merely to copy a newer review-gate label into non-authoritative documents.
 
-```text
-DECISION_D3_001 = LOCKED / OWNER APPROVED
-DECISION_D3_002 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_003 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_005 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_006 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_007 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
+## New-chat note
 
-OWNER_DEC_D3_008_VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
-```
-
-D3 V1 retained invariants:
-
-```text
-WORKFLOW_APPRAISER_COUNT = 1..4
-USERS_PER_SEQUENTIAL_SLOT = EXACTLY 1
-NATIVE_ASSIGNEE_RULE = ALL
-CURRENT_LIVE_STANDARD_ROUTE = M1_G1 / 2 APPRAISERS
-D3_TARGET_ROUTE_CAPABILITY = 1..4 APPRAISERS
-
-APP795 = effective-dated routing master for NEW resolution points
-App794 = current transaction + bound active-stage route/provenance snapshot
-App798 = immutable event-scoped historical snapshot ledger
-App800 = HR control / administrative UI only
-
-APP794_NEW_LOGICAL_FIELDS = 5
-APP794_EFFECTIVE_ROUTING_KEY_REQUIRED = YES
-APP798_EVENT_SCOPED_HISTORY = YES
-APP798_RUNTIME_ROUTING_AUTHORITY = NO
-ARCHIVE_HASH_CONFLICT = FAIL_CLOSED
-ARCHIVE_ACTOR_NOT_RESOLVED = FAIL_CLOSED
-```
-
-The older stage-specific six-slot App794 physical persistence model remains superseded for D3 V1 where it conflicts with D3-008.
-
-## Durable project state
-
-```text
-D1 = PASS / CLOSED / DURABLE
-D2_ENGINEERING = PASS / CLOSED / DURABLE
-D2_OWNER_UAT = IN PROGRESS / PAUSED
-D3 = ARCHITECTURE / DESIGN ACTIVE
-D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / CONTROL_PROVENANCE_CORRECTIVE_AWAITING_REVIEW
-D3_IMPLEMENTATION_AUTHORIZED = NO
-D4 = IN PROGRESS / NOT ACTIVE
-D5 = IN PROGRESS / NOT ACTIVE
-D6 = UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED
-D7 = SOURCE FUNCTIONALITY CLOSED / PRODUCTION CUTOVER NOT AUTHORIZED
-PRODUCTION_READY = NO
-```
-
-## Current D3 authority documents
-
-```text
-D3_DECISION_006 = project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md
-D3_R4 = project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md
-D3_R4_R1 = project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md
-D3_DECISION_008 = project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
-LEGACY_ROUTE_SNAPSHOT_DESIGN = project-docs/architecture-redesign/ROUTING_SNAPSHOT_DESIGN.md (PARTIALLY SUPERSEDED FOR D3 V1)
-```
-
-## Execution boundary
-
-No source, test, config, schema, build, deployment, migration, Kintone read/write, process transition, or data backfill is authorized by R2.
-
-## Startup order for next chat
-
-1. Fresh-fetch canonical HEAD.
-2. Read this file.
-3. Read `AI_CONTROL_CENTER.md`.
-4. Read `AI_ACTIVE_TASK.md`.
-5. Read `control/00_MASTER_DELIVERY_CONTROL.md`.
-6. Read `control/02_ACTIVE_WORK_PACKAGE.md`.
-7. Read `AI_DOCUMENT_INDEX.md`.
-8. Do not start implementation-readiness until R2 receives independent Control Plane PASS and Owner separately authorizes the next bounded gate.
+Do not rely on any old embedded checkpoint from Git history of this file. Derive current state from the authoritative control layers after fresh-fetch.
