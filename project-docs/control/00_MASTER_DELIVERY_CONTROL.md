@@ -1,126 +1,79 @@
-# MBO2026 Master Delivery Control V2 — Current Repository State
+# MBO2026 Master Delivery Control V3 — D1-D7 Stage Scoreboard
 
 Updated: 2026-09-09 ICT
 
+> **Role:** authoritative D1-D7 stage-level scoreboard only.
+> For current gate/authorization, read `project-docs/AI_CONTROL_CENTER.md` and `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`.
+> Governance: `project-docs/MBO_CONTROL_GOVERNANCE_CONSOLIDATION.md`.
+
 ## Project metadata
 
-- **PROJECT**: MBO2026
-- **CANONICAL_BRANCH**: `ai/antigravity-wp002c`
-- **CONTROL_MODEL**: MBO DELIVERY CONTROL V2
-- **STATE_AUTHORITY**: fresh repository truth + newer explicit Owner decisions + newer independent Control Plane evidence
-- **PRODUCTION_READY**: **NO**
+```text
+PROJECT = MBO2026
+CANONICAL_BRANCH = ai/antigravity-wp002c
+CONTROL_MODEL = MBO CONTROL TRUTH V3
+PRODUCTION_READY = NO
+```
 
 ## Current stage status
 
-| Stage | Status | Current control meaning |
+| Stage | Status | Delivery meaning |
 |---|---|---|
-| D1 | **PASS / CLOSED / DURABLE** | Closed and durable. |
-| D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Owner runtime UAT remains IN PROGRESS / PAUSED. |
-| D3 | **ARCHITECTURE / DESIGN ACTIVE; IMPLEMENTATION NOT AUTHORIZED** | Routing architecture locked through `OWNER_DEC_D3_008`; R2 authority-provenance corrective executed and awaiting independent review. |
+| D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline is revision 70. Closed work remains durable unless proven regression or Owner change request. |
+| D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Required XLSX engineering is closed; Owner runtime UAT remains **IN PROGRESS / PAUSED** and is not equivalent to engineering closure. |
+| D3 | **ARCHITECTURE / DESIGN ACTIVE; IMPLEMENTATION NOT AUTHORIZED** | Routing/scoring/persistence architecture is locked through `OWNER_DEC_D3_008`. Implementation-readiness has not started. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
-| D6 | **UAT NOT CLOSED** | Full business UAT not complete. |
-| D7 | **SOURCE FUNCTIONALITY CLOSED / CUTOVER NOT AUTHORIZED** | Production readiness remains NO. |
+| D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | Runtime/UAT activity exists but full business UAT closure is not established. |
+| D7 | **SOURCE FUNCTIONALITY CLOSED / PRODUCTION CUTOVER NOT AUTHORIZED** | Source-level closure does not imply production cutover or production readiness. |
 
-## D3 accepted decision chain
+## Durable D1 evidence summary
 
 ```text
+D1 = PASS / CLOSED / DURABLE
+APP794_LIVE_REVISION = 70
+APP794_LIVE_JS_BLOB = 204d34db9e2eab297409a6a3d5e7f29c649779d5
+APP794_LIVE_CSS_BLOB = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
+```
+
+## Durable D2 engineering summary
+
+```text
+D2_ENGINEERING = PASS / CLOSED / DURABLE
+FOCUSED_EXPORT_SUITE = 16 PASS / 0 FAIL / 0 SKIP
+FROZEN_5_FILE_XLSX_REGRESSION = 44 PASS / 0 FAIL / 0 SKIP
+PDF_XLSX_007 = OWNER-DEFERRED / NON-BLOCKING
+D2_OWNER_UAT = IN PROGRESS / PAUSED
+```
+
+## D3 architecture checkpoint
+
+```text
+D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
+D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / IMPLEMENTATION_READINESS_NOT_STARTED
+D3_IMPLEMENTATION_AUTHORIZED = NO
+
 DECISION_D3_001 = LOCKED / OWNER APPROVED
 DECISION_D3_002 = LOCKED / OWNER APPROVED
 OWNER_DEC_D3_003 = LOCKED / OWNER APPROVED
 OWNER_DEC_D3_005 = LOCKED / OWNER APPROVED
 OWNER_DEC_D3_006 = LOCKED / OWNER APPROVED
 OWNER_DEC_D3_007 = LOCKED / OWNER APPROVED
-D3-WP001-R4 = PASS / CLOSED VIA R4-R1
-D3-WP001-R4-R1 = PASS / CLOSED
 OWNER_DEC_D3_008 = LOCKED / OWNER APPROVED
-OWNER_DEC_D3_008_VALUE = HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
 ```
 
-## Authority provenance — D3-008 control sync
+Primary D3-008 value:
 
 ```text
-ORIGINAL_D3_DECISION_008_SYNC_OWNER_SCOPE = 4 CONTROL DOCS
-ORIGINAL_D3_DECISION_008_SYNC_RESULT = PASS / CLOSED @ d62aa9b5f68a83e81f644648a2d004ad5b05585d
-R1_OWNER_AUTHORIZATION = NONE
-R1_RESULT = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-R2_OWNER_AUTHORIZATION = APPROVED / EXPLICIT
-R2_SCOPE = 6 CONTROL DOCS / DOCUMENTATION-ONLY PROVENANCE CORRECTIVE
-R2_RETROACTIVE_AUTHORIZATION_OF_R1 = NO
+HYBRID_APP794_MINIMAL_NATIVE_PLUS_APP798_EVENT_SCOPED_FULL_IMMUTABLE_ROUTE_SNAPSHOT
 ```
 
-Original Owner-authorized four documents:
+Exact architecture details are routed by `project-docs/AI_DOCUMENT_INDEX.md` and are intentionally not duplicated here.
+
+## Current authorization boundary
 
 ```text
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-```
-
-R2 is explicitly authorized to reconcile these six current control documents only:
-
-```text
-project-docs/CHAT_HANDOFF.md
-project-docs/AI_CONTROL_CENTER.md
-project-docs/AI_ACTIVE_TASK.md
-project-docs/control/00_MASTER_DELIVERY_CONTROL.md
-project-docs/control/02_ACTIVE_WORK_PACKAGE.md
-project-docs/AI_DOCUMENT_INDEX.md
-```
-
-Any R1 claim that the original Owner authorization covered six documents is invalid and non-precedential.
-
-## D3 routing / scoring / persistence contract
-
-```text
-WORKFLOW_APPRAISER_COUNT = 1..4
-USERS_PER_SEQUENTIAL_SLOT = EXACTLY 1
-NATIVE_ASSIGNEE_RULE = ALL
-CURRENT_LIVE_STANDARD_ROUTE = M1_G1 / 2 APPRAISERS
-D3_TARGET_ROUTE_CAPABILITY = 1..4 APPRAISERS
-
-EFFECTIVE_DATED_ROUTING_MODEL = MODEL_A_VERSIONED_ROWS_IN_APP795
-ROUTING_KEY_UNIQUE = NO
-VERSION_KEY_UNIQUE = YES
-ROUTE_VERSION_HAS_NO_EFFECT_BEFORE_EFFECTIVE_FROM = YES
-RESOLVER = READ_ONLY_DATE_INTERVAL
-OVERLAP = FAIL_CLOSED
-NO_EFFECTIVE_ROUTE = FAIL_CLOSED
-APP795_SCHEMA_MIGRATION_REQUIRED = YES
-APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
-
-APP794_NEW_LOGICAL_FIELDS = 5
-APP794_EFFECTIVE_ROUTING_KEY_REQUIRED = YES
-APP794_BOUND_STAGE_AUTHORITY_AFTER_RESOLUTION = YES
-APP798_RUNTIME_ROUTING_AUTHORITY = NO
-APP798_EVENT_SCOPED_HISTORY = YES
-APP798_FULL_PROVENANCE = Snapshot_JSON + Snapshot_Hash
-EVENT_TYPE_1 = STAGE_COMPLETION_SNAPSHOT
-EVENT_TYPE_2 = EVALUATION_REVISION_CREATED
-EVENT_TYPE_3 = ROUTE_REASSIGNMENT_PRECHANGE
-ARCHIVE_KEY_IDEMPOTENT_EVENT_IDENTITY = YES
-ARCHIVE_HASH_CONFLICT = FAIL_CLOSED
-ARCHIVE_ACTOR_NOT_RESOLVED = FAIL_CLOSED
-```
-
-The older stage-specific six-slot App794 physical persistence model remains superseded for D3 V1 where it conflicts with D3-008.
-
-## Active operational state & execution boundaries
-
-```text
-ACTIVE_WORK_PACKAGE = D3-DECISION-008-SYNC-R2
-ACTIVE_WORK_PACKAGE_TITLE = Authority Provenance Corrective for D3-008 Control Sync
-WORK_PACKAGE_TYPE = CONTROL-DOC CORRECTIVE / DOCUMENTATION-ONLY
-OWNER_AUTHORIZATION = APPROVED / EXPLICIT
-STATUS = EXECUTED / AWAITING CONTROL PLANE REVIEW
-
-PARENT_D3_DECISION_008_SYNC = PASS / CLOSED
-D3-DECISION-008-SYNC-R1 = FAIL / UNAUTHORIZED EXECUTION / NON-PRECEDENTIAL
-SNAPSHOT_METADATA_PATH_DECISION = LOCKED
-D3_ROUTING_ARCHITECTURE = LOCKED THROUGH OWNER_DEC_D3_008
-D3_READINESS = ROUTING_ARCHITECTURE_LOCKED / CONTROL_PROVENANCE_CORRECTIVE_AWAITING_REVIEW
-
+ACTIVE_WORK_PACKAGE = NONE
 D3_IMPLEMENTATION_AUTHORIZED = NO
 APP794_FIELD_CREATION_AUTHORIZED = NO
 APP795_SCHEMA_MIGRATION_AUTHORIZED = NO
@@ -130,26 +83,6 @@ TEST_CHANGES_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
-
-NEXT_PERMITTED_ACTION = CONTROL_PLANE_REVIEW_OF_D3_DECISION_008_SYNC_R2
 ```
 
-## Current control source documents
-
-```text
-D3_DECISION_006 = project-docs/D3_DECISION_006_EFFECTIVE_DATED_ROUTING_MODEL_A_SYNC.md
-D3_R4 = project-docs/D3_WP001_R4_APP794_APP798_ROUTE_SNAPSHOT_METADATA_PERSISTENCE_DESIGN.md
-D3_R4_R1 = project-docs/D3_WP001_R4_R1_ROUTE_SNAPSHOT_AUTHORITY_ARCHIVE_EVENT_MODEL_CORRECTIVE.md
-D3_DECISION_008 = project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md
-LEGACY_ROUTE_SNAPSHOT_DESIGN = project-docs/architecture-redesign/ROUTING_SNAPSHOT_DESIGN.md (PARTIALLY SUPERSEDED FOR D3 V1)
-```
-
-## Permanent execution rules
-
-- Fresh-fetch canonical branch before status/review/execution decisions.
-- Exactly one active work package.
-- Owner is final human authority.
-- Execution plane cannot self-authorize or self-certify PASS/CLOSED.
-- Out-of-scope findings are logged, not auto-fixed.
-- No source/schema/test/build/deployment/Kintone work without explicit bounded authorization.
-- D3 implementation remains **NOT AUTHORIZED** until a separate Owner-approved implementation package exists.
+The next substantive package requires fresh explicit Owner authorization.
