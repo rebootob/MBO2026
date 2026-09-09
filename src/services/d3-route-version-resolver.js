@@ -17,27 +17,12 @@ export class D3RouteVersionResolutionError extends Error {
 }
 
 function normalizeDateOnly(value, fieldName) {
-  let raw = value;
-
-  if (raw instanceof Date) {
-    if (Number.isNaN(raw.getTime())) {
-      throw new D3RouteVersionResolutionError(
-        'INVALID_RESOLUTION_DATE',
-        `${fieldName} is an invalid Date.`
-      );
-    }
-    raw = raw.toISOString().slice(0, 10);
-  } else {
-    raw = readD3String(raw);
-    if (/^\d{4}-\d{2}-\d{2}T/.test(raw)) {
-      raw = raw.slice(0, 10);
-    }
-  }
+  const raw = readD3String(value);
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
     throw new D3RouteVersionResolutionError(
       'INVALID_RESOLUTION_DATE',
-      `${fieldName} must resolve to YYYY-MM-DD.`
+      `${fieldName} must be an exact business date in YYYY-MM-DD format.`
     );
   }
 
