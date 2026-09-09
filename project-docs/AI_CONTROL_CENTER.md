@@ -13,14 +13,16 @@ CANONICAL_BRANCH = ai/antigravity-wp002c
 CONTROL_MODEL = MBO CONTROL TRUTH V3
 
 ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-02
+LAST_CLOSED_CONTROL_PACKAGE = D3-IMP-03
 LAST_CLOSED_CONTROL_PACKAGE_STATUS = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-LAST_REVIEWED_IMPLEMENTATION_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
+LAST_REVIEWED_IMPLEMENTATION_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
 
 D3_IMPLEMENTATION_READINESS_PLAN = COMPLETE
 D3_IMP_01 = PASS / CLOSED
 D3_IMP_02 = PASS / CLOSED
 D3_IMP_02_R2 = PASS / CLOSED
+D3_IMP_03 = PASS / CLOSED
+D3_IMP_03_R2 = PASS / CLOSED
 
 D3_IMPLEMENTATION_AUTHORIZED = NO CURRENT PACKAGE
 APP794_FIELD_CREATION_AUTHORIZED = NO
@@ -32,8 +34,9 @@ DEPLOYMENT_AUTHORIZED = NO
 KINTONE_READS_AUTHORIZED = NONE BY CURRENT CONTRACT
 KINTONE_WRITES_AUTHORIZED = NONE
 PRODUCTION_READY = NO
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 
-NEXT_RECOMMENDED_GATE = D3-IMP-03
+NEXT_RECOMMENDED_GATE = D3-IMP-04
 NEXT_PERMITTED_ACTION = OWNER_SELECTION_OR_AUTHORIZATION_OF_NEXT_BOUNDED_GATE
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
@@ -44,7 +47,7 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 |---|---|
 | D1 | **PASS / CLOSED / DURABLE**; accepted live App794 revision 70 |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE**; Owner runtime UAT **IN PROGRESS / PAUSED** |
-| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan, `D3-IMP-01`, and `D3-IMP-02` are **PASS / CLOSED**; no current package authorized |
+| D3 | **ARCHITECTURE LOCKED / IMPLEMENTATION ACTIVE BY BOUNDED PACKAGES**; readiness plan, `D3-IMP-01`, `D3-IMP-02`, and `D3-IMP-03` are **PASS / CLOSED**; no current package authorized; live business-date provider remains a pre-deployment blocker |
 | D4 | **IN PROGRESS / NOT ACTIVE** |
 | D5 | **IN PROGRESS / NOT ACTIVE** |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** |
@@ -110,13 +113,13 @@ D3-IMP-02-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
 D3-IMP-02-R2 = PASS / CLOSED
 D3-IMP-02_FINAL_REVIEW_HEAD = 46102eafd5ebaee5e65e4f6afc57dc3b6b115348
 D3-IMP-02_SCOPE_LEAK = NONE FOUND
-D3-IMP-02_KINTONE_READS = 0
-D3-IMP-02_KINTONE_WRITES = 0
-D3-IMP-02_NETWORK_CALLS = 0
-D3-IMP-02_SCHEMA_LIVE_WRITES = 0
-D3-IMP-02_PROCESS_WRITES = 0
-D3-IMP-02_DATA_BACKFILL = 0
-D3-IMP-02_DEPLOYMENTS = 0
+
+D3-IMP-03 = PASS / CLOSED
+D3-IMP-03-R1 = PASS / SUPERSEDED BY ACCEPTED R2 CORRECTIVE
+D3-IMP-03-R2 = PASS / CLOSED
+D3-IMP-03_FINAL_REVIEW_HEAD = 3624d93e95f5eb9940a826a61108889d2c215a41
+D3-IMP-03_SCOPE_LEAK = NONE FOUND
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
 Accepted D3-IMP-02 capability:
@@ -127,11 +130,34 @@ Accepted D3-IMP-02 capability:
 - strict route-version record readiness validation;
 - guarded dry-run/read-back/rollback planning with live writes disabled.
 
+Accepted D3-IMP-03 capability:
+- explicit D3 runtime activation into Model A App795 effective-date resolution;
+- App796 PUBLISHED `Expected_Appraiser_Count` as the sole runtime K authority;
+- App794 five-field route/provenance binding with post-self-elision effective scorer ordinals;
+- fail-closed immutable bound-stage reuse and stage-boundary archive prerequisite contract;
+- explicit-only business-date source lock with no record/current-clock/legacy fallback;
+- no App798 runtime implementation or live deployment in this package.
+
 Verification evidence recorded by execution and accepted by independent source/diff review:
 
 ```text
-R2_SCHEMA_AND_MIGRATION_TESTS = 68 / 68 PASS
-R2_COMBINED_D3_TESTS = 108 / 108 PASS
+D3_IMP_02_SCHEMA_AND_MIGRATION_TESTS = 68 / 68 PASS
+D3_IMP_02_COMBINED_D3_TESTS = 108 / 108 PASS
+
+D3_IMP_03_RUNTIME_ROUTE_BINDING_TESTS = 48 / 48 PASS
+D3_IMP_03_ROUTING_SERVICE_REGRESSION_TESTS = 37 / 37 PASS
+D3_IMP_03_CORE_INTEGRATION_TESTS = 1 / 1 PASS
+D3_IMP_03_COMBINED_FOCUSED_TESTS = 86 / 86 PASS
+D3_IMP_03_ALL_D3_TESTS = 156 / 156 PASS
+
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+NETWORK_CALLS = 0
+SCHEMA_LIVE_WRITES = 0
+PROCESS_WRITES = 0
+APP798_WRITES = 0
+DATA_BACKFILL = 0
+DEPLOYMENTS = 0
 ```
 
 The pre-existing repository-wide Node test-harness non-exit remains documented from D3-IMP-01 and is not rewritten as a full-suite PASS.
@@ -141,8 +167,8 @@ The pre-existing repository-wide Node test-harness non-exit remains documented f
 ```text
 D3-IMP-01 Local Core Routing / Scorer / Snapshot Contracts + Tests       PASS / CLOSED
 D3-IMP-02 Local Schema Target + Guarded Migration Tooling                PASS / CLOSED
-D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration  NEXT RECOMMENDED / NOT AUTHORIZED
-D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service           NOT AUTHORIZED
+D3-IMP-03 Runtime App795 Resolution + App794 Bound Snapshot Integration  PASS / CLOSED
+D3-IMP-04 App798 Archive / Reopen / Route-Reassignment Service           NEXT RECOMMENDED / NOT AUTHORIZED
 D3-IMP-05 Native 19-State Process Compatibility — Local Payload Only     NOT AUTHORIZED
 D3-IMP-06 App800 HR Versioned Routing Self-Service                       NOT AUTHORIZED
 D3-PREFLIGHT-READONLY                                                     NOT AUTHORIZED
