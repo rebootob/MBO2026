@@ -22,6 +22,10 @@ function makeTransport() {
       async request(spec) {
         calls.push(spec);
         if (spec.path === D3_BINDING_ENDPOINTS.previewFields) return { revision: '12' };
+        if (spec.method === 'GET' && spec.path.startsWith(`${D3_BINDING_ENDPOINTS.previewDeploy}?`)) {
+          const app = spec.path.match(/apps\[0\]=(\d+)/)?.[1] ?? '795';
+          return { apps: [{ app, status: 'SUCCESS' }] };
+        }
         return { ok: true };
       }
     }
@@ -136,10 +140,13 @@ test('schema activation requires a staged revision and can deploy only the exact
     phase: 'APP795_STAGE_OPTIONAL_FIELDS',
     operations: [addOp('Version_Key')]
   });
-  await io.activateFormSchema({ appId: 795, phase: 'APP795_ACTIVATE_STAGED_SCHEMA' });
+  const result = await io.activateFormSchema({ appId: 795, phase: 'APP795_ACTIVATE_STAGED_SCHEMA' });
+  assert.equal(result.deployStatus, 'SUCCESS');
   assert.equal(fake.calls[1].method, 'POST');
   assert.equal(fake.calls[1].path, '/k/v1/preview/app/deploy.json');
   assert.deepEqual(fake.calls[1].body.apps, [{ app: 795, revision: '12' }]);
+  assert.equal(fake.calls[2].method, 'GET');
+  assert.equal(fake.calls[2].path, '/k/v1/preview/app/deploy.json?apps[0]=795');
 });
 
 test('record update is exact-20 App795 PUT only', async () => {

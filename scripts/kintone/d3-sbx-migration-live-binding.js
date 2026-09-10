@@ -12,6 +12,9 @@ export const D3_BINDING_ENDPOINTS = Object.freeze({
   records: '/k/v1/records.json'
 });
 
+export const D3_BINDING_DEPLOY_STATUS_MAX_CHECKS = 30;
+export const D3_BINDING_DEPLOY_POLL_DELAY_MS = 2000;
+
 const APP795_FIELD_ALLOWLIST = Object.freeze([
   'Routing_Key',
   'Version_Key',
@@ -94,6 +97,18 @@ function assertTransport(transport) {
 function assertSnapshotReader(readAppSnapshot) {
   if (typeof readAppSnapshot !== 'function') {
     fail('D3_BINDING_SNAPSHOT_READER_REQUIRED', 'A reviewed normalized snapshot reader is required.');
+  }
+}
+
+function assertDeployPollingOptions({ deployStatusMaxChecks, deployPollDelayMs, sleep }) {
+  if (!Number.isInteger(deployStatusMaxChecks) || deployStatusMaxChecks < 1 || deployStatusMaxChecks > 60) {
+    fail('D3_BINDING_DEPLOY_POLL_CONFIG_INVALID', 'deployStatusMaxChecks must be an integer from 1 to 60.');
+  }
+  if (!Number.isInteger(deployPollDelayMs) || deployPollDelayMs < 0 || deployPollDelayMs > 10000) {
+    fail('D3_BINDING_DEPLOY_POLL_CONFIG_INVALID', 'deployPollDelayMs must be an integer from 0 to 10000.');
+  }
+  if (typeof sleep !== 'function') {
+    fail('D3_BINDING_DEPLOY_POLL_CONFIG_INVALID', 'sleep must be a function.');
   }
 }
 
@@ -185,9 +200,28 @@ function toKintoneRecordValues(values) {
   ]));
 }
 
-export function createD3KintoneIoAdapter({ transport, readAppSnapshot }) {
+function exactDeployStatus(response, appId) {
+  const entries = response?.apps;
+  if (!Array.isArray(entries)) {
+    fail('D3_BINDING_DEPLOY_RESULT_UNCERTAIN', `Deploy status payload for App ${appId} is missing apps[].`);
+  }
+  const exact = entries.find(entry => String(entry?.app) === String(appId));
+  if (!exact || !['PROCESSING', 'SUCCESS', 'FAIL', 'CANCEL'].includes(exact.status)) {
+    fail('D3_BINDING_DEPLOY_RESULT_UNCERTAIN', `Deploy status for App ${appId} is missing or invalid.`);
+  }
+  return exact.status;
+}
+
+export function createD3KintoneIoAdapter({
+  transport,
+  readAppSnapshot,
+  deployStatusMaxChecks = D3_BINDING_DEPLOY_STATUS_MAX_CHECKS,
+  deployPollDelayMs = D3_BINDING_DEPLOY_POLL_DELAY_MS,
+  sleep = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
+}) {
   assertTransport(transport);
   assertSnapshotReader(readAppSnapshot);
+  assertDeployPollingOptions({ deployStatusMaxChecks, deployPollDelayMs, sleep });
   const pendingPreviewRevision = new Map();
 
   return Object.freeze({
@@ -217,24 +251,65 @@ export function createD3KintoneIoAdapter({ transport, readAppSnapshot }) {
 
     async activateFormSchema({ appId, phase }) {
       assertWriteAppId(appId);
-      const validPhase = (Number(appId) === 795
+      const numericAppId = Number(appId);
+      const validPhase = (numericAppId === 795
         && ['APP795_ACTIVATE_STAGED_SCHEMA', 'APP795_ACTIVATE_FINAL_SCHEMA'].includes(phase))
-        || (Number(appId) === 794 && phase === 'APP794_ACTIVATE_STAGED_SCHEMA');
+        || (numericAppId === 794 && phase === 'APP794_ACTIVATE_STAGED_SCHEMA');
       if (!validPhase) {
         fail('D3_BINDING_DEPLOY_PHASE_INVALID', `Unexpected schema activation phase ${phase} for App ${appId}.`);
       }
-      const revision = pendingPreviewRevision.get(Number(appId));
+      const revision = pendingPreviewRevision.get(numericAppId);
       if (!revision) {
         fail('D3_BINDING_PREVIEW_REVISION_REQUIRED', `No staged preview revision exists for App ${appId}.`);
       }
-      const response = await transport.request({
-        method: 'POST',
-        path: D3_BINDING_ENDPOINTS.previewDeploy,
-        body: { apps: [{ app: Number(appId), revision }] },
-        phase
-      });
-      pendingPreviewRevision.delete(Number(appId));
-      return { revision, response: clone(response ?? null) };
+
+      pendingPreviewRevision.delete(numericAppId);
+      let postTransportUncertain = false;
+      try {
+        await transport.request({
+          method: 'POST',
+          path: D3_BINDING_ENDPOINTS.previewDeploy,
+          body: { apps: [{ app: numericAppId, revision }] },
+          phase
+        });
+      } catch {
+        postTransportUncertain = true;
+      }
+
+      const statusPath = `${D3_BINDING_ENDPOINTS.previewDeploy}?apps[0]=${numericAppId}`;
+      let lastStatus = null;
+      for (let check = 0; check < deployStatusMaxChecks; check += 1) {
+        let statusResponse;
+        try {
+          statusResponse = await transport.request({
+            method: 'GET',
+            path: statusPath,
+            phase: `${phase}_STATUS_CHECK`
+          });
+        } catch {
+          fail(
+            'D3_BINDING_DEPLOY_RESULT_UNCERTAIN',
+            `Deploy status transport failed for App ${appId}; automatic write retry is forbidden.`
+          );
+        }
+        lastStatus = exactDeployStatus(statusResponse, numericAppId);
+        if (lastStatus === 'SUCCESS') {
+          return { revision, deployStatus: 'SUCCESS', postTransportUncertain };
+        }
+        if (lastStatus === 'FAIL' || lastStatus === 'CANCEL') {
+          fail(
+            'D3_BINDING_DEPLOY_EXECUTION_FAILED',
+            `Deploy for App ${appId} reached terminal status ${lastStatus}.`
+          );
+        }
+        if (check < deployStatusMaxChecks - 1) await sleep(deployPollDelayMs);
+      }
+
+      fail(
+        'D3_BINDING_DEPLOY_RESULT_UNCERTAIN',
+        `Deploy for App ${appId} remained ${lastStatus ?? 'UNKNOWN'} after ${deployStatusMaxChecks} bounded checks`
+          + `${postTransportUncertain ? ' following an uncertain deploy POST' : ''}.`
+      );
     },
 
     async updateExistingRecords({ appId, operations, atomic, phase }) {

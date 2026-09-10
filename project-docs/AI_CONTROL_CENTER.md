@@ -5,12 +5,11 @@ Updated: 2026-09-10 ICT
 > **PRIMARY CURRENT CONTROL TRUTH** for MBO2026. Fresh-fetch canonical branch before acting. Latest explicit Owner decision remains highest authority, subject to locked role-specific authority where explicitly required.
 
 ## 1. Current project control state
-
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01-R1
-ACTIVE_WORK_PACKAGE_STATUS = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01-R2
+ACTIVE_WORK_PACKAGE_STATUS = IMPLEMENTATION PUBLISHED / CANONICAL RUNTIME TEST PENDING / NOT CLOSED
 LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01-R1-CLOSE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -21,10 +20,11 @@ D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
 D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
 D3-SBX-MIGRATION-01-PREWRITE-01 = PASS / CLOSED / PASS_NO_MATERIAL_DRIFT
 D3-SBX-MIGRATION-01-PREWRITE-01-R1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-D3-SBX-MIGRATION-01-PREEXEC-01 = CORRECTIVE REQUIRED / R1 EXECUTED / REVIEW PENDING
-D3-SBX-MIGRATION-01-PREEXEC-01-R1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+D3-SBX-MIGRATION-01-PREEXEC-01 = CORRECTIVE REQUIRED / R2 ACTIVE
+D3-SBX-MIGRATION-01-PREEXEC-01-R1 = CORRECTIVE REQUIRED / DEPLOY COMPLETION POLLING GAP
+D3-SBX-MIGRATION-01-PREEXEC-01-R2 = IMPLEMENTATION PUBLISHED / CANONICAL RUNTIME TEST PENDING / NOT CLOSED
 
-PREEXEC_R1_AUTHORIZED_BASE_HEAD = e1759eed10885fa5e67624a0f34b32df84664408
+PREEXEC_R2_AUTHORIZED_BASE_HEAD = 6f6351acbba6b5e898220002fb755821afa6c86c
 PRE1_ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 PREWRITE_BACKUP_CHECKSUM = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
 APP795_SANITIZED_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
@@ -41,23 +41,19 @@ AUTO_INFER_SCORER_PLAN = FORBIDDEN
 APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL / OWNER APPROVED / RESOLVED
 INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
 
-PREEXEC_R1_CANONICAL_RUNNER_TEST_PLACEMENT = PASS BY REPOSITORY-PATH INSPECTION
-PREEXEC_R1_PACKAGE_TEST_GLOB_DISCOVERY = PASS / tests/*.test.js
-PREEXEC_R1_BINDING_NODE_SYNTAX = PASS
-PREEXEC_R1_ENTRYPOINT_NODE_SYNTAX = PASS
-PREEXEC_R1_BINDING_TEST_NODE_SYNTAX = PASS
-PREEXEC_R1_ISOLATED_BINDING_GUARD_HARNESS = 10/10 PASS
-PREEXEC_R1_CANONICAL_FULL_REPOSITORY_RUNTIME_TEST = NOT RUN / CONNECTOR-ONLY ENVIRONMENT
-PREEXEC_R1_FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
+PREEXEC_R2_DEPLOY_COMPLETION_POLLING = IMPLEMENTED
+PREEXEC_R2_TARGETED_BINDING_TESTS = 16/16 PASS
+PREEXEC_R2_CANONICAL_NPM_TEST = NOT RUN / ENVIRONMENT BLOCKED
+PREEXEC_R2_FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 
-PREEXEC_R1_KINTONE_READS = 0
-PREEXEC_R1_KINTONE_WRITES = 0
-PREEXEC_R1_SCHEMA_WRITES = 0
-PREEXEC_R1_PROCESS_WRITES = 0
-PREEXEC_R1_RECORD_WRITES = 0
-PREEXEC_R1_ACL_WRITES = 0
-PREEXEC_R1_DEPLOYMENTS = 0
-PREEXEC_R1_LIVE_MIGRATION_EXECUTIONS = 0
+PREEXEC_R2_KINTONE_READS = 0
+PREEXEC_R2_KINTONE_WRITES = 0
+PREEXEC_R2_SCHEMA_WRITES = 0
+PREEXEC_R2_PROCESS_WRITES = 0
+PREEXEC_R2_RECORD_WRITES = 0
+PREEXEC_R2_ACL_WRITES = 0
+PREEXEC_R2_DEPLOYMENTS = 0
+PREEXEC_R2_LIVE_MIGRATION_EXECUTIONS = 0
 
 KINTONE_READ_AUTHORIZED = NO
 KINTONE_WRITE_AUTHORIZED = NO
@@ -75,17 +71,20 @@ PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. PREEXEC-R1 corrective contract
-PREEXEC-R1 corrects the committed test placement and adds the dedicated canonical live binding path without contacting Kintone. The existing runner test blob is moved unchanged into root `tests/`, where its relative imports resolve and the repository `npm test` glob can discover it.
+## 2. PREEXEC-R2 corrective contract
+R2 closes the asynchronous deploy-control gap in the narrow D3 live binding. A schema activation can no longer return until bounded exact-app deployment status reaches `SUCCESS`. `FAIL`, `CANCEL`, timeout or status-read uncertainty fail closed, and the deploy POST cannot be automatically retried through the same staged revision.
 
-The new binding surface is deliberately narrow: read Apps 794/795/798 only; write Apps 794/795 only; App795 exact schema stages plus exact 20 existing-record update; App794 exact five provenance fields; no process/ACL/customization/create/delete/backfill/generic-deploy path. A durable file-backed one-shot authorization ledger rejects replay across process instances sharing the ledger directory.
+The R1 binding scope remains unchanged: read Apps 794/795/798 only; write Apps 794/795 only; App795 exact schema stages plus exact 20 existing-record update; App794 exact five provenance fields; no process/ACL/customization/create/delete/backfill/generic-deploy surface.
 
-## 3. Publication-history note
+## 3. Runtime-test boundary
+The execution environment cannot clone GitHub because DNS/network access is unavailable, and the reviewed tree contains no `.github/workflows` directory. Full canonical `npm test` therefore remains pending and must be supplied from Antigravity/local checkout before PREEXEC closure or any live-migration authorization.
+
+## 4. Publication-history note
 The historical transient out-of-scope root file `__DO_NOT_CREATE__` was created in commit `0c39c6c021cb00fc6f5f71c32a6590fcd5195a61` and corrected forward-only. History must not be rewritten.
 
-## 4. Current boundary
+## 5. Current boundary
 ```text
-NEXT_ACTION = INDEPENDENT CONTROL PLANE REVIEW OF D3-SBX-MIGRATION-01-PREEXEC-01-R1
+NEXT_ACTION = CANONICAL CHECKOUT RUNTIME TEST EVIDENCE FOR PREEXEC-01-R2
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
