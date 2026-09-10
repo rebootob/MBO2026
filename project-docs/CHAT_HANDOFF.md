@@ -10,8 +10,10 @@ Updated: 2026-09-10 ICT
 ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01-R1
 OWNER_AUTHORIZED = YES
 MODE = EVIDENCE/DOCS-ONLY / ZERO NEW KINTONE READ
-BASE_HEAD = 958c347d439ae62b8c2bb53dd322ff1c1e06d55a
-STATUS = AUTHORIZED / ANTIGRAVITY EXECUTION PENDING / NOT CLOSED
+BASE_HEAD = 76eab32f10fb35ce45e308c12ced10996ab009a2
+STATUS = AUTHORIZED / EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+R1_VERDICT = PASS_R1_EVIDENCE_COMPLETE
+R1_EVIDENCE_FILE = project-docs/evidence/D3_SBX_MIGRATION_01_PREWRITE_01_R1_EVIDENCE.md
 
 D3-SBX-MIGRATION-01-PREWRITE-01 = EXECUTION COMPLETE / CORRECTIVE REQUIRED / NOT CLOSED
 PREWRITE_EXECUTION_HEAD = 958c347d439ae62b8c2bb53dd322ff1c1e06d55a
@@ -31,8 +33,8 @@ NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-R1 must add sanitized proof for the 20-row App795 identity/rule comparisons, App795 ACL baseline, App794 process 16-state/31-action baseline, and timestamp provenance. If the existing local raw backup cannot prove any required item, STOP with `FRESH_READ_REAUTH_REQUIRED`; do not re-read Kintone under R1.
+R1 proof has been established from the existing local raw backup and local execution metadata: App 795 20-row sanitized boolean comparisons (both contract-aware and literal hashes provided), App 795 ACL baseline, App 794 16-state/31-action process management, timestamp provenance, and backup SHA-256 bitwise reproduction.
 
 Scorer mapping remains `M1_G1->[1,2]`, `M1_ONLY->[1]` with Owner+HR authority complete. App794 historical provenance policy remains `DEFER_REQUIREDNESS_NO_BACKFILL`; invented provenance is forbidden.
 
-After Antigravity pushes R1 evidence/control docs, STOP for independent Control Plane review. Do not start migration, deployment, UAT or cutover.
+Next required action: STOP for independent Control Plane review. Do not start migration, deployment, UAT or cutover.
