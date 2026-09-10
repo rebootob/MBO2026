@@ -9,15 +9,18 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R1
 OWNER_AUTHORIZED = YES
 MODE = LOCAL-ONLY / TEST-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
-EXE1_EXECUTION_COMPLETE = YES
+R1_BASE_HEAD = 27bbbfaccadbfb7235547941d659512071c4fd6c
+R1_EXECUTION_COMPLETE = YES
 INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
-EXE1_BASE_HEAD = b6bebd85ab6565718e4d31d54561da4f0394c470
 
 D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+D3-SBX-MIGRATION-01-EXE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
+D3-SBX-MIGRATION-01-EXE1-R1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+
 ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 ROUTE_MANIFEST_CANONICALIZATION = ECMASCRIPT_JSON_STRINGIFY_MANIFEST_ROWS_UTF8_NO_TRAILING_NEWLINE
 
@@ -30,38 +33,38 @@ D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
 D3-PROD-CUTOVER = NOT AUTHORIZED
 
-KINTONE_READS_EXECUTED_IN_EXE1 = 0
+KINTONE_READS_EXECUTED_IN_R1 = 0
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
 PROCESS_WRITES = 0
 DEPLOYMENTS = 0
-SOURCE_CHANGES = EXE1 LOCAL EXECUTOR ONLY
-TEST_CHANGES = EXE1 TARGETED TEST ONLY
 BUILD_CHANGES = 0
 AUTO_START_NEXT_WORK_PACKAGE = NO
 PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. EXE1 implementation boundary
+## 2. EXE1-R1 corrective boundary
 
-Implemented local/test-only contracts:
+Implemented/review pending:
 
 ```text
-APP795_STAGED_SCHEMA_EXECUTOR = LOCAL SIMULATION IMPLEMENTED / REVIEW PENDING
-APP795_EXACT_20_ROW_SEED_EXECUTOR = LOCAL SIMULATION IMPLEMENTED / REVIEW PENDING
-APP794_PROVENANCE_EXECUTOR = LOCAL SIMULATION IMPLEMENTED / REVIEW PENDING
+APP795_EXACT_RECORD_SET_GUARD = IMPLEMENTED / REVIEW PENDING
+APP794_EXACT_BACKFILL_SET_GUARD = IMPLEMENTED / REVIEW PENDING
+APP794_PROVENANCE_SEMANTIC_VALIDATION = IMPLEMENTED / REVIEW PENDING
+APP794_ROUTE_VERSION_MANIFEST_BINDING = IMPLEMENTED / REVIEW PENDING
 LIVE_EXECUTION_ENTRYPOINT = HARD FAIL-CLOSED / D3_EXE1_LIVE_IO_LOCKED
 D3_SCHEMA_WRITE_LOCKED = RETAINED / NOT UNLOCKED
 ```
 
 Artifacts:
 
-- `scripts/kintone/d3-sbx-migration-local-executor.js`
-- `tests/d3-sbx-migration-local-executor.test.js`
-- `project-docs/D3_SBX_MIGRATION_01_EXE1.md`
+- `scripts/kintone/d3-sbx-migration-local-executor-core.js` — preserved pre-R1 EXE1 implementation substrate.
+- `scripts/kintone/d3-sbx-migration-local-executor.js` — hardened R1 public entrypoint.
+- `tests/d3-sbx-migration-local-executor-r1.test.js` — targeted corrective regression.
+- `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md` — R1 evidence/contract.
 
-Local pre-commit evidence: source/test syntax checks PASS; isolated synthetic 20-route smoke simulation PASS with zero fetch calls. Repository-targeted test imports the actual PRE1 manifest; exact repository test execution is pending independent review/local repository execution. No full-suite PASS is claimed.
+R1 changes only local/test contracts. No exact repository test-run PASS or full-suite PASS is claimed until independent review executes/verifies evidence.
 
 ## 3. Remaining business/live prerequisites
 
@@ -81,10 +84,10 @@ HISTORICAL_ROUTE_DELETE = FORBIDDEN
 
 ## 4. Current boundary
 
-EXE1 implements and tests local migration contracts only. It does not authorize live Kintone reads/writes, schema/process changes, migration, deployment, UAT or cutover.
-
 ```text
-NEXT_ACTION = INDEPENDENT CONTROL PLANE REVIEW OF D3-SBX-MIGRATION-01-EXE1
+NEXT_ACTION = INDEPENDENT CONTROL PLANE REVIEW OF D3-SBX-MIGRATION-01-EXE1-R1
 NEXT_GATE_AUTHORIZED = NO
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 ```
+
+Do not auto-start migration, deployment, UAT or cutover.

@@ -5,17 +5,17 @@ Updated: 2026-09-10 ICT
 ## Current task
 
 ```text
-CURRENT_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1
+CURRENT_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R1
 MODE = LOCAL-ONLY / TEST-ONLY / ZERO LIVE I/O
 OWNER_AUTHORIZED = YES
-BASE_HEAD = b6bebd85ab6565718e4d31d54561da4f0394c470
+BASE_HEAD = 27bbbfaccadbfb7235547941d659512071c4fd6c
 EXECUTION_COMPLETE = YES
 INDEPENDENT_REVIEW = PENDING
 
-ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
-APP795_SCHEMA_EXECUTOR = LOCAL SIMULATION IMPLEMENTED / REVIEW PENDING
-APP795_20_ROW_SEED_EXECUTOR = LOCAL SIMULATION IMPLEMENTED / REVIEW PENDING
-APP794_PROVENANCE_EXECUTOR = LOCAL SIMULATION IMPLEMENTED / REVIEW PENDING
+PARENT_EXE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
+APP795_EXACT_RECORD_SET_GUARD = IMPLEMENTED / REVIEW PENDING
+APP794_EXACT_BACKFILL_SET_GUARD = IMPLEMENTED / REVIEW PENDING
+APP794_PROVENANCE_SEMANTIC_VALIDATION = IMPLEMENTED / REVIEW PENDING
 LIVE_EXECUTION = HARD LOCKED
 
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
@@ -23,15 +23,16 @@ NEXT_ACTION = OWNER COMMAND "review" / independent fresh-fetch review
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-EXE1 files:
+R1 artifacts:
 
+- `scripts/kintone/d3-sbx-migration-local-executor-core.js`
 - `scripts/kintone/d3-sbx-migration-local-executor.js`
-- `tests/d3-sbx-migration-local-executor.test.js`
-- `project-docs/D3_SBX_MIGRATION_01_EXE1.md`
+- `tests/d3-sbx-migration-local-executor-r1.test.js`
+- `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md`
 
-Local pre-commit checks: source/test syntax PASS; isolated synthetic 20-route smoke PASS with zero fetch calls. Exact repository-targeted test execution is not yet claimed PASS.
+New R1 source/test syntax checks PASS. Exact repository targeted test execution and full-suite PASS are not claimed by the execution package.
 
-Still unresolved and not approved by EXE1:
+Still unresolved and not approved by R1:
 
 ```text
 SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1] / PROPOSAL ONLY / PENDING OWNER-HR APPROVAL
@@ -40,4 +41,4 @@ FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE FUTURE LIVE WRITE
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-Kintone read/write, schema/process write and deployment executed by EXE1 = 0.
+Kintone read/write, schema/process write and deployment executed by R1 = 0.

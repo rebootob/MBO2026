@@ -58,7 +58,8 @@ D3 sandbox-migration planning/evidence/implementation:
 - `project-docs/D3_SBX_MIGRATION_01_PRE1.md` — exact 20-route migration/scorer/ACL plan derived from accepted preflight evidence.
 - `project-docs/D3_SBX_MIGRATION_01_PRE1_R1.md` — manifest-integrity and complete migration-tooling blocker corrective.
 - `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` — machine-readable 20-route manifest, deterministic route-array integrity contract, and execution blocker list.
-- `project-docs/D3_SBX_MIGRATION_01_EXE1.md` — local/test-only guarded App795/App794 migration executor implementation evidence and safety boundary.
+- `project-docs/D3_SBX_MIGRATION_01_EXE1.md` — local/test-only guarded App795/App794 migration executor implementation evidence and first independent-review findings.
+- `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md` — exact record-set coverage and App794 provenance semantic-validation corrective evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

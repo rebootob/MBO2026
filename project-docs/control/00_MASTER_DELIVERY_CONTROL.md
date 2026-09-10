@@ -18,7 +18,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline remains revision 70. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Owner runtime UAT remains paused. |
-| D3 | **EXE1 LOCAL IMPLEMENTATION EXECUTED / REVIEW PENDING** | PRE1/R1 are closed; local guarded migration executor implementation is complete for review; no sandbox migration write is authorized. |
+| D3 | **EXE1-R1 EXECUTED / INDEPENDENT REVIEW PENDING** | PRE1/R1 planning is closed; EXE1 independent review found bounded corrective gaps; EXE1-R1 has been implemented locally and no sandbox migration write is authorized. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | No current D6 authorization. |
@@ -31,7 +31,8 @@ D3-IMP-01..06 = PASS / CLOSED
 D3-PREFLIGHT-READONLY = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+D3-SBX-MIGRATION-01-EXE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
+D3-SBX-MIGRATION-01-EXE1-R1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
@@ -43,11 +44,11 @@ LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ## Remaining D3 migration prerequisites
 
 ```text
-EXE1_LOCAL_EXECUTORS = IMPLEMENTED / REVIEW PENDING
+EXE1_R1_CORRECTIVE = IMPLEMENTED / REVIEW PENDING
 SCORER_MAPPING = PENDING OWNER/HR APPROVAL
 APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
 FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE ANY FUTURE LIVE WRITE
 APP795_HR_ACL = PREPARED / DEFERRED / NOT AUTHORIZED
 ```
 
-EXE1 executes zero Kintone reads/writes, zero schema/process writes and zero deployment. It does not authorize D3-SBX-MIGRATION-01.
+EXE1-R1 executes zero Kintone reads/writes, zero schema/process writes and zero deployment. It does not authorize `D3-SBX-MIGRATION-01`.
