@@ -53,14 +53,15 @@ Primary durable decision/evidence documents:
 - `project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md`
 - `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md` — evidence-grounded implementation sequence, exact planned boundaries and live-preflight/deployment gates; does not itself authorize implementation.
 
-D3 sandbox-migration planning/evidence/implementation:
+D3 sandbox-migration planning/evidence/implementation/decision:
 
 - `project-docs/D3_SBX_MIGRATION_01_PRE1.md` — exact 20-route migration/scorer/ACL plan derived from accepted preflight evidence.
 - `project-docs/D3_SBX_MIGRATION_01_PRE1_R1.md` — manifest-integrity and complete migration-tooling blocker corrective.
-- `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` — machine-readable 20-route manifest, deterministic route-array integrity contract, and execution blocker list.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` — machine-readable 20-route manifest and deterministic route-array integrity contract.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1.md` — local/test-only guarded App795/App794 migration executor implementation evidence and first independent-review findings.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md` — exact record-set coverage and App794 provenance semantic-validation corrective evidence.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md` — strict App794 scorer-slot JSON number/integer type corrective and targeted-regression evidence.
+- `project-docs/D3_SBX_MIGRATION_01_BD1.md` — Owner scorer-mapping decision plus App794 `DEFER_REQUIREDNESS_NO_BACKFILL` policy; records that HR scorer concurrence remains required before live migration.
 - `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation substrate for the R2 canonical entrypoint.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
@@ -69,10 +70,10 @@ For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer c
 
 Use selectively according to the current question:
 
-- `project-docs/architecture-redesign/CONTROLLED_REOPEN_REVISION_DESIGN.md` — controlled reopen/revision business behavior.
-- `project-docs/architecture-redesign/REVISION_DATA_MODEL_DESIGN.md` — revision/archive model.
-- `project-docs/architecture-redesign/ROUTING_SNAPSHOT_DESIGN.md` — historical snapshot design; physical six-slot sections are partially superseded for D3 V1 where they conflict with D3-008.
-- `project-docs/architecture-redesign/GENERIC_ROUTING_ARCHITECTURE.md` — deferred generic/45-state reference, not D3 V1 implementation authority.
+- `project-docs/architecture-redesign/CONTROLLED_REOPEN_REVISION_DESIGN.md`
+- `project-docs/architecture-redesign/REVISION_DATA_MODEL_DESIGN.md`
+- `project-docs/architecture-redesign/ROUTING_SNAPSHOT_DESIGN.md`
+- `project-docs/architecture-redesign/GENERIC_ROUTING_ARCHITECTURE.md`
 - `project-docs/architecture-redesign/EVALUATION_PROFILE_ARCHITECTURE.md`
 - `project-docs/architecture-redesign/ANNUAL_EVALUATION_CYCLE_DESIGN.md`
 - `project-docs/architecture-redesign/ANNUAL_PLAN_CARRY_FORWARD_DESIGN.md`
@@ -82,33 +83,17 @@ Do not broad-read the full architecture-redesign directory unless the current ga
 
 ## 6. Confirmed baselines
 
-`project-docs/CONFIRMED_BASELINE/` contains durable accepted baselines. Read only the baseline relevant to the current decision.
-
-Important examples include:
-
-- D1 identity/access baseline documents;
-- D2 export/Part A/Part B/formula/template baselines;
-- routing/workflow baseline documents.
-
-A baseline defines durable subject truth; it does not by itself authorize a new execution.
+`project-docs/CONFIRMED_BASELINE/` contains durable accepted baselines. Read only the baseline relevant to the current decision. A baseline defines durable subject truth; it does not by itself authorize a new execution.
 
 ## 7. D1 / D2 evidence
 
-D1 deployment/UAT evidence and D2 XLSX engineering evidence remain in `project-docs/` and `CONFIRMED_BASELINE/` under their package-specific names.
-
-Use the Control Center/Master Delivery to know whether the stage is currently closed, paused or active; use the evidence docs only to support the exact factual claim under review.
+D1 deployment/UAT evidence and D2 XLSX engineering evidence remain in `project-docs/` and `CONFIRMED_BASELINE/` under their package-specific names. Use the Control Center/Master Delivery to know whether the stage is currently closed, paused or active.
 
 ## 8. Historical review archive
 
-- `project-docs/AI_REVIEW_PACKAGE.md` is a historical/standardized review archive containing many older package checkpoints and test counts.
-
-It is **not** current state authority. Never override current Control Center/Active WP truth with a status block from this historical package.
+- `project-docs/AI_REVIEW_PACKAGE.md` is a historical/standardized review archive and is not current state authority.
 
 ## 9. Document-role rule
-
-A document may be authoritative for its subject without being authoritative for current project status.
-
-When in doubt:
 
 ```text
 CURRENT STATE -> AI_CONTROL_CENTER.md
@@ -118,5 +103,3 @@ SUBJECT CONTRACT -> locked decision/baseline/evidence document
 IMPLEMENTATION SEQUENCE -> D3_IMPLEMENTATION_READINESS_PLAN.md
 DOCUMENT LOCATION -> AI_DOCUMENT_INDEX.md
 ```
-
-Do not copy mutable current-state blocks into this index during ordinary work-package closure.

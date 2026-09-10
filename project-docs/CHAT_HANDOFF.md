@@ -7,25 +7,35 @@ Updated: 2026-09-10 ICT
 ## Current handoff
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-EXE1-CLOSE
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-BD1
+OWNER_AUTHORIZED = YES
+MODE = DECISION/DOCS-ONLY / ZERO LIVE I/O
+BD1_EXECUTION_COMPLETE = YES
+BD1_STATUS = OWNER DECISION RECORDED / HR CONCURRENCE PENDING / NOT CLOSED
+
 D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1-R1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1-R2 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1-R2-T1 = PASS / CLOSED AFTER CORRECTIVE
-D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 = PASS / CLOSED
-EXE1_FINAL_REVIEWED_HEAD = abb2ae21f27352955ef123da42aab26a0c332db9
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
-NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
+NEXT_GATE_AUTHORIZED = NO
 ```
 
-PRE1 planning remains PASS/CLOSED with authoritative route-array SHA-256:
+Owner decision recorded in BD1:
 
-`0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e`
+```text
+SCORER_MAPPING_OWNER_APPROVAL = YES
+M1_G1   -> [1,2]
+M1_ONLY -> [1]
+SCORER_MAPPING_HR_CONCURRENCE = PENDING
+SCORER_MAPPING_EFFECTIVE_FOR_LIVE_MIGRATION = NO
 
-EXE1 engineering closure now includes exact App795 20-record/revision/route guards, staged schema planning, exact App794 historical backfill coverage, manifest-bound route/version provenance, strict scorer-slot semantics and a hard fail-closed live entrypoint. The final targeted EXE1/R1/R2 artifact rerun produced 28/28 PASS with exit code 0 after T1-R1 corrected two test expectations only. The run used canonical GitHub-fetched artifacts in a temporary workspace; no full repository checkout run is claimed.
+APP794_HISTORICAL_PROVENANCE_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL
+APP794_POLICY_OWNER_APPROVED = YES
+APP794_POLICY_RESOLVED = YES
+INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
+```
 
-Current business decisions remain unresolved: scorer mapping is proposal-only pending explicit Owner/HR approval; App794 existing-record provenance policy remains UNDEFINED / DO NOT GUESS; App795 HR ACL remains deferred; live business-date provider remains a deployment blocker.
+The scorer mapping must not be treated as live-authorized until genuine HR concurrence is separately recorded. The App794 decision permits a future separately authorized migration to stage provenance fields without backfilling invented historical values; requiredness remains deferred where historical truth is unavailable.
 
-Next recommended action is a bounded Owner/HR decision on scorer mapping and App794 historical provenance policy. Do not auto-start migration, deployment, UAT or cutover.
+Fresh pre-write backup/drift verification is still required before any future write. App795 HR ACL remains deferred and the live business-date provider remains a deployment blocker.
+
+Next expected action: HR concurrence on the exact scorer mapping only. Do not auto-start migration, deployment, UAT or cutover.

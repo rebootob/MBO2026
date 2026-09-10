@@ -5,45 +5,45 @@ Updated: 2026-09-10 ICT
 ## Current task
 
 ```text
-CURRENT_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-EXE1-CLOSE
+CURRENT_WORK_PACKAGE = D3-SBX-MIGRATION-01-BD1
+MODE = DECISION/DOCS-ONLY / ZERO LIVE I/O
+OWNER_AUTHORIZED = YES
+BASE_HEAD = 2d28fbe0ff6ecdfeec507c331470ca937e09b1ca
+EXECUTION_COMPLETE = YES
+STATUS = OWNER DECISION RECORDED / HR CONCURRENCE PENDING / NOT CLOSED
 
-D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1-R1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1-R2 = PASS / CLOSED
-D3-SBX-MIGRATION-01-EXE1-R2-T1 = PASS / CLOSED AFTER CORRECTIVE
-D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 = PASS / CLOSED
+SCORER_MAPPING_OWNER_APPROVAL = YES
+SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1]
+SCORER_MAPPING_HR_CONCURRENCE = PENDING
+SCORER_MAPPING_EFFECTIVE_FOR_LIVE_MIGRATION = NO
+AUTO_INFER_SCORER_PLAN = FORBIDDEN
 
-INDEPENDENT_REVIEWED_HEAD = abb2ae21f27352955ef123da42aab26a0c332db9
-TARGETED_EXE1_R1_R2_ARTIFACT_RUN = 28 / 28 PASS / EXIT 0
-FULL_CHECKOUT_REPOSITORY_RUN = NOT CLAIMED
-LIVE_EXECUTION = HARD LOCKED
+APP794_HISTORICAL_BACKFILL_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL / OWNER APPROVED / RESOLVED
+INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
 
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
+KINTONE_READ_AUTHORIZED = NO
+KINTONE_WRITE_AUTHORIZED = NO
+SCHEMA_WRITE_AUTHORIZED = NO
+PROCESS_WRITE_AUTHORIZED = NO
+DEPLOYMENT_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 NEXT_GATE_AUTHORIZED = NO
 ```
 
-EXE1 durable artifacts remain:
+Durable decision artifact:
 
-- `scripts/kintone/d3-sbx-migration-local-executor-core.js`
-- `scripts/kintone/d3-sbx-migration-local-executor-r1.js`
-- `scripts/kintone/d3-sbx-migration-local-executor.js`
-- `tests/d3-sbx-migration-local-executor.test.js`
-- `tests/d3-sbx-migration-local-executor-r1.test.js`
-- `tests/d3-sbx-migration-local-executor-r2.test.js`
-- `project-docs/D3_SBX_MIGRATION_01_EXE1.md`
-- `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md`
-- `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md`
+- `project-docs/D3_SBX_MIGRATION_01_BD1.md`
 
-Still unresolved and not approved by EXE1 closure:
+Previously accepted EXE1 engineering remains PASS/CLOSED with 28/28 targeted artifact tests PASS / exit 0; no full checkout run is claimed.
+
+Still required before any live migration:
 
 ```text
-SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1] / PROPOSAL ONLY / PENDING OWNER-HR APPROVAL
-APP794_HISTORICAL_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
-FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE FUTURE LIVE WRITE
+HR_CONCURRENCE_ON_EXACT_SCORER_MAPPING = REQUIRED
+FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED
 APP795_HR_ACL = PREPARED / DEFERRED / NOT AUTHORIZED
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-Recommended next action is a bounded Owner/HR business-decision gate for scorer mapping and App794 historical provenance policy. No migration, deployment, UAT or cutover starts automatically.
+Next action: obtain genuine HR concurrence on the exact scorer mapping. Do not infer or fabricate HR approval. No migration, deployment, UAT or cutover starts automatically.
