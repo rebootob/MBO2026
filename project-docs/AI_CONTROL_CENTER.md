@@ -9,17 +9,18 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R1
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R2
 OWNER_AUTHORIZED = YES
 MODE = LOCAL-ONLY / TEST-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT
-R1_BASE_HEAD = 27bbbfaccadbfb7235547941d659512071c4fd6c
-R1_EXECUTION_COMPLETE = YES
+R2_BASE_HEAD = b2787d6339b255829c4bd92b9cc4a1a68b40fb7c
+R2_EXECUTION_COMPLETE = YES
 INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
 
 D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-D3-SBX-MIGRATION-01-EXE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
-D3-SBX-MIGRATION-01-EXE1-R1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+D3-SBX-MIGRATION-01-EXE1 = PARTIAL PASS / CORRECTIVE CHAIN OPEN / NOT CLOSED
+D3-SBX-MIGRATION-01-EXE1-R1 = PARTIAL PASS / R2 REQUIRED / NOT CLOSED
+D3-SBX-MIGRATION-01-EXE1-R2 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
 
 ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 ROUTE_MANIFEST_CANONICALIZATION = ECMASCRIPT_JSON_STRINGIFY_MANIFEST_ROWS_UTF8_NO_TRAILING_NEWLINE
@@ -33,7 +34,7 @@ D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
 D3-PROD-CUTOVER = NOT AUTHORIZED
 
-KINTONE_READS_EXECUTED_IN_R1 = 0
+KINTONE_READS_EXECUTED_IN_R2 = 0
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
 PROCESS_WRITES = 0
@@ -44,27 +45,34 @@ PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. EXE1-R1 corrective boundary
+## 2. EXE1-R2 corrective boundary
 
 Implemented/review pending:
 
 ```text
-APP795_EXACT_RECORD_SET_GUARD = IMPLEMENTED / REVIEW PENDING
-APP794_EXACT_BACKFILL_SET_GUARD = IMPLEMENTED / REVIEW PENDING
-APP794_PROVENANCE_SEMANTIC_VALIDATION = IMPLEMENTED / REVIEW PENDING
-APP794_ROUTE_VERSION_MANIFEST_BINDING = IMPLEMENTED / REVIEW PENDING
-LIVE_EXECUTION_ENTRYPOINT = HARD FAIL-CLOSED / D3_EXE1_LIVE_IO_LOCKED
+APP795_EXACT_RECORD_SET_GUARD = RETAINED FROM R1
+APP794_EXACT_BACKFILL_SET_GUARD = RETAINED FROM R1
+APP794_ROUTE_VERSION_MANIFEST_BINDING = RETAINED FROM R1
+APP794_SCORER_SLOT_STRICT_JSON_NUMBER_INTEGER_TYPE = IMPLEMENTED / REVIEW PENDING
+R2_REJECT_NUMERIC_STRING = YES
+R2_REJECT_BOOLEAN = YES
+R2_REJECT_NULL = YES
+R2_REJECT_DECIMAL = YES
+LIVE_EXECUTION_ENTRYPOINT = HARD FAIL-CLOSED
 D3_SCHEMA_WRITE_LOCKED = RETAINED / NOT UNLOCKED
 ```
 
 Artifacts:
 
-- `scripts/kintone/d3-sbx-migration-local-executor-core.js` — preserved pre-R1 EXE1 implementation substrate.
-- `scripts/kintone/d3-sbx-migration-local-executor.js` — hardened R1 public entrypoint.
-- `tests/d3-sbx-migration-local-executor-r1.test.js` — targeted corrective regression.
-- `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md` — R1 evidence/contract.
+- `scripts/kintone/d3-sbx-migration-local-executor-core.js` — preserved pre-R1 EXE1 substrate.
+- `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation bytes.
+- `scripts/kintone/d3-sbx-migration-local-executor.js` — R2 hardened canonical entrypoint.
+- `tests/d3-sbx-migration-local-executor.test.js` — original EXE1 targeted regression.
+- `tests/d3-sbx-migration-local-executor-r1.test.js` — R1 targeted regression.
+- `tests/d3-sbx-migration-local-executor-r2.test.js` — R2 strict-type regression.
+- `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md` — R2 evidence/contract.
 
-R1 changes only local/test contracts. No exact repository test-run PASS or full-suite PASS is claimed until independent review executes/verifies evidence.
+R2 authoring evidence: wrapper syntax check PASS and strict-type micro-regression PASS. Exact repository execution of EXE1+R1+R2 targeted files is not claimed because a full repository checkout is unavailable in this execution environment; independent review must not convert this into a PASS without evidence.
 
 ## 3. Remaining business/live prerequisites
 
@@ -85,7 +93,7 @@ HISTORICAL_ROUTE_DELETE = FORBIDDEN
 ## 4. Current boundary
 
 ```text
-NEXT_ACTION = INDEPENDENT CONTROL PLANE REVIEW OF D3-SBX-MIGRATION-01-EXE1-R1
+NEXT_ACTION = INDEPENDENT CONTROL PLANE REVIEW OF D3-SBX-MIGRATION-01-EXE1-R2
 NEXT_GATE_AUTHORIZED = NO
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 ```

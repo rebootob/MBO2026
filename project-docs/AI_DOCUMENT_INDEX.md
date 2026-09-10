@@ -60,6 +60,8 @@ D3 sandbox-migration planning/evidence/implementation:
 - `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` — machine-readable 20-route manifest, deterministic route-array integrity contract, and execution blocker list.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1.md` — local/test-only guarded App795/App794 migration executor implementation evidence and first independent-review findings.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md` — exact record-set coverage and App794 provenance semantic-validation corrective evidence.
+- `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md` — strict App794 scorer-slot JSON number/integer type corrective and targeted-regression evidence.
+- `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation substrate for the R2 canonical entrypoint.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

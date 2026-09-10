@@ -5,17 +5,16 @@ Updated: 2026-09-10 ICT
 ## Current task
 
 ```text
-CURRENT_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R1
+CURRENT_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R2
 MODE = LOCAL-ONLY / TEST-ONLY / ZERO LIVE I/O
 OWNER_AUTHORIZED = YES
-BASE_HEAD = 27bbbfaccadbfb7235547941d659512071c4fd6c
+BASE_HEAD = b2787d6339b255829c4bd92b9cc4a1a68b40fb7c
 EXECUTION_COMPLETE = YES
 INDEPENDENT_REVIEW = PENDING
 
-PARENT_EXE1 = PARTIAL PASS / R1 REQUIRED / NOT CLOSED
-APP795_EXACT_RECORD_SET_GUARD = IMPLEMENTED / REVIEW PENDING
-APP794_EXACT_BACKFILL_SET_GUARD = IMPLEMENTED / REVIEW PENDING
-APP794_PROVENANCE_SEMANTIC_VALIDATION = IMPLEMENTED / REVIEW PENDING
+PARENT_EXE1 = PARTIAL PASS / CORRECTIVE CHAIN OPEN / NOT CLOSED
+PARENT_R1 = PARTIAL PASS / R2 REQUIRED / NOT CLOSED
+STRICT_SCORER_SLOT_TYPE_GUARD = IMPLEMENTED / REVIEW PENDING
 LIVE_EXECUTION = HARD LOCKED
 
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
@@ -23,16 +22,16 @@ NEXT_ACTION = OWNER COMMAND "review" / independent fresh-fetch review
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-R1 artifacts:
+R2 artifacts:
 
-- `scripts/kintone/d3-sbx-migration-local-executor-core.js`
+- `scripts/kintone/d3-sbx-migration-local-executor-r1.js`
 - `scripts/kintone/d3-sbx-migration-local-executor.js`
-- `tests/d3-sbx-migration-local-executor-r1.test.js`
-- `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md`
+- `tests/d3-sbx-migration-local-executor-r2.test.js`
+- `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md`
 
-New R1 source/test syntax checks PASS. Exact repository targeted test execution and full-suite PASS are not claimed by the execution package.
+R2 wrapper syntax check PASS and strict-type micro-regression PASS. Exact repository execution of EXE1/R1/R2 targeted test files is not claimed by the execution package.
 
-Still unresolved and not approved by R1:
+Still unresolved and not approved by R2:
 
 ```text
 SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1] / PROPOSAL ONLY / PENDING OWNER-HR APPROVAL
@@ -41,4 +40,4 @@ FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE FUTURE LIVE WRITE
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-Kintone read/write, schema/process write and deployment executed by R1 = 0.
+Kintone read/write, schema/process write and deployment executed by R2 = 0.
