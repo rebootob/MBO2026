@@ -62,7 +62,7 @@ test('R1 App794 rejects duplicate scorer slots', () => {
 });
 
 test('R1 App794 rejects zero scorer slot', () => {
-  assert.throws(() => buildApp794ProvenancePlan({ currentSchema: { fields: {} }, existingRecords: [app794Record(1, '7')], policy: explicitPolicy([{ recordId: '1', expectedRevision: '7', values: provenanceValues({ Effective_Scorer_Slots_Snapshot: '[0,1]' }) }]), backupEvidence: backup(794) }), /APP794_PROVENANCE_SCORER_SNAPSHOT_INVALID/);
+  assert.throws(() => buildApp794ProvenancePlan({ currentSchema: { fields: {} }, existingRecords: [app794Record(1, '7')], policy: explicitPolicy([{ recordId: '1', expectedRevision: '7', values: provenanceValues({ Effective_Scorer_Slots_Snapshot: '[0,1]' }) }]), backupEvidence: backup(794) }), /APP794_PROVENANCE_SCORER_SLOT_TYPE_INVALID/);
 });
 
 test('R1 App794 rejects scorer slot beyond active route slot count', () => {

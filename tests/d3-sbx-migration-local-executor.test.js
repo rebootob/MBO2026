@@ -137,7 +137,7 @@ test('real PRE1 manifest has exact authoritative 20-route integrity contract', (
 
 test('manifest drift fails closed before any simulated migration step', () => {
   const changed = structuredClone(manifest);
-  changed.rows[0][changed.columns.indexOf('routingKey')] = 'DRIFTED';
+  changed.rows[0][changed.columns.indexOf('routingKey')] = 'XME1';
   assert.throws(() => assertRouteManifestIntegrity(changed), /ROUTE_MANIFEST_HASH_MISMATCH/);
 });
 
