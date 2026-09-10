@@ -18,7 +18,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline remains revision 70. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Owner runtime UAT remains paused. |
-| D3 | **BUSINESS AUTHORITY PASS / CLOSED; LIVE MIGRATION NOT AUTHORIZED** | PRE1/EXE1 engineering and BD1/HR1 business authority are closed. Fresh pre-write backup/live drift verification remains the next bounded gate before any migration authorization. |
+| D3 | **PREWRITE-01 AUTHORIZED / EXECUTION BLOCKED / NOT CLOSED; LIVE MIGRATION NOT AUTHORIZED** | Business authority is closed. Fresh live backup/drift evidence is still missing because no authenticated Kintone read channel is available in the current Control Plane session. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | No current D6 authorization. |
@@ -33,7 +33,12 @@ D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
 D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-HR1_REVIEWED_HEAD = f468b357208589946e0c87c3096c62179a943696
+D3-SBX-MIGRATION-01-PREWRITE-01 = AUTHORIZED / EXECUTION BLOCKED / NOT CLOSED
+
+PREWRITE_AUTHORIZED_APP_SET = 794,795,796,798,800
+KINTONE_READS_EXECUTED_IN_PREWRITE = 0
+FRESH_BACKUP_CREATED = NO
+LIVE_DRIFT_VERIFICATION = NOT EXECUTED
 
 SCORER_MAPPING_OWNER_APPROVAL = YES
 SCORER_MAPPING_HR_CONCURRENCE = YES
@@ -52,9 +57,10 @@ LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ## Remaining D3 migration prerequisites
 
 ```text
-FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE ANY FUTURE LIVE WRITE
+AUTHENTICATED_KINTONE_READ_CHANNEL_FOR_EXACT_PREWRITE_APP_SET = REQUIRED
+FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = NOT YET SATISFIED
 APP795_HR_ACL = PREPARED / DEFERRED / NOT AUTHORIZED
 LIVE_MIGRATION_GATE = NOT AUTHORIZED
 ```
 
-`D3-SBX-MIGRATION-01-BD1-HR1-CLOSE` is docs-only and executes zero Kintone reads/writes, zero schema/process writes, zero deployment and zero source/test/build changes.
+PREWRITE-01 authorizes reads only for Apps 794/795/796/798/800. No Kintone write, schema/process/record/ACL write, deployment, source/test/build change or migration execution is authorized.

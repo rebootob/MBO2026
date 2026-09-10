@@ -63,6 +63,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md` — strict App794 scorer-slot JSON number/integer type corrective and targeted-regression evidence.
 - `project-docs/D3_SBX_MIGRATION_01_BD1.md` — Owner scorer-mapping decision plus App794 `DEFER_REQUIREDNESS_NO_BACKFILL` policy.
 - `project-docs/D3_SBX_MIGRATION_01_BD1_HR1.md` — HR concurrence record for the exact scorer mapping `M1_G1->[1,2]`, `M1_ONLY->[1]`; does not authorize migration.
+- `project-docs/D3_SBX_MIGRATION_01_PREWRITE_01.md` — authorized fresh pre-write backup/live-drift gate; current execution is fail-closed if no authenticated read channel exists and its exact live-read set is Apps 794/795/796/798/800.
 - `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation substrate for the R2 canonical entrypoint.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
