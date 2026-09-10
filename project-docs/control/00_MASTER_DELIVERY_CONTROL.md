@@ -18,7 +18,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline remains revision 70. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Owner runtime UAT remains paused. |
-| D3 | **BD1 OWNER+HR BUSINESS AUTHORITY COMPLETE / HR1 REVIEW PENDING; LIVE MIGRATION NOT AUTHORIZED** | PRE1 and EXE1 engineering are closed; scorer mapping and App794 no-backfill policy are decided. Fresh write-time backup/drift gate remains before any migration authorization. |
+| D3 | **BUSINESS AUTHORITY PASS / CLOSED; LIVE MIGRATION NOT AUTHORIZED** | PRE1/EXE1 engineering and BD1/HR1 business authority are closed. Fresh pre-write backup/live drift verification remains the next bounded gate before any migration authorization. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | No current D6 authorization. |
@@ -31,8 +31,9 @@ D3-IMP-01..06 = PASS / CLOSED
 D3-PREFLIGHT-READONLY = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
-D3-SBX-MIGRATION-01-BD1 = OWNER + HR BUSINESS DECISIONS COMPLETE / CONTROL REVIEW PENDING
-D3-SBX-MIGRATION-01-BD1-HR1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
+D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+HR1_REVIEWED_HEAD = f468b357208589946e0c87c3096c62179a943696
 
 SCORER_MAPPING_OWNER_APPROVAL = YES
 SCORER_MAPPING_HR_CONCURRENCE = YES
@@ -51,10 +52,9 @@ LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ## Remaining D3 migration prerequisites
 
 ```text
-INDEPENDENT_REVIEW_OF_HR1 = REQUIRED
 FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE ANY FUTURE LIVE WRITE
 APP795_HR_ACL = PREPARED / DEFERRED / NOT AUTHORIZED
 LIVE_MIGRATION_GATE = NOT AUTHORIZED
 ```
 
-HR1 is decision/docs-only and executes zero Kintone reads/writes, zero schema/process writes and zero deployment.
+`D3-SBX-MIGRATION-01-BD1-HR1-CLOSE` is docs-only and executes zero Kintone reads/writes, zero schema/process writes, zero deployment and zero source/test/build changes.

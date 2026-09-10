@@ -9,13 +9,14 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-BD1-HR1
-OWNER_AUTHORIZED = YES
-HR_CONCURRENCE_RECORDED = YES
-MODE = DECISION/DOCS-ONLY
-BASE_HEAD = 85bf41534839e5cc6450998393c029f765c3b5fd
-EXECUTION_COMPLETE = YES
-INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
+ACTIVE_WORK_PACKAGE = NONE
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-BD1-HR1-CLOSE
+NEXT_GATE_AUTHORIZED = NO
+AUTO_START_NEXT_WORK_PACKAGE = NO
+
+D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
+D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+HR1_REVIEWED_HEAD = f468b357208589946e0c87c3096c62179a943696
 
 SCORER_MAPPING_OWNER_APPROVAL = YES
 SCORER_MAPPING_HR_CONCURRENCE = YES
@@ -33,40 +34,15 @@ KINTONE_WRITE_AUTHORIZED = NO
 SCHEMA_WRITE_AUTHORIZED = NO
 PROCESS_WRITE_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
-AUTO_START_NEXT_WORK_PACKAGE = NO
-NEXT_GATE_AUTHORIZED = NO
 ```
 
-## HR1 authorization and concurrence
+## Closure authorization
 
-HR explicitly stated:
+`อนุมัติ D3-SBX-MIGRATION-01-BD1-HR1-CLOSE ตามขอบเขตที่เสนอ`
 
-`HR ยืนยัน M1_G1 -> [1,2] และ M1_ONLY -> [1] และอนุมัติ D3-SBX-MIGRATION-01-BD1-HR1`
+This closure records the already-issued independent PASS verdict for HR1 and closes the BD1 business-authority chain. It does not authorize Kintone access, migration, schema/process changes, deployment, UAT or cutover.
 
-This records genuine HR concurrence on the exact mapping previously approved by the Owner. It closes the missing Owner/HR scorer-business-authority input, subject to independent Control Plane review of this docs-only synchronization.
-
-## Scope
-
-HR1 may only:
-
-1. record HR concurrence on `M1_G1 -> [1,2]` and `M1_ONLY -> [1]`;
-2. update BD1/control/handoff/index documentation to reflect that concurrence;
-3. preserve `DEFER_REQUIREDNESS_NO_BACKFILL` for App794;
-4. preserve all live-write locks.
-
-## Explicitly forbidden
-
-- any Kintone GET/POST/PUT/DELETE;
-- any schema/process/record mutation;
-- any source, test or build change;
-- deployment/UAT/cutover;
-- granting App795 HR ACL;
-- changing the approved scorer mapping;
-- inferring any additional scorer slot;
-- inventing App794 historical provenance;
-- starting `D3-SBX-MIGRATION-01`.
-
-## Execution evidence
+## Closure evidence
 
 ```text
 KINTONE_READS = 0
@@ -79,4 +55,6 @@ TEST_CHANGES = 0
 BUILD_CHANGES = 0
 ```
 
-Next action: independent fresh-fetch review of HR1. No live migration gate is authorized by this package.
+## Next gate
+
+The next recommended bounded gate is `D3-SBX-MIGRATION-01-PREWRITE-01` for a fresh pre-write backup plus live drift verification. That gate is not authorized yet. `D3-SBX-MIGRATION-01` remains NOT AUTHORIZED.
