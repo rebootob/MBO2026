@@ -12,9 +12,9 @@ CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01
 OWNER_AUTHORIZED = YES
 MODE = READ/BACKUP/EVIDENCE-ONLY
-PREWRITE_BASE_HEAD = 197d9251c24091562d77ff557b094a3c82ad9670
-PREWRITE_STATUS = AUTHORIZED / EXECUTION BLOCKED / NOT CLOSED
-EXECUTION_BLOCKER = NO_AUTHENTICATED_KINTONE_READ_CHANNEL_IN_CURRENT_CONTROL_PLANE_SESSION
+PREWRITE_BASE_HEAD = 3fa05d77c92906fb79a107a7f38c0723261a0ac1
+PREWRITE_STATUS = AUTHORIZED / EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+DRIFT_VERDICT = PASS_NO_MATERIAL_DRIFT
 AUTO_START_NEXT_WORK_PACKAGE = NO
 NEXT_GATE_AUTHORIZED = NO
 
@@ -40,10 +40,11 @@ INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
 
 PREWRITE_AUTHORIZED_APP_SET = 794,795,796,798,800
 KINTONE_READ_AUTHORIZED = YES / PREWRITE-01 ONLY / EXACT APP SET
-KINTONE_READS_EXECUTED_IN_PREWRITE = 0
-FRESH_BACKUP_CREATED = NO
-LIVE_DRIFT_VERIFICATION = NOT EXECUTED
-BACKUP_CHECKSUM = NOT AVAILABLE
+KINTONE_READS_EXECUTED_IN_PREWRITE = 50
+FRESH_BACKUP_CREATED = YES
+LIVE_DRIFT_VERIFICATION = EXECUTED / PASS_NO_MATERIAL_DRIFT
+BACKUP_CHECKSUM = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
+EVIDENCE_FILE = project-docs/evidence/D3_SBX_MIGRATION_01_PREWRITE_01_EVIDENCE.md
 
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
@@ -63,11 +64,16 @@ PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. PREWRITE-01 execution blocker
+## 2. PREWRITE-01 execution and drift verification
 
-Owner authorized fresh Kintone read/backup/drift evidence for Apps 794/795/796/798/800. The current Control Plane runtime has no authenticated Kintone connection variables or connected Kintone provider, so no live GET has been executed and no fresh backup may be claimed.
+Owner authorized fresh Kintone read/backup/drift evidence for Apps 794/795/796/798/800. Execution was performed strictly via authenticated Kintone `GET` requests (50 requests total; 10 endpoints per app across the 5 authorized apps). App 797 was excluded.
 
-Repository tooling was also checked. `scripts/kintone/backup-sandbox-apps.js` iterates all configured sandbox apps. The sandbox registry includes App797 in addition to the authorized PREWRITE app set, so `npm run sandbox:backup` must not be run unchanged under this exact authorization because it would exceed scope.
+Raw backup is preserved locally in gitignored directory `backups/prewrite-01/2026-09-10T11-11-23-228Z` with deterministic SHA-256 checksum `75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73`.
+
+Live drift verification against `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` and locked business decisions confirmed:
+- App identity, revision, and record counts across all 5 apps match the accepted baseline exactly.
+- App 795 route manifest: all 20 records match row-by-row with 0 drift.
+- App 794: target D3 provenance fields remain absent as required before migration.
 
 ## 3. Preserved migration safety
 
@@ -81,9 +87,9 @@ D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 ## 4. Current boundary
 
 ```text
-NEXT_REQUIRED_ACTION = EXECUTE PREWRITE-01 FROM AN AUTHENTICATED KINTONE READ CHANNEL LIMITED TO APPS 794,795,796,798,800
+NEXT_REQUIRED_ACTION = SUBMIT PREWRITE-01 EVIDENCE FOR INDEPENDENT CONTROL PLANE REVIEW
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-Do not start migration, deployment, UAT or cutover. PREWRITE-01 remains active and not closed until fresh live evidence exists and is independently reviewed.
+Do not start migration, deployment, UAT or cutover. PREWRITE-01 remains active and not closed until fresh live evidence is independently reviewed by the ChatGPT Control Plane / Project Lead.
