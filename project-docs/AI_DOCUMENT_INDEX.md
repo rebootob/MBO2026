@@ -61,7 +61,8 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/D3_SBX_MIGRATION_01_EXE1.md` — local/test-only guarded App795/App794 migration executor implementation evidence and first independent-review findings.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R1.md` — exact record-set coverage and App794 provenance semantic-validation corrective evidence.
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md` — strict App794 scorer-slot JSON number/integer type corrective and targeted-regression evidence.
-- `project-docs/D3_SBX_MIGRATION_01_BD1.md` — Owner scorer-mapping decision plus App794 `DEFER_REQUIREDNESS_NO_BACKFILL` policy; records that HR scorer concurrence remains required before live migration.
+- `project-docs/D3_SBX_MIGRATION_01_BD1.md` — Owner scorer-mapping decision plus App794 `DEFER_REQUIREDNESS_NO_BACKFILL` policy.
+- `project-docs/D3_SBX_MIGRATION_01_BD1_HR1.md` — HR concurrence record for the exact scorer mapping `M1_G1->[1,2]`, `M1_ONLY->[1]`; does not authorize migration.
 - `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation substrate for the R2 canonical entrypoint.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.

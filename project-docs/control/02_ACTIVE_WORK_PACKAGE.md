@@ -9,12 +9,23 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-BD1
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-BD1-HR1
 OWNER_AUTHORIZED = YES
+HR_CONCURRENCE_RECORDED = YES
 MODE = DECISION/DOCS-ONLY
-BASE_HEAD = 2d28fbe0ff6ecdfeec507c331470ca937e09b1ca
+BASE_HEAD = 85bf41534839e5cc6450998393c029f765c3b5fd
 EXECUTION_COMPLETE = YES
-STATUS = OWNER DECISION RECORDED / HR CONCURRENCE PENDING / NOT CLOSED
+INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
+
+SCORER_MAPPING_OWNER_APPROVAL = YES
+SCORER_MAPPING_HR_CONCURRENCE = YES
+SCORER_MAPPING_M1_G1 = [1,2]
+SCORER_MAPPING_M1_ONLY = [1]
+SCORER_MAPPING_BUSINESS_AUTHORITY_COMPLETE = YES
+AUTO_INFER_SCORER_PLAN = FORBIDDEN
+
+APP794_HISTORICAL_PROVENANCE_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL / OWNER APPROVED / RESOLVED
+INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
 
 D3-SBX-MIGRATION-01_AUTHORIZED = NO
 KINTONE_READ_AUTHORIZED = NO
@@ -26,47 +37,46 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 NEXT_GATE_AUTHORIZED = NO
 ```
 
-## Owner authorization
+## HR1 authorization and concurrence
 
-`อนุมัติ D3-SBX-MIGRATION-01-BD1 ตามขอบเขตและ decision ที่เสนอ`
+HR explicitly stated:
 
-This authorization records only the bounded business decisions proposed immediately before approval.
+`HR ยืนยัน M1_G1 -> [1,2] และ M1_ONLY -> [1] และอนุมัติ D3-SBX-MIGRATION-01-BD1-HR1`
 
-## Decision A — exact scorer mapping
+This records genuine HR concurrence on the exact mapping previously approved by the Owner. It closes the missing Owner/HR scorer-business-authority input, subject to independent Control Plane review of this docs-only synchronization.
 
-```text
-M1_G1   -> [1,2]
-M1_ONLY -> [1]
-OWNER_APPROVED = YES
-HR_CONCURRENCE = PENDING
-EFFECTIVE_FOR_LIVE_MIGRATION = NO
-AUTO_INFER_SCORER_PLAN = FORBIDDEN
-```
+## Scope
 
-The locked scorer contract requires Owner/HR approval before migration may use the mapping. Owner authorization must not be rewritten as HR concurrence.
+HR1 may only:
 
-## Decision B — App794 historical provenance
-
-```text
-POLICY = DEFER_REQUIREDNESS_NO_BACKFILL
-OWNER_APPROVED = YES
-POLICY_RESOLVED = YES
-INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
-```
-
-Under a future separately authorized migration, the five D3 provenance fields may be staged optional as needed. No historical provenance values are backfilled by this policy, and requiredness must remain deferred where enforcement would require invented values.
+1. record HR concurrence on `M1_G1 -> [1,2]` and `M1_ONLY -> [1]`;
+2. update BD1/control/handoff/index documentation to reflect that concurrence;
+3. preserve `DEFER_REQUIREDNESS_NO_BACKFILL` for App794;
+4. preserve all live-write locks.
 
 ## Explicitly forbidden
 
 - any Kintone GET/POST/PUT/DELETE;
 - any schema/process/record mutation;
-- deployment/build upload/cutover;
-- treating Owner scorer approval as HR concurrence;
-- setting the scorer executor's Owner/HR approval gate true without genuine HR concurrence;
-- inventing App794 historical provenance;
+- any source, test or build change;
+- deployment/UAT/cutover;
 - granting App795 HR ACL;
+- changing the approved scorer mapping;
+- inferring any additional scorer slot;
+- inventing App794 historical provenance;
 - starting `D3-SBX-MIGRATION-01`.
 
-## Current next action
+## Execution evidence
 
-Genuine HR concurrence on the exact scorer mapping is required before BD1 can close. Fresh pre-write backup/drift verification remains a later separate gate after business authority is complete.
+```text
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+SCHEMA_WRITES = 0
+PROCESS_WRITES = 0
+DEPLOYMENTS = 0
+SOURCE_CHANGES = 0
+TEST_CHANGES = 0
+BUILD_CHANGES = 0
+```
+
+Next action: independent fresh-fetch review of HR1. No live migration gate is authorized by this package.
