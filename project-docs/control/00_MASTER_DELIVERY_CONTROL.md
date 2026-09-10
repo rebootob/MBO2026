@@ -18,7 +18,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | **PASS / CLOSED / DURABLE** | Accepted live App794 baseline remains revision 70. |
 | D2 | **ENGINEERING PASS / CLOSED / DURABLE** | Owner runtime UAT remains paused. |
-| D3 | **PRE1 + R1 PASS / CLOSED / EXECUTOR IMPLEMENTATION NOT STARTED** | Local implementation and live preflight are closed; exact 20-route migration plan and manifest-integrity/tooling-blocker corrective are closed; no sandbox migration write is authorized. |
+| D3 | **EXE1 LOCAL IMPLEMENTATION EXECUTED / REVIEW PENDING** | PRE1/R1 are closed; local guarded migration executor implementation is complete for review; no sandbox migration write is authorized. |
 | D4 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D5 | **IN PROGRESS / NOT ACTIVE** | No active authorization. |
 | D6 | **UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED** | No current D6 authorization. |
@@ -31,24 +31,23 @@ D3-IMP-01..06 = PASS / CLOSED
 D3-PREFLIGHT-READONLY = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1 = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
 D3-PROD-CUTOVER = NOT AUTHORIZED
 ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
-ROUTE_MANIFEST_HASH_RULE = UTF-8(JSON.stringify(manifest.rows)) / NO TRAILING NEWLINE
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
 ## Remaining D3 migration prerequisites
 
 ```text
+EXE1_LOCAL_EXECUTORS = IMPLEMENTED / REVIEW PENDING
 SCORER_MAPPING = PENDING OWNER/HR APPROVAL
-APP795_SCHEMA_MIGRATION_EXECUTOR = NOT IMPLEMENTED / NOT REVIEWED
-APP795_RECORD_SEED_EXECUTOR = NOT IMPLEMENTED / NOT REVIEWED
-APP794_PROVENANCE_MIGRATION_EXECUTOR = NOT REVIEWED
 APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
-FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED
+FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED BEFORE ANY FUTURE LIVE WRITE
+APP795_HR_ACL = PREPARED / DEFERRED / NOT AUTHORIZED
 ```
 
-No current authorization exists for executor implementation or any Kintone/schema/process/deployment operation.
+EXE1 executes zero Kintone reads/writes, zero schema/process writes and zero deployment. It does not authorize D3-SBX-MIGRATION-01.

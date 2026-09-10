@@ -53,11 +53,12 @@ Primary durable decision/evidence documents:
 - `project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md`
 - `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md` — evidence-grounded implementation sequence, exact planned boundaries and live-preflight/deployment gates; does not itself authorize implementation.
 
-D3 sandbox-migration planning/evidence:
+D3 sandbox-migration planning/evidence/implementation:
 
 - `project-docs/D3_SBX_MIGRATION_01_PRE1.md` — exact 20-route migration/scorer/ACL plan derived from accepted preflight evidence.
 - `project-docs/D3_SBX_MIGRATION_01_PRE1_R1.md` — manifest-integrity and complete migration-tooling blocker corrective.
 - `project-docs/evidence/D3_SBX_MIGRATION_01_PRE1_MANIFEST.json` — machine-readable 20-route manifest, deterministic route-array integrity contract, and execution blocker list.
+- `project-docs/D3_SBX_MIGRATION_01_EXE1.md` — local/test-only guarded App795/App794 migration executor implementation evidence and safety boundary.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
