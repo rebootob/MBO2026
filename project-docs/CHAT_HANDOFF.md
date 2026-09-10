@@ -7,44 +7,39 @@ Updated: 2026-09-10 ICT
 ## Current handoff
 
 ```text
-ACTIVE_WORK_PACKAGE = NONE
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01-R1-CLOSE
+ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01
+STATUS = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+AUTHORIZED_BASE_HEAD = d6dc7ea4e8e7e88776c91be97bd8378ac1fb94d5
+MODE = SOURCE/TEST/DOCS-ONLY / ZERO KINTONE I/O
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
 D3-SBX-MIGRATION-01-PREWRITE-01 = PASS / CLOSED / PASS_NO_MATERIAL_DRIFT
 D3-SBX-MIGRATION-01-PREWRITE-01-R1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-R1_REVIEWED_HEAD = 196587698e409355195ac4887d1661346399b0f1
-PREWRITE_EXECUTION_HEAD = 958c347d439ae62b8c2bb53dd322ff1c1e06d55a
-PREWRITE_BACKUP_CHECKSUM = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
-PREWRITE_KINTONE_READS = 50
-R1_NEW_KINTONE_READS = 0
-APP795_CONTRACT_AWARE_CHECKS = 280/280 PASS
-APP795_SANITIZED_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
-APP795_ACL_BASELINE = PASS
-APP794_PROCESS_BASELINE = PASS / 16 STATES / 31 ACTIONS
-TIMESTAMP_PROVENANCE = PASS
-
-D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
-D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+PRE1_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
+PREWRITE_BACKUP_SHA256 = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
+APP795_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
 SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1]
-APP794_HISTORICAL_PROVENANCE_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL / RESOLVED
+APP794_HISTORICAL_PROVENANCE_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL
 
-KINTONE_READ_AUTHORIZED = NO
-KINTONE_WRITE_AUTHORIZED = NO
-SCHEMA_WRITE_AUTHORIZED = NO
-PROCESS_WRITE_AUTHORIZED = NO
-RECORD_WRITE_AUTHORIZED = NO
-ACL_WRITE_AUTHORIZED = NO
-DEPLOYMENT_AUTHORIZED = NO
+PREEXEC_MOCK_TEST = 10/10 PASS
+FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
+KINTONE_READS = 0
+KINTONE_WRITES = 0
+SCHEMA_WRITES = 0
+PROCESS_WRITES = 0
+RECORD_WRITES = 0
+ACL_WRITES = 0
+DEPLOYMENTS = 0
+
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
 D3-SBX-UAT = NOT AUTHORIZED
 D3-PROD-CUTOVER = NOT AUTHORIZED
 ```
 
-Independent review accepted the R1 evidence at HEAD `196587698e409355195ac4887d1661346399b0f1`. The parent fresh backup was reproduced bit-for-bit, timestamp provenance passed, App795 exact guarded route/ACL evidence passed, and App794 Process Management remained at 16 states / 31 actions.
+PREEXEC introduces a thin future live runner only. The existing EXE1 local/test-only live-I/O lock remains preserved. The future migration write allowlist is App795 schema + exact 20 existing-record updates and App794 exact five provenance-field additions with zero historical backfill. App796/797/798/800 writes, Process Management changes, ACL changes and generic deployment are forbidden.
 
-The inactive App795 legacy approval-rule values are not unexpected drift: PRE1 defines blank inactive rules as a migration-time normalization. No migration was executed by PREWRITE, R1, or this closure.
+A transient out-of-scope `__DO_NOT_CREATE__` root file was created in historical commit `0c39c6c021cb00fc6f5f71c32a6590fcd5195a61`; final publication must remove it forward-only and retain the incident in history.
 
-Next recommended gate is the separately authorized `D3-SBX-MIGRATION-01` guarded live migration. Do not auto-start it. A future executor must fresh-fetch canonical Git and stop on live revision/record-set drift before any first write.
+Next action is independent review of PREEXEC-01. Do not auto-start migration.
