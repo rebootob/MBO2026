@@ -7,15 +7,16 @@ Updated: 2026-09-10 ICT
 ## Current handoff
 
 ```text
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R2
-OWNER_AUTHORIZED = YES
-MODE = LOCAL-ONLY / TEST-ONLY / ZERO LIVE I/O
-EXECUTION_COMPLETE = YES
-INDEPENDENT_REVIEW = PENDING
-BASE_HEAD = b2787d6339b255829c4bd92b9cc4a1a68b40fb7c
-PARENT_EXE1 = PARTIAL PASS / CORRECTIVE CHAIN OPEN / NOT CLOSED
-PARENT_R1 = PARTIAL PASS / R2 REQUIRED / NOT CLOSED
+ACTIVE_WORK_PACKAGE = NONE
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-EXE1-CLOSE
+D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R2 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R2-T1 = PASS / CLOSED AFTER CORRECTIVE
+D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 = PASS / CLOSED
+EXE1_FINAL_REVIEWED_HEAD = abb2ae21f27352955ef123da42aab26a0c332db9
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
+NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
@@ -23,10 +24,8 @@ PRE1 planning remains PASS/CLOSED with authoritative route-array SHA-256:
 
 `0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e`
 
-EXE1-R1 retained exact record-set coverage and manifest-bound App794 provenance semantics. EXE1-R2 adds only strict scorer-slot JSON type validation: scorer slots must be actual positive integer numbers; numeric strings, booleans, null and decimals are rejected. R1 public implementation bytes are preserved as an internal R2 substrate and the canonical public entrypoint remains live-I/O locked.
+EXE1 engineering closure now includes exact App795 20-record/revision/route guards, staged schema planning, exact App794 historical backfill coverage, manifest-bound route/version provenance, strict scorer-slot semantics and a hard fail-closed live entrypoint. The final targeted EXE1/R1/R2 artifact rerun produced 28/28 PASS with exit code 0 after T1-R1 corrected two test expectations only. The run used canonical GitHub-fetched artifacts in a temporary workspace; no full repository checkout run is claimed.
 
-Current business decisions are unchanged: scorer mapping remains proposal-only pending explicit Owner/HR approval; App794 existing-record provenance policy remains unresolved / DO NOT GUESS; App795 HR ACL remains deferred; live business-date provider remains a deployment blocker.
+Current business decisions remain unresolved: scorer mapping is proposal-only pending explicit Owner/HR approval; App794 existing-record provenance policy remains UNDEFINED / DO NOT GUESS; App795 HR ACL remains deferred; live business-date provider remains a deployment blocker.
 
-R2 authoring evidence includes wrapper syntax PASS and strict-type micro-regression PASS. Exact repository execution of the EXE1/R1/R2 targeted files remains pending independent review; no full-suite PASS is claimed.
-
-Next expected action: fresh-fetch and `review` EXE1-R2. Do not auto-start migration, deployment, UAT or cutover.
+Next recommended action is a bounded Owner/HR decision on scorer mapping and App794 historical provenance policy. Do not auto-start migration, deployment, UAT or cutover.

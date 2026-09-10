@@ -1,32 +1,19 @@
 # D3-SBX-MIGRATION-01-EXE1-R2 — Strict Scorer Slot Type + Targeted Regression Closure
 
-Status: EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING  
+Status: PASS / CLOSED  
 Mode: LOCAL-ONLY / TEST-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT  
-Base HEAD: `b2787d6339b255829c4bd92b9cc4a1a68b40fb7c`
+Base HEAD: `b2787d6339b255829c4bd92b9cc4a1a68b40fb7c`  
+Final reviewed HEAD: `abb2ae21f27352955ef123da42aab26a0c332db9`
 
 ## Owner authorization
 
 `อนุมัติ D3-SBX-MIGRATION-01-EXE1-R2 ตามขอบเขตที่เสนอ`
 
-The authorized bounded scope is the Control Plane proposal immediately preceding that approval: strict scorer-slot type validation plus targeted regression closure only.
+The authorized bounded scope was strict scorer-slot type validation plus targeted regression closure only.
 
-## Corrective finding
+## R2 implementation accepted
 
-EXE1-R1 correctly added positive/distinct/in-range scorer semantics, but it normalized each parsed JSON slot with `Number(slot)` before integer validation. That allowed coercible non-number JSON values such as `"1"` or `true` to be interpreted as numeric scorer slots.
-
-R2 closes only that gap.
-
-## R2 implementation
-
-The R1 public implementation bytes are preserved at:
-
-- `scripts/kintone/d3-sbx-migration-local-executor-r1.js`
-
-The canonical public entrypoint remains:
-
-- `scripts/kintone/d3-sbx-migration-local-executor.js`
-
-R2 now requires every parsed scorer slot used by App794 explicit provenance backfill to satisfy all of:
+The canonical public entrypoint requires every parsed App794 provenance scorer slot to satisfy:
 
 ```text
 typeof slot === "number"
@@ -34,47 +21,60 @@ Number.isInteger(slot) === true
 slot >= 1
 ```
 
-Therefore JSON numeric strings, booleans, null and decimals are rejected before R1 semantic validation. R1 continues to own malformed JSON, array length/K, uniqueness, range and route/version manifest binding.
+Numeric strings, booleans, null and decimals are rejected before the preserved R1 semantic validation. R1 continues to own malformed JSON, array length/K, uniqueness, range and route/version manifest binding. The guard is applied to policy build, backfill-plan apply and full local execution paths.
 
-The same strict-type guard is applied to:
+No scorer mapping or App794 historical business value was approved or inferred by R2.
 
-1. `buildApp794ProvenancePlan()` policy input;
-2. `applyApp794BackfillLocal()` plan input, preventing post-plan tampering;
-3. `executeD3SandboxMigrationLocalOnly()` before delegating to the preserved R1 executor.
+## T1 and T1-R1 evidence
 
-No scorer mapping is approved by this change and no business value is inferred.
-
-## Regression artifact
-
-Added:
-
-- `tests/d3-sbx-migration-local-executor-r2.test.js`
-
-Cases include rejection of:
-
-- `["1","2"]`
-- `[true,2]`
-- `[null,2]`
-- `[1,1.5]`
-- tampered plan containing numeric strings
-
-and acceptance of exact JSON integer-number `[1,2]` input under test-only business fixtures.
-
-Local authoring-environment verification completed:
+Independent T1 execution of the three EXE1/R1/R2 targeted test artifacts initially produced:
 
 ```text
-R2_WRAPPER_SYNTAX_CHECK = PASS
-STRICT_TYPE_MICRO_REGRESSION = PASS
-  numeric strings = REJECT
-  boolean = REJECT
-  null = REJECT
-  decimal = REJECT
-  [1,2] numeric integers = PASS
+TOTAL = 28
+PASS = 26
+FAIL = 2
+EXIT_CODE = 1
 ```
 
-A full repository checkout is not available in the execution environment, so no false claim is made that the original EXE1 + R1 + R2 repository test files were executed together. Exact repository targeted-test execution remains an independent-review evidence item.
+Both failures were test-contract expectation mismatches rather than a new production implementation defect:
 
-## Safety boundary
+1. manifest-drift test changed `TME1` to longer `DRIFTED`, causing byte-length guard to fire before hash guard;
+2. R1 zero scorer-slot test still expected the pre-R2 error code instead of the superseding strict-positive R2 guard.
+
+Owner then authorized:
+
+`อนุมัติ D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 ตามขอบเขตที่เสนอ`
+
+T1-R1 changed exactly two test assertions and zero production source:
+
+- same-length manifest mutation `TME1 -> XME1` to isolate `ROUTE_MANIFEST_HASH_MISMATCH`;
+- zero-slot expectation -> `APP794_PROVENANCE_SCORER_SLOT_TYPE_INVALID`.
+
+Independent rerun after the corrective produced:
+
+```text
+TARGETED_TEST_FILES = 3
+TOTAL = 28
+PASS = 28
+FAIL = 0
+CANCELLED = 0
+SKIPPED = 0
+EXIT_CODE = 0
+```
+
+The run used a temporary workspace assembled from canonical GitHub-fetched artifacts. A full repository checkout run and a full-suite PASS are not claimed.
+
+## Final independent verdict
+
+```text
+D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R2-T1 = PASS / CLOSED AFTER CORRECTIVE
+D3-SBX-MIGRATION-01-EXE1-R2 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
+```
+
+## Safety boundary remains unchanged
 
 ```text
 KINTONE_READS = 0
@@ -83,10 +83,11 @@ SCHEMA_WRITES = 0
 PROCESS_WRITES = 0
 DEPLOYMENTS = 0
 D3_SCHEMA_WRITE_LOCKED = UNCHANGED / NOT UNLOCKED
-LIVE_ENTRYPOINT = STILL FAIL-CLOSED THROUGH PRESERVED R1/EXE1 CONTRACT
+LIVE_ENTRYPOINT = HARD FAIL-CLOSED
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 SCORER_MAPPING_BUSINESS_APPROVAL = PENDING OWNER/HR
 APP794_HISTORICAL_PROVENANCE_POLICY = UNRESOLVED / DO NOT GUESS
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-Next action: independent fresh-fetch `review` of EXE1-R2. Do not auto-start migration or any live write gate.
+Final control-state synchronization is performed by `D3-SBX-MIGRATION-01-EXE1-CLOSE`. No later gate starts automatically.

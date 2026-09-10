@@ -9,15 +9,17 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-EXE1-R2
-OWNER_AUTHORIZED = YES
-MODE = LOCAL-ONLY / TEST-ONLY
-BASE_HEAD = b2787d6339b255829c4bd92b9cc4a1a68b40fb7c
-EXECUTION_COMPLETE = YES
-INDEPENDENT_CONTROL_PLANE_REVIEW = PENDING
+ACTIVE_WORK_PACKAGE = NONE
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-EXE1-CLOSE
+NEXT_GATE_AUTHORIZED = NO
 
-PARENT_EXE1 = PARTIAL PASS / CORRECTIVE CHAIN OPEN / NOT CLOSED
-PARENT_R1 = PARTIAL PASS / R2 REQUIRED / NOT CLOSED
+D3-SBX-MIGRATION-01-EXE1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R1 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R2 = PASS / CLOSED
+D3-SBX-MIGRATION-01-EXE1-R2-T1 = PASS / CLOSED AFTER CORRECTIVE
+D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 = PASS / CLOSED
+EXE1_FINAL_REVIEWED_HEAD = abb2ae21f27352955ef123da42aab26a0c332db9
+
 D3-SBX-MIGRATION-01_AUTHORIZED = NO
 KINTONE_READ_AUTHORIZED = NO
 KINTONE_WRITE_AUTHORIZED = NO
@@ -27,50 +29,20 @@ DEPLOYMENT_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-## Owner authorization
+## Last closure authorization
 
-`อนุมัติ D3-SBX-MIGRATION-01-EXE1-R2 ตามขอบเขตที่เสนอ`
+`อนุมัติ D3-SBX-MIGRATION-01-EXE1-CLOSE — Final Corrective-Chain Control Document Sync แบบ DOCS-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO SCHEMA WRITE / ZERO PROCESS WRITE / ZERO DEPLOYMENT`
 
-This authorizes only the exact bounded Control Plane proposal immediately before the approval:
+This closure records already-issued independent review verdicts only. It does not create live-write authority or business decisions.
 
-1. Require App794 provenance scorer slots to be actual JSON number values.
-2. Require `Number.isInteger(slot) === true` and `slot >= 1` before R1 semantic validation.
-3. Add negative regression cases for numeric strings, booleans, null and decimals plus a positive integer-number case.
-4. Preserve the R1 exact-record-set and route/version semantics unchanged.
-5. Run local verification where available and record evidence without overstating repository test execution.
-6. Sync R2 control/evidence documents only.
-
-Implementation paths are limited to:
-
-- `scripts/kintone/d3-sbx-migration-local-executor.js`
-- `scripts/kintone/d3-sbx-migration-local-executor-r1.js` (preserved R1 public implementation bytes/internal substrate)
-- `tests/d3-sbx-migration-local-executor-r2.test.js`
-- R2/current-control documentation.
-
-## Explicitly forbidden
-
-- any Kintone GET/POST/PUT/DELETE performed by R2;
-- any real schema/process/record mutation;
-- deployment/build upload/cutover;
-- changing or unlocking existing `D3_SCHEMA_WRITE_LOCKED`;
-- changing R1 record-set semantics outside what is needed for the strict slot-type guard;
-- treating scorer test values or PRE1 proposal as Owner/HR business approval;
-- choosing/inventing App794 historical provenance business values;
-- granting App795 HR ACL;
-- starting `D3-SBX-MIGRATION-01`.
-
-## Execution evidence
+## Accepted evidence
 
 ```text
-R2_WRAPPER_SYNTAX_CHECK = PASS
-R2_STRICT_TYPE_MICRO_REGRESSION = PASS
-NUMERIC_STRING_CASE = REJECT
-BOOLEAN_CASE = REJECT
-NULL_CASE = REJECT
-DECIMAL_CASE = REJECT
-INTEGER_NUMBER_CASE = PASS
-EXACT_REPOSITORY_EXE1_R1_R2_TEST_RUN = NOT CLAIMED / PENDING INDEPENDENT REVIEW EVIDENCE
-FULL_SUITE_PASS_CLAIM = NO
+T1_INITIAL_TARGETED_RESULT = 26 / 28 PASS / 2 EXPECTATION FAILURES
+T1_R1_TEST_CORRECTIVE = EXACTLY 2 TEST ASSERTIONS / ZERO PRODUCTION SOURCE CHANGE
+FINAL_TARGETED_EXE1_R1_R2_ARTIFACT_RUN = 28 / 28 PASS / EXIT 0
+FINAL_REVIEWED_HEAD = abb2ae21f27352955ef123da42aab26a0c332db9
+FULL_CHECKOUT_REPOSITORY_RUN = NOT CLAIMED
 KINTONE_READS = 0
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
@@ -78,6 +50,19 @@ PROCESS_WRITES = 0
 DEPLOYMENTS = 0
 ```
 
-Current business truth remains unchanged: scorer mapping is pending Owner/HR approval and App794 existing-record provenance backfill policy is unresolved / DO NOT GUESS.
+The final targeted run used a temporary workspace assembled from canonical GitHub-fetched artifacts. This is accepted as bounded EXE1 corrective evidence; it is not represented as a full repository checkout or full-suite run.
 
-Next action: independent fresh-fetch `review` of R2. No next gate is authorized.
+## Remaining prerequisites before any future live migration
+
+```text
+SCORER_MAPPING = PENDING OWNER/HR APPROVAL
+CANDIDATE_M1_G1 = [1,2]
+CANDIDATE_M1_ONLY = [1]
+AUTO_INFER_SCORER_PLAN = FORBIDDEN
+APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = UNDEFINED / DO NOT GUESS
+FRESH_PREWRITE_BACKUP_AND_DRIFT_CHECK = REQUIRED
+APP795_HR_ACL = PREPARED / DEFERRED / NOT AUTHORIZED
+LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
+```
+
+No next package is authorized. Recommended next action is a bounded Owner/HR business-decision gate for scorer mapping and App794 historical provenance policy.
