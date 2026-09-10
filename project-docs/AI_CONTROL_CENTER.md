@@ -9,15 +9,10 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01-R1
-OWNER_AUTHORIZED = YES
-MODE = EVIDENCE/DOCS-ONLY / ZERO NEW KINTONE READ / ZERO KINTONE WRITE / ZERO DEPLOYMENT
-R1_BASE_HEAD = 76eab32f10fb35ce45e308c12ced10996ab009a2
-R1_STATUS = AUTHORIZED / EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
-R1_VERDICT = PASS_R1_EVIDENCE_COMPLETE
-R1_EVIDENCE_FILE = project-docs/evidence/D3_SBX_MIGRATION_01_PREWRITE_01_R1_EVIDENCE.md
-AUTO_START_NEXT_WORK_PACKAGE = NO
+ACTIVE_WORK_PACKAGE = NONE
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01-R1-CLOSE
 NEXT_GATE_AUTHORIZED = NO
+AUTO_START_NEXT_WORK_PACKAGE = NO
 
 D3-SBX-MIGRATION-01-PRE1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-PRE1-R1 = PASS / CLOSED
@@ -28,8 +23,23 @@ D3-SBX-MIGRATION-01-EXE1-R2-T1 = PASS / CLOSED AFTER CORRECTIVE
 D3-SBX-MIGRATION-01-EXE1-R2-T1-R1 = PASS / CLOSED
 D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
 D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-D3-SBX-MIGRATION-01-PREWRITE-01 = EXECUTION COMPLETE / INDEPENDENT REVIEW CORRECTIVE REQUIRED / NOT CLOSED
+D3-SBX-MIGRATION-01-PREWRITE-01 = PASS / CLOSED / PASS_NO_MATERIAL_DRIFT
+D3-SBX-MIGRATION-01-PREWRITE-01-R1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+
 PREWRITE_EXECUTION_HEAD = 958c347d439ae62b8c2bb53dd322ff1c1e06d55a
+R1_EXECUTION_HEAD = 196587698e409355195ac4887d1661346399b0f1
+R1_REVIEWED_HEAD = 196587698e409355195ac4887d1661346399b0f1
+PREWRITE_AUTHORIZED_APP_SET = 794,795,796,798,800
+PREWRITE_KINTONE_READS_EXECUTED = 50
+PREWRITE_FRESH_BACKUP_CREATED = YES
+PREWRITE_BACKUP_CHECKSUM = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
+PREWRITE_DRIFT_VERDICT = PASS_NO_MATERIAL_DRIFT / INDEPENDENTLY ACCEPTED
+R1_NEW_KINTONE_READS = 0
+APP795_SANITIZED_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
+APP795_CONTRACT_AWARE_CHECKS = 280/280 PASS
+APP795_ACL_BASELINE = PASS
+APP794_PROCESS_BASELINE = PASS / 16 STATES / 31 ACTIONS
+TIMESTAMP_PROVENANCE = PASS
 
 SCORER_MAPPING_OWNER_APPROVAL = YES
 SCORER_MAPPING_HR_CONCURRENCE = YES
@@ -41,20 +51,13 @@ AUTO_INFER_SCORER_PLAN = FORBIDDEN
 APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL / OWNER APPROVED / RESOLVED
 INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
 
-PREWRITE_AUTHORIZED_APP_SET = 794,795,796,798,800
-PREWRITE_KINTONE_READS_EXECUTED = 50
-PREWRITE_FRESH_BACKUP_CREATED = YES
-PREWRITE_BACKUP_CHECKSUM = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
-PREWRITE_EXECUTION_DRIFT_VERDICT = PASS_NO_MATERIAL_DRIFT / NOT YET INDEPENDENTLY ACCEPTED
-
-R1_NEW_KINTONE_READ_AUTHORIZED = NO
-R1_RAW_BACKUP_REUSE_ONLY = YES
-R1_KINTONE_WRITES_AUTHORIZED = NO
-R1_SCHEMA_WRITES_AUTHORIZED = NO
-R1_PROCESS_WRITES_AUTHORIZED = NO
-R1_RECORD_WRITES_AUTHORIZED = NO
-R1_ACL_WRITES_AUTHORIZED = NO
-R1_DEPLOYMENT_AUTHORIZED = NO
+KINTONE_READ_AUTHORIZED = NO
+KINTONE_WRITE_AUTHORIZED = NO
+SCHEMA_WRITE_AUTHORIZED = NO
+PROCESS_WRITE_AUTHORIZED = NO
+RECORD_WRITE_AUTHORIZED = NO
+ACL_WRITE_AUTHORIZED = NO
+DEPLOYMENT_AUTHORIZED = NO
 
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 D3-SBX-DEPLOY-01 = NOT AUTHORIZED
@@ -64,34 +67,36 @@ PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. Independent review findings requiring R1
+## 2. PREWRITE / R1 independent acceptance
 
-The Control Plane review of PREWRITE-01 execution HEAD `958c347d439ae62b8c2bb53dd322ff1c1e06d55a` accepted the bounded execution path and sanitized Git scope, but did not close PREWRITE-01 because the committed evidence did not independently expose enough proof for all locked write-time guards.
+Independent Control Plane review of R1 execution HEAD `196587698e409355195ac4887d1661346399b0f1` passed. The corrective reproduced the parent backup checksum, established coherent timestamp provenance, verified the App795 20-row identity/revision/date/rule contract and accepted ACL baseline, and confirmed App794 Process Management remains at the accepted 16-state / 31-action baseline.
 
-R1 must use the existing local raw backup only and add sanitized proof for:
+The live legacy inactive approval-rule values are not treated as unexpected drift because PRE1 explicitly defines blank inactive rules as a **migration target normalization**, not as the required pre-migration live value. Active slots remain `ALL`; inactive slots are normalized only during a separately authorized migration.
 
-1. all 20 App795 rows: requesterUsers, M2, M1, G1, G2 and M2/M1/G1/G2 approval-rule equality against the canonical PRE1 manifest, without adding unnecessary personal data;
-2. App795 ACL/record-ACL/field-ACL comparison against the accepted baseline, plus App794 Process Management confirmation including the accepted 16-state / 31-action baseline;
-3. timestamp provenance for the local backup/execution/commit sequence. If provenance cannot be established from local evidence, STOP and report `FRESH_READ_REAUTH_REQUIRED` rather than re-reading Kintone.
-
-R1 may update sanitized evidence/control documentation only. Raw Kintone backup, credentials and unnecessary personal data must remain local and untracked.
-
-## 3. Preserved migration safety
+## 3. Closure safety evidence
 
 ```text
-AUTO_FIX_DRIFT = FORBIDDEN
-NEW_KINTONE_READ_IN_R1 = FORBIDDEN
-USE_OLD_PREFLIGHT_AS_FRESH_EVIDENCE = FORBIDDEN
-INVENT_BACKUP_OR_CHECKSUM = FORBIDDEN
-D3-SBX-MIGRATION-01 = NOT AUTHORIZED
+KINTONE_READS_IN_R1_CLOSE = 0
+KINTONE_WRITES_IN_R1_CLOSE = 0
+SCHEMA_WRITES_IN_R1_CLOSE = 0
+PROCESS_WRITES_IN_R1_CLOSE = 0
+RECORD_WRITES_IN_R1_CLOSE = 0
+ACL_WRITES_IN_R1_CLOSE = 0
+DEPLOYMENTS_IN_R1_CLOSE = 0
+MIGRATION_EXECUTIONS_IN_R1_CLOSE = 0
+SOURCE_CHANGES_IN_R1_CLOSE = 0
+TEST_CHANGES_IN_R1_CLOSE = 0
+BUILD_CHANGES_IN_R1_CLOSE = 0
 ```
+
+This closure does not authorize any live migration or deployment.
 
 ## 4. Current boundary
 
 ```text
-NEXT_REQUIRED_ACTION = SUBMIT R1 EVIDENCE FOR INDEPENDENT CONTROL PLANE REVIEW
+NEXT_RECOMMENDED_ACTION = D3-SBX-MIGRATION-01 / GUARDED LIVE MIGRATION AUTHORIZATION
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 ```
 
-Do not start migration, deployment, UAT or cutover. PREWRITE-01 / R1 remains active until R1 evidence passes independent Control Plane review.
+Any future migration execution must fresh-fetch canonical Git state and fail closed if the live schema/record revisions or exact guarded record set no longer match the accepted PREWRITE evidence before the first write. Do not start migration, deployment, UAT or cutover without separate explicit Owner authorization.

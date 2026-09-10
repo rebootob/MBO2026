@@ -1,8 +1,9 @@
 # D3-SBX-MIGRATION-01-PREWRITE-01-R1 — Evidence Completeness + Timestamp Provenance Corrective
 
-Status: AUTHORIZED / EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+Status: PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
 Mode: EVIDENCE/DOCS-ONLY / ZERO NEW KINTONE READ / ZERO KINTONE WRITE
 Base HEAD: `76eab32f10fb35ce45e308c12ced10996ab009a2`
+Execution / Reviewed HEAD: `196587698e409355195ac4887d1661346399b0f1`
 Evidence: `project-docs/evidence/D3_SBX_MIGRATION_01_PREWRITE_01_R1_EVIDENCE.md`
 Parent evidence: `project-docs/evidence/D3_SBX_MIGRATION_01_PREWRITE_01_EVIDENCE.md`
 Parent raw backup: `backups/prewrite-01/2026-09-10T11-11-23-228Z` (LOCAL ONLY)
@@ -12,99 +13,33 @@ Parent backup SHA-256: `75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2
 
 `อนุมัติ D3-SBX-MIGRATION-01-PREWRITE-01-R1 EVIDENCE/DOCS-ONLY corrective ตามขอบเขตที่เสนอ`
 
-## Purpose
+## Independent Control Plane review
 
-Close the independent-review evidence gaps in PREWRITE-01 without performing any new live Kintone read. R1 must derive its proof from the existing local raw backup and local execution metadata only.
+Independent review of execution HEAD `196587698e409355195ac4887d1661346399b0f1` accepted R1 and resolved the PREWRITE evidence gaps.
 
-## Required corrective evidence
-
-### A. App795 exact 20-row contract proof
-
-For each of the 20 canonical PRE1 rows, publish only sanitized comparison evidence sufficient to verify:
+Accepted proof:
 
 ```text
-sourceRecordIdMatch
-sourceRevisionMatch
-routingKeyMatch
-requesterUsersMatch
-M2Match
-M1Match
-G1Match
-G2Match
-M2RuleMatch
-M1RuleMatch
-G1RuleMatch
-G2RuleMatch
-effectiveFromMatch
-effectiveToMatch
-```
-
-Avoid republishing unnecessary personal data. A row may identify the already-public `sourceRecordId` and `Routing_Key` and use booleans for identity/rule matches. Record a deterministic SHA-256 over the canonical sanitized comparison-row array and state the canonicalization rule.
-
-### B. App795 ACL proof
-
-From the existing raw backup, compare live App795 ACL state against the accepted baseline and publish only sanitized facts/booleans needed to prove:
-
-- `MBO_DEDICATED_ACCESS` = view-only baseline;
-- `MBO_EMPLOYEE_ACCESS` = view-only baseline;
-- `CREATOR` = existing full-right baseline;
-- `everyone` = no-right baseline;
-- `HR_ADMIN_GROUP` = no explicit App795 write grant / deferred;
-- record ACL = none as accepted baseline;
-- field ACL = none as accepted baseline.
-
-Do not expose unnecessary member listings.
-
-### C. App794 process proof
-
-From the existing raw backup, confirm the accepted App794 Process Management baseline:
-
-```text
-PROCESS_ENABLED = true
-STATE_COUNT = 16
-ACTION_COUNT = 31
-```
-
-If normalized process payload hashing is used, document the canonicalization and SHA-256.
-
-### D. Timestamp provenance
-
-Establish provenance for the parent PREWRITE execution using local-only metadata where available, including:
-
-- backup directory timestamp/name;
-- filesystem creation/last-write timestamps where reliable;
-- local machine timezone/UTC offset at evidence generation time;
-- Git commit author/committer timestamp for parent execution commit;
-- whether any material clock skew is known.
-
-The goal is to show a coherent backup -> evidence -> commit sequence. If the sequence cannot be established, do not invent an explanation; set `TIMESTAMP_PROVENANCE = UNRESOLVED` and STOP with `FRESH_READ_REAUTH_REQUIRED`.
-
-## Safety boundary
-
-```text
-NEW_KINTONE_READ_AUTHORIZED = NO
-KINTONE_WRITE_AUTHORIZED = NO
-SCHEMA_WRITE_AUTHORIZED = NO
-PROCESS_WRITE_AUTHORIZED = NO
-RECORD_WRITE_AUTHORIZED = NO
-ACL_WRITE_AUTHORIZED = NO
-DEPLOYMENT_AUTHORIZED = NO
-MIGRATION_EXECUTION_AUTHORIZED = NO
-SOURCE_CHANGE_AUTHORIZED = NO
-TEST_CHANGE_AUTHORIZED = NO
-BUILD_CHANGE_AUTHORIZED = NO
-RAW_BACKUP_COMMIT_AUTHORIZED = NO
-```
-
-Antigravity may update/create sanitized evidence and minimal control documents only. Credentials, `.env.local`, cookies, tokens and raw Kintone record/config payloads remain local and untracked.
-
-## Exit contract
-
-Successful R1 output must state:
-
-```text
-R1_STATUS = EXECUTION COMPLETE / INDEPENDENT REVIEW PENDING
+REPRODUCED_BACKUP_SHA256 = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
+TIMESTAMP_PROVENANCE = PASS
+APP795_ROWS_CHECKED = 20
+APP795_CONTRACT_AWARE_CHECKS = 280/280 PASS
+APP795_SANITIZED_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
+APP795_ACL_MATCH = PASS
+APP795_RECORD_ACL_RULES = 0 / PASS
+APP795_FIELD_ACL_RULES = 0 / PASS
+APP794_PROCESS_ENABLED = true
+APP794_REVISION = 70
+APP794_STATE_COUNT = 16
+APP794_ACTION_COUNT = 31
 NEW_KINTONE_READS = 0
+```
+
+The review also accepted the disclosed distinction between current legacy inactive approval-rule values and the target manifest: PRE1 explicitly requires migration-time normalization of inactive slots to blank `''`. Therefore strict literal differences on inactive rule fields are expected pre-migration deltas and not unexpected drift. Active sequential slots remain `ALL`.
+
+## Safety result
+
+```text
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
 PROCESS_WRITES = 0
@@ -114,12 +49,11 @@ DEPLOYMENTS = 0
 SOURCE_CHANGES = 0
 TEST_CHANGES = 0
 BUILD_CHANGES = 0
+RAW_BACKUP_COMMITTED_TO_GIT = NO
 ```
 
-If existing local evidence is insufficient:
+## Closure
 
-```text
-R1_STATUS = STOPPED / FRESH_READ_REAUTH_REQUIRED
-```
+Owner subsequently authorized `D3-SBX-MIGRATION-01-PREWRITE-01-R1-CLOSE` as DOCS-ONLY / ZERO KINTONE READ / ZERO KINTONE WRITE / ZERO DEPLOYMENT. That closure records this already-completed independent review and closes both R1 and parent PREWRITE-01 without granting live migration authority.
 
-Do not auto-start a re-read, migration, deployment, UAT or any next package.
+`D3-SBX-MIGRATION-01` remains **NOT AUTHORIZED**. Do not auto-start migration, deployment, UAT or cutover.
