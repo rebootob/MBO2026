@@ -1,6 +1,6 @@
 # MBO2026 — AI CONTROL CENTER
 
-Updated: 2026-09-10 ICT
+Updated: 2026-09-11 ICT
 
 > **PRIMARY CURRENT CONTROL TRUTH** for MBO2026. Fresh-fetch canonical branch before acting. Latest explicit Owner decision remains highest authority, subject to locked role-specific authority where explicitly required.
 
@@ -8,9 +8,9 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01-R2
-ACTIVE_WORK_PACKAGE_STATUS = IMPLEMENTATION PUBLISHED / CANONICAL RUNTIME TEST PENDING / NOT CLOSED
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-PREWRITE-01-R1-CLOSE
+ACTIVE_WORK_PACKAGE = NONE
+ACTIVE_WORK_PACKAGE_STATUS = NO ACTIVE AUTHORIZATION
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01-R2-CLOSE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
@@ -20,11 +20,17 @@ D3-SBX-MIGRATION-01-BD1 = PASS / CLOSED / BUSINESS DECISIONS COMPLETE
 D3-SBX-MIGRATION-01-BD1-HR1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
 D3-SBX-MIGRATION-01-PREWRITE-01 = PASS / CLOSED / PASS_NO_MATERIAL_DRIFT
 D3-SBX-MIGRATION-01-PREWRITE-01-R1 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
-D3-SBX-MIGRATION-01-PREEXEC-01 = CORRECTIVE REQUIRED / R2 ACTIVE
-D3-SBX-MIGRATION-01-PREEXEC-01-R1 = CORRECTIVE REQUIRED / DEPLOY COMPLETION POLLING GAP
-D3-SBX-MIGRATION-01-PREEXEC-01-R2 = IMPLEMENTATION PUBLISHED / CANONICAL RUNTIME TEST PENDING / NOT CLOSED
+D3-SBX-MIGRATION-01-PREEXEC-01 = PASS / CLOSED / R2 ACCEPTED
+D3-SBX-MIGRATION-01-PREEXEC-01-R1 = CORRECTIVE REQUIRED / DEPLOY COMPLETION POLLING GAP / HISTORICAL
+D3-SBX-MIGRATION-01-PREEXEC-01-R2 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+D3-SBX-MIGRATION-01-PREEXEC-01-R2-T1 = HISTORICAL EXECUTION SCOPE VIOLATION / INCOMPLETE ATTRIBUTION
+D3-SBX-MIGRATION-01-PREEXEC-01-R2-T1-R1 = PASS / BASELINE ATTRIBUTION COMPLETE
+D3-SBX-MIGRATION-01-PREEXEC-01-R2-CLOSE = PASS / CLOSED / CONTROL SYNC
 
 PREEXEC_R2_AUTHORIZED_BASE_HEAD = 6f6351acbba6b5e898220002fb755821afa6c86c
+PREEXEC_R2_IMPLEMENTATION_HEAD = 50fc1459cfa1840ffacb272582c23ec382d522c8
+PREEXEC_R2_LOCAL_RUNTIME_EVIDENCE_COMMIT = ed0d3e8df48b521dd999aedd0d5b64c8d84b9a5d
+PREEXEC_R2_ATTRIBUTION_EVIDENCE_COMMIT = e3482ed1279f1e572f2ac3dd3fd956060d6af372
 PRE1_ROUTE_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 PREWRITE_BACKUP_CHECKSUM = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
 APP795_SANITIZED_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
@@ -41,9 +47,12 @@ AUTO_INFER_SCORER_PLAN = FORBIDDEN
 APP794_EXISTING_RECORD_PROVENANCE_BACKFILL_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL / OWNER APPROVED / RESOLVED
 INVENT_HISTORICAL_PROVENANCE = FORBIDDEN
 
-PREEXEC_R2_DEPLOY_COMPLETION_POLLING = IMPLEMENTED
+PREEXEC_R2_DEPLOY_COMPLETION_POLLING = PASS
 PREEXEC_R2_TARGETED_BINDING_TESTS = 16/16 PASS
-PREEXEC_R2_CANONICAL_NPM_TEST = NOT RUN / ENVIRONMENT BLOCKED
+PREEXEC_R2_PRIOR_D3_TARGETED_RUNTIME = 27/27 PASS / CONTROL PLANE REVIEWED
+PREEXEC_R2_LOCAL_CANONICAL_NPM_TEST = FAIL / 1706 PASS / 2 FAIL
+PREEXEC_R2_LOCAL_CANONICAL_FAILURE = CREATE-HANDLER testResolutionBusinessDate 0 != 1
+PREEXEC_R2_BASELINE_ATTRIBUTION = PASS / PRE_EXISTING_BASELINE_FAILURE
 PREEXEC_R2_FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 
 PREEXEC_R2_KINTONE_READS = 0
@@ -71,21 +80,27 @@ PRODUCTION_READY = NO
 LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
 ```
 
-## 2. PREEXEC-R2 corrective contract
-R2 closes the asynchronous deploy-control gap in the narrow D3 live binding. A schema activation can no longer return until bounded exact-app deployment status reaches `SUCCESS`. `FAIL`, `CANCEL`, timeout or status-read uncertainty fail closed, and the deploy POST cannot be automatically retried through the same staged revision.
+## 2. PREEXEC-R2 closure basis
+R2 closed the asynchronous deploy-control gap in the narrow D3 live binding. Schema activation now waits for bounded exact-app deployment status `SUCCESS`; `FAIL`, `CANCEL`, timeout and status-read uncertainty fail closed, and an uncertain/failed deploy POST is not automatically retried through the same staged revision.
 
-The R1 binding scope remains unchanged: read Apps 794/795/798 only; write Apps 794/795 only; App795 exact schema stages plus exact 20 existing-record update; App794 exact five provenance fields; no process/ACL/customization/create/delete/backfill/generic-deploy surface.
+Independent Control Plane review accepted the local runtime evidence and the T1-R1 baseline attribution. The canonical local checkout produced 1706/1708 passing tests with two `create-handler-form-state` failures. T1-R1 then ran the exact R2 source commit and its parent baseline in detached worktrees and reproduced the same two `testResolutionBusinessDate` failures on both sides. The relevant test file was independently verified as the same Git blob on both commits. The accepted attribution is `PRE_EXISTING_BASELINE_FAILURE`; no R2-specific regression was found.
 
-## 3. Runtime-test boundary
-The execution environment cannot clone GitHub because DNS/network access is unavailable, and the reviewed tree contains no `.github/workflows` directory. Full canonical `npm test` therefore remains pending and must be supplied from Antigravity/local checkout before PREEXEC closure or any live-migration authorization.
+The detached-worktree `npm test` runs also showed additional failures caused by missing isolated-worktree dev dependencies such as `esbuild` and `xlsx-populate`; therefore no full-repository integration PASS is claimed.
+
+## 3. Governance history
+The first T1 execution created evidence commit `ed0d3e8df48b521dd999aedd0d5b64c8d84b9a5d` despite its then-current `ZERO DOC CHANGE / ZERO COMMIT / ZERO PUSH` boundary. That is retained as a historical execution-scope violation and was corrected forward-only by T1-R1; no history rewrite is permitted. No source/test/Kintone impact was identified from that evidence-only commit.
+
+The later attribution evidence commit `e3482ed1279f1e572f2ac3dd3fd956060d6af372` was separately Owner-authorized as an evidence-only publication and is accepted as the durable T1-R1 evidence source.
 
 ## 4. Publication-history note
 The historical transient out-of-scope root file `__DO_NOT_CREATE__` was created in commit `0c39c6c021cb00fc6f5f71c32a6590fcd5195a61` and corrected forward-only. History must not be rewritten.
 
 ## 5. Current boundary
 ```text
-NEXT_ACTION = CANONICAL CHECKOUT RUNTIME TEST EVIDENCE FOR PREEXEC-01-R2
+NEXT_ACTION = WAIT FOR EXPLICIT OWNER AUTHORIZATION FOR ANY NEW GATE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 D3-SBX-MIGRATION-01 = NOT AUTHORIZED
 ```
+
+PREEXEC closure does not authorize live migration, deployment, UAT or production cutover.

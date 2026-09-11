@@ -1,6 +1,6 @@
 # MBO2026 Active Work Package Contract
 
-Updated: 2026-09-10 ICT
+Updated: 2026-09-11 ICT
 
 > **Role:** exact active authorization/scope authority.
 
@@ -8,10 +8,9 @@ Updated: 2026-09-10 ICT
 ```text
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
-ACTIVE_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01-R2
-STATUS = IMPLEMENTATION PUBLISHED / CANONICAL RUNTIME TEST PENDING / NOT CLOSED
-AUTHORIZED_BASE_HEAD = 6f6351acbba6b5e898220002fb755821afa6c86c
-MODE = SOURCE/TEST/DOCS-ONLY / ZERO KINTONE I/O
+ACTIVE_WORK_PACKAGE = NONE
+STATUS = NO ACTIVE WORK PACKAGE / PREEXEC R2 CLOSED
+LAST_CLOSED_WORK_PACKAGE = D3-SBX-MIGRATION-01-PREEXEC-01-R2-CLOSE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
@@ -25,22 +24,23 @@ DEPLOYMENT_AUTHORIZED = NO
 D3-SBX-MIGRATION-01_AUTHORIZED = NO
 ```
 
-## Owner authorization
-`อนุมัติ D3-SBX-MIGRATION-01-PREEXEC-01-R2 แบบ SOURCE/TEST/DOCS-ONLY / ZERO KINTONE I/O ตามขอบเขตที่เสนอ`
+## Latest Owner authorization
+`อนุมัติ D3-SBX-MIGRATION-01-PREEXEC-01-R2-CLOSE แบบ DOCS-ONLY / CONTROL-SYNC / ZERO KINTONE I/O ตามขอบเขตที่เสนอ`
 
-## R2 authorized corrective scope
-- Add bounded exact-App deploy-completion polling after schema activation POST.
-- Do not allow the runner to advance until exact status `SUCCESS`.
-- Fail closed on `FAIL`, `CANCEL`, timeout, malformed status, or status-read uncertainty.
-- Do not automatically retry the deploy POST after an uncertain/failed activation.
-- Test PROCESSING->SUCCESS, FAIL, CANCEL, TIMEOUT and transport-uncertainty cases with fake transport only.
-- Run canonical repository runtime tests if a checkout/CI execution surface is available; otherwise record the blocker and make no PASS claim.
-- Update source/test/control/evidence only; zero Kintone I/O and zero deployment.
-
-## Execution evidence
+## Closure result
 ```text
+D3-SBX-MIGRATION-01-PREEXEC-01 = PASS / CLOSED / R2 ACCEPTED
+D3-SBX-MIGRATION-01-PREEXEC-01-R2 = PASS / CLOSED / INDEPENDENT CONTROL PLANE REVIEWED
+D3-SBX-MIGRATION-01-PREEXEC-01-R2-T1-R1 = PASS / BASELINE ATTRIBUTION COMPLETE
+D3-SBX-MIGRATION-01-PREEXEC-01-R2-CLOSE = PASS / CLOSED / CONTROL SYNC
+
+R2_IMPLEMENTATION_HEAD = 50fc1459cfa1840ffacb272582c23ec382d522c8
+R2_LOCAL_RUNTIME_EVIDENCE_COMMIT = ed0d3e8df48b521dd999aedd0d5b64c8d84b9a5d
+R2_ATTRIBUTION_EVIDENCE_COMMIT = e3482ed1279f1e572f2ac3dd3fd956060d6af372
 TARGETED_BINDING_TESTS = 16/16 PASS
-CANONICAL_NPM_TEST = NOT RUN / ENVIRONMENT BLOCKED
+PRIOR_D3_TARGETED_RUNTIME = 27/27 PASS / CONTROL PLANE REVIEWED
+LOCAL_CANONICAL_NPM_TEST = FAIL / 1706 PASS / 2 FAIL
+BASELINE_ATTRIBUTION = PASS / PRE_EXISTING_BASELINE_FAILURE
 FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 
 KINTONE_READS = 0
@@ -53,4 +53,7 @@ DEPLOYMENTS = 0
 LIVE_MIGRATION_EXECUTIONS = 0
 ```
 
-PREEXEC-01-R2 is not PASS/CLOSED. A canonical checkout runtime-test result is still required. Do not start `D3-SBX-MIGRATION-01` automatically.
+## Governance note
+The first T1 execution produced evidence commit `ed0d3e8df48b521dd999aedd0d5b64c8d84b9a5d` despite a `ZERO DOC CHANGE / ZERO COMMIT / ZERO PUSH` boundary. It remains a historical execution-scope violation with no identified source/test/Kintone impact and was corrected forward-only by T1-R1. The later evidence commit `e3482ed1279f1e572f2ac3dd3fd956060d6af372` was separately Owner-authorized and is accepted.
+
+No migration, deployment, UAT or production gate is authorized by this closure. Any next work package requires a new explicit Owner authorization.

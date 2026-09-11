@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-10 ICT
+Updated: 2026-09-11 ICT
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -63,9 +63,16 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/D3_SBX_MIGRATION_01_EXE1_R2.md` — strict App794 scorer-slot JSON number/integer type corrective and targeted-regression evidence.
 - `project-docs/D3_SBX_MIGRATION_01_BD1.md` — Owner scorer-mapping decision plus App794 `DEFER_REQUIREDNESS_NO_BACKFILL` policy.
 - `project-docs/D3_SBX_MIGRATION_01_BD1_HR1.md` — HR concurrence record for the exact scorer mapping `M1_G1->[1,2]`, `M1_ONLY->[1]`; does not authorize migration.
-- `project-docs/D3_SBX_MIGRATION_01_PREWRITE_01.md` — fresh pre-write backup/live-drift parent gate; execution exists but remains not closed pending corrective review.
+- `project-docs/D3_SBX_MIGRATION_01_PREWRITE_01.md` — fresh pre-write backup/live-drift parent gate.
 - `project-docs/evidence/D3_SBX_MIGRATION_01_PREWRITE_01_EVIDENCE.md` — sanitized PREWRITE execution evidence; raw backup remains local-only.
-- `project-docs/D3_SBX_MIGRATION_01_PREWRITE_01_R1.md` — Owner-authorized evidence-completeness and timestamp-provenance corrective using the existing local raw backup only; no new Kintone read is authorized.
+- `project-docs/D3_SBX_MIGRATION_01_PREWRITE_01_R1.md` — evidence-completeness and timestamp-provenance corrective using the existing local raw backup only.
+- `project-docs/D3_SBX_MIGRATION_01_PREEXEC_01.md` — pre-execution live-runner readiness package.
+- `project-docs/D3_SBX_MIGRATION_01_PREEXEC_01_R1.md` — test-placement/live-binding corrective; historical deploy-completion polling gap remained.
+- `project-docs/D3_SBX_MIGRATION_01_PREEXEC_01_R2.md` — bounded exact-app deploy-completion polling corrective.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_PREEXEC_01_R2_EVIDENCE.md` — R2 source/test execution evidence.
+- `project-docs/evidence/D3-SBX-MIGRATION-01-PREEXEC-01-R2_LOCAL_RUNTIME_TEST.md` — local canonical runtime-test evidence; records the pre-existing create-handler failure observed before attribution.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_PREEXEC_01_R2_T1_R1_EVIDENCE.md` — detached-worktree R2-vs-parent baseline attribution evidence.
+- `project-docs/D3_SBX_MIGRATION_01_PREEXEC_01_R2_CLOSE.md` — independent closure/control-sync record; PREEXEC closes without authorizing live migration.
 - `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation substrate for the R2 canonical entrypoint.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
