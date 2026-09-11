@@ -1,0 +1,125 @@
+﻿# Evidence: D3 Live Business Date Implementation Independent Review Acceptance & Control Closure (D3-LIVE-BUSINESS-DATE-IMP1-CLOSE)
+
+## 1. Package Identification & Authorization
+- **Package:** `D3-LIVE-BUSINESS-DATE-IMP1-CLOSE`
+- **Project:** MBO2026
+- **Repository:** `rebootob/MBO2026`
+- **Canonical Branch:** `ai/antigravity-wp002c`
+- **Base HEAD:** `2e1b833815c17693b8908707672fbd1308469f56`
+- **Reviewed HEAD:** `2e1b833815c17693b8908707672fbd1308469f56`
+- **Mode:** `INDEPENDENT REVIEW ACCEPTANCE + CONTROL SYNC / DOCS-ONLY / ZERO KINTONE I/O`
+- **Owner Authorization:** Owner explicitly authorized the sole pending proposal `D3-LIVE-BUSINESS-DATE-IMP1-CLOSE` in the Control Plane conversation.
+- **Control Plane Independent Review Verdict:** `CONTROL_PLANE_INDEPENDENT_REVIEW = PASS`
+- **Verdict:** **`PASS / INDEPENDENT REVIEW ACCEPTED / CONTROL SYNC COMPLETE / CLOSED`**
+
+---
+
+## 2. Work Package Final Closure Status
+
+### A. D3-LIVE-BUSINESS-DATE-IMP1
+- **Final Status:** `PASS / LOCAL PROVIDER IMPLEMENTED / CONTRACT HARDENED / REAL INTEGRATION VERIFIED / INDEPENDENTLY REVIEWED / CLOSED`
+
+### B. D3-LIVE-BUSINESS-DATE-IMP1-R1
+- **Final Status:** `PASS / AUTHORITY ENDPOINT LOCKED / REAL PRODUCTION-SEAM TESTS PASS / TEST ACCOUNTING CORRECTED / INDEPENDENTLY REVIEWED / CLOSED`
+
+---
+
+## 3. Accepted Technical Contract
+```text
+AUTHORITATIVE_BUSINESS_DATE_SOURCE = KINTONE SERVER TIME PROVIDER
+AUTHORITATIVE_ENDPOINT = /k/
+HTTP_METHOD = HEAD
+BUSINESS_DATE_TIMEZONE = Asia/Bangkok
+BUSINESS_DATE_OUTPUT = YYYY-MM-DD
+ENDPOINT_OVERRIDE_ALLOWED = NO
+LOCAL_BROWSER_CLOCK_FALLBACK = FORBIDDEN
+WORKSTATION_CLOCK_FALLBACK = FORBIDDEN
+PROVIDER_FAILURE = FAIL CLOSED
+REAL_PRODUCTION_SEAM = VERIFIED
+```
+
+- **Locked Authoritative Endpoint:** Strictly `/k/` with `{ credentials: 'same-origin', cache: 'no-store' }`. Caller override via `options.endpoint`, `url`, `origin`, or `host` is forbidden and fails closed with `ENDPOINT_OVERRIDE_FORBIDDEN`.
+- **Verified Integration Path:** Actual production seam function `resolveD3RoutingProfileWithDateSeam` in `src/main-mbo-app.js` is exercised directly. Explicit dates bypass provider; provider-acquired dates reach `RoutingService.resolveRoutingProfile` unchanged; provider failures fail closed with zero silent continuation.
+
+---
+
+## 4. Accepted Test Accounting
+
+### A. Historical IMP1 Test Accounting (Preserved)
+```text
+IMP1_TARGETED_EXECUTION_TOTAL = 180
+IMP1_TARGETED_PASS = 178
+IMP1_TARGETED_FAIL = 2
+IMP1_PRE_EXISTING_BASELINE_FAIL = 2
+IMP1_NEW_REGRESSION_FAIL = 0
+```
+
+### B. R1 Test Accounting (Preserved)
+```text
+R1_TARGETED_EXECUTION_TOTAL = 184
+R1_TARGETED_PASS = 182
+R1_TARGETED_FAIL = 2
+R1_PRE_EXISTING_BASELINE_FAIL = 2
+R1_NEW_REGRESSION_FAIL = 0
+```
+
+*(The 2 baseline failures in `tests/create-handler-form-state.test.js` remain attributed to `PRE_EXISTING_BASELINE_FAILURE` and are NOT converted to PASS).*
+
+- **Full-Repository Integration Test:** `FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED`
+
+---
+
+## 5. Live Business Date Provider Status After Closure
+```text
+LIVE_BUSINESS_DATE_PROVIDER = AUTHORITY LOCKED / ACQUISITION MECHANISM VERIFIED / LOCAL IMPLEMENTATION COMPLETE / CONTRACT HARDENED / REAL INTEGRATION VERIFIED / INDEPENDENT REVIEWED / READY FOR NEXT SEPARATELY AUTHORIZED DEPLOYMENT-READINESS GATE
+```
+
+> **IMPORTANT DISTINCTION:**
+> - `READY FOR NEXT GATE != DEPLOYMENT AUTHORIZED`
+> - `READY FOR NEXT GATE != UAT AUTHORIZED`
+> - `READY FOR NEXT GATE != PRODUCTION READY`
+
+---
+
+## 6. Hard Boundaries & Operational Counters
+```text
+SOURCE_CHANGES = 0
+TEST_CHANGES = 0
+KINTONE_LIVE_READS = 0
+KINTONE_WRITES = 0
+SCHEMA_WRITES = 0
+PROCESS_WRITES = 0
+RECORD_WRITES = 0
+ACL_WRITES = 0
+BROWSER_PROBES = 0
+DEPLOYMENTS = 0
+UAT = 0
+```
+
+---
+
+## 7. Control State After Close
+```text
+ACTIVE_WORK_PACKAGE = NONE
+LAST_ATTEMPTED_PACKAGE = D3-LIVE-BUSINESS-DATE-IMP1-CLOSE
+LAST_CLOSED_CONTROL_PACKAGE = D3-LIVE-BUSINESS-DATE-IMP1-CLOSE
+NEXT_GATE_AUTHORIZED = NO
+AUTO_START_NEXT_WORK_PACKAGE = NO
+
+KINTONE_READ_AUTHORIZED = NO
+KINTONE_WRITE_AUTHORIZED = NO
+SCHEMA_WRITE_AUTHORIZED = NO
+PROCESS_WRITE_AUTHORIZED = NO
+RECORD_WRITE_AUTHORIZED = NO
+ACL_WRITE_AUTHORIZED = NO
+
+DEPLOYMENT_AUTHORIZED = NO
+UAT_AUTHORIZED = NO
+PRODUCTION_READY = NO
+
+D3-SBX-DEPLOY-01 = NOT AUTHORIZED
+D3-SBX-UAT = NOT AUTHORIZED
+D3-PROD-CUTOVER = NOT AUTHORIZED
+
+FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
+```

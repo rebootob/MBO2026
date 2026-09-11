@@ -88,6 +88,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_R2_EVIDENCE.md` — Owner post-publication ratification evidence and governance provenance corrective.
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_IMP1_EVIDENCE.md` — provider implementation and targeted unit test evidence.
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_IMP1_R1_EVIDENCE.md` — provider contract hardening, locked endpoint, real production seam integration tests, and corrected test accounting evidence.
+- `project-docs/evidence/D3_LIVE_BUSINESS_DATE_IMP1_CLOSE_EVIDENCE.md` — independent review acceptance and control closure evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
