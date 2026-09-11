@@ -74,6 +74,11 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_MIGRATION_01_PREEXEC_01_R2_T1_R1_EVIDENCE.md` — detached-worktree R2-vs-parent baseline attribution evidence.
 - `project-docs/D3_SBX_MIGRATION_01_PREEXEC_01_R2_CLOSE.md` — independent closure/control-sync record; PREEXEC closes without authorizing live migration.
 - `scripts/kintone/d3-sbx-migration-local-executor-r1.js` — preserved R1 public implementation substrate for the R2 canonical entrypoint.
+- `project-docs/D3_SBX_MIGRATION_01_R3.md` — App795 seed readback field-type-aware blank dropdown comparator corrective.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_R3_EVIDENCE.md` — R3 comparator source and regression test evidence.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_R4_EVIDENCE.md` — R4 pre-recovery audit and fail-closed revision ambiguity evidence.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_R5_EVIDENCE.md` — R5 live recovery execution, App795 finalization, App794 provenance, and non-rewrite verification evidence.
+- `project-docs/evidence/D3_SBX_MIGRATION_01_CLOSE_EVIDENCE.md` — D3 sandbox migration formal closure and control synchronization evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
