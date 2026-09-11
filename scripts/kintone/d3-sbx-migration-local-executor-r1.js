@@ -15,6 +15,8 @@ export const assertRouteManifestIntegrity = core.assertRouteManifestIntegrity;
 export const assertScorerMappingApproval = core.assertScorerMappingApproval;
 export const buildApp795SchemaStages = core.buildApp795SchemaStages;
 export const buildApp795SeedOperations = core.buildApp795SeedOperations;
+export const isOptionalDropDownField = core.isOptionalDropDownField;
+export const isReadBackValueEqual = core.isReadBackValueEqual;
 export const executeLiveD3SandboxMigration = core.executeLiveD3SandboxMigration;
 
 function fail(code, message) {

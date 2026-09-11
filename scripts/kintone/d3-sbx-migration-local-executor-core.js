@@ -462,6 +462,23 @@ export function applyApp795SeedOperationsLocal({ records, operations }) {
   });
 }
 
+export function isOptionalDropDownField(fieldCode) {
+  const spec = routingFields[fieldCode];
+  return Boolean(spec && spec.type === 'DROP_DOWN' && spec.required !== true);
+}
+
+export function isReadBackValueEqual(fieldCode, actual, expected) {
+  if (isOptionalDropDownField(fieldCode)) {
+    const isActualBlank = actual === null || actual === '';
+    const isExpectedBlank = expected === '' || expected === null;
+    if (isActualBlank && isExpectedBlank) {
+      return true;
+    }
+  }
+
+  return String(actual) === String(expected);
+}
+
 export function assertApp795SeedReadBack({ manifest, records, scorerApproval }) {
   const operations = buildApp795SeedOperations({ manifest, scorerApproval });
   if (!Array.isArray(records) || records.length !== 20) {
@@ -471,9 +488,15 @@ export function assertApp795SeedReadBack({ manifest, records, scorerApproval }) 
   for (const operation of operations) {
     const record = byId.get(operation.recordId);
     if (!record) fail('APP795_READBACK_RECORD_MISSING', operation.recordId);
+    if (record.Routing_Key !== undefined && readString(record.Routing_Key) !== operation.preconditions.Routing_Key) {
+      fail('APP795_ROUTING_KEY_DRIFT', `Routing_Key drift on record ${operation.recordId}.`);
+    }
     for (const [fieldCode, expected] of Object.entries(operation.values)) {
+      if (!(fieldCode in record) || record[fieldCode] === undefined) {
+        fail('APP795_READBACK_VALUE_MISMATCH', `${operation.recordId} ${fieldCode}.`);
+      }
       const actual = unwrap(record[fieldCode]);
-      if (String(actual) !== String(expected)) {
+      if (!isReadBackValueEqual(fieldCode, actual, expected)) {
         fail('APP795_READBACK_VALUE_MISMATCH', `${operation.recordId} ${fieldCode}.`);
       }
     }
