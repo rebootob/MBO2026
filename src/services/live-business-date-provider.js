@@ -21,23 +21,39 @@ export class LiveBusinessDateProviderError extends Error {
   }
 }
 
-const DEFAULT_ENDPOINT = '/k/';
+export const AUTHORITATIVE_ENDPOINT = '/k/';
 const BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC+07:00
+
+let testFetchImpl = null;
+
+/**
+ * Sets a test-only fetch implementation. Never used in production runtime.
+ * @param {Function|null} fetchFn
+ */
+export function setLiveBusinessDateFetchForTests(fetchFn) {
+  testFetchImpl = fetchFn;
+}
 
 /**
  * Acquires the authoritative business date (YYYY-MM-DD) from Kintone server.
  *
  * @param {Object} [options]
- * @param {Function} [options.fetchImpl] - Optional custom fetch implementation for dependency injection / test isolation
- * @param {string} [options.endpoint] - Optional endpoint (defaults to '/k/')
+ * @param {Function} [options.fetchImpl] - Optional custom fetch implementation for test injection
  * @returns {Promise<string>} Deterministic Asia/Bangkok calendar date in YYYY-MM-DD format
  * @throws {LiveBusinessDateProviderError} Fail-closed on any network, header, parsing, or formatting error
  */
 export async function getLiveBusinessDate(options = {}) {
+  // Disallow caller override of authoritative endpoint
+  if (options && (options.endpoint !== undefined || options.url !== undefined || options.origin !== undefined || options.host !== undefined)) {
+    throw new LiveBusinessDateProviderError(
+      'ENDPOINT_OVERRIDE_FORBIDDEN',
+      'Authoritative endpoint is locked to /k/. Overriding endpoint, url, origin, or host is strictly forbidden.'
+    );
+  }
+
   const fetchImpl = (options && 'fetchImpl' in options)
     ? options.fetchImpl
-    : (typeof fetch !== 'undefined' ? fetch : null);
-  const endpoint = options.endpoint || DEFAULT_ENDPOINT;
+    : (testFetchImpl || (typeof fetch !== 'undefined' ? fetch : null));
 
   // 1. Fail-closed if fetch interface is unavailable
   if (typeof fetchImpl !== 'function') {
@@ -47,10 +63,10 @@ export async function getLiveBusinessDate(options = {}) {
     );
   }
 
-  // 2. Perform same-origin HEAD request to authoritative endpoint
+  // 2. Perform same-origin HEAD request to authoritative endpoint /k/
   let res;
   try {
-    res = await fetchImpl(endpoint, {
+    res = await fetchImpl(AUTHORITATIVE_ENDPOINT, {
       method: 'HEAD',
       credentials: 'same-origin',
       cache: 'no-store'
@@ -58,7 +74,7 @@ export async function getLiveBusinessDate(options = {}) {
   } catch (netErr) {
     throw new LiveBusinessDateProviderError(
       'NETWORK_ERROR',
-      `Failed to fetch server date from ${endpoint}: ${netErr.message}`,
+      `Failed to fetch server date from ${AUTHORITATIVE_ENDPOINT}: ${netErr.message}`,
       netErr
     );
   }
@@ -68,7 +84,7 @@ export async function getLiveBusinessDate(options = {}) {
     const status = res?.status ?? 'UNKNOWN';
     throw new LiveBusinessDateProviderError(
       'NON_SUCCESS_HTTP_STATUS',
-      `Authoritative server returned non-success status ${status} from ${endpoint}.`
+      `Authoritative server returned non-success status ${status} from ${AUTHORITATIVE_ENDPOINT}.`
     );
   }
 
@@ -127,6 +143,10 @@ export async function getLiveBusinessDate(options = {}) {
 }
 
 export class LiveBusinessDateProvider {
+  static get AUTHORITATIVE_ENDPOINT() {
+    return AUTHORITATIVE_ENDPOINT;
+  }
+
   /**
    * Static entrypoint for getting the authoritative business date.
    * @param {Object} [options]

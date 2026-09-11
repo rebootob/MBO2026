@@ -1,11 +1,18 @@
-﻿import test from 'node:test';
+import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   LiveBusinessDateProvider,
   getLiveBusinessDate,
-  LiveBusinessDateProviderError
+  LiveBusinessDateProviderError,
+  AUTHORITATIVE_ENDPOINT,
+  setLiveBusinessDateFetchForTests
 } from '../src/services/live-business-date-provider.js';
-import { setResolutionBusinessDateForTests } from '../src/main-mbo-app.js';
+import {
+  setResolutionBusinessDateForTests,
+  setLiveBusinessDateProviderForTests,
+  resolveD3RoutingProfileWithDateSeam
+} from '../src/main-mbo-app.js';
+import { RoutingService } from '../src/services/routing-service.js';
 
 test('LiveBusinessDateProvider: Requirement 1 - HTTP 200 + valid RFC1123 Date returns Asia/Bangkok YYYY-MM-DD', async () => {
   let calledEndpoint = null;
@@ -194,61 +201,241 @@ test('LiveBusinessDateProvider: Requirement 8 - local clock independence (Date.n
   }
 });
 
-test('LiveBusinessDateProvider: Requirement 9 - explicit injected resolutionBusinessDate bypasses provider', async () => {
-  let providerFetchCalled = false;
-
-  const mockProvider = {
-    getBusinessDate: async () => {
-      providerFetchCalled = true;
-      throw new Error('Provider must not be invoked when explicit date is injected');
-    }
-  };
-
-  // Simulating main-mbo-app seam logic
-  const authOptions = { resolutionBusinessDate: '2026-06-15' };
-  const options = {};
-
-  let resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
-  if (!resolutionBusinessDate) {
-    resolutionBusinessDate = await mockProvider.getBusinessDate();
+test('LiveBusinessDateProvider: Requirement 9 (Corrective 1) - Authoritative endpoint is locked to /k/ (override forbidden)', async () => {
+  // Disallow caller from redirecting authority to other endpoints
+  for (const badOption of [
+    { endpoint: '/custom/endpoint' },
+    { url: 'https://evil.com/k/' },
+    { origin: 'https://evil.com' },
+    { host: 'evil.com' }
+  ]) {
+    await assert.rejects(
+      () => getLiveBusinessDate(badOption),
+      (err) => {
+        assert.ok(err instanceof LiveBusinessDateProviderError);
+        assert.equal(err.code, 'ENDPOINT_OVERRIDE_FORBIDDEN');
+        return true;
+      }
+    );
   }
-
-  assert.equal(resolutionBusinessDate, '2026-06-15');
-  assert.equal(providerFetchCalled, false, 'provider was bypassed by explicit injected date');
 });
 
-test('LiveBusinessDateProvider: Requirement 10 - provider result reaches resolutionBusinessDate seam unchanged', async () => {
-  const mockFetch = async () => ({
-    status: 200,
-    ok: true,
-    headers: {
-      get: () => 'Fri, 11 Sep 2026 12:00:00 GMT'
-    }
+test('LiveBusinessDateProvider: Requirement 10 (Corrective 1) - Request strictly targets /k/ with same-origin and no-store', async () => {
+  let queriedPath = null;
+  let queriedInit = null;
+
+  const mockFetch = async (target, init) => {
+    queriedPath = target;
+    queriedInit = init;
+    return {
+      status: 200,
+      ok: true,
+      headers: { get: () => 'Fri, 11 Sep 2026 12:00:00 GMT' }
+    };
+  };
+
+  assert.equal(AUTHORITATIVE_ENDPOINT, '/k/');
+  assert.equal(LiveBusinessDateProvider.AUTHORITATIVE_ENDPOINT, '/k/');
+
+  const date = await LiveBusinessDateProvider.getBusinessDate({ fetchImpl: mockFetch });
+  assert.equal(date, '2026-09-11');
+  assert.equal(queriedPath, '/k/', 'Requested path must strictly be /k/');
+  assert.equal(queriedInit.method, 'HEAD');
+  assert.equal(queriedInit.credentials, 'same-origin');
+  assert.equal(queriedInit.cache, 'no-store');
+});
+
+test('Real Production Seam: Requirement 11 (Corrective 2, Path A) - Explicit date bypasses provider and reaches RoutingService', async () => {
+  let providerFetchCalled = false;
+  let receivedRoutingOptions = null;
+
+  // Set test fetch implementation that throws if called
+  setLiveBusinessDateFetchForTests(async () => {
+    providerFetchCalled = true;
+    throw new Error('Provider must NOT be invoked when explicit date is provided');
   });
 
-  // Simulating main-mbo-app lookup flow when no explicit date is injected
-  const authOptions = {};
-  const options = {};
-
-  let resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
-  if (!resolutionBusinessDate) {
-    resolutionBusinessDate = await getLiveBusinessDate({ fetchImpl: mockFetch });
-  }
-
-  // Validate format regex
-  assert.match(resolutionBusinessDate, /^\d{4}-\d{2}-\d{2}$/);
-  assert.equal(resolutionBusinessDate, '2026-09-11');
-
-  // Verify options structure passed to RoutingService.resolveRoutingProfile
-  const routingServiceOptions = {
-    d3: true,
-    resolutionBusinessDate: resolutionBusinessDate
+  const originalResolve = RoutingService.resolveRoutingProfile;
+  RoutingService.resolveRoutingProfile = async (appId, sec, team, api, pos, options) => {
+    receivedRoutingOptions = options;
+    return { mockSuccess: true, effectiveDate: options.resolutionBusinessDate };
   };
 
-  assert.equal(routingServiceOptions.resolutionBusinessDate, '2026-09-11');
+  try {
+    const authOptions = { resolutionBusinessDate: '2026-06-15' };
+    const options = {};
+
+    // Execute actual production code from src/main-mbo-app.js
+    const result = await resolveD3RoutingProfileWithDateSeam(
+      795, 'SEC', 'TEAM', {}, 'Staff',
+      { d3: true, kExpected: 2 },
+      authOptions,
+      options
+    );
+
+    assert.equal(result.mockSuccess, true);
+    assert.equal(providerFetchCalled, false, 'Provider was NOT invoked');
+    assert.equal(receivedRoutingOptions?.resolutionBusinessDate, '2026-06-15', 'Exact explicit date reached RoutingService input');
+  } finally {
+    RoutingService.resolveRoutingProfile = originalResolve;
+    setLiveBusinessDateFetchForTests(null);
+  }
 });
 
-test('MainMboApp: setResolutionBusinessDateForTests preserves deterministic test injection seam', () => {
+test('Real Production Seam: Requirement 12 (Corrective 2, Path B) - Provider acquires server date and reaches RoutingService unchanged', async () => {
+  let providerFetchCalled = false;
+  let receivedRoutingOptions = null;
+
+  setLiveBusinessDateFetchForTests(async (endpoint, init) => {
+    providerFetchCalled = true;
+    assert.equal(endpoint, '/k/');
+    assert.equal(init.method, 'HEAD');
+    return {
+      status: 200,
+      ok: true,
+      headers: { get: () => 'Fri, 11 Sep 2026 15:55:13 GMT' }
+    };
+  });
+
+  const originalResolve = RoutingService.resolveRoutingProfile;
+  RoutingService.resolveRoutingProfile = async (appId, sec, team, api, pos, options) => {
+    receivedRoutingOptions = options;
+    return { mockSuccess: true, effectiveDate: options.resolutionBusinessDate };
+  };
+
+  try {
+    const authOptions = {};
+    const options = {};
+
+    // Execute actual production code from src/main-mbo-app.js with NO explicit date
+    const result = await resolveD3RoutingProfileWithDateSeam(
+      795, 'SEC', 'TEAM', {}, 'Staff',
+      { d3: true, kExpected: 2 },
+      authOptions,
+      options
+    );
+
+    assert.equal(result.mockSuccess, true);
+    assert.equal(providerFetchCalled, true, 'Provider path was invoked');
+    assert.equal(receivedRoutingOptions?.resolutionBusinessDate, '2026-09-11', 'Exact server-derived Asia/Bangkok date reached RoutingService unchanged');
+  } finally {
+    RoutingService.resolveRoutingProfile = originalResolve;
+    setLiveBusinessDateFetchForTests(null);
+  }
+});
+
+test('Real Production Seam: Requirement 13 (Corrective 2, Path B) - End-to-end routing version resolution succeeds with provider date', async () => {
+  // Test complete integration through RoutingService.resolveD3RoutingProfile
+  const v = {
+    Routing_Key: { value: 'TMT1' },
+    Version_Key: { value: 'TMT1#v1' },
+    Version_Number: { value: '1' },
+    Version_Status: { value: 'ACTIVE' },
+    Effective_From: { value: '2026-04-01' },
+    Effective_To: { value: '2026-12-31' },
+    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
+    Routing_Topology: { value: 'M1_G1' },
+    Manager_Level1_Approvers: { value: [{ code: 'mgr_1', name: 'Manager 1' }] },
+    GM_Level1_Approvers: { value: [{ code: 'gm_1', name: 'GM 1' }] },
+    Manager_Level2_Approvers: { value: [] },
+    GM_Level2_Approvers: { value: [] },
+    Manager_Level1_Approval_Rule: { value: 'ALL' },
+    GM_Level1_Approval_Rule: { value: 'ALL' },
+    Has_Manager_Level2: { value: 'NO' },
+    Has_GM_Level2: { value: 'NO' },
+    Scorer_Priority_Slots: { value: '[1, 2]' },
+    Requester_User: { value: [{ code: 'emp_1' }] }
+  };
+
+  // 1. Valid date in window (2026-09-11)
+  setLiveBusinessDateFetchForTests(async () => ({
+    status: 200,
+    ok: true,
+    headers: { get: () => 'Fri, 11 Sep 2026 15:55:13 GMT' }
+  }));
+
+  try {
+    const routeProfile = await resolveD3RoutingProfileWithDateSeam(
+      795, 'TMT1', '', {}, 'Staff',
+      {
+        d3: true,
+        candidateRecords: [v],
+        frozenProfileCode: 'PROF_STAFF_CHIEF',
+        kExpected: 2
+      },
+      {},
+      {}
+    );
+
+    assert.equal(routeProfile.Effective_Route_Version_Key, 'TMT1#v1');
+    assert.equal(routeProfile.Active_Scorers.length, 2);
+  } finally {
+    setLiveBusinessDateFetchForTests(null);
+  }
+
+  // 2. Date before window (2026-03-15) fails closed with NO_EFFECTIVE_ROUTE
+  setLiveBusinessDateFetchForTests(async () => ({
+    status: 200,
+    ok: true,
+    headers: { get: () => 'Sun, 15 Mar 2026 12:00:00 GMT' }
+  }));
+
+  try {
+    await assert.rejects(
+      () => resolveD3RoutingProfileWithDateSeam(
+        795, 'TMT1', '', {}, 'Staff',
+        {
+          d3: true,
+          candidateRecords: [v],
+          frozenProfileCode: 'PROF_STAFF_CHIEF',
+          kExpected: 2
+        },
+        {},
+        {}
+      ),
+      /NO_EFFECTIVE_ROUTE/
+    );
+  } finally {
+    setLiveBusinessDateFetchForTests(null);
+  }
+});
+
+test('Real Production Seam: Requirement 14 (Corrective 2, Path C) - Provider failure fails closed with zero silent continuation', async () => {
+  let routeCalled = false;
+
+  setLiveBusinessDateFetchForTests(async () => {
+    throw new Error('Connection refused to Kintone endpoint');
+  });
+
+  const originalResolve = RoutingService.resolveRoutingProfile;
+  RoutingService.resolveRoutingProfile = async () => {
+    routeCalled = true;
+    return { mockSuccess: true };
+  };
+
+  try {
+    await assert.rejects(
+      () => resolveD3RoutingProfileWithDateSeam(
+        795, 'SEC', 'TEAM', {}, 'Staff',
+        { d3: true, kExpected: 2 },
+        {},
+        {}
+      ),
+      (err) => {
+        assert.ok(err instanceof LiveBusinessDateProviderError);
+        assert.equal(err.code, 'NETWORK_ERROR');
+        return true;
+      }
+    );
+
+    assert.equal(routeCalled, false, 'RoutingService MUST NOT be called on provider failure; routing does not silently continue');
+  } finally {
+    RoutingService.resolveRoutingProfile = originalResolve;
+    setLiveBusinessDateFetchForTests(null);
+  }
+});
+
+test('MainMboApp: Requirement 15 - setResolutionBusinessDateForTests preserves deterministic test injection seam', () => {
   setResolutionBusinessDateForTests('2026-07-01');
   // Validation: invalid formats must throw
   assert.throws(

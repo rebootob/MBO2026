@@ -1,4 +1,4 @@
-﻿# Evidence: D3 Live Business Date Provider Implementation (D3-LIVE-BUSINESS-DATE-IMP1)
+# Evidence: D3 Live Business Date Provider Implementation (D3-LIVE-BUSINESS-DATE-IMP1)
 
 ## 1. Package Identification & Authorization
 - **Package:** `D3-LIVE-BUSINESS-DATE-IMP1`
@@ -78,7 +78,13 @@ Results: **11/11 PASS (0 FAIL)**
 - `node --test tests/d3-route-version-resolver.test.js`: **7/7 PASS (0 FAIL)**
 - `node --test tests/d3-route-viability-service.test.js tests/d3-snapshot-serializer.test.js tests/d3-workflow-payload.test.js`: **75/75 PASS (0 FAIL)**
 
-Total unit & contract test suite passing: **178 PASS / 0 FAIL**.
+Targeted unit & contract test suite passing: **178 PASS / 0 FAIL**.
+Overall targeted execution accounting (acknowledging pre-existing baseline failures):
+- IMP1_TARGETED_EXECUTION_TOTAL = 180
+- IMP1_TARGETED_PASS = 178
+- IMP1_TARGETED_FAIL = 2
+- IMP1_PRE_EXISTING_BASELINE_FAIL = 2
+- IMP1_NEW_REGRESSION_FAIL = 0
 
 ### C. Impacted Existing Test & Baseline Attribution
 Command:

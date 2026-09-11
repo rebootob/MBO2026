@@ -82,6 +82,50 @@ export function setResolutionBusinessDateForTests(value) {
   testResolutionBusinessDate = value;
 }
 
+let liveBusinessDateProvider = LiveBusinessDateProvider;
+
+export function setLiveBusinessDateProviderForTests(provider) {
+  liveBusinessDateProvider = provider || LiveBusinessDateProvider;
+}
+
+export function getLiveBusinessDateProvider() {
+  return liveBusinessDateProvider;
+}
+
+/**
+ * Production seam: Resolves D3 Model A route profile with canonical K and authoritative business date.
+ * Exercised by production onLookupEmployee and directly testable without code duplication.
+ */
+export async function resolveD3RoutingProfileWithDateSeam(
+  routingAppId,
+  section,
+  team,
+  apiWrapper,
+  position,
+  routingOptions = {},
+  authOptions = {},
+  options = {},
+  provider = liveBusinessDateProvider
+) {
+  const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
+  const effectiveResolutionBusinessDate = resolutionBusinessDate || await provider.getBusinessDate();
+  if (!effectiveResolutionBusinessDate || typeof effectiveResolutionBusinessDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(effectiveResolutionBusinessDate)) {
+    throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED).');
+  }
+
+  return RoutingService.resolveRoutingProfile(
+    routingAppId,
+    section,
+    team,
+    apiWrapper,
+    position,
+    {
+      ...routingOptions,
+      resolutionBusinessDate: effectiveResolutionBusinessDate
+    }
+  );
+}
+
 /**
  * Allows test injection of a mock gate. Never self-authorize live cutover.
  * @param {MboKintoneLoginGate|null} gate
@@ -706,13 +750,8 @@ if (typeof kintone !== 'undefined') {
         // Step 5: D3 Model A Route Resolution with Canonical K & Explicit Business Date
         // LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
         const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
-        const effectiveResolutionBusinessDate = resolutionBusinessDate || await LiveBusinessDateProvider.getBusinessDate();
-        if (!effectiveResolutionBusinessDate || typeof effectiveResolutionBusinessDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(effectiveResolutionBusinessDate)) {
-          throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED).');
-        }
-
         const loginUserCode = context.kintoneUserCode;
-        let routeProfile = await RoutingService.resolveRoutingProfile(
+        let routeProfile = await resolveD3RoutingProfileWithDateSeam(
           ROUTING_APP_ID,
           empProfile.Employee_Section,
           empProfile.Team,
@@ -724,10 +763,12 @@ if (typeof kintone !== 'undefined') {
             employeeSnapshot: empProfile,
             employeeUserCode: loginUserCode,
             isOwnMbo: context.mode === 'DEDICATED',
-            resolutionBusinessDate: effectiveResolutionBusinessDate,
             frozenProfileCode: profileCode,
             kExpected: kExpected
-          }
+          },
+          authOptions,
+          options,
+          liveBusinessDateProvider
         );
 
         if (context.mode === 'DEDICATED' && !routeProfile.Effective_Route_Version_Key) {
