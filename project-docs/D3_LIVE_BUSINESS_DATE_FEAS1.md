@@ -1,21 +1,18 @@
-# D3 Live Business Date Feasibility Summary (D3-LIVE-BUSINESS-DATE-FEAS1, FEAS1-R1, FEAS1-R2 & FEAS1-R3)
+# D3 Live Business Date Feasibility Summary (D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE)
 
 ## 1. Executive Summary
-- **Work Packages:** `D3-LIVE-BUSINESS-DATE-FEAS1`, `D3-LIVE-BUSINESS-DATE-FEAS1-R1`, `D3-LIVE-BUSINESS-DATE-FEAS1-R2` & `D3-LIVE-BUSINESS-DATE-FEAS1-R3`
+- **Lifecycle Work Packages:** `D3-LIVE-BUSINESS-DATE-FEAS1`, `FEAS1-R1`, `FEAS1-R2`, `FEAS1-R3`, and `FEAS1-CLOSE`
 - **Canonical Repository:** `rebootob/MBO2026`
 - **Canonical Branch:** `ai/antigravity-wp002c`
-- **FEAS1 Preflight Base SHA:** `7f59949396ae395684a246936cc2f04fed691859`
-- **FEAS1-R1 Preflight Base SHA:** `239fa14a95015f682a334313287026d779d02fb6`
-- **FEAS1-R2 Preflight Base SHA:** `7c28f2f85782b3743b50a818b6c55d7e6d5a702b`
-- **FEAS1-R3 Preflight Base SHA:** `669e2ea8c23767a58471e9931ea178f2f18ca7dc`
-- **Mode:** `ACTUAL AUTHENTICATED KINTONE BROWSER PROBE READ-ONLY / ZERO WRITE`
-- **Current Feasibility Verdict:** **`STOPPED / LEVEL B UNVERIFIED`**
+- **Final Preflight Base SHA:** `d526bfa9da6e82510413a69ce7790d2b36800759`
+- **Mode:** `DOCS-ONLY / ZERO KINTONE I/O`
+- **Feasibility Verdict:** **`D3-LIVE-BUSINESS-DATE-FEASIBILITY = A+B+C VERIFIED`**
 
 ---
 
-## 2. Feasibility Findings & Multi-Level Evidence Status
+## 2. Verified Technical Findings
 
-The empirical investigation across `FEAS1`, `FEAS1-R1`, `FEAS1-R2`, and `FEAS1-R3` evaluated the locked Owner Decision (`D3-LIVE-BUSINESS-DATE-DEC1`):
+The multi-stage feasibility evaluation of `D3-LIVE-BUSINESS-DATE-DEC1`:
 ```text
 AUTHORITATIVE_BUSINESS_DATE_SOURCE = KINTONE SERVER TIME PROVIDER
 BUSINESS_DATE_TIMEZONE = Asia/Bangkok
@@ -24,49 +21,53 @@ LOCAL_BROWSER_CLOCK_FALLBACK = FORBIDDEN
 WORKSTATION_SYSTEM_CLOCK_FALLBACK = FORBIDDEN
 PROVIDER_FAILURE_BEHAVIOR = FAIL CLOSED
 ```
+has achieved complete empirical verification across all required levels:
 
-### Multi-Level Verification Summary:
 1. **Server Header Integrity (Level A - `VERIFIED`):**
-   Kintone web servers (nginx) consistently emit standard RFC 7231 / RFC 1123 `Date` headers (e.g. `Fri, 11 Sep 2026 14:52:16 GMT`) on read-only HTTP endpoints (`200 OK` and `401 Unauthorized`).
-2. **Browser Runtime Exposure (Level B - `UNVERIFIED`):**
-   Independent Control Plane review requires actual empirical JavaScript execution within an authentic authenticated Kintone browser customization runtime (`response.headers.get('date')`). While the Owner opened and authenticated Kintone in Chrome, the browser was launched without remote debugging automation flags (`--remote-debugging-port`), rendering the tab inaccessible to automated CDP probes (`ACTUAL_BROWSER_RUNTIME_NOT_AVAILABLE`). Following strict fail-closed governance, Level B remains unverified until demonstrated in a live authenticated browser tab.
+   Kintone web servers (nginx) emit standard RFC 7231 / RFC 1123 `Date` headers on HTTP responses.
+2. **Browser Runtime Exposure (Level B - `VERIFIED`):**
+   Live browser execution in the genuine authenticated Kintone browser customization runtime empirically confirms that same-origin non-mutating requests (`HEAD /k/`) return `HTTP 200` with the `Date` response header accessible via standard JavaScript (`res.headers.get('date')`).
 3. **Deterministic Asia/Bangkok Conversion (Level C - `VERIFIED`):**
-   Parsing the RFC 1123 GMT string into UTC milliseconds and applying fixed UTC+07:00 arithmetic (`+ 7 * 3,600,000` ms) produces the exact Bangkok calendar date (`YYYY-MM-DD`) with zero dependence on the client operating system's local clock, timezone, or locale.
+   Converting the RFC 1123 timestamp string to UTC epoch milliseconds and adding fixed UTC+07:00 arithmetic (`+ 7 * 3,600,000` ms) produces the exact Bangkok business date (`2026-09-11`) formatted as `YYYY-MM-DD` with zero client-clock dependence.
 
 ---
 
-## 3. Read Count Reconciliation & Accounting
+## 3. Read Count Accounting
 
-- **FEAS1 Reported:** `6` requests reported in header, 5 documented in markdown text (Test B omitted during documentation).
-- **FEAS1 Corrected Read Requests:** `6`
-- **FEAS1-R1 Read Requests:** `0` (Halted fail-closed before network probe).
-- **FEAS1-R2 Read Requests:** `0` (Halted fail-closed before network probe).
-- **FEAS1-R3 Read Requests:** `0` (Halted fail-closed before network probe).
-- **Cumulative Read Requests:** `6`
+- **FEAS1 Reads:** 6 requests (Probes 1–3 from probe 1, Tests A–C from probe 2)
+- **FEAS1-R1 Reads:** 0 requests (halted fail-closed)
+- **FEAS1-R2 Reads:** 0 requests (halted fail-closed)
+- **FEAS1-R3 Reads:** 0 requests (halted fail-closed)
+- **FEAS1-CLOSE Reads:** 0 requests (docs-only closeout)
+- **Cumulative Feasibility Reads:** `6`
 
 ---
 
 ## 4. Control & Deployment Status
 
-- **D3-LIVE-BUSINESS-DATE-PRE1:** `PASS / REVIEWED / DECISION GAP IDENTIFIED`
-- **D3-LIVE-BUSINESS-DATE-DEC1:** `PASS / OWNER DECISION LOCKED / REVIEWED`
-- **D3-LIVE-BUSINESS-DATE-FEAS1:** `PASS / EVIDENCE RECORDED`
-- **D3-LIVE-BUSINESS-DATE-FEAS1-R1:** `STOPPED / LEVEL B UNVERIFIED`
-- **D3-LIVE-BUSINESS-DATE-FEAS1-R2:** `STOPPED / LEVEL B UNVERIFIED / REVIEW REQUIRED`
-- **D3-LIVE-BUSINESS-DATE-FEAS1-R3:** `STOPPED / LEVEL B UNVERIFIED / REVIEW REQUIRED`
+```text
+D3-LIVE-BUSINESS-DATE-PRE1 = PASS / REVIEWED / DECISION GAP IDENTIFIED
+D3-LIVE-BUSINESS-DATE-DEC1 = OWNER DECISION LOCKED / REVIEW REQUIRED
+D3-LIVE-BUSINESS-DATE-FEAS1 = PASS / EVIDENCE RECORDED
+D3-LIVE-BUSINESS-DATE-FEAS1-R1 = STOPPED / LEVEL B UNVERIFIED / RESOLVED
+D3-LIVE-BUSINESS-DATE-FEAS1-R2 = STOPPED / LEVEL B UNVERIFIED / RESOLVED
+D3-LIVE-BUSINESS-DATE-FEAS1-R3 = STOPPED / LEVEL B UNVERIFIED / RESOLVED
+D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE = PASS / FEASIBILITY COMPLETE / REVIEW REQUIRED
+```
+
 - **Updated Blocker State:**
   ```text
-  LIVE_BUSINESS_DATE_PROVIDER = AUTHORITY LOCKED / SERVER HEADER VERIFIED / BROWSER RUNTIME EXPOSURE UNVERIFIED / DEPLOYMENT BLOCKER
+  LIVE_BUSINESS_DATE_PROVIDER = AUTHORITY LOCKED / ACQUISITION MECHANISM VERIFIED / IMPLEMENTATION REQUIRED / DEPLOYMENT BLOCKER (see `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_EVIDENCE.md`)
   ```
 
 ```text
 ACTIVE_WORK_PACKAGE = NONE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
+IMP1_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
 UAT_AUTHORIZED = NO
 PRODUCTION_READY = NO
-IMP1_AUTHORIZED = NO
 ```
 
-Deployment remains completely blocked until the business date provider acquisition is fully verified, implemented, tested, and independently reviewed.
+Feasibility is completely verified. Deployment remains blocked until the verified provider is implemented in production source, tested, and reviewed under a future authorized implementation package (`D3-LIVE-BUSINESS-DATE-IMP1`).
