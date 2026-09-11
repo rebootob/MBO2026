@@ -79,6 +79,8 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_MIGRATION_01_R4_EVIDENCE.md` — R4 pre-recovery audit and fail-closed revision ambiguity evidence.
 - `project-docs/evidence/D3_SBX_MIGRATION_01_R5_EVIDENCE.md` — R5 live recovery execution, App795 finalization, App794 provenance, and non-rewrite verification evidence.
 - `project-docs/evidence/D3_SBX_MIGRATION_01_CLOSE_EVIDENCE.md` — D3 sandbox migration formal closure and control synchronization evidence.
+- `project-docs/D3_LIVE_BUSINESS_DATE_PRE1.md` — decision and gap review for live business date provider contract (PRE1).
+- `project-docs/evidence/D3_LIVE_BUSINESS_DATE_PRE1_EVIDENCE.md` — PRE1 audit evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
