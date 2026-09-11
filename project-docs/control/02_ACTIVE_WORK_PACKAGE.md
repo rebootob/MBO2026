@@ -9,8 +9,8 @@ Updated: 2026-09-11 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-STATUS = D3-SBX-MIGRATION-01-R1 IMPLEMENTATION COMPLETE / REVIEW REQUIRED
-LAST_CLOSED_PACKAGE = D3-SBX-MIGRATION-01-R1
+STATUS = D3-SBX-MIGRATION-01-R2 PARTIAL WRITE HALTED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-SBX-MIGRATION-01-R2
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
@@ -25,21 +25,23 @@ LIVE_MIGRATION_RETRY_AUTHORIZED = NO
 ```
 
 ## Latest Owner authorization
-`“อนุมัติ D3-SBX-MIGRATION-01-R1 SOURCE/TEST/DOCS-ONLY / ZERO KINTONE I/O ตามขอบเขตที่เสนอ”`
+`“อนุมัติ D3-SBX-MIGRATION-01-R2 ONE-SHOT LIVE SANDBOX MIGRATION RETRY ตามขอบเขตที่เสนอ”`
 
-## Corrective result
+## Execution result
 ```text
-PACKAGE = D3-SBX-MIGRATION-01-R1
-MODE = SOURCE / TEST / DOCS ONLY
-DEFECT = APP795 PREVIEW FIELDS PAYLOAD MISSING TOP-LEVEL CODE PROPERTY
-SOURCE_FIX = ADDED spec.code & target.code IN EXECUTOR CORE AND descriptor.code IN BINDING
-TARGETED_TESTS = 44/44 PASS (5/5 SCHEMA DESCRIPTORS, 16/16 BINDING, 23/23 RUNNER/CORE)
-KINTONE_READS = 0
-KINTONE_WRITES = 0
-LIVE_RETRIES = 0
-VERDICT = D3-SBX-MIGRATION-01-R1 = IMPLEMENTATION COMPLETE / REVIEW REQUIRED
+PACKAGE = D3-SBX-MIGRATION-01-R2
+MODE = ONE-SHOT LIVE SANDBOX MIGRATION RETRY
+APP795_SCHEMA_STAGED = SUCCESS (Revision 11 -> 12, 33 fields)
+APP795_SEED_20_ROWS = SUCCESS (Records updated to revision 6)
+APP795_SEED_READBACK = HALTED (null vs "" mismatch on unassigned DROP_DOWN rule)
+APP795_FINALIZE_SCHEMA = NOT EXECUTED
+APP794_WRITES = 0 (Revision 70 preserved)
+APP798_WRITES = 0 (Revision 5 preserved)
+PARTIAL_WRITE_LEAK = NONE OUTSIDE AUTHORIZED APP 795 BOUNDARY
+RECOVERY_BOUNDARY = APP 795 STAGED (REV 12) / SEEDED (REV 6) / READBACK COMPARISON FIX NEEDED
+VERDICT = D3-SBX-MIGRATION-01-R2 = PARTIAL WRITE HALTED / REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-SBX-MIGRATION-01-R1 resolves the schema property descriptor defect without any Kintone I/O or live migration retry.
-Live migration retry remains strictly NOT AUTHORIZED. Any future live retry requires an independent review by ChatGPT Control Plane followed by a new explicit Owner authorization.
+Execution was halted immediately upon readback value mismatch on unassigned DROP_DOWN field (`Manager_Level2_Approval_Rule` null vs ""). Pursuant to the locked partial-write rule, zero retry and zero rollback were performed. App 794 and App 798 remain completely unmutated.
+Live migration retry remains strictly NOT AUTHORIZED. Any future action requires an independent review by ChatGPT Control Plane followed by a new explicit Owner authorization.
