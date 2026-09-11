@@ -9,6 +9,7 @@ import { ValidationEngine } from './validation/validation-engine.js';
 import { EmployeeService } from './services/employee-service.js';
 import { MboIdentityService } from './services/mbo-identity-service.js';
 import { RoutingService } from './services/routing-service.js';
+import { LiveBusinessDateProvider } from './services/live-business-date-provider.js';
 import { resolveProfileCodeForSnapshot as resolveProfileCode } from './profiles/runtime-profile-resolver.js';
 import { MboKintoneLoginGate } from './ui/mbo-kintone-login-gate.js';
 import { MboKintoneAuthAdapter } from './ui/mbo-kintone-auth-adapter.js';
@@ -705,8 +706,9 @@ if (typeof kintone !== 'undefined') {
         // Step 5: D3 Model A Route Resolution with Canonical K & Explicit Business Date
         // LIVE_BUSINESS_DATE_PROVIDER = UNRESOLVED / DEPLOYMENT BLOCKER
         const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
-        if (!resolutionBusinessDate || typeof resolutionBusinessDate !== 'string') {
-          throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED). Live business date provider is unresolved and blocks deployment.');
+        const effectiveResolutionBusinessDate = resolutionBusinessDate || await LiveBusinessDateProvider.getBusinessDate();
+        if (!effectiveResolutionBusinessDate || typeof effectiveResolutionBusinessDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(effectiveResolutionBusinessDate)) {
+          throw new Error('Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED).');
         }
 
         const loginUserCode = context.kintoneUserCode;
@@ -722,7 +724,7 @@ if (typeof kintone !== 'undefined') {
             employeeSnapshot: empProfile,
             employeeUserCode: loginUserCode,
             isOwnMbo: context.mode === 'DEDICATED',
-            resolutionBusinessDate: resolutionBusinessDate,
+            resolutionBusinessDate: effectiveResolutionBusinessDate,
             frozenProfileCode: profileCode,
             kExpected: kExpected
           }

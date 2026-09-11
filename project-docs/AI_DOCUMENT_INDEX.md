@@ -86,6 +86,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_EVIDENCE.md` — technical feasibility closeout evidence and verified browser runtime acquisition mechanism.
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_R1_EVIDENCE.md` — Control Plane consistency corrective evidence, corrected provenance, and lifecycle read accounting.
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_R2_EVIDENCE.md` — Owner post-publication ratification evidence and governance provenance corrective.
+- `project-docs/evidence/D3_LIVE_BUSINESS_DATE_IMP1_EVIDENCE.md` — provider implementation and targeted unit test evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
