@@ -187,7 +187,9 @@ function propertiesForSchemaOperations(operations) {
     if (!isPlainObject(source)) {
       fail('D3_BINDING_SCHEMA_SPEC_INVALID', `Missing field spec for ${operation.fieldCode}.`);
     }
-    properties[operation.fieldCode] = clone(source);
+    const descriptor = clone(source);
+    descriptor.code = operation.fieldCode;
+    properties[operation.fieldCode] = descriptor;
   }
   return properties;
 }

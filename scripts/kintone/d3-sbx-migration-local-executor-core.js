@@ -277,8 +277,9 @@ function cloneFieldSpec(spec) {
   return deepClone(spec);
 }
 
-function stagedOptionalSpec(targetSpec) {
+function stagedOptionalSpec(targetSpec, fieldCode) {
   const spec = cloneFieldSpec(targetSpec);
+  if (fieldCode) spec.code = fieldCode;
   spec.required = false;
   if (Object.prototype.hasOwnProperty.call(spec, 'unique')) spec.unique = false;
   delete spec.defaultValue;
@@ -292,7 +293,9 @@ function assertCompatibleType(field, target, fieldCode) {
 }
 
 function fieldFinalDiff(current, target, fieldCode) {
-  if (!current) return { fieldCode, operation: 'FINALIZE_FIELD_PROPERTIES', target: cloneFieldSpec(target) };
+  const targetWithCode = cloneFieldSpec(target);
+  if (fieldCode) targetWithCode.code = fieldCode;
+  if (!current) return { fieldCode, operation: 'FINALIZE_FIELD_PROPERTIES', target: targetWithCode };
   const properties = ['required', 'unique', 'minValue', 'maxValue'];
   const differs = properties.some(key => {
     if (!Object.prototype.hasOwnProperty.call(target, key)) return false;
@@ -301,9 +304,9 @@ function fieldFinalDiff(current, target, fieldCode) {
   const targetOptions = target.options ? Object.keys(target.options).sort() : [];
   const currentOptions = current.options ? Object.keys(current.options).sort() : [];
   if (JSON.stringify(targetOptions) !== JSON.stringify(currentOptions)) {
-    return { fieldCode, operation: 'FINALIZE_FIELD_PROPERTIES', target: cloneFieldSpec(target) };
+    return { fieldCode, operation: 'FINALIZE_FIELD_PROPERTIES', target: targetWithCode };
   }
-  return differs ? { fieldCode, operation: 'FINALIZE_FIELD_PROPERTIES', target: cloneFieldSpec(target) } : null;
+  return differs ? { fieldCode, operation: 'FINALIZE_FIELD_PROPERTIES', target: targetWithCode } : null;
 }
 
 export function buildApp795SchemaStages({ currentSchema, manifest, backupEvidence }) {
@@ -324,7 +327,7 @@ export function buildApp795SchemaStages({ currentSchema, manifest, backupEvidenc
       stageAdditions.push({
         fieldCode,
         operation: 'ADD_FIELD_STAGED_OPTIONAL',
-        spec: stagedOptionalSpec(target)
+        spec: stagedOptionalSpec(target, fieldCode)
       });
     }
     const diff = fieldFinalDiff(current, target, fieldCode);
@@ -335,9 +338,9 @@ export function buildApp795SchemaStages({ currentSchema, manifest, backupEvidenc
     const current = fields[fieldCode];
     const target = routingFields[fieldCode];
     if (!current && fieldCode === 'Effective_From') {
-      stageAdditions.push({ fieldCode, operation: 'ADD_FIELD_STAGED_OPTIONAL', spec: stagedOptionalSpec(target) });
+      stageAdditions.push({ fieldCode, operation: 'ADD_FIELD_STAGED_OPTIONAL', spec: stagedOptionalSpec(target, fieldCode) });
     } else if (!current && fieldCode === 'Effective_To') {
-      stageAdditions.push({ fieldCode, operation: 'ADD_FIELD_STAGED_OPTIONAL', spec: stagedOptionalSpec(target) });
+      stageAdditions.push({ fieldCode, operation: 'ADD_FIELD_STAGED_OPTIONAL', spec: stagedOptionalSpec(target, fieldCode) });
     } else {
       assertCompatibleType(current, target, fieldCode);
     }
@@ -529,7 +532,7 @@ export function buildApp794ProvenancePlan({
       additions.push({
         fieldCode,
         operation: 'ADD_FIELD_STAGED_OPTIONAL',
-        spec: stagedOptionalSpec(target)
+        spec: stagedOptionalSpec(target, fieldCode)
       });
     }
   }
