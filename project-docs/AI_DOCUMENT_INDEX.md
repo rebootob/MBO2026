@@ -82,6 +82,9 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/D3_LIVE_BUSINESS_DATE_PRE1.md` — decision and gap review for live business date provider contract (PRE1).
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_PRE1_EVIDENCE.md` — PRE1 audit evidence.
 - `project-docs/D3_LIVE_BUSINESS_DATE_DEC1.md` — Owner decision record locking Kintone server time provider and Asia/Bangkok date contract (DEC1).
+- `project-docs/D3_LIVE_BUSINESS_DATE_FEAS1.md` — feasibility evaluation and multi-level verification summary for live business date provider contract.
+- `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_EVIDENCE.md` — technical feasibility closeout evidence and verified browser runtime acquisition mechanism.
+- `project-docs/evidence/D3_LIVE_BUSINESS_DATE_FEAS1_CLOSE_R1_EVIDENCE.md` — Control Plane consistency corrective evidence, corrected provenance, and lifecycle read accounting.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

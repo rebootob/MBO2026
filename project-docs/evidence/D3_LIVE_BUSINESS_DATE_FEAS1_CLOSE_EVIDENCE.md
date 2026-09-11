@@ -30,7 +30,7 @@ LOCAL_BROWSER_CLOCK_CONSULTED = NO (STRICTLY PROHIBITED & ENFORCED)
 
 ### Verified Technical Acquisition Mechanism:
 ```javascript
-// Production-ready client runtime acquisition primitive:
+// Empirically verified feasibility acquisition mechanism:
 const res = await fetch('/k/', { method: 'HEAD', credentials: 'same-origin', cache: 'no-store' });
 const dateHeader = res.headers.get('date'); // e.g. "Fri, 11 Sep 2026 15:55:13 GMT"
 if (!dateHeader) {
@@ -64,8 +64,10 @@ const businessDate = `${yyyy}-${mm}-${dd}`;
 ## 4. Hard Boundaries & Accounting
 
 ```text
-CLOSE_KINTONE_READ_REQUESTS = 0
-CUMULATIVE_FEAS_READ_REQUESTS = 6 (FEAS1: 6, R1: 0, R2: 0, R3: 0, CLOSE: 0)
+AUTOMATED_FEAS_READ_REQUESTS = 6 (FEAS1: 6, R1: 0, R2: 0, R3: 0, CLOSE: 0)
+OWNER_ASSISTED_LIVE_READ_REQUESTS = 1 (Owner manual DevTools probe)
+TOTAL_FEASIBILITY_READ_INTERACTIONS = 7
+CLOSE_PACKAGE_READS = 0
 KINTONE_WRITES = 0
 SCHEMA_WRITES = 0
 RECORD_WRITES = 0

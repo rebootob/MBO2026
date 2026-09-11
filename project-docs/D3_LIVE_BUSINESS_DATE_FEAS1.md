@@ -1,7 +1,7 @@
-# D3 Live Business Date Feasibility Summary (D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE)
+# D3 Live Business Date Feasibility Summary (D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE-R1)
 
 ## 1. Executive Summary
-- **Lifecycle Work Packages:** `D3-LIVE-BUSINESS-DATE-FEAS1`, `FEAS1-R1`, `FEAS1-R2`, `FEAS1-R3`, and `FEAS1-CLOSE`
+- **Lifecycle Work Packages:** `D3-LIVE-BUSINESS-DATE-FEAS1`, `FEAS1-R1`, `FEAS1-R2`, `FEAS1-R3`, `FEAS1-CLOSE`, and `FEAS1-CLOSE-R1`
 - **Canonical Repository:** `rebootob/MBO2026`
 - **Canonical Branch:** `ai/antigravity-wp002c`
 - **Final Preflight Base SHA:** `d526bfa9da6e82510413a69ce7790d2b36800759`
@@ -26,7 +26,7 @@ has achieved complete empirical verification across all required levels:
 1. **Server Header Integrity (Level A - `VERIFIED`):**
    Kintone web servers (nginx) emit standard RFC 7231 / RFC 1123 `Date` headers on HTTP responses.
 2. **Browser Runtime Exposure (Level B - `VERIFIED`):**
-   Live browser execution in the genuine authenticated Kintone browser customization runtime empirically confirms that same-origin non-mutating requests (`HEAD /k/`) return `HTTP 200` with the `Date` response header accessible via standard JavaScript (`res.headers.get('date')`).
+   Live browser execution in the genuine authenticated Kintone browser customization runtime empirically confirms that same-origin non-mutating requests (`HEAD /k/`) return `HTTP 200` with the `Date` response header accessible via standard JavaScript (`res.headers.get('date')`). Direct browser attempts against `/k/v1/app.json?id=794` returned `HTTP 400 Bad Request` (recorded negative evidence).
 3. **Deterministic Asia/Bangkok Conversion (Level C - `VERIFIED`):**
    Converting the RFC 1123 timestamp string to UTC epoch milliseconds and adding fixed UTC+07:00 arithmetic (`+ 7 * 3,600,000` ms) produces the exact Bangkok business date (`2026-09-11`) formatted as `YYYY-MM-DD` with zero client-clock dependence.
 
@@ -34,12 +34,14 @@ has achieved complete empirical verification across all required levels:
 
 ## 3. Read Count Accounting
 
-- **FEAS1 Reads:** 6 requests (Probes 1–3 from probe 1, Tests A–C from probe 2)
+- **Automated Feasibility Reads:** 6 requests (Probes 1–3 from probe 1, Tests A–C from probe 2)
 - **FEAS1-R1 Reads:** 0 requests (halted fail-closed)
 - **FEAS1-R2 Reads:** 0 requests (halted fail-closed)
 - **FEAS1-R3 Reads:** 0 requests (halted fail-closed)
 - **FEAS1-CLOSE Reads:** 0 requests (docs-only closeout)
-- **Cumulative Feasibility Reads:** `6`
+- **FEAS1-CLOSE-R1 Reads:** 0 requests (docs-only corrective)
+- **Owner-Assisted Live Browser Reads:** 1 interaction (manual DevTools probe)
+- **Total Feasibility Read Interactions:** `7`
 
 ---
 
@@ -52,7 +54,8 @@ D3-LIVE-BUSINESS-DATE-FEAS1 = PASS / EVIDENCE RECORDED
 D3-LIVE-BUSINESS-DATE-FEAS1-R1 = STOPPED / LEVEL B UNVERIFIED / RESOLVED
 D3-LIVE-BUSINESS-DATE-FEAS1-R2 = STOPPED / LEVEL B UNVERIFIED / RESOLVED
 D3-LIVE-BUSINESS-DATE-FEAS1-R3 = STOPPED / LEVEL B UNVERIFIED / RESOLVED
-D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE = PASS / FEASIBILITY COMPLETE / REVIEW REQUIRED
+D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE = PASS / FEASIBILITY COMPLETE / TECHNICALLY ACCEPTED
+D3-LIVE-BUSINESS-DATE-FEAS1-CLOSE-R1 = PASS / CONTROL + PROVENANCE + ACCOUNTING CONSISTENCY CORRECTED / REVIEW REQUIRED
 ```
 
 - **Updated Blocker State:**
