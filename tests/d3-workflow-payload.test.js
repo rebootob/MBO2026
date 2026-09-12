@@ -13,6 +13,7 @@ import {
   buildD3WorkflowPayload
 } from '../scripts/kintone/build-d3-workflow-payload.js';
 import { D3_PROCESS_CAPABILITY_ID } from '../src/validation/validation-engine.js';
+import { computeProcessSemanticFingerprint } from '../scripts/kintone/deploy-d3-workflow.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -157,7 +158,7 @@ test('9. no extra states', () => {
 
 test('10. requester states map to Requester_User with ONE', () => {
   const { states } = buildD3WorkflowDefinition();
-  const requesterKeys = ['Not started', '05 Objective Approved', '06 Employee Mid-Year', '10 Mid-Year Completed', '11 Employee Self Evaluation'];
+  const requesterKeys = ['05 Objective Approved', '06 Employee Mid-Year', '10 Mid-Year Completed', '11 Employee Self Evaluation'];
   for (const key of requesterKeys) {
     const s = states[key];
     assert.equal(s.assignee.type, 'ONE', `${key} must have type ONE`);
@@ -630,6 +631,112 @@ test('40. no topology can choose both M2 and direct-M1 entry', () => {
     assert.ok(!(hasM2 && hasM1), `Topology ${topology} cannot have both M2 and direct M1 entry`);
     assert.ok(hasM2 || hasM1, `Topology ${topology} must have either M2 or direct M1 entry`);
   }
+});
+
+// =============================================================================
+// COMPATIBILITY CORRECTIVES TESTS (Items 41..46)
+// =============================================================================
+test('41. Corrective A: initial state contract matches App794 (key, name, index, empty entities, no Requester_User)', () => {
+  const { states } = buildD3WorkflowDefinition();
+  assert.ok(states['01 Draft Objective'], 'State "01 Draft Objective" must exist as key');
+  assert.equal(states['Not started'], undefined, 'State "Not started" must NOT exist as key');
+
+  const draftState = states['01 Draft Objective'];
+  assert.equal(draftState.name, '01 Draft Objective');
+  assert.equal(draftState.index, '0');
+  assert.equal(draftState.assignee.type, 'ONE');
+  assert.ok(Array.isArray(draftState.assignee.entities), 'assignee entities must be an array');
+  assert.equal(draftState.assignee.entities.length, 0, 'initial state assignee entities must be exactly empty');
+
+  // Verify Requester_User is not assigned
+  const hasRequester = draftState.assignee.entities.some(
+    (e) => e.entity?.code === 'Requester_User' || e.code === 'Requester_User'
+  );
+  assert.equal(hasRequester, false, 'Initial state must NOT reference Requester_User');
+});
+
+test('42. Corrective A: all actions referencing draft state resolve correctly to canonical state name', () => {
+  const { states, actions } = buildD3WorkflowDefinition();
+  const validStateNames = new Set(Object.values(states).map((s) => s.name));
+
+  // Outgoing actions from draft state
+  const fromDraft = actions.filter((a) => a.from === '01 Draft Objective');
+  assert.equal(fromDraft.length, 2, 'Exactly 2 outgoing forward actions from draft state');
+  for (const act of fromDraft) {
+    assert.ok(validStateNames.has(act.to), `Target state "${act.to}" must exist in state definitions`);
+  }
+
+  // Incoming return actions to draft state
+  const returnToDraft = actions.filter((a) => a.to === '01 Draft Objective');
+  assert.equal(returnToDraft.length, 4, 'Exactly 4 return actions to draft state (from 02, 03, 04, 04B)');
+  for (const act of returnToDraft) {
+    assert.ok(validStateNames.has(act.from), `Source state "${act.from}" must exist in state definitions`);
+  }
+
+  // Ensure no action references "Not started"
+  for (const act of actions) {
+    assert.notEqual(act.from, 'Not started', `Action "${act.name}" must not reference "Not started" as from`);
+    assert.notEqual(act.to, 'Not started', `Action "${act.name}" must not reference "Not started" as to`);
+  }
+});
+
+test('43. Corrective B: 15 HR Final Check intermediate assignee contract (USER / hr / includeSubs=false)', () => {
+  const { states } = buildD3WorkflowDefinition();
+  assert.ok(states['15 HR Final Check'], 'State "15 HR Final Check" must exist');
+
+  const hrState = states['15 HR Final Check'];
+  assert.equal(hrState.name, '15 HR Final Check');
+  assert.equal(hrState.index, '17');
+  assert.equal(hrState.assignee.type, 'ONE', 'Assignee type must remain ONE');
+  assert.equal(hrState.assignee.entities.length, 1, 'HR Final Check must have exactly 1 assignee entity');
+
+  const entity = hrState.assignee.entities[0];
+  assert.deepEqual(entity, {
+    entity: { type: 'USER', code: 'hr' },
+    includeSubs: false
+  });
+});
+
+test('44. Corrective C: 16 Completed terminal-state contract explicitly verified', () => {
+  const { states, actions } = buildD3WorkflowDefinition();
+  assert.ok(states['16 Completed'], 'State "16 Completed" must exist');
+
+  const completedState = states['16 Completed'];
+  assert.equal(completedState.name, '16 Completed');
+  assert.equal(completedState.index, '18');
+  assert.equal(completedState.assignee.type, 'ONE');
+  assert.deepEqual(completedState.assignee.entities, [], 'Terminal state must have empty assignee entities');
+
+  // Terminal state must have ZERO outgoing actions
+  const outgoing = actions.filter((a) => a.from === '16 Completed');
+  assert.equal(outgoing.length, 0, 'Terminal state "16 Completed" must have zero outgoing actions');
+
+  // Must have incoming completion action
+  const incoming = actions.filter((a) => a.to === '16 Completed');
+  assert.equal(incoming.length, 1, 'Terminal state must be reached via exactly 1 Complete action');
+  assert.equal(incoming[0].from, '15 HR Final Check');
+  assert.equal(incoming[0].name, 'Complete');
+});
+
+test('45. canonical D3 target remains exactly 19 states and 40 actions', () => {
+  const { states, actions } = buildD3WorkflowDefinition();
+  assert.equal(Object.keys(states).length, 19);
+  assert.equal(actions.length, 40);
+
+  const payload = buildD3WorkflowPayload({ app: 794, revision: 1 }).payload;
+  assert.equal(Object.keys(payload.states).length, 19);
+  assert.equal(payload.actions.length, 40);
+  assert.equal(payload.enable, true);
+});
+
+test('46. new canonical target fingerprint is deterministic', () => {
+  const p1 = buildD3WorkflowPayload({ app: 794, revision: 1 }).payload;
+  const p2 = buildD3WorkflowPayload({ app: 794, revision: 99 }).payload;
+
+  const fp1 = computeProcessSemanticFingerprint(p1);
+  const fp2 = computeProcessSemanticFingerprint(p2);
+  assert.equal(fp1, fp2, 'Process semantic fingerprint must be independent of revision');
+  assert.equal(fp1, 'bc22d11c3f89959178d8c3aac1b2c008d1c13d93f815bae2b746f800c523fdbd');
 });
 
 // =============================================================================

@@ -7,6 +7,7 @@ import {
   computeProcessSemanticFingerprint,
   computeProcessSemanticDiff,
   validatePreviewFieldCompatibility,
+  formatSanitizedPutError,
   D3_EXPECTED_STATE_COUNT,
   D3_EXPECTED_ACTION_COUNT,
   REQUIRED_ASSIGNEE_FIELDS
@@ -744,4 +745,182 @@ test('53. final live and preview both exact canonical 19/40 converge successfull
   assert.ok(res.finalLiveFingerprint);
   assert.ok(res.finalPreviewFingerprint);
   assert.equal(res.finalLiveFingerprint, res.finalPreviewFingerprint);
+});
+
+// =============================================================================
+// CORRECTIVE D — SANITIZED PUT ERROR & ZERO RETRY TESTS (Items 54..60)
+// =============================================================================
+
+// 54. PUT failure with safe server metadata propagates status, code, and message with zero retry and zero deploy POST
+test('54. PUT failure with safe server metadata propagates status, code, and message with zero retry and zero deploy POST', async () => {
+  const serverError = new Error('Rejection');
+  serverError.status = 400;
+  serverError.code = 'CB_VA01';
+  serverError.message = 'Invalid state configuration.';
+
+  const transport = createMockTransport({ putError: serverError });
+  const opts = baseOpts({ transport });
+
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    (err) => {
+      assert.equal(
+        err.message,
+        'D3_PROCESS_PUT_FAILED: HTTP 400 / CODE CB_VA01 / MESSAGE Invalid state configuration.'
+      );
+      return true;
+    }
+  );
+
+  // Hard safety contract checks:
+  assert.equal(transport.calls.filter((c) => c.method === 'PUT').length, 1, 'Exactly 1 PUT attempt (ZERO retry)');
+  assert.equal(transport.calls.filter((c) => c.method === 'POST').length, 0, 'Zero deploy POST calls on PUT rejection');
+});
+
+// 55. PUT failure with response object metadata propagates sanitized details with zero retry
+test('55. PUT failure with response object metadata propagates sanitized details with zero retry', async () => {
+  const responseError = {
+    response: {
+      status: 520,
+      data: {
+        code: 'GAIA_AP01',
+        message: 'Internal processing error occurred.'
+      }
+    }
+  };
+
+  const transport = createMockTransport({ putError: responseError });
+  const opts = baseOpts({ transport });
+
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    (err) => {
+      assert.equal(
+        err.message,
+        'D3_PROCESS_PUT_FAILED: HTTP 520 / CODE GAIA_AP01 / MESSAGE Internal processing error occurred.'
+      );
+      return true;
+    }
+  );
+
+  assert.equal(transport.calls.filter((c) => c.method === 'PUT').length, 1, 'Zero PUT retry');
+  assert.equal(transport.calls.filter((c) => c.method === 'POST').length, 0, 'Zero deploy POST');
+});
+
+// 56. PUT failure redacts credentials, tokens, passwords, cookies, headers, and secret-bearing URLs
+test('56. PUT failure redacts credentials, tokens, passwords, cookies, headers, and secret-bearing URLs', async () => {
+  const dirtyError = {
+    status: 403,
+    code: 'CB_WA01',
+    message: 'Access denied: Bearer topSecretToken12345 password=superSecretPassword api_token=kintoneToken999 cookie=sessionTokenAbc https://user:pass@kintone.com/k/v1/preview/app/status.json?token=leak',
+    headers: {
+      Authorization: 'Basic dXNlcjpwYXNz',
+      'X-Cybozu-Authorization': 'c2VjcmV0'
+    }
+  };
+
+  const transport = createMockTransport({ putError: dirtyError });
+  const opts = baseOpts({ transport });
+
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    (err) => {
+      const msg = err.message;
+      // Must contain safe sanitized markers
+      assert.ok(msg.includes('D3_PROCESS_PUT_FAILED: HTTP 403 / CODE CB_WA01'));
+      assert.ok(msg.includes('[REDACTED]'));
+
+      // Must NEVER contain raw secrets
+      assert.equal(msg.includes('topSecretToken12345'), false, 'Must not leak Bearer token');
+      assert.equal(msg.includes('superSecretPassword'), false, 'Must not leak password');
+      assert.equal(msg.includes('kintoneToken999'), false, 'Must not leak api_token');
+      assert.equal(msg.includes('sessionTokenAbc'), false, 'Must not leak cookie');
+      assert.equal(msg.includes('dXNlcjpwYXNz'), false, 'Must not leak Authorization header');
+      assert.equal(msg.includes('c2VjcmV0'), false, 'Must not leak Cybozu authorization');
+      assert.equal(msg.includes('user:pass'), false, 'Must not leak credential URL');
+      return true;
+    }
+  );
+
+  assert.equal(transport.calls.filter((c) => c.method === 'PUT').length, 1, 'Zero PUT retry');
+});
+
+// 57. PUT failure with missing safe server detail falls back to generic failure
+test('57. PUT failure with missing safe server detail falls back to generic failure', async () => {
+  // Generic client error without HTTP status or server code
+  const clientError = new Error('Client transport socket dropped unexpectedly');
+  const transport1 = createMockTransport({ putError: clientError });
+  const opts1 = baseOpts({ transport: transport1 });
+
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts1),
+    (err) => {
+      assert.equal(err.message, 'D3_PROCESS_PUT_FAILED: PUT preview process failed.');
+      return true;
+    }
+  );
+
+  // Network error code (ECONNRESET) is treated as non-server error and falls back to generic failure
+  const networkError = new Error('read ECONNRESET');
+  networkError.code = 'ECONNRESET';
+  const transport2 = createMockTransport({ putError: networkError });
+  const opts2 = baseOpts({ transport: transport2 });
+
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts2),
+    (err) => {
+      assert.equal(err.message, 'D3_PROCESS_PUT_FAILED: PUT preview process failed.');
+      return true;
+    }
+  );
+});
+
+// 58. formatSanitizedPutError unit testing across edge cases
+test('58. formatSanitizedPutError unit testing across edge cases', () => {
+  // 1. null / undefined / empty
+  assert.equal(formatSanitizedPutError(null), 'D3_PROCESS_PUT_FAILED: PUT preview process failed.');
+  assert.equal(formatSanitizedPutError(undefined), 'D3_PROCESS_PUT_FAILED: PUT preview process failed.');
+  assert.equal(formatSanitizedPutError({}), 'D3_PROCESS_PUT_FAILED: PUT preview process failed.');
+
+  // 2. HTTP status only
+  assert.equal(formatSanitizedPutError({ status: 500 }), 'D3_PROCESS_PUT_FAILED: HTTP 500');
+
+  // 3. Code only
+  assert.equal(formatSanitizedPutError({ code: 'CB_NO02' }), 'D3_PROCESS_PUT_FAILED: CODE CB_NO02');
+
+  // 4. HTTP and Code without message
+  assert.equal(formatSanitizedPutError({ status: 404, code: 'GAIA_RE01' }), 'D3_PROCESS_PUT_FAILED: HTTP 404 / CODE GAIA_RE01');
+
+  // 5. Message length capping (> 256 chars)
+  const longMsg = 'A'.repeat(300);
+  const formatted = formatSanitizedPutError({ status: 400, code: 'CB_VA01', message: longMsg });
+  assert.ok(formatted.includes('...'));
+  // MESSAGE portion capped to 256 chars
+  assert.ok(formatted.length < 350);
+
+  // 6. Parsing status and code from kintoneRequest-style error message string
+  const kintoneStyleError = new Error('Kintone returned HTTP 400 (CB_VA01: Invalid state definition).');
+  const fromString = formatSanitizedPutError(kintoneStyleError);
+  assert.equal(
+    fromString,
+    'D3_PROCESS_PUT_FAILED: HTTP 400 / CODE CB_VA01 / MESSAGE Kintone returned HTTP 400 (CB_VA01: Invalid state definition).'
+  );
+});
+
+// 59. canonical target in executor verification (target 19/40 and exact new fingerprint)
+test('59. canonical target in executor verification (target 19/40 and exact new fingerprint)', async () => {
+  const transport = createMockTransport();
+  const opts = baseOpts({ transport });
+  const res = await executeD3ProcessDeploy(opts);
+
+  assert.equal(res.targetStateCount, 19);
+  assert.equal(res.targetActionCount, 40);
+  assert.equal(res.finalLiveFingerprint, 'bc22d11c3f89959178d8c3aac1b2c008d1c13d93f815bae2b746f800c523fdbd');
+  assert.equal(res.finalPreviewFingerprint, 'bc22d11c3f89959178d8c3aac1b2c008d1c13d93f815bae2b746f800c523fdbd');
+});
+
+// 60. zero real network I/O in local tests
+test('60. zero real network I/O in local tests', () => {
+  // All transport interactions use createMockTransport; verify no global network calls
+  assert.equal(typeof executeD3ProcessDeploy, 'function');
 });

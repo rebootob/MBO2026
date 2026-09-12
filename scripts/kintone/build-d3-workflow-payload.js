@@ -29,7 +29,7 @@ export function buildTopologyFilter(topologies) {
 
 export const D3_STATE_DEFINITIONS = [
   // Objective stage (indexes 0..5)
-  { index: 0, name: '01 Draft Objective', key: 'Not started', fieldCode: 'Requester_User', type: 'ONE' },
+  { index: 0, name: '01 Draft Objective', key: '01 Draft Objective', fieldCode: null, type: 'ONE' },
   { index: 1, name: '02 First Manager Objective Review', key: '02 First Manager Objective Review', fieldCode: 'Manager_Level2_Approvers', type: 'ALL' },
   { index: 2, name: '03 Manager Objective Review', key: '03 Manager Objective Review', fieldCode: 'Manager_Level1_Approvers', type: 'ALL' },
   { index: 3, name: '04 GM Objective Review', key: '04 GM Objective Review', fieldCode: 'GM_Level1_Approvers', type: 'ALL' },
@@ -50,7 +50,14 @@ export const D3_STATE_DEFINITIONS = [
   { index: 14, name: '13 Manager Final Evaluation', key: '13 Manager Final Evaluation', fieldCode: 'Manager_Level1_Approvers', type: 'ALL' },
   { index: 15, name: '14 GM Final Evaluation', key: '14 GM Final Evaluation', fieldCode: 'GM_Level1_Approvers', type: 'ALL' },
   { index: 16, name: '14B GM Level 2 Final Evaluation', key: '14B GM Level 2 Final Evaluation', fieldCode: 'GM_Level2_Approvers', type: 'ALL' },
-  { index: 17, name: '15 HR Final Check', key: '15 HR Final Check', fieldCode: null, type: 'ONE' },
+  {
+    index: 17,
+    name: '15 HR Final Check',
+    key: '15 HR Final Check',
+    fieldCode: null,
+    type: 'ONE',
+    entities: [{ entity: { type: 'USER', code: 'hr' }, includeSubs: false }]
+  },
   { index: 18, name: '16 Completed', key: '16 Completed', fieldCode: null, type: 'ONE' }
 ];
 
@@ -305,14 +312,22 @@ export const D3_ACTION_DEFINITIONS = [
 export function buildD3WorkflowDefinition() {
   const states = {};
   for (const def of D3_STATE_DEFINITIONS) {
+    let entities = [];
+    if (Array.isArray(def.entities)) {
+      entities = def.entities.map((e) => ({
+        entity: { ...e.entity },
+        includeSubs: Boolean(e.includeSubs)
+      }));
+    } else if (def.fieldCode) {
+      entities = [{ entity: { type: 'FIELD_ENTITY', code: def.fieldCode }, includeSubs: false }];
+    }
+
     states[def.key] = {
       name: def.name,
       index: String(def.index),
       assignee: {
         type: def.type,
-        entities: def.fieldCode
-          ? [{ entity: { type: 'FIELD_ENTITY', code: def.fieldCode }, includeSubs: false }]
-          : []
+        entities
       }
     };
   }

@@ -10,8 +10,8 @@ PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
 ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-MIGRATION-01 CLOSED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE1
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-PRE3-R1
+LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE1-R1
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-EXE1-R1
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
@@ -82,15 +82,17 @@ POST_EXECUTION_AUDIT:
 LIFECYCLE_PROVENANCE:
 - D3-SBX-DEPLOY-01-PRE3-R1 = PASS / INDEPENDENTLY REVIEWED / CLOSED
 - D3-SBX-DEPLOY-01-EXE1 = STOPPED / D3_PROCESS_PUT_FAILED / KINTONE REJECTED PREVIEW PUT / ZERO STATE MODIFIED / ZERO RETRY / REVIEW REQUIRED
+- D3-SBX-DEPLOY-01-EXE1-R1 = PASS / LOCAL PAYLOAD COMPATIBILITY CORRECTIVE VERIFIED / TARGETED TESTS PASS / ZERO KINTONE I/O / ZERO DEPLOYMENT / REVIEW REQUIRED
 
-VERDICT = D3-SBX-DEPLOY-01-EXE1 = STOPPED / D3_PROCESS_PUT_FAILED / KINTONE REJECTED PREVIEW PUT / ZERO STATE MODIFIED / ZERO RETRY / REVIEW REQUIRED
+VERDICT = D3-SBX-DEPLOY-01-EXE1-R1 = PASS / LOCAL PAYLOAD COMPATIBILITY CORRECTIVE VERIFIED / TARGETED TESTS PASS / ZERO KINTONE I/O / ZERO DEPLOYMENT / REVIEW REQUIRED
 ```
 
 ## Governance note
-D3 process deploy executor executed preflight baseline capture (16 states / 31 actions confirmed matching live and preview).
-At write boundary, one PUT preview was attempted with canonical 19/40 payload; Kintone server rejected the PUT request.
-Executor failed closed with `D3_PROCESS_PUT_FAILED`.
-Write budget strictly enforced: PUT count 1, retry count 0, deploy POST count 0.
-Live and preview App 794 state verified unchanged at baseline revision 71 (16 states / 31 actions). Zero state modified (`PARTIAL_WRITE = FALSE`).
-Tooling remained frozen; zero source changes made.
-All gates remain stopped. Next work package, retry writes, UAT, and deployment are strictly NOT AUTHORIZED without explicit Owner authorization.
+D3-SBX-DEPLOY-01-EXE1-R1 completed local payload compatibility correctives:
+- Corrective A: Initial state contract aligned with App794 (key '01 Draft Objective', name '01 Draft Objective', index '0', entities [], no Requester_User).
+- Corrective B: Intermediate state 15 HR Final Check assignee contract aligned (USER / hr / includeSubs=false).
+- Corrective C: Terminal state 16 Completed contract explicitly verified (index '18', entities [], zero outgoing actions).
+- Corrective D: PUT failure diagnostics hardened with sanitized Kintone code/message/status propagation and credential redaction; zero write retry.
+- All 108 targeted tests passed (48 in workflow payload, 60 in deploy executor).
+- Hard operational counters: Zero Kintone reads, zero Kintone writes, zero deployments, zero UAT.
+- All gates remain stopped. Next work package, write execution, UAT, and deployment remain strictly NOT AUTHORIZED without explicit Owner authorization.

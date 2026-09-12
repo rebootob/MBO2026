@@ -219,6 +219,157 @@ export function validatePreviewFieldCompatibility(fieldProperties) {
   return true;
 }
 
+const NON_SERVER_ERROR_CODES = new Set([
+  'ECONNRESET',
+  'ENOTFOUND',
+  'ECONNREFUSED',
+  'ETIMEDOUT',
+  'EAI_AGAIN',
+  'ERR_HTTP2_STREAM_ERROR',
+  'ERR_INVALID_URL',
+  'UND_ERR_CONNECT_TIMEOUT'
+]);
+
+/**
+ * Sanitizes and formats safe diagnostic server metadata from a PUT preview error.
+ * Preserves HTTP status, safe Kintone error code, and sanitized server message.
+ * Strictly redacts credentials, headers, tokens, cookies, and secrets.
+ * Returns generic failure when no safe server detail exists.
+ */
+export function formatSanitizedPutError(error) {
+  const GENERIC_FAILURE = 'D3_PROCESS_PUT_FAILED: PUT preview process failed.';
+
+  if (!error || (typeof error !== 'object' && typeof error !== 'string')) {
+    return GENERIC_FAILURE;
+  }
+
+  // 1. Extract HTTP status if available
+  let httpStatus = null;
+  const rawStatus = error?.status ?? error?.statusCode ?? error?.response?.status;
+  if (typeof rawStatus === 'number' && Number.isInteger(rawStatus) && rawStatus >= 100 && rawStatus <= 599) {
+    httpStatus = rawStatus;
+  } else if (typeof rawStatus === 'string' && /^[1-5]\d\d$/.test(rawStatus.trim())) {
+    httpStatus = parseInt(rawStatus.trim(), 10);
+  }
+
+  // 2. Extract safe error code if available
+  let safeCode = null;
+  const rawCode =
+    error?.code ??
+    error?.response?.data?.code ??
+    error?.data?.code ??
+    error?.error?.code ??
+    error?.kintoneCode;
+
+  if (typeof rawCode === 'string') {
+    const trimmedCode = rawCode.trim();
+    if (
+      !NON_SERVER_ERROR_CODES.has(trimmedCode) &&
+      /^[A-Za-z0-9_.-]{2,64}$/.test(trimmedCode)
+    ) {
+      safeCode = trimmedCode;
+    }
+  }
+
+  // 3. Extract and sanitize server message
+  let safeMessage = null;
+  const explicitServerMessage =
+    error?.response?.data?.message ??
+    error?.data?.message ??
+    error?.error?.message ??
+    error?.serverMessage;
+
+  const rawMessage =
+    explicitServerMessage ??
+    (typeof error?.message === 'string' ? error.message : typeof error === 'string' ? error : null);
+
+  if (typeof rawMessage === 'string' && rawMessage.trim()) {
+    let msg = rawMessage.trim();
+
+    // If HTTP status was not on an object property, check if message contains "HTTP <status>"
+    if (!httpStatus) {
+      const statusMatch = msg.match(/\bHTTP\s+([1-5]\d\d)\b/i);
+      if (statusMatch) {
+        httpStatus = parseInt(statusMatch[1], 10);
+      }
+    }
+
+    // If error code was not on an object property, check if message contains typical Kintone code
+    if (!safeCode) {
+      const codeMatches = [...msg.matchAll(/\b([A-Z0-9_]{2,30})\b/g)];
+      for (const m of codeMatches) {
+        const candidate = m[1];
+        if (
+          candidate !== 'HTTP' &&
+          candidate !== 'CODE' &&
+          candidate !== 'MESSAGE' &&
+          !NON_SERVER_ERROR_CODES.has(candidate) &&
+          /^[A-Z][A-Z0-9_]+$/.test(candidate) &&
+          /[0-9_]/.test(candidate)
+        ) {
+          safeCode = candidate;
+          break;
+        }
+      }
+    }
+
+    // Sanitize: strip tokens, passwords, authorization, cookies, URLs, headers
+    msg = msg
+      .replace(/bearer\s+[a-zA-Z0-9_\-.]+/gi, 'Bearer [REDACTED]')
+      .replace(/basic\s+[a-zA-Z0-9+/=]+/gi, 'Basic [REDACTED]')
+      .replace(/(?:authorization|x-cybozu-[a-z0-9-]+)\s*[:=]\s*[^\s,;]+/gi, '$1: [REDACTED]')
+      .replace(/(?:api[-_]?token|password|secret|cookie|session)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
+      .replace(/https?:\/\/[^\s]+/gi, (url) => {
+        try {
+          const parsed = new URL(url);
+          return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+        } catch {
+          return '[URL]';
+        }
+      })
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Cap length to 256 characters
+    if (msg.length > 256) {
+      msg = msg.slice(0, 253) + '...';
+    }
+
+    if (msg) {
+      safeMessage = msg;
+    }
+  }
+
+  // Determine whether any safe server detail exists
+  const hasSafeDetail = Boolean(
+    httpStatus ||
+    safeCode ||
+    explicitServerMessage
+  );
+
+  if (!hasSafeDetail) {
+    return GENERIC_FAILURE;
+  }
+
+  const parts = [];
+  if (httpStatus) {
+    parts.push(`HTTP ${httpStatus}`);
+  }
+  if (safeCode) {
+    parts.push(`CODE ${safeCode}`);
+  }
+  if (safeMessage) {
+    parts.push(`MESSAGE ${safeMessage}`);
+  }
+
+  if (parts.length === 0) {
+    return GENERIC_FAILURE;
+  }
+
+  return `D3_PROCESS_PUT_FAILED: ${parts.join(' / ')}`;
+}
+
 /**
  * Executes guarded D3 process management deployment.
  */
@@ -386,8 +537,9 @@ export async function executeD3ProcessDeploy({
       path: '/k/v1/preview/app/status.json',
       body: targetPayload
     });
-  } catch {
-    throw new Error('D3_PROCESS_PUT_FAILED: PUT preview process failed.');
+  } catch (putError) {
+    const sanitizedError = formatSanitizedPutError(putError);
+    throw new Error(sanitizedError);
   }
 
   if (!putResponse || typeof putResponse !== 'object' || !putResponse.revision || !/^[1-9]\d*$/.test(String(putResponse.revision).trim())) {
