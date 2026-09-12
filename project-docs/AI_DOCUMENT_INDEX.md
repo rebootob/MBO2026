@@ -95,6 +95,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE2_CLOSE_EVIDENCE.md` — independent review acceptance and control closure evidence for sandbox customization preflight.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE3_EVIDENCE.md` — local D3 process deploy guard and executor implementation and failure-mode validation evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE3_R1_EVIDENCE.md` — local D3 process deploy executor fail-closed hardening, pure structural validator extraction, and failure-mode test evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE1_EVIDENCE.md` — App 794 Process Management sandbox deployment execution record, baseline capture, and fail-closed stop evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
