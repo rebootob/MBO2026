@@ -887,3 +887,89 @@ export function assertD3RoutingSchemaMigrationAuthorization(authConfig, requestC
   return true;
 }
 
+export const D3_APP794_PROCESS_DEPLOY_STAGE = 'STAGE_D3_APP794_PROCESS_DEPLOY';
+export const D3_APP794_PROCESS_DEPLOY_OPERATION = 'APP794_D3_PROCESS_DEPLOY';
+export const D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE = 'D3-SBX-DEPLOY-01';
+export const D3_APP794_PROCESS_TARGET_APP = 794;
+
+const consumedD3App794ProcessDeployAuthorizationIds = new Set();
+
+/**
+ * Narrow authorization guard for D3 Process Management Deployment on App 794.
+ * Enforces:
+ * - Fail-closed on missing/corrupted configs
+ * - Permanent protected apps hard-blocked
+ * - Target App ID and Auth App ID must be exactly 794 (no wildcard, no App 795, no legacy apps)
+ * - Work package must be exactly D3-SBX-DEPLOY-01
+ * - Stage must be exactly STAGE_D3_APP794_PROCESS_DEPLOY
+ * - Operation must be exactly APP794_D3_PROCESS_DEPLOY
+ * - Active window and explicit user authorization required
+ * - Non-empty single-use authorization ID
+ * - Request target contract: exactly 19 states and 40 actions
+ * - Single-use consumption at write boundary
+ */
+export function assertD3App794ProcessDeployAuthorization(authConfig, requestConfig) {
+  if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED (FAIL-CLOSED): Missing or corrupted authorization/request configuration.');
+  }
+
+  const reqAppId = requestConfig.appId ?? requestConfig.targetAppId;
+  const authAppId = authConfig.appId;
+
+  if (PROTECTED_APP_IDS.includes(reqAppId) || PROTECTED_APP_IDS.includes(authAppId)) {
+    const blockedApp = PROTECTED_APP_IDS.includes(reqAppId) ? reqAppId : authAppId;
+    throw new Error(`WRITE BLOCKED: App ${blockedApp} is a permanent PROTECTED PRODUCTION APP and cannot be modified.`);
+  }
+
+  if (reqAppId !== D3_APP794_PROCESS_TARGET_APP || authAppId !== D3_APP794_PROCESS_TARGET_APP) {
+    throw new Error(`D3_PROCESS_DEPLOY_BLOCKED: Target App ID must be exactly ${D3_APP794_PROCESS_TARGET_APP}.`);
+  }
+
+  if (
+    authConfig.workPackageId !== D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE ||
+    requestConfig.workPackageId !== D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE
+  ) {
+    throw new Error(`D3_PROCESS_DEPLOY_BLOCKED: Work package must be exactly ${D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE}.`);
+  }
+
+  if (
+    authConfig.stage !== D3_APP794_PROCESS_DEPLOY_STAGE ||
+    requestConfig.stage !== D3_APP794_PROCESS_DEPLOY_STAGE
+  ) {
+    throw new Error(`D3_PROCESS_DEPLOY_BLOCKED: Stage must be exactly ${D3_APP794_PROCESS_DEPLOY_STAGE}.`);
+  }
+
+  if (
+    authConfig.operation !== D3_APP794_PROCESS_DEPLOY_OPERATION ||
+    requestConfig.operation !== D3_APP794_PROCESS_DEPLOY_OPERATION
+  ) {
+    throw new Error(`D3_PROCESS_DEPLOY_BLOCKED: Operation must be exactly ${D3_APP794_PROCESS_DEPLOY_OPERATION}.`);
+  }
+
+  if (authConfig.activeWindow !== true) {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: One-time write window is CLOSED.');
+  }
+
+  if (authConfig.explicitUserAuthorization !== true) {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Explicit user authorization is required.');
+  }
+
+  const authorizationId = authConfig.authorizationId;
+  if (typeof authorizationId !== 'string' || authorizationId.trim() === '') {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: A non-empty authorization ID is required.');
+  }
+
+  if (consumedD3App794ProcessDeployAuthorizationIds.has(authorizationId)) {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Authorization has already been consumed.');
+  }
+
+  const stateCount = requestConfig.expectedStateCount ?? requestConfig.stateCount;
+  const actionCount = requestConfig.expectedActionCount ?? requestConfig.actionCount;
+
+  if (stateCount !== 19 || actionCount !== 40) {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Exact target must be 19 states and 40 actions.');
+  }
+
+  consumedD3App794ProcessDeployAuthorizationIds.add(authorizationId);
+  return true;
+}

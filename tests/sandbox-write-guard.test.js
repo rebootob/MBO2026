@@ -379,3 +379,155 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use au
   assert.equal(assertApp794CustomizationDeployAuthorization(authCtx, reqCtx), true);
   assert.equal(assertSandboxWriteTarget(794, undefined, [794], { dryRunBypassDiscovery: true }), 794);
 });
+
+test('assertD3App794ProcessDeployAuthorization enforces narrow single-use process authorization and hard blocks protected apps', async () => {
+  const {
+    D3_APP794_PROCESS_DEPLOY_STAGE,
+    D3_APP794_PROCESS_DEPLOY_OPERATION,
+    D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE,
+    D3_APP794_PROCESS_TARGET_APP,
+    assertD3App794ProcessDeployAuthorization
+  } = await import('../src/core/sandbox-write-guard.js');
+
+  const validAuth = {
+    workPackageId: D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE,
+    stage: D3_APP794_PROCESS_DEPLOY_STAGE,
+    operation: D3_APP794_PROCESS_DEPLOY_OPERATION,
+    appId: D3_APP794_PROCESS_TARGET_APP,
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    authorizationId: 'D3_PROCESS_AUTH_001'
+  };
+
+  const validReq = {
+    workPackageId: D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE,
+    stage: D3_APP794_PROCESS_DEPLOY_STAGE,
+    operation: D3_APP794_PROCESS_DEPLOY_OPERATION,
+    appId: D3_APP794_PROCESS_TARGET_APP,
+    expectedStateCount: 19,
+    expectedActionCount: 40
+  };
+
+  // 1. Exact good contract passes
+  assert.equal(assertD3App794ProcessDeployAuthorization({ ...validAuth }, { ...validReq }), true);
+
+  // 2. Replay attempt fails
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization({ ...validAuth }, { ...validReq }),
+    /D3_PROCESS_DEPLOY_BLOCKED: Authorization has already been consumed/
+  );
+
+  // 3. Wrong app blocked (App 795)
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_795', appId: 795 },
+      { ...validReq, appId: 795 }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Target App ID must be exactly 794/
+  );
+
+  // 4. Other wrong apps blocked (App 796, 798)
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_796', appId: 796 },
+      { ...validReq, appId: 796 }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Target App ID must be exactly 794/
+  );
+
+  // 5. Permanent protected production apps hard-blocked (53, 283)
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_PROTECTED_53', appId: 53 },
+      { ...validReq, appId: 53 }
+    ),
+    /WRITE BLOCKED: App 53 is a permanent PROTECTED PRODUCTION APP/
+  );
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_PROTECTED_283', appId: 283 },
+      { ...validReq, appId: 283 }
+    ),
+    /WRITE BLOCKED: App 283 is a permanent PROTECTED PRODUCTION APP/
+  );
+
+  // 6. Wrong work package blocked
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_WP', workPackageId: 'WRONG_WP' },
+      { ...validReq, workPackageId: 'WRONG_WP' }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Work package must be exactly D3-SBX-DEPLOY-01/
+  );
+
+  // 7. Wrong stage blocked
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_STAGE', stage: 'STAGE_WRONG' },
+      { ...validReq, stage: 'STAGE_WRONG' }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Stage must be exactly STAGE_D3_APP794_PROCESS_DEPLOY/
+  );
+
+  // 8. Wrong operation blocked
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_OP', operation: 'WRONG_OPERATION' },
+      { ...validReq, operation: 'WRONG_OPERATION' }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Operation must be exactly APP794_D3_PROCESS_DEPLOY/
+  );
+
+  // 9. Missing or empty authorization ID blocked
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: '' },
+      { ...validReq }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: A non-empty authorization ID is required/
+  );
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: null },
+      { ...validReq }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: A non-empty authorization ID is required/
+  );
+
+  // 10. Inactive window blocked
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_INACTIVE', activeWindow: false },
+      { ...validReq }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: One-time write window is CLOSED/
+  );
+
+  // 11. Missing explicitUserAuthorization blocked
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_NO_EXPLICIT', explicitUserAuthorization: false },
+      { ...validReq }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Explicit user authorization is required/
+  );
+
+  // 12. State/Action count mismatch blocked (not 19/40)
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_WRONG_COUNTS' },
+      { ...validReq, expectedStateCount: 16, expectedActionCount: 31 }
+    ),
+    /D3_PROCESS_DEPLOY_BLOCKED: Exact target must be 19 states and 40 actions/
+  );
+
+  // 13. Missing or malformed configs fail closed
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(null, validReq),
+    /D3_PROCESS_DEPLOY_BLOCKED \(FAIL-CLOSED\)/
+  );
+  assert.throws(
+    () => assertD3App794ProcessDeployAuthorization(validAuth, null),
+    /D3_PROCESS_DEPLOY_BLOCKED \(FAIL-CLOSED\)/
+  );
+});

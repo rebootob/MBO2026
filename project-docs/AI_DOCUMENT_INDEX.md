@@ -93,6 +93,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE2_EVIDENCE.md` — live read-only customization topology, preflight validation, and ephemeral release manifest evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE2_MANIFEST_INPUTS.json` — sanitized release manifest preflight inputs and topology hashes.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE2_CLOSE_EVIDENCE.md` — independent review acceptance and control closure evidence for sandbox customization preflight.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_PRE3_EVIDENCE.md` — local D3 process deploy guard and executor implementation and failure-mode validation evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
