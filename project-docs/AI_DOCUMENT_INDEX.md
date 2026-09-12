@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-11 ICT
+Updated: 2026-09-12 ICT
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -90,6 +90,8 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_IMP1_R1_EVIDENCE.md` — provider contract hardening, locked endpoint, real production seam integration tests, and corrected test accounting evidence.
 - `project-docs/evidence/D3_LIVE_BUSINESS_DATE_IMP1_CLOSE_EVIDENCE.md` — independent review acceptance and control closure evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_PRE1_EVIDENCE.md` — local release candidate preparation, artifact identity pinning, and targeted validation evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_PRE2_EVIDENCE.md` — live read-only customization topology, preflight validation, and ephemeral release manifest evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_PRE2_MANIFEST_INPUTS.json` — sanitized release manifest preflight inputs and topology hashes.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

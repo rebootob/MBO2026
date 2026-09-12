@@ -1,0 +1,18 @@
+{
+  "appId": 794,
+  "observedBaseHead": "f3e4d357d4e01bfdd8c1becac8376883d8dcd440",
+  "expectedJsBlobSha": "6a29a0e652ab8bb210589583b2a2ebfa2754aafa",
+  "expectedCssBlobSha": "0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61",
+  "expectedScope": "ALL",
+  "expectedTopology": {
+    "desktopJsCount": 1,
+    "desktopCssCount": 1,
+    "mobileJsCount": 0,
+    "mobileCssCount": 0
+  },
+  "sanitizedLiveTopologyHash": "51fcd0dabf89999b4abfc801081a3b3591a38c6e529669fd14cea8996cfafbce",
+  "sanitizedPreviewTopologyHash": "51fcd0dabf89999b4abfc801081a3b3591a38c6e529669fd14cea8996cfafbce",
+  "liveRevision": "71",
+  "previewRevision": "71",
+  "note": "Sanitized preflight inputs only; NOT a deploy-authorized final manifest. Final manifest must be rematerialized against the exact future deployment HEAD."
+}
