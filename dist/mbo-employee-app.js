@@ -301,6 +301,20 @@
   }
 
   // src/validation/validation-engine.js
+  var D3_PROCESS_CAPABILITY_ID = "D3_V1_19_STATE_40_ACTION";
+  var D3_ACTIVE_ROUTE_SLOTS = {
+    M1_ONLY: ["M1"],
+    M1_G1: ["M1", "G1"],
+    M1_M2_G1: ["M2", "M1", "G1"],
+    M1_G1_G2: ["M1", "G1", "G2"],
+    M1_M2_G1_G2: ["M2", "M1", "G1", "G2"]
+  };
+  var D3_SLOT_FIELD_MAP = {
+    M2: { approverField: "Manager_Level2_Approvers", ruleField: "Manager_Level2_Approval_Rule" },
+    M1: { approverField: "Manager_Level1_Approvers", ruleField: "Manager_Level1_Approval_Rule" },
+    G1: { approverField: "GM_Level1_Approvers", ruleField: "GM_Level1_Approval_Rule" },
+    G2: { approverField: "GM_Level2_Approvers", ruleField: "GM_Level2_Approval_Rule" }
+  };
   var ValidationEngine = class {
     /**
      * Validate record against stage business rules
@@ -531,7 +545,15 @@ Please select Self Achievement ${i} (1 - 5)`
      * @param {string} stage Resolved business stage from STATUS_TO_STAGE_MAP
      * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
      */
-    static validateWorkflowAction(record, actionName, stage) {
+    /**
+     * Validate workflow action against topology, status, and role/assignee constraints
+     * @param {Object} record Kintone record object
+     * @param {string} actionName Name of process action (event.action?.value)
+     * @param {string} stage Resolved business stage from STATUS_TO_STAGE_MAP
+     * @param {Object} options Optional capability parameters (e.g. processCapabilityId)
+     * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
+     */
+    static validateWorkflowAction(record, actionName, stage, options = {}) {
       const fieldErrors = [];
       if (!record) {
         fieldErrors.push({
@@ -551,9 +573,159 @@ Please select Self Achievement ${i} (1 - 5)`
         });
         return this._formatResult(fieldErrors);
       }
+      const isD3 = options && options.processCapabilityId === D3_PROCESS_CAPABILITY_ID;
       const topology = this._val(record.Routing_Topology);
       const status = this._val(record.Status);
-      const RECOGNIZED_TOPOLOGIES = ["M1_G1", "M1_M2_G1", "M1_G1_G2", "M1_M2_G1_G2", "M1_ONLY"];
+      if (!isD3) {
+        const RECOGNIZED_TOPOLOGIES2 = ["M1_G1", "M1_M2_G1", "M1_G1_G2", "M1_M2_G1_G2", "M1_ONLY"];
+        if (!topology || !RECOGNIZED_TOPOLOGIES2.includes(topology)) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 "${topology || "BLANK"}" \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07\u0E2B\u0E23\u0E37\u0E2D\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E23\u0E30\u0E1A\u0E38 (UNKNOWN TOPOLOGY FAIL-CLOSED)`,
+            messageEN: `Routing topology "${topology || "BLANK"}" is invalid or unmapped.`,
+            message: `\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 "${topology || "BLANK"}" \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07\u0E2B\u0E23\u0E37\u0E2D\u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E23\u0E30\u0E1A\u0E38 (UNKNOWN TOPOLOGY FAIL-CLOSED)
+Routing topology "${topology || "BLANK"}" is invalid or unmapped.`
+          });
+          return this._formatResult(fieldErrors);
+        }
+        if (topology.includes("G2")) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A ${topology} \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19 (G2 UNSUPPORTED CONFIGURATION ERROR)`,
+            messageEN: `Routing topology ${topology} is not supported by current Process Management workflow.`,
+            message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A ${topology} \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19 (G2 UNSUPPORTED CONFIGURATION ERROR)
+Routing topology ${topology} is not supported by current Process Management workflow.`
+          });
+          return this._formatResult(fieldErrors);
+        }
+        const firstMgrStates2 = [
+          "02 First Manager Objective Review",
+          "07 First Manager Mid-Year Review",
+          "12 First Manager Final Evaluation"
+        ];
+        if (firstMgrStates2.includes(status) && !topology.includes("M2")) {
+          fieldErrors.push({
+            field: "Status",
+            messageTH: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 First Manager (M2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+            messageEN: `Status ${status} is valid only for topologies containing First Manager (M2).`,
+            message: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 First Manager (M2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Status ${status} is valid only for topologies containing First Manager (M2).`
+          });
+          return this._formatResult(fieldErrors);
+        }
+        const firstManagerSubmits2 = [
+          "Submit Objective to First Manager",
+          "Submit Mid-Year to First Manager",
+          "Submit Final to First Manager"
+        ];
+        const directManagerSubmits2 = [
+          "Submit Objective to Manager",
+          "Submit Mid-Year to Manager",
+          "Submit Final to Manager"
+        ];
+        const hasFirstManager = Array.isArray(record.First_Manager_User?.value) && record.First_Manager_User.value.length > 0;
+        const hasManager = Array.isArray(record.Manager_User?.value) && record.Manager_User.value.length > 0;
+        const hasGM = Array.isArray(record.GM_User?.value) && record.GM_User.value.length > 0;
+        const hasRequester2 = Array.isArray(record.Requester_User?.value) && record.Requester_User.value.length > 0;
+        if (firstManagerSubmits2.includes(actionName)) {
+          if (!topology.includes("M2")) {
+            fieldErrors.push({
+              field: "Routing_Topology",
+              messageTH: `\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager (${actionName}) \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology || "Direct Manager"}`,
+              messageEN: `Action "${actionName}" is not allowed for topology ${topology || "Direct Manager"}.`,
+              message: `\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager (${actionName}) \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology || "Direct Manager"}
+Action "${actionName}" is not allowed for topology ${topology || "Direct Manager"}.`
+            });
+          } else if (!hasFirstManager) {
+            fieldErrors.push({
+              field: "First_Manager_User",
+              messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 First_Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})`,
+              messageEN: `First_Manager_User is empty for action "${actionName}".`,
+              message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 First_Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})
+First_Manager_User is empty for action "${actionName}".`
+            });
+          }
+        }
+        if (directManagerSubmits2.includes(actionName)) {
+          if (topology.includes("M2")) {
+            fieldErrors.push({
+              field: "Routing_Topology",
+              messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+              messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
+              message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
+            });
+          } else if (!hasManager) {
+            fieldErrors.push({
+              field: "Manager_User",
+              messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})`,
+              messageEN: `Manager_User is empty for action "${actionName}".`,
+              message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})
+Manager_User is empty for action "${actionName}".`
+            });
+          }
+        }
+        const managerHandoverActions = [
+          "Approve Objective",
+          // from 02 to 03
+          "Approve Mid-Year First Manager",
+          // from 07 to 08
+          "Approve Final First Manager"
+          // from 12 to 13
+        ];
+        if (managerHandoverActions.includes(actionName) && (status.startsWith("02") || status.startsWith("07") || status.startsWith("12"))) {
+          if (!hasManager) {
+            fieldErrors.push({
+              field: "Manager_User",
+              messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B`,
+              messageEN: `Manager_User is empty for action "${actionName}".`,
+              message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B
+Manager_User is empty for action "${actionName}".`
+            });
+          }
+        }
+        const gmHandoverActions = [
+          "Approve Objective",
+          // from 03 to 04
+          "Approve Mid-Year Manager",
+          // from 08 to 09
+          "Approve Final Manager"
+          // from 13 to 14
+        ];
+        if (gmHandoverActions.includes(actionName) && (status.startsWith("03") || status.startsWith("08") || status.startsWith("13"))) {
+          if (topology !== "M1_ONLY" && !hasGM) {
+            fieldErrors.push({
+              field: "GM_User",
+              messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 GM_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B`,
+              messageEN: `GM_User is empty for action "${actionName}".`,
+              message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 GM_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B
+GM_User is empty for action "${actionName}".`
+            });
+          }
+        }
+        const returnActions2 = [
+          "Return Objective",
+          "Return Mid-Year First Manager",
+          "Return Mid-Year Manager",
+          "Return Mid-Year GM",
+          "Return Final First Manager",
+          "Return Final Manager",
+          "Return Final GM",
+          "Return Final HR"
+        ];
+        const isRequesterHandoffAction = status.startsWith("04") && actionName === "Approve Objective" || status.startsWith("05") && actionName === "Start Mid-Year" || status.startsWith("09") && actionName === "Approve Mid-Year GM" || status.startsWith("10") && actionName === "Start Self Evaluation" || returnActions2.includes(actionName);
+        if (isRequesterHandoffAction && !hasRequester2) {
+          fieldErrors.push({
+            field: "Requester_User",
+            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+            messageEN: `Requester_User is empty for action "${actionName}".`,
+            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+Requester_User is empty for action "${actionName}".`
+          });
+        }
+        return this._formatResult(fieldErrors);
+      }
+      const RECOGNIZED_TOPOLOGIES = ["M1_ONLY", "M1_G1", "M1_M2_G1", "M1_G1_G2", "M1_M2_G1_G2"];
       if (!topology || !RECOGNIZED_TOPOLOGIES.includes(topology)) {
         fieldErrors.push({
           field: "Routing_Topology",
@@ -564,22 +736,16 @@ Routing topology "${topology || "BLANK"}" is invalid or unmapped.`
         });
         return this._formatResult(fieldErrors);
       }
-      if (topology.includes("G2")) {
-        fieldErrors.push({
-          field: "Routing_Topology",
-          messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A ${topology} \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19 (G2 UNSUPPORTED CONFIGURATION ERROR)`,
-          messageEN: `Routing topology ${topology} is not supported by current Process Management workflow.`,
-          message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A ${topology} \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E23\u0E2D\u0E07\u0E23\u0E31\u0E1A\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A\u0E1B\u0E31\u0E08\u0E08\u0E38\u0E1A\u0E31\u0E19 (G2 UNSUPPORTED CONFIGURATION ERROR)
-Routing topology ${topology} is not supported by current Process Management workflow.`
-        });
-        return this._formatResult(fieldErrors);
-      }
+      const hasM2Topology = topology.includes("M2");
+      const hasG1Topology = topology.includes("G1");
+      const hasG2Topology = topology.includes("G2");
+      const isM1Only = topology === "M1_ONLY";
       const firstMgrStates = [
         "02 First Manager Objective Review",
         "07 First Manager Mid-Year Review",
         "12 First Manager Final Evaluation"
       ];
-      if (firstMgrStates.includes(status) && !topology.includes("M2")) {
+      if (firstMgrStates.includes(status) && !hasM2Topology) {
         fieldErrors.push({
           field: "Status",
           messageTH: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 First Manager (M2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
@@ -589,6 +755,143 @@ Status ${status} is valid only for topologies containing First Manager (M2).`
         });
         return this._formatResult(fieldErrors);
       }
+      const g2States = [
+        "04B GM Level 2 Objective Review",
+        "09B GM Level 2 Mid-Year Review",
+        "14B GM Level 2 Final Evaluation"
+      ];
+      if (g2States.includes(status) && !hasG2Topology) {
+        fieldErrors.push({
+          field: "Status",
+          messageTH: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+          messageEN: `Status ${status} is valid only for topologies containing GM Level 2 (G2).`,
+          message: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Status ${status} is valid only for topologies containing GM Level 2 (G2).`
+        });
+        return this._formatResult(fieldErrors);
+      }
+      const g1States = [
+        "04 GM Objective Review",
+        "09 GM Mid-Year Review",
+        "14 GM Final Evaluation"
+      ];
+      if (g1States.includes(status) && isM1Only) {
+        fieldErrors.push({
+          field: "Status",
+          messageTH: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 M1_ONLY`,
+          messageEN: `Status ${status} is not allowed for M1_ONLY topology.`,
+          message: `\u0E2A\u0E16\u0E32\u0E19\u0E30 ${status} \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 M1_ONLY
+Status ${status} is not allowed for M1_ONLY topology.`
+        });
+        return this._formatResult(fieldErrors);
+      }
+      const getApproverUsers = (code) => {
+        const field = record[code];
+        if (!field) return [];
+        if (Array.isArray(field.value)) return field.value;
+        if (Array.isArray(field)) return field;
+        return [];
+      };
+      const getApprovalRule = (code) => {
+        const field = record[code];
+        if (field === null || field === void 0) return "";
+        if (typeof field === "object" && "value" in field) {
+          if (typeof field.value === "object" && field.value !== null && "value" in field.value) {
+            return String(field.value.value ?? "");
+          }
+          return String(field.value ?? "");
+        }
+        return String(field);
+      };
+      const validatedSlots = /* @__PURE__ */ new Set();
+      const validateD3Slot = (approverField, ruleField) => {
+        if (validatedSlots.has(approverField)) return;
+        validatedSlots.add(approverField);
+        const rawField = record[approverField];
+        let isArray = false;
+        let users = [];
+        if (rawField && Array.isArray(rawField.value)) {
+          isArray = true;
+          users = rawField.value;
+        } else if (Array.isArray(rawField)) {
+          isArray = true;
+          users = rawField;
+        }
+        if (!isArray || users.length === 0) {
+          fieldErrors.push({
+            field: approverField,
+            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${approverField}`,
+            messageEN: `${approverField} is empty.`,
+            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${approverField}
+${approverField} is empty.`
+          });
+        } else if (users.length > 1) {
+          fieldErrors.push({
+            field: approverField,
+            messageTH: `\u0E08\u0E33\u0E19\u0E27\u0E19\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${approverField} \u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E40\u0E1E\u0E35\u0E22\u0E07 1 \u0E04\u0E19 (\u0E1E\u0E1A ${users.length} \u0E04\u0E19)`,
+            messageEN: `${approverField} must have exactly 1 user (found ${users.length}).`,
+            message: `\u0E08\u0E33\u0E19\u0E27\u0E19\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${approverField} \u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E40\u0E1E\u0E35\u0E22\u0E07 1 \u0E04\u0E19 (\u0E1E\u0E1A ${users.length} \u0E04\u0E19)
+${approverField} must have exactly 1 user (found ${users.length}).`
+          });
+        } else {
+          const user = users[0];
+          const isObject = typeof user === "object" && user !== null && !Array.isArray(user);
+          const code = isObject ? user.code : void 0;
+          const isString = typeof code === "string";
+          const isNonEmpty = isString && code.length > 0;
+          const isNotWhitespace = isString && code.trim().length > 0;
+          if (!isObject || !isString || !isNonEmpty || !isNotWhitespace) {
+            fieldErrors.push({
+              field: approverField,
+              messageTH: `\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E43\u0E19 ${approverField} \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 \u0E15\u0E49\u0E2D\u0E07\u0E23\u0E30\u0E1A\u0E38\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49 Kintone \u0E17\u0E35\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 (EXACT USER IDENTITY INVARIANT)`,
+              messageEN: `${approverField} must contain a valid Kintone user object with exact non-empty code string.`,
+              message: `\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E43\u0E19 ${approverField} \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 \u0E15\u0E49\u0E2D\u0E07\u0E23\u0E30\u0E1A\u0E38\u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49 Kintone \u0E17\u0E35\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 (EXACT USER IDENTITY INVARIANT)
+${approverField} must contain a valid Kintone user object with exact non-empty code string.`
+            });
+          }
+        }
+        const rule = getApprovalRule(ruleField);
+        if (rule !== "ALL") {
+          fieldErrors.push({
+            field: ruleField,
+            messageTH: `\u0E01\u0E0E\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${ruleField} \u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19 ALL \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19 (\u0E1E\u0E1A ${rule || "BLANK"})`,
+            messageEN: `${ruleField} must be ALL (found ${rule || "BLANK"}).`,
+            message: `\u0E01\u0E0E\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${ruleField} \u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19 ALL \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19 (\u0E1E\u0E1A ${rule || "BLANK"})
+${ruleField} must be ALL (found ${rule || "BLANK"}).`
+          });
+        }
+      };
+      const activeSlots = D3_ACTIVE_ROUTE_SLOTS[topology] || [];
+      for (const slotKey of activeSlots) {
+        const { approverField, ruleField } = D3_SLOT_FIELD_MAP[slotKey];
+        validateD3Slot(approverField, ruleField);
+      }
+      const seenUserCodes = /* @__PURE__ */ new Map();
+      for (const slotKey of activeSlots) {
+        const { approverField } = D3_SLOT_FIELD_MAP[slotKey];
+        const rawField = record[approverField];
+        const users = rawField && Array.isArray(rawField.value) ? rawField.value : Array.isArray(rawField) ? rawField : [];
+        if (users.length === 1) {
+          const u = users[0];
+          if (typeof u === "object" && u !== null && !Array.isArray(u) && typeof u.code === "string" && u.code.trim().length > 0) {
+            const code = u.code;
+            if (seenUserCodes.has(code)) {
+              const priorSlot = seenUserCodes.get(code);
+              fieldErrors.push({
+                field: approverField,
+                messageTH: `\u0E1E\u0E1A\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${code} \u0E0B\u0E49\u0E33\u0E01\u0E31\u0E19\u0E43\u0E19\u0E15\u0E33\u0E41\u0E2B\u0E19\u0E48\u0E07 ${priorSlot} \u0E41\u0E25\u0E30 ${slotKey} (DISTINCT APPRAISER INVARIANT)`,
+                messageEN: `Duplicate appraiser user "${code}" in active route slots (${priorSlot} and ${slotKey}).`,
+                message: `\u0E1E\u0E1A\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 ${code} \u0E0B\u0E49\u0E33\u0E01\u0E31\u0E19\u0E43\u0E19\u0E15\u0E33\u0E41\u0E2B\u0E19\u0E48\u0E07 ${priorSlot} \u0E41\u0E25\u0E30 ${slotKey} (DISTINCT APPRAISER INVARIANT)
+Duplicate appraiser user "${code}" in active route slots (${priorSlot} and ${slotKey}).`
+              });
+            } else {
+              seenUserCodes.set(code, slotKey);
+            }
+          }
+        }
+      }
+      const requesterUsers = getApproverUsers("Requester_User");
+      const hasRequester = requesterUsers.length > 0;
       const firstManagerSubmits = [
         "Submit Objective to First Manager",
         "Submit Mid-Year to First Manager",
@@ -599,86 +902,26 @@ Status ${status} is valid only for topologies containing First Manager (M2).`
         "Submit Mid-Year to Manager",
         "Submit Final to Manager"
       ];
-      const hasFirstManager = Array.isArray(record.First_Manager_User?.value) && record.First_Manager_User.value.length > 0;
-      const hasManager = Array.isArray(record.Manager_User?.value) && record.Manager_User.value.length > 0;
-      const hasGM = Array.isArray(record.GM_User?.value) && record.GM_User.value.length > 0;
-      const hasRequester = Array.isArray(record.Requester_User?.value) && record.Requester_User.value.length > 0;
-      if (firstManagerSubmits.includes(actionName)) {
-        if (!topology.includes("M2")) {
-          fieldErrors.push({
-            field: "Routing_Topology",
-            messageTH: `\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager (${actionName}) \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology || "Direct Manager"}`,
-            messageEN: `Action "${actionName}" is not allowed for topology ${topology || "Direct Manager"}.`,
-            message: `\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager (${actionName}) \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology || "Direct Manager"}
-Action "${actionName}" is not allowed for topology ${topology || "Direct Manager"}.`
-          });
-        } else if (!hasFirstManager) {
-          fieldErrors.push({
-            field: "First_Manager_User",
-            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 First_Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})`,
-            messageEN: `First_Manager_User is empty for action "${actionName}".`,
-            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 First_Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})
-First_Manager_User is empty for action "${actionName}".`
-          });
-        }
-      }
-      if (directManagerSubmits.includes(actionName)) {
-        if (topology.includes("M2")) {
-          fieldErrors.push({
-            field: "Routing_Topology",
-            messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
-            messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
-            message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
-Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
-          });
-        } else if (!hasManager) {
-          fieldErrors.push({
-            field: "Manager_User",
-            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})`,
-            messageEN: `Manager_User is empty for action "${actionName}".`,
-            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23 (${actionName})
-Manager_User is empty for action "${actionName}".`
-          });
-        }
-      }
-      const managerHandoverActions = [
-        "Approve Objective",
-        // from 02 to 03
-        "Approve Mid-Year First Manager",
-        // from 07 to 08
-        "Approve Final First Manager"
-        // from 12 to 13
+      const m1OnlyActions = [
+        "Approve Objective (M1 Only)",
+        "Approve Mid-Year Manager (M1 Only)",
+        "Approve Final Manager (M1 Only)"
       ];
-      if (managerHandoverActions.includes(actionName) && (status.startsWith("02") || status.startsWith("07") || status.startsWith("12"))) {
-        if (!hasManager) {
-          fieldErrors.push({
-            field: "Manager_User",
-            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B`,
-            messageEN: `Manager_User is empty for action "${actionName}".`,
-            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 Manager_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B
-Manager_User is empty for action "${actionName}".`
-          });
-        }
-      }
-      const gmHandoverActions = [
-        "Approve Objective",
-        // from 03 to 04
-        "Approve Mid-Year Manager",
-        // from 08 to 09
-        "Approve Final Manager"
-        // from 13 to 14
+      const toG2Actions = [
+        "Approve Objective to G2",
+        "Approve Mid-Year GM to G2",
+        "Approve Final GM to G2"
       ];
-      if (gmHandoverActions.includes(actionName) && (status.startsWith("03") || status.startsWith("08") || status.startsWith("13"))) {
-        if (topology !== "M1_ONLY" && !hasGM) {
-          fieldErrors.push({
-            field: "GM_User",
-            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 GM_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B`,
-            messageEN: `GM_User is empty for action "${actionName}".`,
-            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 GM_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E43\u0E19\u0E02\u0E31\u0E49\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E48\u0E2D\u0E44\u0E1B
-GM_User is empty for action "${actionName}".`
-          });
-        }
-      }
+      const g2ApproveActions = [
+        "Approve Objective G2",
+        "Approve Mid-Year G2",
+        "Approve Final G2"
+      ];
+      const g2ReturnActions = [
+        "Return Objective G2",
+        "Return Mid-Year G2",
+        "Return Final G2"
+      ];
       const returnActions = [
         "Return Objective",
         "Return Mid-Year First Manager",
@@ -689,15 +932,195 @@ GM_User is empty for action "${actionName}".`
         "Return Final GM",
         "Return Final HR"
       ];
-      const isRequesterHandoffAction = status.startsWith("04") && actionName === "Approve Objective" || status.startsWith("05") && actionName === "Start Mid-Year" || status.startsWith("09") && actionName === "Approve Mid-Year GM" || status.startsWith("10") && actionName === "Start Self Evaluation" || returnActions.includes(actionName);
-      if (isRequesterHandoffAction && !hasRequester) {
-        fieldErrors.push({
-          field: "Requester_User",
-          messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
-          messageEN: `Requester_User is empty for action "${actionName}".`,
-          message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+      if (firstManagerSubmits.includes(actionName)) {
+        if (!hasM2Topology) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager (${actionName}) \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology || "Direct Manager"}`,
+            messageEN: `Action "${actionName}" is not allowed for topology ${topology || "Direct Manager"}. Direct Manager submit must be used.`,
+            message: `\u0E01\u0E32\u0E23\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager (${actionName}) \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology || "Direct Manager"}
+Action "${actionName}" is not allowed for topology ${topology || "Direct Manager"}. Direct Manager submit must be used.`
+          });
+        } else {
+          validateD3Slot("Manager_Level2_Approvers", "Manager_Level2_Approval_Rule");
+        }
+      }
+      if (directManagerSubmits.includes(actionName)) {
+        if (hasM2Topology) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+            messageEN: `Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`,
+            message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E1C\u0E48\u0E32\u0E19 First Manager \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Action "${actionName}" is not allowed for topology ${topology}. First Manager submit must be used.`
+          });
+        } else {
+          validateD3Slot("Manager_Level1_Approvers", "Manager_Level1_Approval_Rule");
+        }
+      }
+      const m2HandoverActions = [
+        "Approve Objective",
+        "Approve Mid-Year First Manager",
+        "Approve Final First Manager"
+      ];
+      if (m2HandoverActions.includes(actionName) && (status.startsWith("02") || status.startsWith("07") || status.startsWith("12"))) {
+        validateD3Slot("Manager_Level1_Approvers", "Manager_Level1_Approval_Rule");
+        validateD3Slot("Manager_Level2_Approvers", "Manager_Level2_Approval_Rule");
+      }
+      if (m1OnlyActions.includes(actionName)) {
+        if (!isM1Only) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 M1_ONLY \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+            messageEN: `Action "${actionName}" is allowed only for M1_ONLY topology.`,
+            message: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 M1_ONLY \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Action "${actionName}" is allowed only for M1_ONLY topology.`
+          });
+        } else {
+          validateD3Slot("Manager_Level1_Approvers", "Manager_Level1_Approval_Rule");
+          if (actionName === "Approve Objective (M1 Only)" || actionName === "Approve Mid-Year Manager (M1 Only)") {
+            if (!hasRequester) {
+              fieldErrors.push({
+                field: "Requester_User",
+                messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+                messageEN: `Requester_User is empty for action "${actionName}".`,
+                message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
 Requester_User is empty for action "${actionName}".`
-        });
+              });
+            }
+          }
+        }
+      }
+      const m1ToG1Actions = [
+        "Approve Objective",
+        "Approve Mid-Year Manager",
+        "Approve Final Manager"
+      ];
+      if (m1ToG1Actions.includes(actionName) && (status.startsWith("03") || status.startsWith("08") || status.startsWith("13"))) {
+        if (isM1Only) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 M1_ONLY \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2A\u0E48\u0E07\u0E44\u0E1B\u0E22\u0E31\u0E07 GM \u0E44\u0E14\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E0A\u0E49\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A M1 Only`,
+            messageEN: `Action "${actionName}" is not allowed for M1_ONLY topology. M1 Only action must be used.`,
+            message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 M1_ONLY \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2A\u0E48\u0E07\u0E44\u0E1B\u0E22\u0E31\u0E07 GM \u0E44\u0E14\u0E49 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E43\u0E0A\u0E49\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A M1 Only
+Action "${actionName}" is not allowed for M1_ONLY topology. M1 Only action must be used.`
+          });
+        } else if (hasG1Topology) {
+          validateD3Slot("GM_Level1_Approvers", "GM_Level1_Approval_Rule");
+          validateD3Slot("Manager_Level1_Approvers", "Manager_Level1_Approval_Rule");
+        }
+      }
+      if (toG2Actions.includes(actionName)) {
+        if (!hasG2Topology) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+            messageEN: `Action "${actionName}" is allowed only for G2 topologies.`,
+            message: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2 Topology) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Action "${actionName}" is allowed only for G2 topologies.`
+          });
+        } else {
+          validateD3Slot("GM_Level2_Approvers", "GM_Level2_Approval_Rule");
+          validateD3Slot("GM_Level1_Approvers", "GM_Level1_Approval_Rule");
+        }
+      }
+      const g1DirectApproveActions = [
+        "Approve Objective",
+        "Approve Mid-Year GM",
+        "Approve Final GM"
+      ];
+      if (g1DirectApproveActions.includes(actionName) && (status.startsWith("04") && !status.startsWith("04B") || status.startsWith("09") && !status.startsWith("09B") || status.startsWith("14") && !status.startsWith("14B"))) {
+        if (hasG2Topology) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E15\u0E48\u0E2D\u0E44\u0E1B\u0E22\u0E31\u0E07 GM Level 2 (G2) \u0E01\u0E48\u0E2D\u0E19 \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E2A\u0E34\u0E49\u0E19\u0E42\u0E14\u0E22\u0E15\u0E23\u0E07\u0E44\u0E14\u0E49`,
+            messageEN: `Action "${actionName}" is not allowed for G2 topology. Approve to G2 must be used.`,
+            message: `\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07 ${topology} \u0E15\u0E49\u0E2D\u0E07\u0E2A\u0E48\u0E07\u0E15\u0E48\u0E2D\u0E44\u0E1B\u0E22\u0E31\u0E07 GM Level 2 (G2) \u0E01\u0E48\u0E2D\u0E19 \u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E2A\u0E34\u0E49\u0E19\u0E42\u0E14\u0E22\u0E15\u0E23\u0E07\u0E44\u0E14\u0E49
+Action "${actionName}" is not allowed for G2 topology. Approve to G2 must be used.`
+          });
+        } else {
+          validateD3Slot("GM_Level1_Approvers", "GM_Level1_Approval_Rule");
+          if (actionName === "Approve Objective" || actionName === "Approve Mid-Year GM") {
+            if (!hasRequester) {
+              fieldErrors.push({
+                field: "Requester_User",
+                messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+                messageEN: `Requester_User is empty for action "${actionName}".`,
+                message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+Requester_User is empty for action "${actionName}".`
+              });
+            }
+          }
+        }
+      }
+      if (g2ApproveActions.includes(actionName)) {
+        if (!hasG2Topology) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+            messageEN: `Action "${actionName}" is allowed only for G2 topologies.`,
+            message: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Action "${actionName}" is allowed only for G2 topologies.`
+          });
+        } else {
+          validateD3Slot("GM_Level2_Approvers", "GM_Level2_Approval_Rule");
+          if (actionName === "Approve Objective G2" || actionName === "Approve Mid-Year G2") {
+            if (!hasRequester) {
+              fieldErrors.push({
+                field: "Requester_User",
+                messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+                messageEN: `Requester_User is empty for action "${actionName}".`,
+                message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+Requester_User is empty for action "${actionName}".`
+              });
+            }
+          }
+        }
+      }
+      if (g2ReturnActions.includes(actionName)) {
+        if (!hasG2Topology) {
+          fieldErrors.push({
+            field: "Routing_Topology",
+            messageTH: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19`,
+            messageEN: `Action "${actionName}" is allowed only for G2 topologies.`,
+            message: `\u0E04\u0E33\u0E2A\u0E31\u0E48\u0E07 ${actionName} \u0E43\u0E0A\u0E49\u0E44\u0E14\u0E49\u0E40\u0E09\u0E1E\u0E32\u0E30\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E21\u0E35 GM Level 2 (G2) \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19
+Action "${actionName}" is allowed only for G2 topologies.`
+          });
+        } else {
+          validateD3Slot("GM_Level2_Approvers", "GM_Level2_Approval_Rule");
+          if (!hasRequester) {
+            fieldErrors.push({
+              field: "Requester_User",
+              messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+              messageEN: `Requester_User is empty for action "${actionName}".`,
+              message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+Requester_User is empty for action "${actionName}".`
+            });
+          }
+        }
+      }
+      if (returnActions.includes(actionName)) {
+        if (!hasRequester) {
+          fieldErrors.push({
+            field: "Requester_User",
+            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+            messageEN: `Requester_User is empty for action "${actionName}".`,
+            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+Requester_User is empty for action "${actionName}".`
+          });
+        }
+      }
+      const stageStartActions = ["Start Mid-Year", "Start Self Evaluation"];
+      if (stageStartActions.includes(actionName)) {
+        if (!hasRequester) {
+          fieldErrors.push({
+            field: "Requester_User",
+            messageTH: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})`,
+            messageEN: `Requester_User is empty for action "${actionName}".`,
+            message: `\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E02\u0E2D\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 Requester_User \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E07\u0E32\u0E19 (${actionName})
+Requester_User is empty for action "${actionName}".`
+          });
+        }
       }
       return this._formatResult(fieldErrors);
     }
@@ -707,6 +1130,226 @@ Requester_User is empty for action "${actionName}".`
         return field.value !== null && field.value !== void 0 ? String(field.value).trim() : "";
       }
       return String(field).trim();
+    }
+    /**
+     * Validates D3 App 794 bound route & provenance snapshot completeness (Fail-Closed)
+     * @param {Object} record App 794 record object
+     * @param {Object} options Optional validation context (e.g. employeeUserCode)
+     * @returns {Object} { isValid: boolean, fieldErrors: Array, errors: string[] }
+     */
+    static validateD3RouteProvenance(record, options = {}) {
+      const fieldErrors = [];
+      if (!record || typeof record !== "object") {
+        fieldErrors.push({
+          field: "RECORD",
+          messageTH: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Record \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A D3 Provenance",
+          messageEN: "Record data missing for D3 Provenance validation",
+          message: "Record data missing for D3 Provenance validation"
+        });
+        return this._formatResult(fieldErrors);
+      }
+      const frozenProfile = this._val(record.Frozen_Profile_Code);
+      if (!frozenProfile) {
+        fieldErrors.push({
+          field: "Frozen_Profile_Code",
+          messageTH: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Frozen_Profile_Code",
+          messageEN: "Frozen_Profile_Code is required",
+          message: "Frozen_Profile_Code is required"
+        });
+      }
+      const kRaw = this._val(record.K_expected_Snapshot);
+      const kExpected = Number(kRaw);
+      if (!kRaw || kExpected !== 1 && kExpected !== 2) {
+        fieldErrors.push({
+          field: "K_expected_Snapshot",
+          messageTH: "K_expected_Snapshot \u0E15\u0E49\u0E2D\u0E07\u0E40\u0E1B\u0E47\u0E19 1 \u0E2B\u0E23\u0E37\u0E2D 2 \u0E40\u0E17\u0E48\u0E32\u0E19\u0E31\u0E49\u0E19",
+          messageEN: "K_expected_Snapshot must be exactly 1 or 2",
+          message: "K_expected_Snapshot must be exactly 1 or 2"
+        });
+      }
+      const effectiveRoutingKey = this._val(record.Effective_Routing_Key);
+      if (!effectiveRoutingKey) {
+        fieldErrors.push({
+          field: "Effective_Routing_Key",
+          messageTH: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Effective_Routing_Key",
+          messageEN: "Effective_Routing_Key is required",
+          message: "Effective_Routing_Key is required"
+        });
+      }
+      const effectiveVersionKey = this._val(record.Effective_Route_Version_Key);
+      if (!effectiveVersionKey) {
+        fieldErrors.push({
+          field: "Effective_Route_Version_Key",
+          messageTH: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Effective_Route_Version_Key",
+          messageEN: "Effective_Route_Version_Key is required",
+          message: "Effective_Route_Version_Key is required"
+        });
+      }
+      const topology = this._val(record.Routing_Topology);
+      const validTopologies = ["M1_ONLY", "M1_G1", "M1_M2_G1", "M1_G1_G2", "M1_M2_G1_G2"];
+      if (!topology || !validTopologies.includes(topology)) {
+        fieldErrors.push({
+          field: "Routing_Topology",
+          messageTH: `\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 "${topology || "BLANK"}" \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07`,
+          messageEN: `Routing topology "${topology || "BLANK"}" is invalid`,
+          message: `Routing topology "${topology || "BLANK"}" is invalid`
+        });
+      }
+      const slotDefinitions = {
+        M1_ONLY: ["M1"],
+        M1_G1: ["M1", "G1"],
+        M1_M2_G1: ["M2", "M1", "G1"],
+        M1_G1_G2: ["M1", "G1", "G2"],
+        M1_M2_G1_G2: ["M2", "M1", "G1", "G2"]
+      };
+      const activeSlots = slotDefinitions[topology] || [];
+      if (activeSlots.length === 0) {
+        fieldErrors.push({
+          field: "Routing_Topology",
+          messageTH: "\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E44\u0E21\u0E48\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E17\u0E35\u0E48\u0E23\u0E2D\u0E14\u0E2B\u0E25\u0E31\u0E07 self-elision",
+          messageEN: "No surviving workflow appraisers in routing topology",
+          message: "No surviving workflow appraisers in routing topology"
+        });
+      }
+      const slotFields = {
+        M1: { users: "Manager_Level1_Approvers", rule: "Manager_Level1_Approval_Rule" },
+        M2: { users: "Manager_Level2_Approvers", rule: "Manager_Level2_Approval_Rule" },
+        G1: { users: "GM_Level1_Approvers", rule: "GM_Level1_Approval_Rule" },
+        G2: { users: "GM_Level2_Approvers", rule: "GM_Level2_Approval_Rule" }
+      };
+      const survivingApproverCodes = [];
+      for (const slotId of activeSlots) {
+        const { users: userField, rule: ruleField } = slotFields[slotId];
+        const rawUsers = record[userField]?.value !== void 0 ? record[userField].value : record[userField];
+        const users = Array.isArray(rawUsers) ? rawUsers : [];
+        const rawRule = record[ruleField]?.value !== void 0 ? record[ruleField].value : record[ruleField];
+        const rule = rawRule !== null && rawRule !== void 0 ? String(rawRule).trim() : "";
+        if (users.length !== 1) {
+          fieldErrors.push({
+            field: userField,
+            messageTH: `${userField} \u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E04\u0E19\u0E40\u0E14\u0E35\u0E22\u0E27\u0E43\u0E19 D3 V1 (\u0E1E\u0E1A ${users.length})`,
+            messageEN: `${userField} must contain exactly one user (found ${users.length})`,
+            message: `${userField} must contain exactly one user (found ${users.length})`
+          });
+        } else {
+          const u = users[0];
+          const uCode = String(u?.code || u?.value || u || "").trim();
+          if (!uCode) {
+            fieldErrors.push({
+              field: userField,
+              messageTH: `${userField} \u0E23\u0E2B\u0E31\u0E2A\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19\u0E15\u0E49\u0E2D\u0E07\u0E44\u0E21\u0E48\u0E27\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E25\u0E48\u0E32`,
+              messageEN: `${userField} user code cannot be blank`,
+              message: `${userField} user code cannot be blank`
+            });
+          } else {
+            survivingApproverCodes.push(uCode);
+          }
+        }
+        if (rule !== "ALL") {
+          fieldErrors.push({
+            field: ruleField,
+            messageTH: `${ruleField} \u0E15\u0E49\u0E2D\u0E07\u0E23\u0E30\u0E1A\u0E38\u0E04\u0E48\u0E32 ALL \u0E2D\u0E22\u0E48\u0E32\u0E07\u0E0A\u0E31\u0E14\u0E40\u0E08\u0E19\u0E43\u0E19 D3 V1 (\u0E1E\u0E1A "${rule}")`,
+            messageEN: `${ruleField} approval rule must be explicitly ALL (found "${rule}")`,
+            message: `${ruleField} approval rule must be explicitly ALL (found "${rule}")`
+          });
+        }
+      }
+      const allSlots = ["M1", "M2", "G1", "G2"];
+      const inactiveSlots = allSlots.filter((s) => !activeSlots.includes(s));
+      for (const slotId of inactiveSlots) {
+        const { users: userField } = slotFields[slotId];
+        const rawUsers = record[userField]?.value !== void 0 ? record[userField].value : record[userField];
+        const users = Array.isArray(rawUsers) ? rawUsers : [];
+        if (users.length > 0) {
+          fieldErrors.push({
+            field: userField,
+            messageTH: `${userField} \u0E15\u0E49\u0E2D\u0E07\u0E27\u0E48\u0E32\u0E07\u0E40\u0E1B\u0E25\u0E48\u0E32\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A topology ${topology} (\u0E1E\u0E1A ${users.length})`,
+            messageEN: `${userField} must be empty for topology ${topology} (found ${users.length})`,
+            message: `${userField} must be empty for topology ${topology} (found ${users.length})`
+          });
+        }
+      }
+      const uniqueApprovers = new Set(survivingApproverCodes);
+      if (uniqueApprovers.size !== survivingApproverCodes.length) {
+        fieldErrors.push({
+          field: "Routing_Topology",
+          messageTH: "\u0E2B\u0E49\u0E32\u0E21\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E0B\u0E49\u0E33\u0E01\u0E31\u0E19\u0E43\u0E19\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34 (DUPLICATE_APPROVERS)",
+          messageEN: "Duplicate approver identities in routing path (DUPLICATE_APPROVERS)",
+          message: "Duplicate approver identities in routing path (DUPLICATE_APPROVERS)"
+        });
+      }
+      const scorerSlotsRaw = this._val(record.Effective_Scorer_Slots_Snapshot);
+      if (!scorerSlotsRaw) {
+        fieldErrors.push({
+          field: "Effective_Scorer_Slots_Snapshot",
+          messageTH: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Effective_Scorer_Slots_Snapshot",
+          messageEN: "Effective_Scorer_Slots_Snapshot is required",
+          message: "Effective_Scorer_Slots_Snapshot is required"
+        });
+      } else {
+        let parsedSlots;
+        try {
+          parsedSlots = JSON.parse(scorerSlotsRaw);
+        } catch {
+          fieldErrors.push({
+            field: "Effective_Scorer_Slots_Snapshot",
+            messageTH: "Effective_Scorer_Slots_Snapshot \u0E21\u0E35\u0E23\u0E39\u0E1B\u0E41\u0E1A\u0E1A JSON \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07",
+            messageEN: "Effective_Scorer_Slots_Snapshot contains malformed JSON",
+            message: "Effective_Scorer_Slots_Snapshot contains malformed JSON"
+          });
+        }
+        if (Array.isArray(parsedSlots)) {
+          if (parsedSlots.length !== kExpected) {
+            fieldErrors.push({
+              field: "Effective_Scorer_Slots_Snapshot",
+              messageTH: `\u0E08\u0E33\u0E19\u0E27\u0E19 scorer slots (${parsedSlots.length}) \u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A K_expected (${kExpected})`,
+              messageEN: `Scorer slots count (${parsedSlots.length}) does not match K_expected (${kExpected})`,
+              message: `Scorer slots count (${parsedSlots.length}) does not match K_expected (${kExpected})`
+            });
+          }
+          const uniqueSlots = new Set(parsedSlots);
+          if (uniqueSlots.size !== parsedSlots.length) {
+            fieldErrors.push({
+              field: "Effective_Scorer_Slots_Snapshot",
+              messageTH: "Scorer slots \u0E15\u0E49\u0E2D\u0E07\u0E44\u0E21\u0E48\u0E0B\u0E49\u0E33\u0E01\u0E31\u0E19",
+              messageEN: "Scorer slots must be unique",
+              message: "Scorer slots must be unique"
+            });
+          }
+          const scorerUserCodes = [];
+          for (const ordinal of parsedSlots) {
+            if (!Number.isInteger(ordinal) || ordinal < 1 || ordinal > activeSlots.length) {
+              fieldErrors.push({
+                field: "Effective_Scorer_Slots_Snapshot",
+                messageTH: `Scorer slot ordinal ${ordinal} \u0E44\u0E21\u0E48\u0E15\u0E23\u0E07\u0E01\u0E31\u0E1A\u0E40\u0E2A\u0E49\u0E19\u0E17\u0E32\u0E07\u0E17\u0E35\u0E48\u0E23\u0E2D\u0E14 (${activeSlots.length} slots)`,
+                messageEN: `Scorer slot ordinal ${ordinal} does not reference surviving route (${activeSlots.length} slots)`,
+                message: `Scorer slot ordinal ${ordinal} does not reference surviving route (${activeSlots.length} slots)`
+              });
+            } else {
+              const approverCode = survivingApproverCodes[ordinal - 1];
+              if (approverCode) scorerUserCodes.push(approverCode);
+            }
+          }
+          if (kExpected === 2 && scorerUserCodes.length === 2 && scorerUserCodes[0] === scorerUserCodes[1]) {
+            fieldErrors.push({
+              field: "Effective_Scorer_Slots_Snapshot",
+              messageTH: "K=2 \u0E15\u0E49\u0E2D\u0E07\u0E21\u0E35\u0E1C\u0E39\u0E49\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 2 \u0E04\u0E19\u0E17\u0E35\u0E48\u0E44\u0E21\u0E48\u0E0B\u0E49\u0E33\u0E01\u0E31\u0E19",
+              messageEN: "K=2 requires two distinct scorer identities",
+              message: "K=2 requires two distinct scorer identities"
+            });
+          }
+          const targetEmpCode = String(options.employeeUserCode || "").trim();
+          if (targetEmpCode && scorerUserCodes.includes(targetEmpCode)) {
+            fieldErrors.push({
+              field: "Effective_Scorer_Slots_Snapshot",
+              messageTH: "\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E1B\u0E23\u0E30\u0E40\u0E21\u0E34\u0E19 MBO \u0E15\u0E19\u0E40\u0E2D\u0E07\u0E44\u0E14\u0E49 (SELF_SCORING_CONFLICT)",
+              messageEN: "Employee cannot score their own MBO (SELF_SCORING_CONFLICT)",
+              message: "Employee cannot score their own MBO (SELF_SCORING_CONFLICT)"
+            });
+          }
+        }
+      }
+      return this._formatResult(fieldErrors);
     }
   };
 
@@ -6628,7 +7271,667 @@ Employee Master canonical identity does not match requested code (${cleanCode}).
   ]));
   var MboIdentityService = _MboIdentityService;
 
+  // src/config/d3-route-contract.js
+  var D3RouteContractError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3RouteContractError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  var D3_ROUTE_PATTERNS = Object.freeze({
+    PATTERN_1_M1: Object.freeze({
+      topology: "M1_ONLY",
+      sourceSlots: Object.freeze(["M1"])
+    }),
+    PATTERN_2_M1_G1: Object.freeze({
+      topology: "M1_G1",
+      sourceSlots: Object.freeze(["M1", "G1"])
+    }),
+    PATTERN_3A_M2_M1_G1: Object.freeze({
+      topology: "M1_M2_G1",
+      sourceSlots: Object.freeze(["M2", "M1", "G1"])
+    }),
+    PATTERN_3B_M1_G1_G2: Object.freeze({
+      topology: "M1_G1_G2",
+      sourceSlots: Object.freeze(["M1", "G1", "G2"])
+    }),
+    PATTERN_4_M2_M1_G1_G2: Object.freeze({
+      topology: "M1_M2_G1_G2",
+      sourceSlots: Object.freeze(["M2", "M1", "G1", "G2"])
+    })
+  });
+  var D3_SLOT_DEFINITIONS = Object.freeze({
+    M1: Object.freeze({
+      approverField: "Manager_Level1_Approvers",
+      legacyApproverField: "Manager_User",
+      approvalRuleField: "Manager_Level1_Approval_Rule"
+    }),
+    M2: Object.freeze({
+      approverField: "Manager_Level2_Approvers",
+      legacyApproverField: "First_Manager_User",
+      approvalRuleField: "Manager_Level2_Approval_Rule"
+    }),
+    G1: Object.freeze({
+      approverField: "GM_Level1_Approvers",
+      legacyApproverField: "GM_User",
+      approvalRuleField: "GM_Level1_Approval_Rule"
+    }),
+    G2: Object.freeze({
+      approverField: "GM_Level2_Approvers",
+      legacyApproverField: null,
+      approvalRuleField: "GM_Level2_Approval_Rule"
+    })
+  });
+  function unwrapD3Field(value) {
+    if (value && typeof value === "object" && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, "value")) {
+      return value.value;
+    }
+    return value;
+  }
+  function readD3String(value) {
+    const raw = unwrapD3Field(value);
+    if (raw === null || raw === void 0) return "";
+    return String(raw).trim();
+  }
+  function normalizeUserIdentity(rawUser, fieldCode) {
+    if (typeof rawUser === "string") {
+      const code = rawUser.trim();
+      if (!code || rawUser !== code) {
+        throw new D3RouteContractError(
+          "INVALID_APPRAISER_IDENTITY",
+          `Blank user identity in ${fieldCode}.`
+        );
+      }
+      return { code };
+    }
+    if (rawUser && typeof rawUser === "object") {
+      const rawCode = String(rawUser.code ?? rawUser.value ?? "");
+      const code = rawCode.trim();
+      if (!code || rawCode !== code) {
+        throw new D3RouteContractError(
+          "INVALID_APPRAISER_IDENTITY",
+          `Missing Kintone user code in ${fieldCode}.`
+        );
+      }
+      return { ...rawUser, code };
+    }
+    throw new D3RouteContractError(
+      "INVALID_APPRAISER_IDENTITY",
+      `Unsupported user identity in ${fieldCode}.`
+    );
+  }
+  function readD3UserList(value, fieldCode = "USER_SELECT") {
+    const raw = unwrapD3Field(value);
+    if (raw === null || raw === void 0 || raw === "") return [];
+    if (!Array.isArray(raw)) {
+      throw new D3RouteContractError(
+        "INVALID_SLOT_USER_SHAPE",
+        `${fieldCode} must be a USER_SELECT array.`
+      );
+    }
+    return raw.map((user) => normalizeUserIdentity(user, fieldCode));
+  }
+  function readSlotUsers(routeVersion, slotId) {
+    const def = D3_SLOT_DEFINITIONS[slotId];
+    const primary = routeVersion?.[def.approverField];
+    if (primary !== void 0) {
+      return readD3UserList(primary, def.approverField);
+    }
+    if (def.legacyApproverField && routeVersion?.[def.legacyApproverField] !== void 0) {
+      return readD3UserList(
+        routeVersion[def.legacyApproverField],
+        def.legacyApproverField
+      );
+    }
+    return [];
+  }
+  function readSlotRule(routeVersion, slotId) {
+    const def = D3_SLOT_DEFINITIONS[slotId];
+    return readD3String(routeVersion?.[def.approvalRuleField]);
+  }
+  function parseD3ScorerPrioritySlots(value) {
+    let raw = unwrapD3Field(value);
+    if (raw === null || raw === void 0 || raw === "") {
+      throw new D3RouteContractError(
+        "SCORER_PLAN_NOT_CONFIGURED",
+        "Scorer_Priority_Slots is missing or blank."
+      );
+    }
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        throw new D3RouteContractError(
+          "SCORER_PLAN_NOT_CONFIGURED",
+          "Scorer_Priority_Slots is blank."
+        );
+      }
+      if (trimmed.startsWith("[")) {
+        try {
+          raw = JSON.parse(trimmed);
+        } catch {
+          throw new D3RouteContractError(
+            "INVALID_SCORER_PLAN",
+            "Scorer_Priority_Slots contains malformed JSON."
+          );
+        }
+      } else {
+        raw = trimmed.split(",").map((item) => item.trim());
+      }
+    }
+    if (!Array.isArray(raw) || raw.length === 0) {
+      throw new D3RouteContractError(
+        "INVALID_SCORER_PLAN",
+        "Scorer_Priority_Slots must be a non-empty ordered list."
+      );
+    }
+    const slots = raw.map((item) => {
+      const candidate = unwrapD3Field(item);
+      const parsed = Number(candidate);
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 4) {
+        throw new D3RouteContractError(
+          "INVALID_SCORER_PLAN",
+          `Invalid scorer priority slot: ${String(candidate)}.`
+        );
+      }
+      return parsed;
+    });
+    if (new Set(slots).size !== slots.length) {
+      throw new D3RouteContractError(
+        "INVALID_SCORER_PLAN",
+        "Scorer priority slots must be distinct."
+      );
+    }
+    return slots;
+  }
+  function getD3RoutePattern(routePattern) {
+    const pattern = readD3String(routePattern);
+    const contract = D3_ROUTE_PATTERNS[pattern];
+    if (!contract) {
+      throw new D3RouteContractError(
+        "UNKNOWN_ROUTE_PATTERN",
+        `Unsupported D3 route pattern: ${pattern || "BLANK"}.`
+      );
+    }
+    return { pattern, ...contract };
+  }
+  function normalizeD3RouteVersion(routeVersion) {
+    if (!routeVersion || typeof routeVersion !== "object") {
+      throw new D3RouteContractError(
+        "ROUTE_VERSION_NOT_PROVIDED",
+        "Route version object is required."
+      );
+    }
+    const { pattern, topology, sourceSlots } = getD3RoutePattern(
+      routeVersion.Route_Pattern
+    );
+    const declaredTopology = readD3String(routeVersion.Routing_Topology);
+    if (declaredTopology && declaredTopology !== topology) {
+      throw new D3RouteContractError(
+        "ROUTE_PATTERN_TOPOLOGY_MISMATCH",
+        `Route pattern ${pattern} requires ${topology}, received ${declaredTopology}.`
+      );
+    }
+    const activeSlotIds = new Set(sourceSlots);
+    const slotState = {};
+    const allConfiguredCodes = [];
+    for (const slotId of Object.keys(D3_SLOT_DEFINITIONS)) {
+      const users = readSlotUsers(routeVersion, slotId);
+      const rule = readSlotRule(routeVersion, slotId);
+      if (rule && rule !== "ALL") {
+        throw new D3RouteContractError(
+          "D3_V1_APPROVAL_RULE_NOT_ALL",
+          `${slotId} approval rule must be ALL in D3 V1.`
+        );
+      }
+      if (activeSlotIds.has(slotId)) {
+        if (users.length !== 1) {
+          throw new D3RouteContractError(
+            "D3_V1_SLOT_USER_COUNT_INVALID",
+            `${slotId} must contain exactly one Kintone user in D3 V1.`,
+            { slotId, count: users.length }
+          );
+        }
+        if (rule !== "ALL") {
+          throw new D3RouteContractError(
+            "D3_V1_APPROVAL_RULE_NOT_ALL",
+            `${slotId} approval rule must be explicitly ALL in D3 V1.`
+          );
+        }
+        allConfiguredCodes.push(users[0].code);
+      } else if (users.length !== 0) {
+        throw new D3RouteContractError(
+          "INACTIVE_ROUTE_SLOT_POPULATED",
+          `${slotId} must be empty for route pattern ${pattern}.`
+        );
+      }
+      slotState[slotId] = { users, rule };
+    }
+    if (new Set(allConfiguredCodes).size !== allConfiguredCodes.length) {
+      throw new D3RouteContractError(
+        "DUPLICATE_APPRAISER_IDENTITY",
+        "The same Kintone user cannot occupy more than one D3 V1 sequential slot."
+      );
+    }
+    const routingKey = readD3String(routeVersion.Routing_Key);
+    const versionKey = readD3String(routeVersion.Version_Key);
+    const versionNumberRaw = readD3String(routeVersion.Version_Number);
+    const versionNumber = Number(versionNumberRaw);
+    if (!routingKey) {
+      throw new D3RouteContractError(
+        "ROUTING_KEY_REQUIRED",
+        "Routing_Key is required for a D3 route version."
+      );
+    }
+    if (!versionKey) {
+      throw new D3RouteContractError(
+        "INVALID_ROUTE_VERSION_IDENTITY",
+        "Version_Key is required for a D3 route version."
+      );
+    }
+    if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+      throw new D3RouteContractError(
+        "INVALID_ROUTE_VERSION_NUMBER",
+        `Version_Number must be a positive integer, received ${versionNumberRaw || "BLANK"}.`
+      );
+    }
+    const businessSlots = sourceSlots.map((slotId, index) => {
+      const def = D3_SLOT_DEFINITIONS[slotId];
+      return {
+        ordinal: index + 1,
+        sourceOrdinal: index + 1,
+        sourceSlot: slotId,
+        targetSlot: slotId,
+        fieldCode: def.approverField,
+        approvalRule: "ALL",
+        user: slotState[slotId].users[0]
+      };
+    });
+    return {
+      routingKey,
+      versionKey,
+      versionNumber,
+      routePattern: pattern,
+      topology,
+      businessSlots
+    };
+  }
+  function compactedPatternFor(routeContract, removedOrdinal) {
+    const remainingCount = routeContract.businessSlots.length - 1;
+    if (remainingCount === 0) {
+      throw new D3RouteContractError(
+        "SELF_APPROVAL_ROUTE_CONFLICT",
+        "Self-elision leaves zero surviving appraisers."
+      );
+    }
+    if (remainingCount === 1) return "PATTERN_1_M1";
+    if (remainingCount === 2) return "PATTERN_2_M1_G1";
+    if (remainingCount === 3 && routeContract.routePattern === "PATTERN_4_M2_M1_G1_G2") {
+      return removedOrdinal <= 2 ? "PATTERN_3B_M1_G1_G2" : "PATTERN_3A_M2_M1_G1";
+    }
+    throw new D3RouteContractError(
+      "SELF_ELISION_PATTERN_UNRESOLVED",
+      "Unable to derive a valid compacted D3 route pattern."
+    );
+  }
+  function applyD3SelfElision(routeContract, employeeUserCode, isOwnMbo = false) {
+    if (!routeContract || !Array.isArray(routeContract.businessSlots)) {
+      throw new D3RouteContractError(
+        "INVALID_ROUTE_CONTRACT",
+        "Normalized route contract is required."
+      );
+    }
+    if (!isOwnMbo) {
+      return {
+        ...routeContract,
+        businessSlots: routeContract.businessSlots.map((slot) => ({ ...slot })),
+        selfAppraiserElided: false,
+        removedSourceOrdinal: null
+      };
+    }
+    const employeeCode = String(employeeUserCode ?? "");
+    if (!employeeCode || employeeCode !== employeeCode.trim()) {
+      throw new D3RouteContractError(
+        "MISSING_DEDICATED_USER_CODE",
+        "Exact nonblank Kintone user code is required for own-MBO self-elision."
+      );
+    }
+    const removed = routeContract.businessSlots.find(
+      (slot) => slot.user.code === employeeCode
+    );
+    if (!removed) {
+      return {
+        ...routeContract,
+        businessSlots: routeContract.businessSlots.map((slot) => ({ ...slot })),
+        selfAppraiserElided: false,
+        removedSourceOrdinal: null
+      };
+    }
+    const survivors = routeContract.businessSlots.filter(
+      (slot) => slot.user.code !== employeeCode
+    );
+    if (survivors.length === 0) {
+      throw new D3RouteContractError(
+        "SELF_APPROVAL_ROUTE_CONFLICT",
+        "Self-elision leaves zero surviving appraisers."
+      );
+    }
+    const effectivePattern = routeContract.businessSlots.length === survivors.length ? routeContract.routePattern : compactedPatternFor(routeContract, removed.sourceOrdinal);
+    const effectiveDefinition = D3_ROUTE_PATTERNS[effectivePattern];
+    const compactedSlots = survivors.map((slot, index) => ({
+      ...slot,
+      ordinal: index + 1,
+      targetSlot: effectiveDefinition.sourceSlots[index],
+      targetFieldCode: D3_SLOT_DEFINITIONS[effectiveDefinition.sourceSlots[index]].approverField
+    }));
+    return {
+      ...routeContract,
+      routePattern: effectivePattern,
+      topology: effectiveDefinition.topology,
+      businessSlots: compactedSlots,
+      selfAppraiserElided: true,
+      removedSourceOrdinal: removed.sourceOrdinal
+    };
+  }
+
+  // src/services/d3-route-version-resolver.js
+  var D3RouteVersionResolutionError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3RouteVersionResolutionError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  function normalizeDateOnly(value, fieldName) {
+    const raw = readD3String(value);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      throw new D3RouteVersionResolutionError(
+        "INVALID_RESOLUTION_DATE",
+        `${fieldName} must be an exact business date in YYYY-MM-DD format.`
+      );
+    }
+    const parsed = /* @__PURE__ */ new Date(`${raw}T00:00:00.000Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== raw) {
+      throw new D3RouteVersionResolutionError(
+        "INVALID_RESOLUTION_DATE",
+        `${fieldName} is not a valid calendar date: ${raw}.`
+      );
+    }
+    return raw;
+  }
+  function normalizeRouteVersionRecord(record) {
+    const routingKey = readD3String(record?.Routing_Key);
+    const versionKey = readD3String(record?.Version_Key);
+    const versionStatus = readD3String(record?.Version_Status);
+    const effectiveFrom = readD3String(record?.Effective_From);
+    const effectiveTo = readD3String(record?.Effective_To);
+    return {
+      record,
+      routingKey,
+      versionKey,
+      versionStatus,
+      effectiveFrom,
+      effectiveTo
+    };
+  }
+  function validateActiveVersionMetadata(candidate) {
+    if (!candidate.versionKey) {
+      throw new D3RouteVersionResolutionError(
+        "INVALID_ROUTE_VERSION_IDENTITY",
+        `ACTIVE route ${candidate.routingKey || "UNKNOWN"} is missing Version_Key.`
+      );
+    }
+    const from = normalizeDateOnly(candidate.effectiveFrom, "Effective_From");
+    const to = candidate.effectiveTo ? normalizeDateOnly(candidate.effectiveTo, "Effective_To") : "";
+    if (to && to < from) {
+      throw new D3RouteVersionResolutionError(
+        "INVALID_EFFECTIVE_INTERVAL",
+        `Effective_To ${to} precedes Effective_From ${from}.`,
+        { versionKey: candidate.versionKey, effectiveFrom: from, effectiveTo: to }
+      );
+    }
+    return {
+      ...candidate,
+      effectiveFrom: from,
+      effectiveTo: to
+    };
+  }
+  function resolveEffectiveRouteVersion({
+    records,
+    routingKey,
+    at
+  }) {
+    if (!Array.isArray(records)) {
+      throw new D3RouteVersionResolutionError(
+        "INVALID_ROUTE_VERSION_COLLECTION",
+        "Route-version candidates must be an array."
+      );
+    }
+    const targetKey = String(routingKey ?? "").trim();
+    if (!targetKey) {
+      throw new D3RouteVersionResolutionError(
+        "ROUTING_KEY_REQUIRED",
+        "Routing_Key is required for Model A resolution."
+      );
+    }
+    const atDate = normalizeDateOnly(at, "resolution timestamp");
+    const matchingActive = records.map(normalizeRouteVersionRecord).filter(
+      (candidate) => candidate.routingKey === targetKey && candidate.versionStatus === "ACTIVE"
+    ).map(validateActiveVersionMetadata);
+    const effective = matchingActive.filter(
+      (candidate) => candidate.effectiveFrom <= atDate && (!candidate.effectiveTo || candidate.effectiveTo >= atDate)
+    );
+    if (effective.length === 0) {
+      throw new D3RouteVersionResolutionError(
+        "NO_EFFECTIVE_ROUTE",
+        `No ACTIVE route version for ${targetKey} is effective on ${atDate}.`,
+        { routingKey: targetKey, atDate }
+      );
+    }
+    if (effective.length > 1) {
+      throw new D3RouteVersionResolutionError(
+        "AMBIGUOUS_EFFECTIVE_ROUTE",
+        `Multiple ACTIVE route versions for ${targetKey} are effective on ${atDate}.`,
+        {
+          routingKey: targetKey,
+          atDate,
+          versionKeys: effective.map((candidate) => candidate.versionKey)
+        }
+      );
+    }
+    const selected = effective[0];
+    return {
+      record: selected.record,
+      routingKey: selected.routingKey,
+      versionKey: selected.versionKey,
+      effectiveFrom: selected.effectiveFrom,
+      effectiveTo: selected.effectiveTo,
+      resolvedDate: atDate
+    };
+  }
+
+  // src/services/d3-route-viability-service.js
+  var D3RouteViabilityError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3RouteViabilityError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  function failFromContract(error) {
+    if (error instanceof D3RouteContractError) {
+      throw new D3RouteViabilityError(error.code, error.message.replace(/^[^:]+:\s*/, ""), error.details);
+    }
+    throw error;
+  }
+  function normalizeKExpected(value) {
+    const raw = unwrapD3Field(value);
+    const parsed = Number(raw);
+    if (parsed !== 1 && parsed !== 2) {
+      throw new D3RouteViabilityError(
+        "INVALID_K_EXPECTED",
+        `K_expected must be exactly 1 or 2, received ${String(raw)}.`
+      );
+    }
+    return parsed;
+  }
+  function exactEmployeeCode(value, required) {
+    const code = String(value ?? "");
+    if (!required && !code) return "";
+    if (!code || code !== code.trim()) {
+      throw new D3RouteViabilityError(
+        "MISSING_DEDICATED_USER_CODE",
+        "Exact nonblank Kintone user code is required for own-MBO evaluation."
+      );
+    }
+    return code;
+  }
+  function evaluateD3RouteViability({
+    routeVersion,
+    kExpected,
+    employeeUserCode = "",
+    isOwnMbo = false,
+    scorerPrioritySlots
+  }) {
+    const requiredK = normalizeKExpected(kExpected);
+    let configuredRoute;
+    try {
+      configuredRoute = normalizeD3RouteVersion(routeVersion);
+    } catch (error) {
+      failFromContract(error);
+    }
+    const employeeCode = exactEmployeeCode(employeeUserCode, isOwnMbo);
+    let effectiveRoute;
+    try {
+      effectiveRoute = applyD3SelfElision(
+        configuredRoute,
+        employeeCode,
+        isOwnMbo
+      );
+    } catch (error) {
+      failFromContract(error);
+    }
+    if (effectiveRoute.businessSlots.length < requiredK) {
+      throw new D3RouteViabilityError(
+        "INSUFFICIENT_EFFECTIVE_APPRAISERS",
+        `Surviving workflow appraisers (${effectiveRoute.businessSlots.length}) are fewer than K_expected (${requiredK}).`
+      );
+    }
+    let prioritySlots;
+    try {
+      prioritySlots = parseD3ScorerPrioritySlots(
+        scorerPrioritySlots !== void 0 ? scorerPrioritySlots : routeVersion?.Scorer_Priority_Slots
+      );
+    } catch (error) {
+      failFromContract(error);
+    }
+    for (const priority of prioritySlots) {
+      if (priority > configuredRoute.businessSlots.length) {
+        throw new D3RouteViabilityError(
+          "INVALID_SCORER_PLAN",
+          `Scorer priority slot ${priority} does not exist in the configured route.`
+        );
+      }
+    }
+    const survivingCodes = new Set(
+      effectiveRoute.businessSlots.map((slot) => slot.user.code)
+    );
+    const authorizedCandidates = [];
+    for (const sourceOrdinal of prioritySlots) {
+      const configuredSlot = configuredRoute.businessSlots.find(
+        (slot) => slot.sourceOrdinal === sourceOrdinal
+      );
+      if (!configuredSlot || !survivingCodes.has(configuredSlot.user.code)) {
+        continue;
+      }
+      if (!authorizedCandidates.some((item) => item.user.code === configuredSlot.user.code)) {
+        authorizedCandidates.push(configuredSlot);
+      }
+    }
+    if (authorizedCandidates.length < requiredK) {
+      throw new D3RouteViabilityError(
+        "SCORING_ROUTE_INCOMPLETE_AFTER_SELF_ELISION",
+        `Surviving HR-authorized scorers (${authorizedCandidates.length}) are fewer than K_expected (${requiredK}).`,
+        {
+          prioritySlots,
+          survivingCandidateCodes: authorizedCandidates.map((item) => item.user.code)
+        }
+      );
+    }
+    const selected = authorizedCandidates.slice(0, requiredK);
+    if (requiredK === 2 && selected[0].user.code === selected[1].user.code) {
+      throw new D3RouteViabilityError(
+        "DUPLICATE_SCORER_IDENTITY",
+        "K=2 requires two distinct scorer identities."
+      );
+    }
+    if (isOwnMbo && selected.some((slot) => slot.user.code === employeeCode)) {
+      throw new D3RouteViabilityError(
+        "SELF_SCORING_CONFLICT",
+        "Target employee cannot score their own MBO."
+      );
+    }
+    const weights = requiredK === 1 ? [100] : [50, 50];
+    const activeScorers = selected.map((configuredSlot, index) => {
+      const effectiveSlot = effectiveRoute.businessSlots.find(
+        (slot) => slot.user.code === configuredSlot.user.code
+      );
+      return {
+        scorerRank: index + 1,
+        sourceOrdinal: configuredSlot.sourceOrdinal,
+        effectiveOrdinal: effectiveSlot?.ordinal ?? null,
+        user: configuredSlot.user,
+        weight: weights[index]
+      };
+    });
+    return {
+      status: "PASS",
+      code: "VIABLE",
+      configuredRoute,
+      effectiveRoute,
+      kExpected: requiredK,
+      scorerPrioritySlots: prioritySlots,
+      activeScorers,
+      scorerWeights: weights,
+      routeVersionKey: configuredRoute.versionKey,
+      routingKey: configuredRoute.routingKey
+    };
+  }
+
+  // src/profiles/runtime-profile-resolver.js
+  var RuntimeProfileResolverError = class extends Error {
+    constructor(code, message = code) {
+      super(message);
+      this.name = "RuntimeProfileResolverError";
+      this.code = code;
+    }
+  };
+  function resolveProfileCodeForSnapshot(employeeSnapshot) {
+    if (!isVerifiedEmployeeSnapshot(employeeSnapshot)) {
+      throw new RuntimeProfileResolverError("EMPLOYEE_SNAPSHOT_UNVERIFIED");
+    }
+    try {
+      return getProfileCodeFromPosition(employeeSnapshot.Employee_Position);
+    } catch (err) {
+      if (err instanceof ProfilePolicyError) {
+        throw new RuntimeProfileResolverError(err.code);
+      }
+      throw err;
+    }
+  }
+
   // src/services/routing-service.js
+  var D3RouteBindingError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3RouteBindingError";
+      this.code = code;
+      this.details = details;
+    }
+  };
   var RoutingService = class _RoutingService {
     /**
      * Normalize position string to canonical routing position class
@@ -6649,16 +7952,284 @@ Employee Master canonical identity does not match requested code (${cleanCode}).
       return clean;
     }
     /**
+     * Derives exact App 795 Routing_Key based on position priority (DGM/GM/VP) or Section/Team
+     * @param {string} sectionCode
+     * @param {string} teamCode
+     * @param {string} positionCode
+     * @returns {string} Derived Routing_Key
+     */
+    static deriveRoutingKey(sectionCode, teamCode, positionCode = "") {
+      const cleanPosition = String(positionCode || "").trim();
+      const normalizedPos = _RoutingService.normalizePosition(cleanPosition);
+      const cleanSection = String(sectionCode || "").trim();
+      const cleanTeam = String(teamCode || "").trim();
+      const isExecutiveDirect = ["DEPUTY_GENERAL_MANAGER", "GENERAL_MANAGER", "VICE_PRESIDENT"].includes(normalizedPos);
+      if (isExecutiveDirect) {
+        if (normalizedPos === "DEPUTY_GENERAL_MANAGER") return "POSITION_DGM";
+        if (normalizedPos === "VICE_PRESIDENT") return "POSITION_VP";
+        return "POSITION_GM";
+      }
+      if (!cleanSection) {
+        throw new Error("\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Section \u0E02\u0E2D\u0E07\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A Employee Master (App 53)\nEmployee section is missing in Employee Master.");
+      }
+      const isTmgSection = cleanSection === "TMG1" || cleanSection === "TMG2" || /^TMG/i.test(cleanSection);
+      if (isTmgSection && !cleanTeam) {
+        throw new Error(`\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 Team \u0E02\u0E2D\u0E07\u0E1E\u0E19\u0E31\u0E01\u0E07\u0E32\u0E19\u0E43\u0E19 Section ${cleanSection} \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A Employee Master (App 53) (TEAM_REQUIRED)
+Team is required for employee in section ${cleanSection}.`);
+      }
+      return cleanTeam ? `${cleanSection}|${cleanTeam}` : cleanSection;
+    }
+    /**
+     * Checks if an App 794 record contains a complete and valid bound D3 provenance snapshot
+     * Delegates to ValidationEngine.validateD3RouteProvenance (Single Source of Truth)
+     * @param {Object} record
+     * @param {Object} options
+     * @returns {boolean}
+     */
+    static hasCompleteD3Provenance(record, options = {}) {
+      if (!record || typeof record !== "object") return false;
+      return ValidationEngine.validateD3RouteProvenance(record, options).isValid;
+    }
+    /**
+     * Extracts bound D3 route and provenance snapshot from an already bound App 794 record
+     * Zero silent repair: preserves exact stored values without defaulting rules or inferring topology
+     * @param {Object} record
+     * @returns {Object}
+     */
+    static extractD3BoundSnapshot(record) {
+      const val = (f) => {
+        if (f === null || f === void 0) return "";
+        if (typeof f === "object" && "value" in f) return f.value;
+        return f;
+      };
+      const str = (f) => {
+        const v = val(f);
+        return v !== null && v !== void 0 ? String(v).trim() : "";
+      };
+      const mgrL1 = val(record.Manager_Level1_Approvers) || [];
+      const mgrL2 = val(record.Manager_Level2_Approvers) || [];
+      const gmL1 = val(record.GM_Level1_Approvers) || [];
+      const gmL2 = val(record.GM_Level2_Approvers) || [];
+      const requesters = val(record.Requester_User) || [];
+      return {
+        Frozen_Profile_Code: str(record.Frozen_Profile_Code),
+        K_expected_Snapshot: Number(val(record.K_expected_Snapshot)),
+        Effective_Routing_Key: str(record.Effective_Routing_Key),
+        Effective_Route_Version_Key: str(record.Effective_Route_Version_Key),
+        Effective_Scorer_Slots_Snapshot: str(record.Effective_Scorer_Slots_Snapshot),
+        Routing_Topology: str(record.Routing_Topology),
+        Requester_User: requesters,
+        Manager_Level1_Approvers: mgrL1,
+        Manager_Level1_Approval_Rule: str(record.Manager_Level1_Approval_Rule),
+        Manager_Level2_Approvers: mgrL2,
+        Manager_Level2_Approval_Rule: str(record.Manager_Level2_Approval_Rule),
+        GM_Level1_Approvers: gmL1,
+        GM_Level1_Approval_Rule: str(record.GM_Level1_Approval_Rule),
+        GM_Level2_Approvers: gmL2,
+        GM_Level2_Approval_Rule: str(record.GM_Level2_Approval_Rule),
+        Has_Manager_Level2: str(record.Has_Manager_Level2),
+        Has_GM_Level2: str(record.Has_GM_Level2),
+        Manager_User: mgrL1,
+        First_Manager_User: mgrL2,
+        GM_User: gmL1,
+        Routing_Key: str(record.Effective_Routing_Key),
+        Version_Key: str(record.Effective_Route_Version_Key),
+        isBoundSnapshot: true,
+        inFlightImmutable: true
+      };
+    }
+    /**
+     * D3 Model A Runtime Resolution + App794 Bound Snapshot Integrator
+     * Evaluates: candidates -> Model A version resolution -> canonical normalization ->
+     * own-MBO self-elision -> HR scorer viability -> App 794 bound snapshot with 5 provenance fields.
+     */
+    static async resolveD3RoutingProfile({
+      routingAppId = 795,
+      sectionCode = "",
+      teamCode = "",
+      positionCode = "",
+      employeeSnapshot = null,
+      employeeUserCode = "",
+      isOwnMbo = false,
+      resolutionBusinessDate,
+      kintoneApi = null,
+      candidateRecords = null,
+      routingKey = "",
+      frozenProfileCode = null,
+      kExpected = null,
+      scorerPrioritySlots = void 0,
+      existingRecord = null,
+      isStageBoundary = false,
+      priorStageArchiveVerified = false
+    }) {
+      if (existingRecord && typeof existingRecord === "object") {
+        const getVal = (f) => {
+          if (f === null || f === void 0) return "";
+          if (typeof f === "object" && "value" in f) {
+            return f.value !== null && f.value !== void 0 ? String(f.value).trim() : "";
+          }
+          return String(f).trim();
+        };
+        const provenanceValues = [
+          getVal(existingRecord.Frozen_Profile_Code),
+          getVal(existingRecord.K_expected_Snapshot),
+          getVal(existingRecord.Effective_Routing_Key),
+          getVal(existingRecord.Effective_Route_Version_Key),
+          getVal(existingRecord.Effective_Scorer_Slots_Snapshot)
+        ];
+        const isAllBlank = provenanceValues.every((v) => v === "");
+        if (!isAllBlank) {
+          const valResult = ValidationEngine.validateD3RouteProvenance(existingRecord, {
+            employeeUserCode
+          });
+          if (!valResult.isValid) {
+            throw new D3RouteBindingError(
+              "D3_BOUND_SNAPSHOT_INVALID",
+              `Existing record contains invalid or incomplete D3 bound snapshot: ${valResult.errors.join("; ")}`,
+              valResult.fieldErrors
+            );
+          }
+          if (!isStageBoundary) {
+            return _RoutingService.extractD3BoundSnapshot(existingRecord);
+          }
+          if (!priorStageArchiveVerified) {
+            throw new D3RouteBindingError(
+              "APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS",
+              "Next-stage fresh route binding requires verified prior-stage archive evidence."
+            );
+          }
+        }
+      }
+      if (!resolutionBusinessDate || typeof resolutionBusinessDate !== "string") {
+        throw new D3RouteBindingError(
+          "RESOLUTION_BUSINESS_DATE_REQUIRED",
+          "Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution."
+        );
+      }
+      const derivedKey = routingKey || _RoutingService.deriveRoutingKey(sectionCode, teamCode, positionCode);
+      let candidates = candidateRecords;
+      if (!candidates) {
+        if (!kintoneApi || typeof kintoneApi.getRecords !== "function") {
+          throw new D3RouteBindingError("CANDIDATE_RECORDS_REQUIRED", "Either candidateRecords or kintoneApi must be provided.");
+        }
+        const query = `Routing_Key = "${derivedKey}"`;
+        const resp = await kintoneApi.getRecords(routingAppId, query);
+        candidates = resp?.records || [];
+      }
+      const selectedVersion = resolveEffectiveRouteVersion({
+        records: candidates,
+        routingKey: derivedKey,
+        at: resolutionBusinessDate
+      });
+      let profileCode = frozenProfileCode;
+      if (!profileCode && employeeSnapshot) {
+        profileCode = resolveProfileCodeForSnapshot(employeeSnapshot);
+      }
+      if (!profileCode) {
+        throw new D3RouteBindingError(
+          "FROZEN_PROFILE_CODE_REQUIRED",
+          "Frozen_Profile_Code is required for D3 route binding."
+        );
+      }
+      if (!Object.values(PROFILE_CODES).includes(profileCode)) {
+        throw new D3RouteBindingError(
+          "INVALID_PROFILE_CODE",
+          `Unsupported profile code: ${profileCode}`
+        );
+      }
+      if (kExpected === null || kExpected === void 0) {
+        throw new D3RouteBindingError(
+          "K_EXPECTED_NOT_CONFIGURED",
+          "kExpected is required and must be provided from App 796 scoring configuration."
+        );
+      }
+      const numK = Number(kExpected);
+      if (numK !== 1 && numK !== 2) {
+        throw new D3RouteBindingError("INVALID_K_EXPECTED", `K_expected must be 1 or 2, received ${kExpected}`);
+      }
+      const resolvedK = numK;
+      const viability = evaluateD3RouteViability({
+        routeVersion: selectedVersion.record,
+        kExpected: resolvedK,
+        employeeUserCode,
+        isOwnMbo,
+        scorerPrioritySlots: scorerPrioritySlots !== void 0 ? scorerPrioritySlots : selectedVersion.record?.Scorer_Priority_Slots
+      });
+      const effectiveRoute = viability.effectiveRoute;
+      const activeScorers = viability.activeScorers;
+      let mgrL1 = [];
+      let mgrL2 = [];
+      let gmL1 = [];
+      let gmL2 = [];
+      for (const slot of effectiveRoute.businessSlots) {
+        const u = { code: slot.user.code, ...slot.user.name ? { name: slot.user.name } : {} };
+        if (slot.targetSlot === "M1") mgrL1 = [u];
+        else if (slot.targetSlot === "M2") mgrL2 = [u];
+        else if (slot.targetSlot === "G1") gmL1 = [u];
+        else if (slot.targetSlot === "G2") gmL2 = [u];
+      }
+      const rawRequesters = selectedVersion.record?.Requester_User?.value || selectedVersion.record?.Requester_User || [];
+      const requesters = Array.isArray(rawRequesters) ? rawRequesters : [];
+      const effectiveScorerSlots = activeScorers.map((s) => s.effectiveOrdinal);
+      const scorerSlotsSnapshot = JSON.stringify(effectiveScorerSlots);
+      return {
+        // 5 Mandatory D3-008 Provenance Fields
+        Frozen_Profile_Code: profileCode,
+        K_expected_Snapshot: resolvedK,
+        Effective_Routing_Key: selectedVersion.routingKey,
+        Effective_Route_Version_Key: selectedVersion.versionKey,
+        Effective_Scorer_Slots_Snapshot: scorerSlotsSnapshot,
+        // Reused Sequential Routing Snapshot Fields
+        Routing_Topology: effectiveRoute.topology,
+        Requester_User: requesters,
+        Manager_Level1_Approvers: mgrL1,
+        Manager_Level1_Approval_Rule: "ALL",
+        Manager_Level2_Approvers: mgrL2,
+        Manager_Level2_Approval_Rule: "ALL",
+        GM_Level1_Approvers: gmL1,
+        GM_Level1_Approval_Rule: "ALL",
+        GM_Level2_Approvers: gmL2,
+        GM_Level2_Approval_Rule: "ALL",
+        Has_Manager_Level2: mgrL2.length > 0 ? "Yes" : "No",
+        Has_GM_Level2: gmL2.length > 0 ? "Yes" : "No",
+        // Compatibility Fields
+        Manager_User: mgrL1,
+        First_Manager_User: mgrL2,
+        GM_User: gmL1,
+        // Resolution Metadata
+        Matched_Rule: selectedVersion.routingKey,
+        Routing_Key: selectedVersion.routingKey,
+        Version_Key: selectedVersion.versionKey,
+        Effective_From: selectedVersion.effectiveFrom,
+        Effective_To: selectedVersion.effectiveTo,
+        Resolution_Business_Date: selectedVersion.resolvedDate,
+        Active_Scorers: activeScorers,
+        selfAppraiserElided: effectiveRoute.selfAppraiserElided
+      };
+    }
+    /**
      * Pure Read-Only Route Resolution from App 795 (Zero Requester Authorization Check)
      * Supports Position Priority (DGM/GM/VP -> President) and Team-aware routing keys (Section_Code|Team)
+     * If options.d3 === true or options.resolutionBusinessDate is present, delegates to D3 Model A resolver.
      * @param {number} routingAppId
      * @param {string} sectionCode
      * @param {string} teamCode
      * @param {Object} kintoneApi
      * @param {string} positionCode
+     * @param {Object} options
      * @returns {Object} Resolved Routing Profile with Requester_User list
      */
-    static async resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode = "") {
+    static async resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode = "", options = {}) {
+      if (options && (options.d3 === true || options.resolutionBusinessDate)) {
+        return _RoutingService.resolveD3RoutingProfile({
+          routingAppId,
+          sectionCode,
+          teamCode,
+          kintoneApi,
+          positionCode,
+          ...options
+        });
+      }
       const cleanPosition = String(positionCode || "").trim();
       const normalizedPos = _RoutingService.normalizePosition(cleanPosition);
       const cleanSection = String(sectionCode || "").trim();
@@ -6985,34 +8556,113 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
      * @param {string} positionCode
      * @returns {Object} Full Sequential Routing Profile
      */
-    static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = "") {
-      const route = await _RoutingService.resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode);
+    static async validateRequesterAccess(routingAppId, sectionCode, teamCode, loginUserCode, kintoneApi, positionCode = "", options = {}) {
+      const route = await _RoutingService.resolveRoutingProfile(routingAppId, sectionCode, teamCode, kintoneApi, positionCode, options);
       _RoutingService.assertRequesterAuthorized(route, loginUserCode);
       return route;
     }
   };
 
-  // src/profiles/runtime-profile-resolver.js
-  var RuntimeProfileResolverError = class extends Error {
-    constructor(code, message = code) {
-      super(message);
-      this.name = "RuntimeProfileResolverError";
+  // src/services/live-business-date-provider.js
+  var LiveBusinessDateProviderError = class extends Error {
+    constructor(code, message, cause = null) {
+      super(`${code}: ${message}`);
+      this.name = "LiveBusinessDateProviderError";
       this.code = code;
+      this.cause = cause;
     }
   };
-  function resolveProfileCodeForSnapshot(employeeSnapshot) {
-    if (!isVerifiedEmployeeSnapshot(employeeSnapshot)) {
-      throw new RuntimeProfileResolverError("EMPLOYEE_SNAPSHOT_UNVERIFIED");
+  var AUTHORITATIVE_ENDPOINT = "/k/";
+  var BANGKOK_OFFSET_MS = 7 * 60 * 60 * 1e3;
+  var testFetchImpl = null;
+  async function getLiveBusinessDate(options = {}) {
+    if (options && (options.endpoint !== void 0 || options.url !== void 0 || options.origin !== void 0 || options.host !== void 0)) {
+      throw new LiveBusinessDateProviderError(
+        "ENDPOINT_OVERRIDE_FORBIDDEN",
+        "Authoritative endpoint is locked to /k/. Overriding endpoint, url, origin, or host is strictly forbidden."
+      );
     }
+    const fetchImpl = options && "fetchImpl" in options ? options.fetchImpl : testFetchImpl || (typeof fetch !== "undefined" ? fetch : null);
+    if (typeof fetchImpl !== "function") {
+      throw new LiveBusinessDateProviderError(
+        "FETCH_UNAVAILABLE",
+        "Fetch interface is unavailable. Cannot acquire authoritative business date."
+      );
+    }
+    let res;
     try {
-      return getProfileCodeFromPosition(employeeSnapshot.Employee_Position);
-    } catch (err) {
-      if (err instanceof ProfilePolicyError) {
-        throw new RuntimeProfileResolverError(err.code);
-      }
-      throw err;
+      res = await fetchImpl(AUTHORITATIVE_ENDPOINT, {
+        method: "HEAD",
+        credentials: "same-origin",
+        cache: "no-store"
+      });
+    } catch (netErr) {
+      throw new LiveBusinessDateProviderError(
+        "NETWORK_ERROR",
+        `Failed to fetch server date from ${AUTHORITATIVE_ENDPOINT}: ${netErr.message}`,
+        netErr
+      );
     }
+    if (!res || !res.ok || res.status < 200 || res.status >= 300) {
+      const status = res?.status ?? "UNKNOWN";
+      throw new LiveBusinessDateProviderError(
+        "NON_SUCCESS_HTTP_STATUS",
+        `Authoritative server returned non-success status ${status} from ${AUTHORITATIVE_ENDPOINT}.`
+      );
+    }
+    if (!res.headers || typeof res.headers.get !== "function") {
+      throw new LiveBusinessDateProviderError(
+        "HEADERS_INTERFACE_UNAVAILABLE",
+        "Response headers interface is unavailable."
+      );
+    }
+    const dateHeader = res.headers.get("date");
+    if (!dateHeader || typeof dateHeader !== "string" || !dateHeader.trim()) {
+      throw new LiveBusinessDateProviderError(
+        "SERVER_DATE_HEADER_MISSING",
+        "Authoritative server Date response header is missing or empty."
+      );
+    }
+    const serverEpochMs = Date.parse(dateHeader);
+    if (!Number.isFinite(serverEpochMs)) {
+      throw new LiveBusinessDateProviderError(
+        "SERVER_DATE_HEADER_INVALID",
+        `Server Date header is not a valid parseable timestamp: ${dateHeader}`
+      );
+    }
+    const bkkInstant = new Date(serverEpochMs + BANGKOK_OFFSET_MS);
+    const yyyy = String(bkkInstant.getUTCFullYear());
+    const mm = String(bkkInstant.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(bkkInstant.getUTCDate()).padStart(2, "0");
+    const businessDate = `${yyyy}-${mm}-${dd}`;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(businessDate)) {
+      throw new LiveBusinessDateProviderError(
+        "BUSINESS_DATE_FORMAT_INVALID",
+        `Converted business date does not match YYYY-MM-DD: ${businessDate}`
+      );
+    }
+    const calendarVerify = /* @__PURE__ */ new Date(`${businessDate}T00:00:00.000Z`);
+    if (Number.isNaN(calendarVerify.getTime()) || calendarVerify.toISOString().slice(0, 10) !== businessDate) {
+      throw new LiveBusinessDateProviderError(
+        "BUSINESS_DATE_FORMAT_INVALID",
+        `Converted business date is not a valid calendar date: ${businessDate}`
+      );
+    }
+    return businessDate;
   }
+  var LiveBusinessDateProvider = class {
+    static get AUTHORITATIVE_ENDPOINT() {
+      return AUTHORITATIVE_ENDPOINT;
+    }
+    /**
+     * Static entrypoint for getting the authoritative business date.
+     * @param {Object} [options]
+     * @returns {Promise<string>}
+     */
+    static async getBusinessDate(options = {}) {
+      return getLiveBusinessDate(options);
+    }
+  };
 
   // src/ui/mbo-kintone-login-gate.js
   var BASE_STYLE = "font-family:sans-serif;box-sizing:border-box;";
@@ -8728,6 +10378,44 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
     }
   };
   var mboLoginGate = null;
+  var testResolutionBusinessDate = null;
+  function setResolutionBusinessDateForTests(value) {
+    if (value === null) {
+      testResolutionBusinessDate = null;
+      return;
+    }
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      throw new Error(
+        "TEST_RESOLUTION_BUSINESS_DATE_INVALID: Expected YYYY-MM-DD or null."
+      );
+    }
+    testResolutionBusinessDate = value;
+  }
+  var liveBusinessDateProvider = LiveBusinessDateProvider;
+  function setLiveBusinessDateProviderForTests(provider) {
+    liveBusinessDateProvider = provider || LiveBusinessDateProvider;
+  }
+  function getLiveBusinessDateProvider() {
+    return liveBusinessDateProvider;
+  }
+  async function resolveD3RoutingProfileWithDateSeam(routingAppId, section, team, apiWrapper, position, routingOptions = {}, authOptions = {}, options = {}, provider = liveBusinessDateProvider) {
+    const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
+    const effectiveResolutionBusinessDate = resolutionBusinessDate || await provider.getBusinessDate();
+    if (!effectiveResolutionBusinessDate || typeof effectiveResolutionBusinessDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(effectiveResolutionBusinessDate)) {
+      throw new Error("Explicit resolution business date (YYYY-MM-DD) is required for D3 Model A resolution (RESOLUTION_BUSINESS_DATE_REQUIRED).");
+    }
+    return RoutingService.resolveRoutingProfile(
+      routingAppId,
+      section,
+      team,
+      apiWrapper,
+      position,
+      {
+        ...routingOptions,
+        resolutionBusinessDate: effectiveResolutionBusinessDate
+      }
+    );
+  }
   function setMboLoginGate(gate) {
     mboLoginGate = gate;
   }
@@ -9095,13 +10783,28 @@ Record: ${record.Employee_Code.value}`,
             "Manager_Level2_Approvers",
             "GM_Level1_Approvers",
             "GM_Level2_Approvers",
+            "Manager_Level1_Approval_Rule",
+            "Manager_Level2_Approval_Rule",
+            "GM_Level1_Approval_Rule",
+            "GM_Level2_Approval_Rule",
             "Has_Manager_Level2",
             "Has_GM_Level2",
             "Routing_Topology",
             "First_Manager_User",
             "Manager_User",
             "GM_User",
-            "Requester_User"
+            "Requester_User",
+            "Frozen_Profile_Code",
+            "K_expected_Snapshot",
+            "Effective_Routing_Key",
+            "Effective_Route_Version_Key",
+            "Effective_Scorer_Slots_Snapshot",
+            "Profile_Code",
+            "PartA_Weight",
+            "PartB_Weight",
+            "Part_A_Scoring_Mode",
+            "Competency_Set_Code",
+            "Configuration_Hash"
           ];
           if (record.Employee_Code) {
             record.Employee_Code.value = newCode;
@@ -9119,30 +10822,10 @@ Record: ${record.Employee_Code.value}`,
         onLookupEmployee: async (empCode) => {
           const empLookupRes = await EmployeeService.lookupEmployee(empCode, kintoneApiWrapper);
           const empProfile = empLookupRes.employee || empLookupRes;
-          const loginUserCode2 = context.kintoneUserCode;
-          let routeProfile = await RoutingService.resolveRoutingProfile(
-            ROUTING_APP_ID,
-            empProfile.Employee_Section,
-            empProfile.Team,
-            kintoneApiWrapper,
-            empProfile.Employee_Position
-          );
-          if (context.mode === "DEDICATED") {
-            routeProfile = RoutingService.applyOwnMboSelfAppraiserElision(routeProfile, loginUserCode2, true);
-          }
-          const effectiveRequesterUsers = RoutingService.resolveEffectiveRequesterUser({
-            mode: context.mode,
-            kintoneUserCode: loginUserCode2,
-            routeRequesterUsers: routeProfile.Requester_User
-          });
-          const routing = {
-            ...routeProfile,
-            Requester_User: effectiveRequesterUsers
-          };
+          const profileCode = resolveProfileCodeForSnapshot(empProfile);
           const fy = record.Fiscal_Year?.value || "FY2026";
           let scoringConfig = null;
           try {
-            const profileCode = resolveProfileCodeForSnapshot(empProfile);
             const scoringQuery = `Profile_Code = "${profileCode}" and Config_Status in ("PUBLISHED") and Fiscal_Year = "${fy}" limit 2`;
             const scoringRes = await kintoneApiWrapper.getRecords(SCORING_APP_ID, scoringQuery);
             const scoringRecords = scoringRes?.records || [];
@@ -9157,6 +10840,7 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             const scRec = scoringRecords[0];
             scoringConfig = {
               Profile_Code: profileCode,
+              Expected_Appraiser_Count: scRec.Expected_Appraiser_Count?.value ? Number(scRec.Expected_Appraiser_Count.value) : void 0,
               PartA_Weight: scRec.PartA_Weight?.value ? Number(scRec.PartA_Weight.value) : void 0,
               PartB_Weight: scRec.PartB_Weight?.value ? Number(scRec.PartB_Weight.value) : void 0,
               Part_A_Scoring_Mode: scRec.Part_A_Scoring_Mode?.value || "",
@@ -9167,6 +10851,44 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             console.warn("[MBO V2] Scoring resolution info:", scoringErr.message);
             throw scoringErr;
           }
+          const kExpected = scoringConfig.Expected_Appraiser_Count;
+          if (kExpected !== 1 && kExpected !== 2) {
+            throw new Error(`\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E2B\u0E23\u0E37\u0E2D\u0E04\u0E48\u0E32 Expected_Appraiser_Count \u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07\u0E43\u0E19 Scoring Master (App 796) \u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E42\u0E1B\u0E23\u0E44\u0E1F\u0E25\u0E4C ${profileCode} (K_EXPECTED_NOT_CONFIGURED)
+Expected_Appraiser_Count must be 1 or 2 in App 796 scoring configuration for profile ${profileCode}.`);
+          }
+          const resolutionBusinessDate = authOptions?.resolutionBusinessDate || options?.resolutionBusinessDate;
+          const loginUserCode2 = context.kintoneUserCode;
+          let routeProfile = await resolveD3RoutingProfileWithDateSeam(
+            ROUTING_APP_ID,
+            empProfile.Employee_Section,
+            empProfile.Team,
+            kintoneApiWrapper,
+            empProfile.Employee_Position,
+            {
+              d3: true,
+              existingRecord: record,
+              employeeSnapshot: empProfile,
+              employeeUserCode: loginUserCode2,
+              isOwnMbo: context.mode === "DEDICATED",
+              frozenProfileCode: profileCode,
+              kExpected
+            },
+            authOptions,
+            options,
+            liveBusinessDateProvider
+          );
+          if (context.mode === "DEDICATED" && !routeProfile.Effective_Route_Version_Key) {
+            routeProfile = RoutingService.applyOwnMboSelfAppraiserElision(routeProfile, loginUserCode2, true);
+          }
+          const effectiveRequesterUsers = RoutingService.resolveEffectiveRequesterUser({
+            mode: context.mode,
+            kintoneUserCode: loginUserCode2,
+            routeRequesterUsers: routeProfile.Requester_User
+          });
+          const routing = {
+            ...routeProfile,
+            Requester_User: effectiveRequesterUsers
+          };
           const generatedKey = buildRecordKey(fy, empProfile.Employee_Code);
           await EmployeeService.checkDuplicateMBO(getMboAppId(), fy, empProfile.Employee_Code, record.$id?.value, kintoneApiWrapper);
           const fieldsToSync = {
@@ -9210,6 +10932,11 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             if (scoringConfig.Competency_Set_Code) fieldsToSync.Competency_Set_Code = scoringConfig.Competency_Set_Code;
             if (scoringConfig.Configuration_Hash) fieldsToSync.Configuration_Hash = scoringConfig.Configuration_Hash;
           }
+          if (routing.Frozen_Profile_Code !== void 0) fieldsToSync.Frozen_Profile_Code = routing.Frozen_Profile_Code;
+          if (routing.K_expected_Snapshot !== void 0) fieldsToSync.K_expected_Snapshot = routing.K_expected_Snapshot;
+          if (routing.Effective_Routing_Key !== void 0) fieldsToSync.Effective_Routing_Key = routing.Effective_Routing_Key;
+          if (routing.Effective_Route_Version_Key !== void 0) fieldsToSync.Effective_Route_Version_Key = routing.Effective_Route_Version_Key;
+          if (routing.Effective_Scorer_Slots_Snapshot !== void 0) fieldsToSync.Effective_Scorer_Slots_Snapshot = routing.Effective_Scorer_Slots_Snapshot;
           const CORE_SNAPSHOT_FIELDS = [
             "Profile_Code",
             "PartA_Weight",
@@ -9221,7 +10948,18 @@ Duplicate published scoring configurations found in App 796 for profile ${profil
             "Requester_User",
             "Record_Key"
           ];
-          for (const fieldCode of CORE_SNAPSHOT_FIELDS) {
+          const D3_PROVENANCE_FIELDS = [
+            "Frozen_Profile_Code",
+            "K_expected_Snapshot",
+            "Effective_Routing_Key",
+            "Effective_Route_Version_Key",
+            "Effective_Scorer_Slots_Snapshot"
+          ];
+          const isD3ProvenanceActive = Boolean(
+            routing.Effective_Route_Version_Key || routing.Frozen_Profile_Code || record.Effective_Route_Version_Key
+          );
+          const requiredSnapshotFields = isD3ProvenanceActive ? [...CORE_SNAPSHOT_FIELDS, ...D3_PROVENANCE_FIELDS] : CORE_SNAPSHOT_FIELDS;
+          for (const fieldCode of requiredSnapshotFields) {
             if (!record[fieldCode]) {
               throw new Error(`\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E0A\u0E48\u0E2D\u0E07\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 ${fieldCode} \u0E43\u0E19\u0E41\u0E1A\u0E1A\u0E1F\u0E2D\u0E23\u0E4C\u0E21 (App 794)
 Field ${fieldCode} does not exist on Kintone form schema.`);
@@ -9235,7 +10973,7 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
           if (!isAutoloadingInCreateHandler) {
             syncRecordToKintone(record, {
               requireVerifiedPersistence: true,
-              requiredFields: CORE_SNAPSHOT_FIELDS
+              requiredFields: requiredSnapshotFields
             });
           }
         }
@@ -9447,7 +11185,19 @@ Field ${fieldCode} does not exist on Kintone form schema.`);
             }
           }
         }
-        return setupRecordUiWithAuth(event, record, isCreate, isEdit, isDetail, uiHost, res2.context, { isCrossEmployeeDetailAuthorized });
+        return setupRecordUiWithAuth(
+          event,
+          record,
+          isCreate,
+          isEdit,
+          isDetail,
+          uiHost,
+          res2.context,
+          {
+            isCrossEmployeeDetailAuthorized,
+            resolutionBusinessDate: testResolutionBusinessDate
+          }
+        );
       };
       const res = resolveRuntimeEmployeeSelfContext(uiHost);
       if (res && typeof res.then === "function") {
