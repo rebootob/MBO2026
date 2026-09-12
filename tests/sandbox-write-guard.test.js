@@ -336,6 +336,14 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use D3
     /APP794 DEPLOY BLOCKED: Authorization has already been consumed/
   );
 
+  // 5b. Replay remains rejected; no authorization reset bypass is exported
+  const guardModule = await import('../src/core/sandbox-write-guard.js');
+  assert.equal(
+    guardModule._resetConsumedApp794DeployAuthorizationIdsForTest,
+    undefined,
+    'Authorization reset bypass must NOT be exported in production code'
+  );
+
   // 6. Historical MBO-P03-WP-002C ID rejected
   assert.throws(
     () => assertApp794CustomizationDeployAuthorization(

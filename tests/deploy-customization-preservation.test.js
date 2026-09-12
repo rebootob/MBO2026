@@ -24,8 +24,7 @@ import {
   APP794_CUSTOMIZATION_DEPLOY_OPERATION,
   APP794_MBO_V2_APP_ID,
   validateApp794CustomizationDeployAuthorization,
-  assertApp794CustomizationDeployAuthorization,
-  _resetConsumedApp794DeployAuthorizationIdsForTest
+  assertApp794CustomizationDeployAuthorization
 } from '../src/core/sandbox-write-guard.js';
 
 // Standard valid live & preview fixtures matching real App794 topology
@@ -1096,7 +1095,6 @@ test('BLOCKER_B_AUTHORIZATION_CONSUMPTION: Not consumed during local validation/
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig: { ...authConfig, activeWindow: false },
       requestConfig,
       kintoneRequest: mockNetwork,
@@ -1111,7 +1109,6 @@ test('BLOCKER_B_AUTHORIZATION_CONSUMPTION: Not consumed during local validation/
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig,
       requestConfig,
       releaseManifest: { ...getValidManifestFixture(), sourceCommit: currentHead },
@@ -1133,7 +1130,6 @@ test('BLOCKER_B_AUTHORIZATION_CONSUMPTION: Not consumed during local validation/
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig,
       requestConfig,
       releaseManifest: {
@@ -1172,7 +1168,6 @@ test('BLOCKER_B_AUTHORIZATION_CONSUMPTION: Not consumed during local validation/
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig,
       requestConfig,
       releaseManifest: { ...getValidManifestFixture(), sourceCommit: currentHead },
@@ -1213,7 +1208,6 @@ test('BLOCKER_C_UPLOAD_ERROR_SANITIZATION: JS upload max 1, CSS upload max 1, up
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig: {
         workPackageId: 'D3-SBX-DEPLOY-01',
         stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
@@ -1272,7 +1266,6 @@ test('BLOCKER_C_UPLOAD_ERROR_SANITIZATION: JS upload max 1, CSS upload max 1, up
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig: {
         workPackageId: 'D3-SBX-DEPLOY-01',
         stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
@@ -1330,7 +1323,6 @@ test('BLOCKER_D_PREVIEW_READBACK_BEFORE_DEPLOY: PUT max 1, PUT failure causes ze
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig: {
         workPackageId: 'D3-SBX-DEPLOY-01',
         stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
@@ -1532,7 +1524,6 @@ test('BLOCKER_D_PREVIEW_READBACK_BEFORE_DEPLOY: PUT max 1, PUT failure causes ze
   await assert.rejects(
     async () => executeDeployCustomUi({
       isBuildOnly: false,
-      worktreeClean: true,
       authConfig: {
         workPackageId: 'D3-SBX-DEPLOY-01',
         stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
@@ -1805,7 +1796,6 @@ test('FULL_E2E_MOCK_EXECUTION: Zero real network, deploy POST max 1, PUT max 1, 
 
   const result = await executeDeployCustomUi({
     isBuildOnly: false,
-    worktreeClean: true,
     authConfig: {
       workPackageId: 'D3-SBX-DEPLOY-01',
       stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
@@ -1882,3 +1872,124 @@ test('FULL_E2E_MOCK_EXECUTION: Zero real network, deploy POST max 1, PUT max 1, 
   assert.equal(getLiveCalls, 2, 'Live customization read at preflight and final convergence');
   assert.equal(getPreviewCalls, 3, 'Preview read at preflight, read-back verification, and final convergence');
 });
+
+test('REGRESSION_FINDING_2: CALLER_ARTIFACT_OVERRIDE_CANNOT_BYPASS_IDENTITY_GUARD', async () => {
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
+  const authConfig = {
+    workPackageId: 'D3-SBX-DEPLOY-01',
+    stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    appId: 794,
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    authorizationId: `AUTH_ARTIFACT_BYPASS_${Date.now()}`
+  };
+  const requestConfig = {
+    workPackageId: 'D3-SBX-DEPLOY-01',
+    stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    appId: 794
+  };
+
+  // 1. Caller attempt to supply options.artifacts to live entrypoint MUST be rejected fail-closed
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      artifacts: {
+        app: 794,
+        fullJs: 'console.log("spoofed-js");',
+        cssContent: 'body { color: red; }',
+        jsBlobSha: 'fake_spoofed_js_hash_12345678901234567890',
+        cssBlobSha: 'fake_spoofed_css_hash_12345678901234567890'
+      },
+      authConfig,
+      requestConfig,
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: 'fake_spoofed_js_hash_12345678901234567890',
+        expectedCssBlobSha: 'fake_spoofed_css_hash_12345678901234567890'
+      }
+    }),
+    /CALLER_ARTIFACT_OVERRIDE_BLOCKED: Caller cannot supply artifact overrides in live deployment entrypoint; identity must be verified from disk/
+  );
+
+  // 2. Identity MUST be verified from actual artifact bytes on disk:
+  // Manifest expecting spoofed hashes is rejected against actual disk bytes even without options.artifacts
+  let networkCalls = 0;
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig,
+      requestConfig,
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: 'ffffffffffffffffffffffffffffffffffffffff',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      kintoneRequest: async (path) => {
+        if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
+        if (path.includes('/k/v1/preview/app/customize.json')) return getValidPreviewFixture();
+        return {};
+      },
+      uploadFile: async () => { networkCalls++; return 'key'; }
+    }),
+    /JS_IDENTITY_MISMATCH_BLOCKED_PRE_UPLOAD/
+  );
+  assert.equal(networkCalls, 0, 'Zero write network calls when disk artifact does not match expected manifest');
+});
+
+test('REGRESSION_FINDING_3: CALLER_CLEAN_OVERRIDE_CANNOT_BYPASS_DIRTY_WORKTREE_GUARD', async () => {
+  const currentHead = getCurrentGitHead() || '8f3774ab47625c95495eb1b41464d22a01273cc9';
+  const authConfig = {
+    workPackageId: 'D3-SBX-DEPLOY-01',
+    stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    appId: 794,
+    activeWindow: true,
+    explicitUserAuthorization: true,
+    authorizationId: `AUTH_WORKTREE_BYPASS_${Date.now()}`
+  };
+  const requestConfig = {
+    workPackageId: 'D3-SBX-DEPLOY-01',
+    stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+    operation: 'APP794_CUSTOMIZATION_DEPLOY',
+    appId: 794
+  };
+
+  // 1. Caller attempt to declare worktreeClean: true in live entrypoint MUST be rejected fail-closed
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      worktreeClean: true,
+      authConfig,
+      requestConfig,
+      releaseManifest: { ...getValidManifestFixture(), sourceCommit: currentHead }
+    }),
+    /CALLER_WORKTREE_CLEAN_OVERRIDE_BLOCKED: Caller cannot declare worktree clean in live deployment entrypoint; actual Git worktree status inspection is required/
+  );
+
+  // 2. Caller attempt to pass worktreeClean: false in live entrypoint is also rejected (no caller override allowed)
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      worktreeClean: false,
+      authConfig,
+      requestConfig,
+      releaseManifest: { ...getValidManifestFixture(), sourceCommit: currentHead }
+    }),
+    /CALLER_WORKTREE_CLEAN_OVERRIDE_BLOCKED: Caller cannot declare worktree clean in live deployment entrypoint; actual Git worktree status inspection is required/
+  );
+
+  // 3. validatePrebuildSourceManifest with dirty worktree fails closed
+  assert.throws(
+    () => validatePrebuildSourceManifest({
+      releaseManifest: { ...getValidManifestFixture(), sourceCommit: currentHead },
+      currentGitHead: currentHead,
+      worktreeClean: false
+    }),
+    /DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK/
+  );
+});
+

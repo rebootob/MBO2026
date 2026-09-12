@@ -1133,6 +1133,13 @@ export async function executeDeployCustomUi(options = {}) {
   }
 
   // Live Mode:
+  if (options.artifacts !== undefined) {
+    throw new Error('CALLER_ARTIFACT_OVERRIDE_BLOCKED: Caller cannot supply artifact overrides in live deployment entrypoint; identity must be verified from disk.');
+  }
+  if (options.worktreeClean !== undefined) {
+    throw new Error('CALLER_WORKTREE_CLEAN_OVERRIDE_BLOCKED: Caller cannot declare worktree clean in live deployment entrypoint; actual Git worktree status inspection is required.');
+  }
+
   // 1. Resolve registry target without silent fallback catch
   let sandboxRegistryModule;
   try {
@@ -1152,7 +1159,7 @@ export async function executeDeployCustomUi(options = {}) {
 
   // 5. PRE-BUILD SOURCE MANIFEST GATE (BEFORE BUILD AND BEFORE ANY KINTONE GET/NETWORK CALL):
   const gitHead = getCurrentGitHead();
-  const clean = options.worktreeClean !== undefined ? options.worktreeClean : isWorktreeClean();
+  const clean = isWorktreeClean();
 
   validatePrebuildSourceManifest({
     releaseManifest: options.releaseManifest,
@@ -1162,7 +1169,7 @@ export async function executeDeployCustomUi(options = {}) {
   });
 
   // 6. ONLY AFTER PRE-BUILD GATE PASSES: Build candidate artifacts
-  const artifacts = options.artifacts || await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
+  const artifacts = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
   console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
 
   // 7. ONLY AFTER BUILD: Read live and preview customization from Kintone

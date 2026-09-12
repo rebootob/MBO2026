@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-12 ICT
+Updated: 2026-09-13 ICT
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -99,6 +99,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE1_R1_EVIDENCE.md` — App 794 Process Management local payload compatibility correctives, sanitized PUT error diagnostics, and targeted regression evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE1_R2_EVIDENCE.md` — App 794 Process Management sandbox deployment execution record, 19-state / 40-action preview verification, deploy success, and live+preview convergence evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R1_EVIDENCE.md` — App 794 UI customization deployment safety contract hardening (Blockers A-F), targeted regression test results, zero-drift artifact identity, and zero-I/O accounting evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R2_EVIDENCE.md` — App 794 UI customization deployment safety bypass corrective (Findings 1-3: authorization reset removal, artifact override closure, worktree clean override closure), targeted regression test results (47/47 PASS), zero-drift artifact identity, and zero-I/O accounting evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

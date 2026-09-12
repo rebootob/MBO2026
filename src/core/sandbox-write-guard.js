@@ -176,10 +176,6 @@ export function assertApp794CustomizationDeployAuthorization(authConfig, request
   return true;
 }
 
-export function _resetConsumedApp794DeployAuthorizationIdsForTest() {
-  consumedApp794DeployAuthorizationIds.clear();
-}
-
 /**
  * Narrow pre-ID authorization for exactly one future WP-002C app creation.
  * This is validation only: it neither changes Discovery Mode nor performs I/O.
