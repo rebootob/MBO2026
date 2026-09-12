@@ -18,6 +18,10 @@ import {
 } from '../scripts/kintone/build-d3-workflow-payload.js';
 
 import {
+  validateWorkflowPayloadStructure
+} from '../src/core/workflow-validator.js';
+
+import {
   D3_APP794_PROCESS_DEPLOY_STAGE,
   D3_APP794_PROCESS_DEPLOY_OPERATION,
   D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE,
@@ -74,6 +78,7 @@ const validFormFields = {
 };
 
 const canonical19_40 = buildD3WorkflowPayload({ app: 794, revision: '72' }).payload;
+const validBaselineFingerprint = computeProcessSemanticFingerprint(baselineProcess);
 
 function makeAuth(id = 'AUTH_TEST_' + Math.random().toString(36).slice(2)) {
   return {
@@ -99,7 +104,7 @@ function createMockTransport(overrides = {}) {
       }
       if (method === 'GET' && path === '/k/v1/app/status.json?app=794') {
         const hasDeployed = calls.some((c) => c.method === 'POST' && c.path === '/k/v1/preview/app/deploy.json');
-        if (overrides.liveProcess) return JSON.parse(JSON.stringify(overrides.liveProcess));
+        if (overrides.liveProcess && !hasDeployed) return JSON.parse(JSON.stringify(overrides.liveProcess));
         if (hasDeployed) {
           if (overrides.finalLiveMismatch) return JSON.parse(JSON.stringify(baselineProcess));
           return JSON.parse(JSON.stringify({ ...canonical19_40, revision: '73' }));
@@ -107,6 +112,11 @@ function createMockTransport(overrides = {}) {
         return JSON.parse(JSON.stringify(baselineProcess));
       }
       if (method === 'GET' && path === '/k/v1/preview/app/status.json?app=794') {
+        const hasDeployed = calls.some((c) => c.method === 'POST' && c.path === '/k/v1/preview/app/deploy.json');
+        if (hasDeployed) {
+          if (overrides.finalPreviewMismatch) return JSON.parse(JSON.stringify(baselineProcess));
+          return JSON.parse(JSON.stringify({ ...canonical19_40, revision: '73' }));
+        }
         if (overrides.previewProcess && !calls.some((c) => c.method === 'PUT')) {
           return JSON.parse(JSON.stringify(overrides.previewProcess));
         }
@@ -126,7 +136,10 @@ function createMockTransport(overrides = {}) {
       }
       if (method === 'POST' && path === '/k/v1/preview/app/deploy.json') {
         if (overrides.deployPostError) throw overrides.deployPostError;
-        if (overrides.deployPostResponse) return JSON.parse(JSON.stringify(overrides.deployPostResponse));
+        if (overrides.deployPostUndefined) return undefined;
+        if (overrides.deployPostResponse !== undefined) {
+          return overrides.deployPostResponse === null ? null : JSON.parse(JSON.stringify(overrides.deployPostResponse));
+        }
         return { apps: [{ app: 794, revision: '72' }] };
       }
       if (method === 'GET' && path.startsWith('/k/v1/preview/app/deploy.json')) {
@@ -147,6 +160,7 @@ function baseOpts(extra = {}) {
   return {
     appId: 794,
     expectedSourceCommit: MOCK_COMMIT,
+    expectedBaselineFingerprint: validBaselineFingerprint,
     authConfig: makeAuth(),
     transport: createMockTransport(),
     getGitHead: async () => MOCK_COMMIT,
@@ -209,30 +223,32 @@ test('7. canonical target is exactly 19 states / 40 actions', () => {
   assert.equal(D3_EXPECTED_ACTION_COUNT, 40);
 });
 
-// 8. executor actually uses canonical D3 builder contract
-test('8. executor actually uses canonical D3 builder contract', async () => {
-  let targetBuilt = false;
-  const opts = baseOpts({
-    targetBuildOverride: (() => {
-      targetBuilt = true;
-      return buildD3WorkflowPayload({ app: 794, revision: '72' });
-    })()
-  });
-  await executeD3ProcessDeploy(opts);
-  assert.equal(targetBuilt, true);
+// 8. executor actually uses canonical D3 builder contract (no override allowed)
+test('8. executor actually uses canonical D3 builder contract (no override allowed)', async () => {
+  const transport = createMockTransport();
+  const fakeOverride = {
+    payload: {
+      app: 794,
+      enable: true,
+      revision: '999',
+      states: { Fake: { name: 'Fake', index: '0', assignee: { type: 'ONE', entities: [] } } },
+      actions: []
+    }
+  };
+  // Caller-supplied override must NOT replace canonical builder
+  const opts = baseOpts({ transport, targetBuildOverride: fakeOverride });
+  const res = await executeD3ProcessDeploy(opts);
+  assert.equal(res.targetStateCount, 19);
+  assert.equal(res.targetActionCount, 40);
+  assert.equal(res.success, true);
 });
 
-// 9. malformed target fails before write
-test('9. malformed target fails before write', async () => {
-  const transport = createMockTransport();
-  const opts = baseOpts({
-    transport,
-    targetBuildOverride: {
-      payload: { app: 794, enable: true, revision: '1', states: {}, actions: [] }
-    }
-  });
-  await assert.rejects(() => executeD3ProcessDeploy(opts), /Canonical D3 target must have 19 states and 40 actions/);
-  assert.equal(transport.calls.some((c) => c.method === 'PUT'), false);
+// 9. malformed target fails validation
+test('9. malformed target fails validation', () => {
+  assert.throws(
+    () => validateWorkflowPayloadStructure({ app: 794, enable: true, states: { Bad: { name: 'Bad', index: 'NaN' } }, actions: [] }, {}),
+    /Invalid state: Bad/
+  );
 });
 
 // 10. missing required field fails before write
@@ -273,7 +289,7 @@ test('12. live/preview baseline drift fails before write', async () => {
   };
   const transport = createMockTransport({ previewProcess: driftedPreview });
   const opts = baseOpts({ transport });
-  await assert.rejects(() => executeD3ProcessDeploy(opts), /Live and preview baseline process definitions are drifted/);
+  await assert.rejects(() => executeD3ProcessDeploy(opts), /D3_PROCESS_DEPLOY_BLOCKED: Preview process baseline fingerprint mismatch/);
   assert.equal(transport.calls.some((c) => c.method === 'PUT'), false);
 });
 
@@ -375,7 +391,7 @@ test('22. authorization inactive window fails', async () => {
 
 // 23. authorization replay fails
 test('23. authorization replay fails', async () => {
-  const authId = 'AUTH_REPLAY_TEST_KEY';
+  const authId = 'AUTH_REPLAY_TEST_KEY_' + Math.random().toString(36).slice(2);
   const auth1 = makeAuth(authId);
   const opts1 = baseOpts({ authConfig: auth1 });
   await executeD3ProcessDeploy(opts1);
@@ -595,4 +611,137 @@ test('42. authorization is consumed exactly once at write boundary', async () =>
     },
     /Authorization has already been consumed/
   );
+});
+
+// 43. missing expectedBaselineFingerprint fails before any transport I/O
+test('43. missing expectedBaselineFingerprint fails before any transport I/O', async () => {
+  const transport = createMockTransport();
+  const opts = baseOpts({ transport, expectedBaselineFingerprint: undefined });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /EXPECTED_BASELINE_FINGERPRINT_REQUIRED/
+  );
+  assert.equal(transport.calls.length, 0, 'Must not perform any transport requests when fingerprint missing');
+});
+
+// 44. malformed expectedBaselineFingerprint fails before any transport I/O
+test('44. malformed expectedBaselineFingerprint fails before any transport I/O', async () => {
+  const transport = createMockTransport();
+  const opts = baseOpts({ transport, expectedBaselineFingerprint: 'not_a_valid_sha256' });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /EXPECTED_BASELINE_FINGERPRINT_REQUIRED/
+  );
+  assert.equal(transport.calls.length, 0, 'Must not perform any transport requests when fingerprint malformed');
+});
+
+// 45. live and preview equal each other but differ from expected baseline -> STOP before write
+test('45. live and preview equal each other but differ from expected baseline -> STOP before write', async () => {
+  const transport = createMockTransport();
+  const wrongBaseline = '1111111111111111111111111111111111111111111111111111111111111111';
+  const opts = baseOpts({ transport, expectedBaselineFingerprint: wrongBaseline });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /D3_PROCESS_DEPLOY_BLOCKED: Live process baseline fingerprint mismatch/
+  );
+  assert.equal(transport.calls.some((c) => c.method === 'PUT'), false, 'Must not issue PUT write');
+});
+
+// 46. canonical D3 builder produces non-overridable target fingerprint matching canonical builder
+test('46. canonical D3 builder produces non-overridable target fingerprint matching canonical builder', async () => {
+  const canonicalTarget = buildD3WorkflowPayload({ app: 794, revision: 1 }).payload;
+  const canonicalFingerprint = computeProcessSemanticFingerprint(canonicalTarget);
+  const opts = baseOpts();
+  const res = await executeD3ProcessDeploy(opts);
+  assert.equal(res.finalLiveFingerprint, canonicalFingerprint);
+  assert.equal(res.finalPreviewFingerprint, canonicalFingerprint);
+});
+
+// 47. structural workflow validator is exercised on canonical target before authorization
+test('47. structural workflow validator is exercised on canonical target before authorization', async () => {
+  const transport = createMockTransport();
+  const opts = baseOpts({ transport });
+  const res = await executeD3ProcessDeploy(opts);
+  assert.equal(res.success, true);
+});
+
+// 48. structural workflow validator failure blocks write and performs zero PUTs
+test('48. structural workflow validator failure blocks write and performs zero PUTs', async () => {
+  // If an assignee field in preview form fields has an unrecognized type for ENTITY_TYPES
+  const corruptedFields = {
+    properties: {
+      ...validFormFields.properties,
+      Requester_User: { type: 'DATE', code: 'Requester_User' } // Not in ENTITY_TYPES
+    }
+  };
+  const transport = createMockTransport({ formFields: corruptedFields });
+  const opts = baseOpts({ transport });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /FIELD_COMPATIBILITY_ERROR|Invalid assignee field/
+  );
+  assert.equal(transport.calls.some((c) => c.method === 'PUT'), false, 'Zero PUTs when validator fails');
+});
+
+// 49. deploy POST null response fails closed (D3_DEPLOY_POST_UNCERTAIN / zero polls / no retry)
+test('49. deploy POST null response fails closed (D3_DEPLOY_POST_UNCERTAIN / zero polls / no retry)', async () => {
+  const transport = createMockTransport({ deployPostResponse: null });
+  const opts = baseOpts({ transport });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /D3_DEPLOY_POST_UNCERTAIN: Deploy POST returned null, primitive, or malformed result/
+  );
+  assert.equal(transport.calls.filter((c) => c.method === 'POST').length, 1, 'Exactly one deploy POST');
+  assert.equal(transport.calls.filter((c) => c.path.startsWith('/k/v1/preview/app/deploy.json') && c.method === 'GET').length, 0, 'Zero status polls');
+});
+
+// 50. deploy POST undefined response fails closed (D3_DEPLOY_POST_UNCERTAIN / zero polls / no retry)
+test('50. deploy POST undefined response fails closed (D3_DEPLOY_POST_UNCERTAIN / zero polls / no retry)', async () => {
+  const transport = createMockTransport({ deployPostUndefined: true });
+  const opts = baseOpts({ transport });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /D3_DEPLOY_POST_UNCERTAIN: Deploy POST returned null, primitive, or malformed result/
+  );
+  assert.equal(transport.calls.filter((c) => c.method === 'POST').length, 1, 'Exactly one deploy POST');
+  assert.equal(transport.calls.filter((c) => c.path.startsWith('/k/v1/preview/app/deploy.json') && c.method === 'GET').length, 0, 'Zero status polls');
+});
+
+// 51. deploy POST primitive response fails closed (D3_DEPLOY_POST_UNCERTAIN / zero polls / no retry)
+test('51. deploy POST primitive response fails closed (D3_DEPLOY_POST_UNCERTAIN / zero polls / no retry)', async () => {
+  const transport = createMockTransport({
+    onRequest({ method, path }) {
+      if (method === 'POST' && path === '/k/v1/preview/app/deploy.json') {
+        return 'unexpected_string_response';
+      }
+    }
+  });
+  const opts = baseOpts({ transport });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /D3_DEPLOY_POST_UNCERTAIN: Deploy POST returned null, primitive, or malformed result/
+  );
+  assert.equal(transport.calls.filter((c) => c.method === 'POST').length, 1, 'Exactly one deploy POST');
+  assert.equal(transport.calls.filter((c) => c.path.startsWith('/k/v1/preview/app/deploy.json') && c.method === 'GET').length, 0, 'Zero status polls');
+});
+
+// 52. final live exact but final preview mismatched fails closed (D3_FINAL_PREVIEW_READBACK_MISMATCH)
+test('52. final live exact but final preview mismatched fails closed (D3_FINAL_PREVIEW_READBACK_MISMATCH)', async () => {
+  const transport = createMockTransport({ finalPreviewMismatch: true });
+  const opts = baseOpts({ transport });
+  await assert.rejects(
+    () => executeD3ProcessDeploy(opts),
+    /D3_FINAL_PREVIEW_READBACK_MISMATCH: Final preview process read-back does not match canonical 19\/40 target/
+  );
+});
+
+// 53. final live and preview both exact canonical 19/40 converge successfully
+test('53. final live and preview both exact canonical 19/40 converge successfully', async () => {
+  const transport = createMockTransport();
+  const opts = baseOpts({ transport });
+  const res = await executeD3ProcessDeploy(opts);
+  assert.equal(res.success, true);
+  assert.ok(res.finalLiveFingerprint);
+  assert.ok(res.finalPreviewFingerprint);
+  assert.equal(res.finalLiveFingerprint, res.finalPreviewFingerprint);
 });

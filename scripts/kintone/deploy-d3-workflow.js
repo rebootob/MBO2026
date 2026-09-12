@@ -19,6 +19,8 @@ import {
   buildD3WorkflowDefinition
 } from './build-d3-workflow-payload.js';
 
+import { validateWorkflowPayloadStructure } from '../../src/core/workflow-validator.js';
+
 import {
   assertD3App794ProcessDeployAuthorization,
   D3_APP794_PROCESS_DEPLOY_STAGE,
@@ -225,7 +227,6 @@ export async function executeD3ProcessDeploy({
   expectedSourceCommit,
   expectedPreviewRevision,
   expectedBaselineFingerprint,
-  targetBuildOverride,
   authConfig,
   transport,
   getGitHead,
@@ -234,6 +235,18 @@ export async function executeD3ProcessDeploy({
   maxDeployStatusChecks = 30,
   deployPollDelayMs = 2000
 } = {}) {
+  // 1. Mandatory expectedBaselineFingerprint validation BEFORE any transport I/O
+  if (
+    !expectedBaselineFingerprint ||
+    typeof expectedBaselineFingerprint !== 'string' ||
+    !/^[0-9a-f]{64}$/.test(expectedBaselineFingerprint.trim())
+  ) {
+    throw new Error(
+      'EXPECTED_BASELINE_FINGERPRINT_REQUIRED: expectedBaselineFingerprint must be a 64-character lowercase hex SHA-256 string.'
+    );
+  }
+  const normalizedExpectedBaselineFingerprint = expectedBaselineFingerprint.trim();
+
   // A. Local / App Guard
   if (PROTECTED_APP_IDS.includes(appId)) {
     throw new Error(`WRITE BLOCKED: App ${appId} is a permanent PROTECTED PRODUCTION APP and cannot be modified.`);
@@ -263,9 +276,10 @@ export async function executeD3ProcessDeploy({
     throw new Error(`D3_PROCESS_DEPLOY_BLOCKED: Git HEAD mismatch (expected ${expectedSourceCommit}, got ${currentHead}).`);
   }
 
-  // Canonical Target Verification
-  const canonicalBuild = targetBuildOverride || buildD3WorkflowPayload({ app: D3_APP794_PROCESS_TARGET_APP, revision: 1 });
+  // Canonical Target Verification (Derived strictly from buildD3WorkflowPayload; no caller override permitted)
+  const canonicalBuild = buildD3WorkflowPayload({ app: D3_APP794_PROCESS_TARGET_APP, revision: 1 });
   const canonicalDef = canonicalBuild.payload;
+  const canonicalTargetFingerprint = computeProcessSemanticFingerprint(canonicalDef);
   const stateCount = Object.keys(canonicalDef?.states || {}).length;
   const actionCount = canonicalDef?.actions?.length || 0;
 
@@ -296,13 +310,40 @@ export async function executeD3ProcessDeploy({
     throw new Error(`D3_PROCESS_DEPLOY_BLOCKED: Process revision drift detected (expected ${expectedPreviewRevision}, observed ${previewRevision}).`);
   }
 
+  // 1. D3 required-field compatibility validation
   validatePreviewFieldCompatibility(formFields);
 
+  // 2. Build target payload strictly using observed preview revision
+  const targetBuildWithRev = buildD3WorkflowPayload({
+    app: D3_APP794_PROCESS_TARGET_APP,
+    revision: String(previewRevision).trim()
+  });
+  const targetPayload = targetBuildWithRev.payload;
+
+  // Semantic enforcement: target fingerprint must equal canonicalTargetFingerprint
+  const actualTargetFingerprint = computeProcessSemanticFingerprint(targetPayload);
+  if (actualTargetFingerprint !== canonicalTargetFingerprint) {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Derived target process fingerprint does not match canonical D3 target.');
+  }
+
+  // 3. Structural workflow validation using pure validateWorkflowPayloadStructure
+  const props = formFields?.properties || formFields || {};
+  const fieldTypes = {};
+  for (const [code, def] of Object.entries(props)) {
+    fieldTypes[code] = def?.type;
+  }
+  validateWorkflowPayloadStructure(targetPayload, fieldTypes);
+
+  // 4. Baseline fingerprint verification against mandatory expectedBaselineFingerprint
   const liveFingerprint = computeProcessSemanticFingerprint(liveProcess);
   const previewFingerprint = computeProcessSemanticFingerprint(previewProcess);
 
-  if (expectedBaselineFingerprint && liveFingerprint !== expectedBaselineFingerprint) {
+  if (liveFingerprint !== normalizedExpectedBaselineFingerprint) {
     throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Live process baseline fingerprint mismatch.');
+  }
+
+  if (previewFingerprint !== normalizedExpectedBaselineFingerprint) {
+    throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Preview process baseline fingerprint mismatch.');
   }
 
   if (liveFingerprint !== previewFingerprint) {
@@ -318,12 +359,6 @@ export async function executeD3ProcessDeploy({
     previewProcess: clone(previewProcess)
   };
 
-  const targetBuildWithRev = targetBuildOverride || buildD3WorkflowPayload({
-    app: D3_APP794_PROCESS_TARGET_APP,
-    revision: String(previewRevision).trim()
-  });
-  const targetPayload = targetBuildWithRev.payload;
-
   const semanticDiff = computeProcessSemanticDiff(previewProcess, targetPayload);
   if (
     semanticDiff.states.targetCount !== D3_EXPECTED_STATE_COUNT ||
@@ -332,7 +367,7 @@ export async function executeD3ProcessDeploy({
     throw new Error('D3_PROCESS_DEPLOY_BLOCKED: Target process in diff must be 19 states and 40 actions.');
   }
 
-  // D. Authorization Write Boundary (Consumed only here, immediately before the first write)
+  // D. Authorization Write Boundary (Consumed strictly here, immediately before the first write)
   assertD3App794ProcessDeployAuthorization(authConfig, {
     appId: D3_APP794_PROCESS_TARGET_APP,
     workPackageId: D3_APP794_PROCESS_DEPLOY_WORK_PACKAGE,
@@ -367,7 +402,7 @@ export async function executeD3ProcessDeploy({
     path: '/k/v1/preview/app/status.json?app=794'
   });
 
-  const targetFingerprint = computeProcessSemanticFingerprint(targetPayload);
+  const targetFingerprint = canonicalTargetFingerprint;
   const readbackFingerprint = computeProcessSemanticFingerprint(previewReadback);
 
   if (targetFingerprint !== readbackFingerprint) {
@@ -388,7 +423,15 @@ export async function executeD3ProcessDeploy({
     throw new Error('D3_DEPLOY_POST_FAILED: Deploy POST transport failed.');
   }
 
-  if (deployResponse && deployResponse.status && deployResponse.status >= 400) {
+  if (
+    !deployResponse ||
+    typeof deployResponse !== 'object' ||
+    Array.isArray(deployResponse)
+  ) {
+    throw new Error('D3_DEPLOY_POST_UNCERTAIN: Deploy POST returned null, primitive, or malformed result.');
+  }
+
+  if (deployResponse.status && deployResponse.status >= 400) {
     throw new Error('D3_DEPLOY_POST_FAILED: Deploy POST returned error status.');
   }
 
@@ -428,7 +471,7 @@ export async function executeD3ProcessDeploy({
     );
   }
 
-  // 5. GET final live process
+  // 5. GET final live process and enforce convergence
   const finalLiveProcess = await transport.request({
     method: 'GET',
     path: '/k/v1/app/status.json?app=794'
@@ -439,11 +482,16 @@ export async function executeD3ProcessDeploy({
     throw new Error('D3_FINAL_LIVE_READBACK_MISMATCH: Live process read-back does not match canonical 19/40 target.');
   }
 
-  // 6. Confirm preview convergence
+  // 6. GET final preview process and enforce convergence
   const finalPreviewProcess = await transport.request({
     method: 'GET',
     path: '/k/v1/preview/app/status.json?app=794'
   });
+  const finalPreviewFingerprint = computeProcessSemanticFingerprint(finalPreviewProcess);
+
+  if (finalPreviewFingerprint !== targetFingerprint) {
+    throw new Error('D3_FINAL_PREVIEW_READBACK_MISMATCH: Final preview process read-back does not match canonical 19/40 target.');
+  }
 
   return {
     success: true,
@@ -454,6 +502,8 @@ export async function executeD3ProcessDeploy({
     semanticDiff,
     stagedRevision,
     finalLiveRevision: finalLiveProcess?.revision,
-    finalLiveFingerprint
+    finalLiveFingerprint,
+    finalPreviewRevision: finalPreviewProcess?.revision,
+    finalPreviewFingerprint
   };
 }
