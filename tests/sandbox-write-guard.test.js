@@ -282,42 +282,79 @@ test('assertScoringMasterSupersessionAuthorization enforces strict security gate
   );
 });
 
-test('assertApp794CustomizationDeployAuthorization enforces narrow single-use authorization and hard blocks protected apps', async () => {
+test('assertApp794CustomizationDeployAuthorization enforces narrow single-use D3 authorization and hard blocks protected apps', async () => {
   const {
     WRITE_ALLOWED_APPS,
-    assertApp794CustomizationDeployAuthorization
+    APP794_CUSTOMIZATION_DEPLOY_STAGE,
+    APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE,
+    APP794_CUSTOMIZATION_DEPLOY_OPERATION,
+    APP794_MBO_V2_APP_ID,
+    assertApp794CustomizationDeployAuthorization,
+    validateApp794CustomizationDeployAuthorization
   } = await import('../src/core/sandbox-write-guard.js');
 
-  // 1. Default WRITE_ALLOWED_APPS remains empty
+  // 1. Constants match D3 contract
+  assert.equal(APP794_CUSTOMIZATION_DEPLOY_STAGE, 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY');
+  assert.equal(APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE, 'D3-SBX-DEPLOY-01');
+  assert.equal(APP794_CUSTOMIZATION_DEPLOY_OPERATION, 'APP794_CUSTOMIZATION_DEPLOY');
+  assert.equal(APP794_MBO_V2_APP_ID, 794);
+
+  // 2. Default WRITE_ALLOWED_APPS remains empty
   assert.equal(WRITE_ALLOWED_APPS.length, 0, 'WRITE_ALLOWED_APPS must default to empty array');
 
   const validAuth = {
-    workPackageId: 'MBO-P03-WP-002C',
-    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
+    workPackageId: 'D3-SBX-DEPLOY-01',
+    stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
     operation: 'APP794_CUSTOMIZATION_DEPLOY',
     activeWindow: true,
     explicitUserAuthorization: true,
-    authorizationId: 'APP794_DEPLOY_AUTH_001',
+    authorizationId: 'D3_APP794_DEPLOY_AUTH_001',
     appId: 794
   };
 
   const validReq = {
-    workPackageId: 'MBO-P03-WP-002C',
-    stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY',
+    workPackageId: 'D3-SBX-DEPLOY-01',
+    stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
     operation: 'APP794_CUSTOMIZATION_DEPLOY',
     appId: 794
   };
 
-  // Valid authorization passes
+  // 3. Validation without consuming does not consume the authorization ID
+  assert.equal(validateApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }), true);
+  assert.equal(assertApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }, { consume: false }), true);
+
+  // 4. Valid authorization passes and consumes authorization ID
   assert.equal(assertApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }), true);
 
-  // Replay attempt fails
+  // 5. Replay attempt fails closed
   assert.throws(
     () => assertApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }),
     /APP794 DEPLOY BLOCKED: Authorization has already been consumed/
   );
+  assert.throws(
+    () => validateApp794CustomizationDeployAuthorization({ ...validAuth }, { ...validReq }),
+    /APP794 DEPLOY BLOCKED: Authorization has already been consumed/
+  );
 
-  // Wrong App ID (e.g. 795) fails
+  // 6. Historical MBO-P03-WP-002C ID rejected
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_HIST_WP', workPackageId: 'MBO-P03-WP-002C' },
+      { ...validReq, workPackageId: 'MBO-P03-WP-002C' }
+    ),
+    /APP794 DEPLOY BLOCKED: Work package must be exactly D3-SBX-DEPLOY-01/
+  );
+
+  // 7. Historical STAGE_D1_APP794_CUSTOMIZATION_DEPLOY rejected
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_HIST_STAGE', stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY' },
+      { ...validReq, stage: 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY' }
+    ),
+    /APP794 DEPLOY BLOCKED: Stage must be exactly STAGE_D3_APP794_CUSTOMIZATION_DEPLOY/
+  );
+
+  // 8. Wrong App ID (e.g. 795) fails
   assert.throws(
     () => assertApp794CustomizationDeployAuthorization(
       { ...validAuth, authorizationId: 'AUTH_WRONG_APP' },
@@ -326,7 +363,7 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use au
     /APP794 DEPLOY BLOCKED: Target App ID must be exactly 794/
   );
 
-  // Protected production app (53) hard blocks even with valid authorization structure
+  // 9. Protected production app (53) hard blocks even with valid authorization structure
   assert.throws(
     () => assertApp794CustomizationDeployAuthorization(
       { ...validAuth, authorizationId: 'AUTH_PROTECTED_53', appId: 53 },
@@ -335,25 +372,7 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use au
     /WRITE BLOCKED: App 53 is a permanent PROTECTED PRODUCTION APP/
   );
 
-  // Missing explicitUserAuthorization fails
-  assert.throws(
-    () => assertApp794CustomizationDeployAuthorization(
-      { ...validAuth, authorizationId: 'AUTH_NO_EXPLICIT', explicitUserAuthorization: false },
-      { ...validReq }
-    ),
-    /APP794 DEPLOY BLOCKED: Explicit user authorization is required/
-  );
-
-  // Closed window fails
-  assert.throws(
-    () => assertApp794CustomizationDeployAuthorization(
-      { ...validAuth, authorizationId: 'AUTH_CLOSED_WINDOW', activeWindow: false },
-      { ...validReq }
-    ),
-    /APP794 DEPLOY BLOCKED: One-time write window is CLOSED/
-  );
-
-  // Legacy Protected production app (283) hard blocks even with valid authorization structure
+  // 10. Legacy Protected production app (283) hard blocks even with valid authorization structure
   assert.throws(
     () => assertApp794CustomizationDeployAuthorization(
       { ...validAuth, authorizationId: 'AUTH_PROTECTED_283', appId: 283 },
@@ -362,7 +381,34 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use au
     /WRITE BLOCKED: App 283 is a permanent PROTECTED PRODUCTION APP/
   );
 
-  // Missing or malformed authConfig/requestConfig fail closed
+  // 11. Missing explicitUserAuthorization fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_NO_EXPLICIT', explicitUserAuthorization: false },
+      { ...validReq }
+    ),
+    /APP794 DEPLOY BLOCKED: Explicit user authorization is required/
+  );
+
+  // 12. Closed window fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: 'AUTH_CLOSED_WINDOW', activeWindow: false },
+      { ...validReq }
+    ),
+    /APP794 DEPLOY BLOCKED: One-time write window is CLOSED/
+  );
+
+  // 13. Missing or empty authorizationId fails
+  assert.throws(
+    () => assertApp794CustomizationDeployAuthorization(
+      { ...validAuth, authorizationId: '' },
+      { ...validReq }
+    ),
+    /APP794 DEPLOY BLOCKED: A non-empty authorization ID is required/
+  );
+
+  // 14. Missing or malformed authConfig/requestConfig fail closed
   assert.throws(
     () => assertApp794CustomizationDeployAuthorization(null, validReq),
     /APP794 DEPLOY BLOCKED \(FAIL-CLOSED\)/
@@ -372,7 +418,7 @@ test('assertApp794CustomizationDeployAuthorization enforces narrow single-use au
     /APP794 DEPLOY BLOCKED \(FAIL-CLOSED\)/
   );
 
-  // Exact authorized App794 context passes both authorization and sandbox write target layer
+  // 15. Exact authorized App794 context passes both authorization and sandbox write target layer
   const { assertSandboxWriteTarget } = await import('../src/core/sandbox-write-guard.js');
   const authCtx = { ...validAuth, authorizationId: 'AUTH_EXACT_CONTEXT_794' };
   const reqCtx = { ...validReq };

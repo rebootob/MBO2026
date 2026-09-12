@@ -36,8 +36,8 @@ export const WP002C_SUPERSEDE_STAGE = 'STAGE_4D_SUPERSEDE_AND_PUBLISH';
 export const WP002C_SUPERSEDE_CONTRACT_ID = 'WP002C_SUPERSEDE_V1';
 export const WP002C_SCORING_MASTER_APP_ID = 796;
 
-export const APP794_CUSTOMIZATION_DEPLOY_STAGE = 'STAGE_D1_APP794_CUSTOMIZATION_DEPLOY';
-export const APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE = 'MBO-P03-WP-002C';
+export const APP794_CUSTOMIZATION_DEPLOY_STAGE = 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY';
+export const APP794_CUSTOMIZATION_DEPLOY_WORK_PACKAGE = 'D3-SBX-DEPLOY-01';
 export const APP794_CUSTOMIZATION_DEPLOY_OPERATION = 'APP794_CUSTOMIZATION_DEPLOY';
 export const APP794_MBO_V2_APP_ID = 794;
 
@@ -103,13 +103,10 @@ export function assertSandboxWriteTarget(appId, registry = sandboxRegistry, allo
 }
 
 /**
- * Narrow authorization for exactly App 794 Customization Deploy.
- * Requires explicit user authorization, active window, non-empty single-use authorization ID,
- * exact App ID 794, and operation APP794_CUSTOMIZATION_DEPLOY.
- * Fails closed on missing/malformed/wrong target/replayed authorization.
- * HARD BLOCKS permanent protected apps (53, 283, 305, 307, 310, 640, 643, 715, 716).
+ * Narrow authorization validation for exactly App 794 Customization Deploy.
+ * Validates authorization structure without consuming the one-shot token.
  */
-export function assertApp794CustomizationDeployAuthorization(authConfig, requestConfig) {
+export function validateApp794CustomizationDeployAuthorization(authConfig, requestConfig) {
   if (!authConfig || typeof authConfig !== 'object' || !requestConfig || typeof requestConfig !== 'object') {
     throw new Error('APP794 DEPLOY BLOCKED (FAIL-CLOSED): Missing or corrupted authorization/request configuration.');
   }
@@ -156,8 +153,31 @@ export function assertApp794CustomizationDeployAuthorization(authConfig, request
     throw new Error('APP794 DEPLOY BLOCKED: Authorization has already been consumed.');
   }
 
-  consumedApp794DeployAuthorizationIds.add(authorizationId);
   return true;
+}
+
+/**
+ * Narrow authorization for exactly App 794 Customization Deploy.
+ * Requires explicit user authorization, active window, non-empty single-use authorization ID,
+ * exact App ID 794, and operation APP794_CUSTOMIZATION_DEPLOY.
+ * Fails closed on missing/malformed/wrong target/replayed authorization.
+ * HARD BLOCKS permanent protected apps (53, 283, 305, 307, 310, 640, 643, 715, 716).
+ * Consumes the authorization unless options.consume === false.
+ */
+export function assertApp794CustomizationDeployAuthorization(authConfig, requestConfig, options = {}) {
+  validateApp794CustomizationDeployAuthorization(authConfig, requestConfig);
+
+  const shouldConsume = options.consume !== false;
+  if (shouldConsume) {
+    const authorizationId = authConfig.authorizationId;
+    consumedApp794DeployAuthorizationIds.add(authorizationId);
+  }
+
+  return true;
+}
+
+export function _resetConsumedApp794DeployAuthorizationIdsForTest() {
+  consumedApp794DeployAuthorizationIds.clear();
 }
 
 /**
