@@ -4,7 +4,7 @@ Updated: 2026-09-13 ICT
 
 > [!NOTE]
 > **Forward Correction & Qualification Notice (R1):**
-> See [`D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md`](file:///C:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md) for full root-cause investigation, exhaustive itemized read accounting (11 total GET calls vs. 3 in-executor calls), qualification of the Kintone re-keying hypothesis, and content identity qualifications.
+> See [`D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md`](./D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md) for full root-cause investigation, exhaustive itemized read accounting (11 total GET calls vs. 3 in-executor calls), qualification of the Kintone re-keying hypothesis, and content identity qualifications.
 
 ## 1. Package & Execution Metadata
 ```text
