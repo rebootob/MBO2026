@@ -100,6 +100,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE1_R2_EVIDENCE.md` — App 794 Process Management sandbox deployment execution record, 19-state / 40-action preview verification, deploy success, and live+preview convergence evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R1_EVIDENCE.md` — App 794 UI customization deployment safety contract hardening (Blockers A-F), targeted regression test results, zero-drift artifact identity, and zero-I/O accounting evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R2_EVIDENCE.md` — App 794 UI customization deployment safety bypass corrective (Findings 1-3: authorization reset removal, artifact override closure, worktree clean override closure), targeted regression test results (47/47 PASS), zero-drift artifact identity, and zero-I/O accounting evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_EVIDENCE.md` — App 794 UI customization sandbox deployment execution record, JIT baseline capture, file upload and preview PUT evidence, Step 13 preview read-back stop diagnostics, and partial-write accounting.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
