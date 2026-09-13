@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-13 ICT
+Updated: 2026-09-14 ICT
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -110,7 +110,8 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_UAT_01_EVIDENCE.md` — Real browser UI read-only UAT evidence record (physical desktop WinSta0\Default attach, Chrome PID 30516 navigation to https://ttmet.cybozu.com/k/794/ redirected to /login, missing authenticated session stop condition, zero Kintone writes, zero mutations, all 4 test cases blocked, sanitized visual screenshot).
 - `project-docs/evidence/D3_SBX_UAT_02_EVIDENCE.md` — Existing M1_G1 real browser read-only UAT evidence record (physical desktop WinSta0\Default attach, Chrome PID 30516 authenticated session, existing saved record #15 verified in UI; superseded by R1; verdict downgraded to REQUEST CORRECTIVE / ALL-FOUR-PASS NOT ACCEPTED; PII sanitized).
 - `project-docs/evidence/D3_SBX_UAT_02_R1_EVIDENCE.md` — D3-SBX-UAT-02 corrective evidence, opaque screenshot privacy sanitization, and control doc synchronization record (all PII redacted, UAT02 downgraded to REQUEST CORRECTIVE / ALL-FOUR-PASS NOT ACCEPTED, evidence-bounded outcomes, zero Kintone I/O, zero browser execution).
-- `project-docs/evidence/D3_SBX_UAT_03_EVIDENCE.md` — Real browser UI read-only vs persisted App 794 record 15 baseline UAT evidence record (physical desktop WinSta0\Default attach, Chrome PID 30516 authenticated session, existing saved record #15 verified in UI and REST API GET baseline, 4/4 PASS, zero Kintone mutations, 2 GET reads within 2 ceiling, Decision 008 persisted snapshot provenance verified, opaque PII sanitized screenshots).
+- `project-docs/evidence/D3_SBX_UAT_03_EVIDENCE.md` — Real browser UI read-only vs persisted App 794 record 15 baseline UAT evidence record (physical desktop WinSta0\Default attach, Chrome PID 30516 authenticated session; superseded by R1; downgraded to REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY; opaque PII sanitized screenshots).
+- `project-docs/evidence/D3_SBX_UAT_03_R1_EVIDENCE.md` — D3-SBX-UAT-03-R1 historical GET accounting reconstruction, opaque privacy sanitization, and control sync evidence (dispatched 5-7 GET attempts accounted from console/transcript evidence, 2-GET ceiling preserved, privacy redaction of personal browser tabs/bookmarks and employee start date, evidence-bounded findings, zero Kintone I/O, zero browser execution).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
