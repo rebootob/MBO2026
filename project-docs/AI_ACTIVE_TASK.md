@@ -5,8 +5,8 @@ Updated: 2026-09-13 ICT
 ## Current task
 ```text
 CURRENT_WORK_PACKAGE = NONE
-STATUS = NO ACTIVE AUTHORIZATION / D3-SBX-UAT-01 STOPPED SAFELY / BLOCKED / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-UAT-01
+STATUS = NO ACTIVE AUTHORIZATION / D3-SBX-UAT-02 STOPPED SAFELY / BLOCKED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-SBX-UAT-02
 LAST_CLOSED_WORK_PACKAGE = D3-SBX-DEPLOY-01-EXE2-R5
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -61,12 +61,38 @@ D3-SBX-DEPLOY-01-EXE2-R3 = REQUEST CORRECTIVE / REKEYING HYPOTHESIS OVER-ASSERTE
 D3-SBX-DEPLOY-01-EXE2-R4 = PASS / LOCAL EXACT BLOCKER CORRECTIVE COMPLETE / TARGETED TESTS PASS (58/58) / ARTIFACT IDENTITY UNCHANGED / ZERO KINTONE I/O / ZERO DEPLOYMENT / INDEPENDENTLY REVIEWED / CLOSED
 D3-SBX-DEPLOY-01-EXE2-R5 = PASS / APP794 UI CUSTOMIZATION DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED (REV 74) / TARGET JS+CSS BYTE IDENTITY VERIFIED / PROCESS 19/40 PRESERVED / REVIEW REQUIRED
 D3-SBX-UAT-01 = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
+D3-SBX-UAT-02 = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
 
 PRE1_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 PREWRITE_BACKUP_SHA256 = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
 APP795_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
 SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1]
 APP794_HISTORICAL_BACKFILL_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL
+
+UAT02_COUNTERS:
+- AUTHORIZATION_ID = MBO2026-D3-SBX-UAT02-20260913-OWNER-01
+- MODE = EXISTING M1_G1 REAL BROWSER READ-ONLY UAT
+- KINTONE_API_READS = 0
+- KINTONE_API_WRITES = 0
+- RECORD_WRITES = 0
+- SCHEMA_WRITES = 0
+- PROCESS_WRITES = 0
+- ACL_WRITES = 0
+- CUSTOMIZATION_WRITES = 0
+- DEPLOYMENT_POSTS = 0
+- CREDENTIAL_ENTRIES = 0
+- SESSION_MUTATIONS = 0
+- LOCAL_STORAGE_INJECTIONS = 0
+- MUTATION_CLICKS = 0
+- TOTAL_MUTATIONS = 0
+- CASE_UAT02_01 = BLOCKED (App 794 UI redirected to /login; unauthenticated browser session)
+- CASE_UAT02_02 = BLOCKED (Cannot open details or inspect record ID / revision / workflow state without authenticated session)
+- CASE_UAT02_03 = BLOCKED (Cannot verify appraiser identities or sequence without accessible authenticated record)
+- CASE_UAT02_04 = BLOCKED (Cannot verify routing version, frozen profile, or scorer snapshot without accessible authenticated record)
+- STOP_CONDITION = MISSING_AUTHENTICATED_BROWSER_SESSION
+- EVIDENCE_FILE = project-docs/evidence/D3_SBX_UAT_02_EVIDENCE.md
+- EVIDENCE_SCREENSHOT = project-docs/evidence/D3_SBX_UAT_02/UAT02_LOGIN_REQUIRED_EVIDENCE.png
+- VERDICT = REVIEW REQUIRED
 
 UAT01_COUNTERS:
 - AUTHORIZATION_ID = MBO2026-D3-SBX-UAT01-20260913-OWNER-01
@@ -266,4 +292,4 @@ PRODUCTION_READY = NO
 FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 ```
 
-No execution task is active. D3 sandbox migration is closed. D3-SBX-DEPLOY-01-EXE2-R5 completed live Kintone sandbox deployment execution of App 794 UI customization under authorization MBO2026-D3-EXE2-R5-20260913-OWNER-01. Candidate artifacts built cleanly from disk and verified bit-for-bit identical to invariant. Process baseline confirmed 19 states / 40 actions (fingerprint bc22d11c3f89959178d8c3aac1b2c008d1c13d93f815bae2b746f800c523fdbd). Exactly 4 writes executed (JS upload, CSS upload, preview customize PUT, deploy POST). Target JS and CSS raw-byte identities verified bit-for-bit in preview. Deploy POST dispatched using getApp794DeployRequestOptions with object body and revision 74. Deploy polling completed successfully on check 3 (SUCCESS). Final Live and Preview customization converged at revision 74 (topologyHash 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35), with all 4 target files verified bit-for-bit identical in SHA-256 and byte length. Process final audit confirmed 19 states / 40 actions preserved at revision 74 with identical semantic fingerprint. Total 21 GET reads (within 38 GET ceiling), zero read retries, zero auxiliary reads. All gates remain stopped; REVIEW REQUIRED. D3 SANDBOX MIGRATION COMPLETE != PRODUCTION READY.
+No execution task is active. D3 sandbox migration is closed. D3-SBX-DEPLOY-01-EXE2-R5 completed live Kintone sandbox deployment execution of App 794 UI customization under authorization MBO2026-D3-EXE2-R5-20260913-OWNER-01. Subsequent real browser read-only UAT packages D3-SBX-UAT-01 and D3-SBX-UAT-02 both stopped safely at mandatory stop condition MISSING_AUTHENTICATED_BROWSER_SESSION with zero credentials entered, zero session mutations, zero Kintone writes, and zero substitute mocks. All gates remain stopped; REVIEW REQUIRED. D3 SANDBOX MIGRATION COMPLETE != PRODUCTION READY.
