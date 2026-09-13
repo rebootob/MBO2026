@@ -3,6 +3,8 @@
 
 Updated: 2026-09-13 ICT
 
+> **Forward Clarification Notice (2026-09-13):** The Control Plane reviewed this package and issued **REQUEST CORRECTIVE** regarding the stop-condition chronology (reads executed after LIVE JS mismatch) and the qualification of LIVE historical byte identity. See [`D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_R1_EVIDENCE.md`](./D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_R1_EVIDENCE.md) for the authoritative clarification record, exact sequence breakdown, and qualified historical findings. All historical operational counters and technical findings below are preserved as executed.
+
 ---
 
 ## 1. Package & Governance Metadata

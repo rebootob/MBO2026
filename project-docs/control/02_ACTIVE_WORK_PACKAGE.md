@@ -9,9 +9,9 @@ Updated: 2026-09-13 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-DEPLOY-01-EXE2-IDENTITY-01 CLOSED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01
+ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1 CLOSED
+LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
@@ -27,26 +27,22 @@ PRODUCTION_READY = NO
 ```
 
 ## Latest Owner authorization
-Owner explicitly authorized package `D3-SBX-DEPLOY-01-EXE2-IDENTITY-01` (APP794 UI CUSTOMIZATION RAW-BYTE CONTENT IDENTITY VERIFICATION) under Authorization ID `MBO2026-D3-EXE2-IDENTITY01-20260913-OWNER-01` in `READ-ONLY AUDIT / ZERO WRITE` mode on canonical base HEAD `db233eda29d4bbf98c2d936cb40591374a6dbad8` (parent: `8b436f03c52c791a01200952c3b2e0611b7e1b82`, tree: `9980f3d5048f321cbf7fc3bd7642a24df3a4becd`).
-Preceding package status: `D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1` accepted by Control Plane (without claiming Control Plane re-inspected raw transcript directly).
+Owner explicitly authorized package `D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1` (LOCAL EVIDENCE CLARIFICATION FOR APP794 UI CUSTOMIZATION RAW-BYTE IDENTITY) under Authorization ID `MBO2026-D3-IDENTITY01-R1-20260913-OWNER-01` in `DOCS-ONLY / EXISTING LOCAL EVIDENCE ONLY / ZERO KINTONE I/O` mode on canonical base HEAD `703e0f875c45c5db8e6c1e820b11aa77fa8aac39` (parent: `db233eda29d4bbf98c2d936cb40591374a6dbad8`, tree: `22cd2eac199bd5c4eb2f89b4e245c4857f769db7`).
+Preceding package status: `D3-SBX-DEPLOY-01-EXE2-IDENTITY-01` Control Plane review = REQUEST CORRECTIVE (does not claim independent PASS).
 
 ## Execution result
 ```text
-PACKAGE = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01
-TITLE = APP794 UI CUSTOMIZATION RAW-BYTE CONTENT IDENTITY VERIFICATION
-AUTHORIZATION_ID = MBO2026-D3-EXE2-IDENTITY01-20260913-OWNER-01
-MODE = READ-ONLY AUDIT / ZERO WRITE
-STATUS = PASS / READ-ONLY AUDIT COMPLETE / REVIEW REQUIRED
-BASE_HEAD = db233eda29d4bbf98c2d936cb40591374a6dbad8 (MATCH)
+PACKAGE = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1
+TITLE = LOCAL EVIDENCE CLARIFICATION FOR APP794 UI CUSTOMIZATION RAW-BYTE IDENTITY
+AUTHORIZATION_ID = MBO2026-D3-IDENTITY01-R1-20260913-OWNER-01
+MODE = DOCS-ONLY / EXISTING LOCAL EVIDENCE ONLY / ZERO KINTONE I/O
+STATUS = REVIEW REQUIRED / LOCAL EVIDENCE CLARIFICATION COMPLETE / ZERO I/O
+BASE_HEAD = 703e0f875c45c5db8e6c1e820b11aa77fa8aac39 (MATCH)
 TARGET_APP = 794
-COMPONENT = UI CUSTOMIZATION RAW-BYTE CONTENT IDENTITY
+COMPONENT = UI CUSTOMIZATION RAW-BYTE IDENTITY CLARIFICATION
 
-OPERATIONAL_COUNTERS (PACKAGE IDENTITY-01):
-- TOTAL_GET_READS = 8 (Exact budget <= 8)
-- CUSTOMIZATION_METADATA_GETS = 4 (Live initial, Preview initial, Live final, Preview final)
-- FILE_DOWNLOAD_GETS = 4 (Live JS, Live CSS, Preview JS, Preview CSS)
-- READ_RETRIES = 0
-- DISCOVERY_CALLS = 0
+OPERATIONAL_COUNTERS (PACKAGE IDENTITY-01-R1):
+- KINTONE_READS = 0
 - KINTONE_WRITES = 0
 - FILE_UPLOADS = 0
 - CUSTOMIZATION_PUTS = 0
@@ -65,26 +61,23 @@ OPERATIONAL_COUNTERS (PACKAGE IDENTITY-01):
 - TESTS_RERUN = 0
 - FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 
-CANONICAL_PINNED_ARTIFACTS (PRE-I/O BLOB VERIFICATION):
-- JS: dist/mbo-employee-app.js (Git blob 6a29a0e652ab8bb210589583b2a2ebfa2754aafa; 640471 bytes; SHA-256 cc80a23fa1adcd71fd8eae1ba95d78faa0694115aa672937c97c009b77e31bf3)
-- CSS: dist/mbo-employee.css (Git blob 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61; 43728 bytes; SHA-256 c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd)
+CORRECTIVE ISSUE 1: STOP-CONDITION CHRONOLOGY CLARIFICATION:
+- Mandate requirement: "Content identity mismatch with canonical => STOP"
+- In-script hashing chronology: In-memory hash computation executed immediately upon buffer receipt (Seqs 3-6); stdout comparison output logged after Seq 6.
+- LIVE JS mismatch detection: In memory after Seq 3 buffer arrival; explicitly logged to stdout between Seq 6 and Seq 7.
+- Reads executed after detection: 5 GET calls after Seq 3 buffer arrival; 2 GET calls (Seqs 7 & 8) after console evaluation.
+- Reason: Script author omitted fail-closed error throw on LIVE JS mismatch, treating Live remaining on baseline as expected behavior.
+- Stop-condition compliance: STOP_CONDITION_COMPLIANCE = VIOLATED (historical execution proceeded despite mismatch; violation honestly recorded without retrospective "EXPECTED" excuse).
+- Technical finding retained: Preview JS (640471 bytes, SHA-256 cc80a23f...) and Preview CSS (43728 bytes, SHA-256 c0257969...) bit-for-bit identical to canonical release artifacts; does not override package governance verdict.
 
-RAW_BYTE_CONTENT_IDENTITY_OUTCOME:
-- PREVIEW_JS:  640471 bytes / SHA-256 cc80a23fa1adcd71fd8eae1ba95d78faa0694115aa672937c97c009b77e31bf3 -> BIT-FOR-BIT IDENTICAL (100% MATCH)
-- PREVIEW_CSS: 43728 bytes  / SHA-256 c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd -> BIT-FOR-BIT IDENTICAL (100% MATCH)
-- LIVE_JS:     554900 bytes / SHA-256 6334e64655f2a1717f5bcc44ac561e6de4e5ec8baf4efba532d69b54f2daae7f -> MISMATCH (CONFIRMED LIVE REV 72 UNMUTATED)
-- LIVE_CSS:    43728 bytes  / SHA-256 c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd -> BIT-FOR-BIT IDENTICAL (100% MATCH)
-
-STABILITY_AND_DRIFT_RECHECK:
-- LIVE_REVISION: Initial 72 -> Final 72 (STABLE)
-- PREVIEW_REVISION: Initial 73 -> Final 73 (STABLE)
-- SCOPE: ALL on both (STABLE)
-- TOPOLOGY: 1 desktop JS, 1 desktop CSS, 0 mobile on both (STABLE)
-- TARGET_FILEKEYS: Identical initial vs. post-download re-check (STABLE)
-
-EMPIRICAL_FILEKEY_FINDING:
-- Downloading files using attached fileKeys in Preview (Revision 73) proves they resolve directly to the exact canonical release bytes uploaded in EXE2.
-- Server re-keying mechanism is not speculated upon beyond observed empirical facts.
+CORRECTIVE ISSUE 2: LIVE HISTORICAL IDENTITY QUALIFICATION:
+- Observed LIVE JS: 554900 bytes / SHA-256 6334e64655f2a1717f5bcc44ac561e6de4e5ec8baf4efba532d69b54f2daae7f (mismatch with canonical release candidate).
+- LIVE Revision stability: Observed stable at revision 72 throughout EXE2 and Identity-01 reads.
+- Historical deploy POST: DEPLOY_POSTS = 0 (halted fail-closed at Step 13 in EXE2).
+- Historical byte identity: HISTORICAL_LIVE_BYTE_IDENTITY = UNVERIFIED (no pre-EXE2 cryptographic hash baseline exists in repository records).
+- Immutability claim qualified: Do not conclude retrospectively that LIVE bytes never changed merely because revision metadata remained 72.
+- Future deployment revisions: Zero speculation on future deployment revision numbers.
+- Server re-keying mechanism: SERVER_REKEYING_MECHANISM = UNVERIFIED PLATFORM BEHAVIOR (empirical token resolution observed; internal mechanics not proven).
 
 LIFECYCLE_PROVENANCE:
 - D3-SBX-DEPLOY-01-EXE1-R2 = PASS / APP794 PROCESS 19/40 DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED / PROCESS ONLY / REVIEW REQUIRED
@@ -92,18 +85,18 @@ LIFECYCLE_PROVENANCE:
 - D3-SBX-DEPLOY-01-EXE2-R2 = PASS / LOCAL SAFETY BYPASS CORRECTIVE COMPLETE / TARGETED TESTS PASS / ARTIFACT IDENTITY UNCHANGED / ZERO KINTONE I/O / ZERO DEPLOYMENT / REVIEW REQUIRED
 - D3-SBX-DEPLOY-01-EXE2 = STOPPED / PREVIEW_READBACK_MISMATCH / TARGET JS ATTACHED FILEKEY MISMATCH / PARTIAL WRITE HALTED BEFORE DEPLOY POST / REVIEW REQUIRED
 - D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1 = PASS / LOCAL EVIDENCE CLARIFICATION ACCEPTED BY CONTROL PLANE (WITHOUT DIRECT TRANSCRIPT RE-INSPECTION) / TOTAL READ ACCOUNTING VERIFIED (11 READS) / REKEYING HYPOTHESIS QUALIFIED / ATTACHED CONTENT IDENTITY UNVERIFIED / ZERO I/O / REVIEW REQUIRED
-- D3-SBX-DEPLOY-01-EXE2-IDENTITY-01 = PASS / READ-ONLY AUDIT COMPLETE / 8 GETS / PREVIEW ATTACHED CONTENT BIT-FOR-BIT IDENTICAL / LIVE UNMUTATED / ZERO WRITES / REVIEW REQUIRED
+- D3-SBX-DEPLOY-01-EXE2-IDENTITY-01 = REQUEST CORRECTIVE / READ-ONLY AUDIT EXECUTED / PREVIEW IDENTICAL / LIVE MISMATCH STOP-CHRONOLOGY AND HISTORICAL IDENTITY DEFECTS IDENTIFIED / RESOLVED BY R1
+- D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1 = REVIEW REQUIRED / LOCAL EVIDENCE CLARIFICATION COMPLETE / STOP-CHRONOLOGY DOCUMENTED / HISTORICAL LIVE BYTE IDENTITY UNVERIFIED / ZERO I/O
 
-VERDICT = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01 = REVIEW REQUIRED
+VERDICT = D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1 = REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-SBX-DEPLOY-01-EXE2-IDENTITY-01 closed with empirical read-only audit verification:
-- Pre-I/O canonical artifact hashing verified against Git blobs.
-- 8 total GET reads executed within strict budget (4 metadata, 4 downloads); zero retries.
-- Preview attached JS and CSS proved bit-for-bit identical to canonical artifacts.
-- Live App 794 confirmed unmutated at revision 72 holding pre-D3 JS bundle.
-- Metadata stability verified: zero drift between initial and post-download re-check.
-- Zero writes executed (UPLOAD=0, PUT=0, DEPLOY POST=0, POLL=0).
-- Guards remain strictly in place; deployment is NOT approved; REVIEW REQUIRED.
+D3-SBX-DEPLOY-01-EXE2-IDENTITY-01-R1 closed with local evidence clarification:
+- Verified exact in-script sequence: 5 GET reads occurred after LIVE JS buffer arrival; 2 GET reads occurred after console comparison evaluation.
+- Honestly recorded historical stop-condition violation (STOP_CONDITION_COMPLIANCE = VIOLATED) rather than excusing it retrospectively as "EXPECTED".
+- Qualified LIVE historical byte identity as UNVERIFIED due to the absence of a pre-EXE2 cryptographic hash baseline.
+- Retained Preview JS/CSS bit-for-bit identity match with canonical artifacts as an empirical technical finding without overriding package governance verdict.
+- Executed in docs-only mode with zero Kintone I/O, zero builds, and zero tests.
+- Deployment guards remain strictly in place; deployment is NOT approved; REVIEW REQUIRED.
 - All gates remain stopped. Next work package, write execution, UAT, and deployment remain strictly NOT AUTHORIZED without explicit Owner authorization.

@@ -102,7 +102,8 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R2_EVIDENCE.md` — App 794 UI customization deployment safety bypass corrective (Findings 1-3: authorization reset removal, artifact override closure, worktree clean override closure), targeted regression test results (47/47 PASS), zero-drift artifact identity, and zero-I/O accounting evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_EVIDENCE.md` — App 794 UI customization sandbox deployment execution record, JIT baseline capture, file upload and preview PUT evidence, Step 13 preview read-back stop diagnostics, and partial-write accounting.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md` — App 794 UI customization local evidence clarification record, root-cause investigation (re-keying hypothesis unverified), exhaustive itemized read accounting (11 total GET calls), and content identity qualifications.
-- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_EVIDENCE.md` — App 794 UI customization raw-byte content identity verification record, 8 GET read accounting, bit-for-bit preview match, unmutated live baseline, and stability recheck evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_EVIDENCE.md` — App 794 UI customization raw-byte content identity verification record, 8 GET read accounting, bit-for-bit preview match, and stability recheck evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_R1_EVIDENCE.md` — App 794 UI customization local evidence clarification record, stop-condition chronology (reads after LIVE JS mismatch), and LIVE historical byte identity qualification.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
