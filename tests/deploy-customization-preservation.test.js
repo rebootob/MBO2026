@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import crypto from 'node:crypto';
 import {
   validatePreflight,
   validateTopologyAlignment,
@@ -13,9 +15,13 @@ import {
   getCurrentGitHead,
   isWorktreeClean,
   formatSanitizedUploadError,
+  formatSanitizedDownloadError,
   validatePreviewReadback,
+  validatePreviewStability,
   pollApp794DeployStatus,
   validateCustomizationConvergence,
+  validateLiveStability,
+  verifyTargetContentIdentity,
   sanitizeTopologyForEvidence
 } from '../scripts/kintone/deploy-custom-ui.js';
 import {
@@ -1454,30 +1460,54 @@ test('BLOCKER_D_PREVIEW_READBACK_BEFORE_DEPLOY: PUT max 1, PUT failure causes ze
     /PREVIEW_READBACK_MISMATCH: Target JS "mbo-employee-app.js" is duplicated/
   );
 
-  // JS key mismatch fails closed
+  // Target fileKey differing from upload key passes preview readback (content identity is verified via raw bytes)
+  assert.equal(validatePreviewReadback({
+    previewCustomize: {
+      ...validReadback,
+      desktop: {
+        ...validReadback.desktop,
+        js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'DIFFERENT_STORED_JS_KEY' } }]
+      }
+    },
+    targetFileName: 'mbo-employee-app.js',
+    targetCssFileName: 'mbo-employee.css',
+    newJsFileKey: 'UPLOAD_TOKEN_KEY',
+    newCssFileKey: 'KEY_CSS_NEW',
+    baselinePreview: baseline
+  }), true);
+
+  // Missing preview target JS fileKey fails closed
   assert.throws(
     () => validatePreviewReadback({
-      previewCustomize: validReadback,
+      previewCustomize: {
+        ...validReadback,
+        desktop: {
+          ...validReadback.desktop,
+          js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }]
+        }
+      },
       targetFileName: 'mbo-employee-app.js',
       targetCssFileName: 'mbo-employee.css',
-      newJsFileKey: 'WRONG_JS_KEY',
-      newCssFileKey: 'KEY_CSS_NEW',
       baselinePreview: baseline
     }),
-    /PREVIEW_READBACK_MISMATCH: Target JS attached fileKey does not match/
+    /PREVIEW_READBACK_MISMATCH: Target JS "mbo-employee-app.js" is missing preview fileKey/
   );
 
-  // CSS key mismatch fails closed
+  // Missing preview target CSS fileKey fails closed
   assert.throws(
     () => validatePreviewReadback({
-      previewCustomize: validReadback,
+      previewCustomize: {
+        ...validReadback,
+        desktop: {
+          ...validReadback.desktop,
+          css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: '' } }]
+        }
+      },
       targetFileName: 'mbo-employee-app.js',
       targetCssFileName: 'mbo-employee.css',
-      newJsFileKey: 'KEY_JS_NEW',
-      newCssFileKey: 'WRONG_CSS_KEY',
       baselinePreview: baseline
     }),
-    /PREVIEW_READBACK_MISMATCH: Target CSS attached fileKey does not match/
+    /PREVIEW_READBACK_MISMATCH: Target CSS "mbo-employee.css" is missing preview fileKey/
   );
 
   // Retained entry drift in preview read-back fails closed
@@ -1517,7 +1547,7 @@ test('BLOCKER_D_PREVIEW_READBACK_BEFORE_DEPLOY: PUT max 1, PUT failure causes ze
     /PREVIEW_READBACK_MISMATCH: Retained desktop.js\[0\] URL changed/
   );
 
-  // 3. In executeDeployCustomUi: Preview read-back mismatch blocks deploy POST
+  // 3. In executeDeployCustomUi: Preview content identity mismatch blocks deploy POST
   let postDeployAttempts = 0;
   const authId2 = `AUTH_READBACK_MISMATCH_${Date.now()}`;
 
@@ -1549,13 +1579,12 @@ test('BLOCKER_D_PREVIEW_READBACK_BEFORE_DEPLOY: PUT max 1, PUT failure causes ze
         if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
         if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') return {};
         if (path.includes('/k/v1/preview/app/customize.json')) {
-          // Return wrong read-back (wrong key)
           return {
             revision: '43',
             scope: 'ALL',
             desktop: {
-              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'WRONG_READBACK_KEY' } }],
-              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'CORRECT_CSS_KEY' } }]
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'SERVER_STORED_JS_KEY' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'SERVER_STORED_CSS_KEY' } }]
             },
             mobile: { js: [], css: [] }
           };
@@ -1566,12 +1595,16 @@ test('BLOCKER_D_PREVIEW_READBACK_BEFORE_DEPLOY: PUT max 1, PUT failure causes ze
         }
         return {};
       },
-      uploadFile: async (name) => (name === 'mbo-employee-app.js' ? 'REAL_JS_KEY' : 'CORRECT_CSS_KEY')
+      uploadFile: async (name) => (name === 'mbo-employee-app.js' ? 'UPLOAD_JS_KEY' : 'UPLOAD_CSS_KEY'),
+      downloadFile: async (fileKey, filename) => {
+        // Return mismatched bytes to prove content check stops deploy POST
+        return Buffer.from('mismatched-content-bytes');
+      }
     }),
-    /PREVIEW_READBACK_MISMATCH/
+    /PREVIEW_CONTENT_IDENTITY_MISMATCH/
   );
 
-  assert.equal(postDeployAttempts, 0, 'Deploy POST was strictly BLOCKED due to preview read-back mismatch');
+  assert.equal(postDeployAttempts, 0, 'Deploy POST was strictly BLOCKED due to preview content identity mismatch');
 });
 
 test('BLOCKER_E_BOUNDED_EXACT_APP_DEPLOY_POLLING: Exact App794 required, FAIL/CANCEL stops, malformed status stops, timeout stops, deploy POST max 1', async () => {
@@ -1713,46 +1746,58 @@ test('BLOCKER_F_FINAL_CONVERGENCE: LIVE/PREVIEW convergence passes; LIVE mismatc
     /FINAL_CONVERGENCE_MISMATCH/
   );
 
-  // 4. Final LIVE target JS key mismatch fails closed
+  // 4. Live target fileKey differing from upload key passes structural convergence (bytes verified via download)
+  const convDiffKey = validateCustomizationConvergence({
+    liveCustomize: {
+      ...validTargetLive,
+      desktop: {
+        ...validTargetLive.desktop,
+        js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'SERVER_STORED_LIVE_KEY' } }]
+      }
+    },
+    previewCustomize: validTargetPreview,
+    targetFileName: 'mbo-employee-app.js',
+    targetCssFileName: 'mbo-employee.css',
+    newJsFileKey: 'UPLOAD_TOKEN_KEY',
+    newCssFileKey: 'CONVERGED_CSS_KEY',
+    baselinePreview: baseline,
+    expectedScope: 'ALL'
+  });
+  assert.equal(convDiffKey.converged, true);
+
+  // 5. Missing Live target JS fileKey fails closed
   assert.throws(
     () => validateCustomizationConvergence({
       liveCustomize: {
         ...validTargetLive,
         desktop: {
           ...validTargetLive.desktop,
-          js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'WRONG_KEY' } }]
+          js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: '' } }]
         }
       },
       previewCustomize: validTargetPreview,
       targetFileName: 'mbo-employee-app.js',
       targetCssFileName: 'mbo-employee.css',
-      newJsFileKey: 'CONVERGED_JS_KEY',
-      newCssFileKey: 'CONVERGED_CSS_KEY',
       baselinePreview: baseline,
       expectedScope: 'ALL'
     }),
-    /FINAL_CONVERGENCE_MISMATCH: Live desktop.js target fileKey does not match/
+    /FINAL_CONVERGENCE_MISMATCH: Live desktop.js target JS "mbo-employee-app.js" is missing fileKey/
   );
 
-  // 5. Final LIVE target CSS key mismatch fails closed
+  // 6. Live target content mismatch fails closed
   assert.throws(
     () => validateCustomizationConvergence({
-      liveCustomize: {
-        ...validTargetLive,
-        desktop: {
-          ...validTargetLive.desktop,
-          css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'WRONG_CSS_KEY' } }]
-        }
-      },
+      liveCustomize: validTargetLive,
       previewCustomize: validTargetPreview,
       targetFileName: 'mbo-employee-app.js',
       targetCssFileName: 'mbo-employee.css',
-      newJsFileKey: 'CONVERGED_JS_KEY',
-      newCssFileKey: 'CONVERGED_CSS_KEY',
       baselinePreview: baseline,
-      expectedScope: 'ALL'
+      expectedScope: 'ALL',
+      liveJsContent: Buffer.from('mismatched-live-bytes'),
+      expectedJsSha256: 'cc80a23fa1adcd71fd8eae1ba95d78faa0694115aa672937c97c009b77e31bf3',
+      expectedJsByteLength: 640471
     }),
-    /FINAL_CONVERGENCE_MISMATCH: Live desktop.css target fileKey does not match/
+    /LIVE_CONTENT_IDENTITY_MISMATCH/
   );
 });
 
@@ -1767,19 +1812,24 @@ test('FULL_E2E_MOCK_EXECUTION: Zero real network, deploy POST max 1, PUT max 1, 
   let putPreviewCalls = 0;
   let deployPostCalls = 0;
   let deployPollCalls = 0;
+  const downloadCalls = [];
 
   const initialLive = getValidLiveFixture();
   const initialPreview = getValidPreviewFixture();
 
   const uploadedJsKey = 'UPLOADED_JS_KEY_888';
   const uploadedCssKey = 'UPLOADED_CSS_KEY_999';
+  const previewStoredJsKey = 'PREVIEW_STORED_JS_KEY_123';
+  const previewStoredCssKey = 'PREVIEW_STORED_CSS_KEY_456';
+  const liveStoredJsKey = 'LIVE_STORED_JS_KEY_789';
+  const liveStoredCssKey = 'LIVE_STORED_CSS_KEY_012';
 
   const updatedPreview = {
     revision: '43',
     scope: 'ALL',
     desktop: {
-      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: uploadedJsKey } }],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: uploadedCssKey } }]
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: previewStoredJsKey } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: previewStoredCssKey } }]
     },
     mobile: { js: [], css: [] }
   };
@@ -1788,11 +1838,14 @@ test('FULL_E2E_MOCK_EXECUTION: Zero real network, deploy POST max 1, PUT max 1, 
     revision: '43',
     scope: 'ALL',
     desktop: {
-      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: uploadedJsKey } }],
-      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: uploadedCssKey } }]
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: liveStoredJsKey } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: liveStoredCssKey } }]
     },
     mobile: { js: [], css: [] }
   };
+
+  const canonicalJsBuf = fs.readFileSync('dist/mbo-employee-app.js');
+  const canonicalCssBuf = fs.readFileSync('dist/mbo-employee.css');
 
   const result = await executeDeployCustomUi({
     isBuildOnly: false,
@@ -1830,6 +1883,16 @@ test('FULL_E2E_MOCK_EXECUTION: Zero real network, deploy POST max 1, PUT max 1, 
       }
       throw new Error(`Unexpected upload: ${name}`);
     },
+    downloadFile: async (fileKey, filename) => {
+      downloadCalls.push({ fileKey, filename });
+      if (filename === 'mbo-employee-app.js') {
+        return canonicalJsBuf;
+      }
+      if (filename === 'mbo-employee.css') {
+        return canonicalCssBuf;
+      }
+      throw new Error(`Unexpected download: ${filename}`);
+    },
     kintoneRequest: async (path, opts) => {
       if (path === '/k/v1/app/customize.json?app=794') {
         getLiveCalls++;
@@ -1863,14 +1926,19 @@ test('FULL_E2E_MOCK_EXECUTION: Zero real network, deploy POST max 1, PUT max 1, 
   assert.equal(result.topologyHash.length, 64);
   assert.ok(!JSON.stringify(result).includes(uploadedJsKey), 'No raw JS fileKey exposed');
   assert.ok(!JSON.stringify(result).includes(uploadedCssKey), 'No raw CSS fileKey exposed');
+  assert.ok(!JSON.stringify(result).includes(previewStoredJsKey), 'No stored preview JS fileKey exposed');
+  assert.ok(!JSON.stringify(result).includes(liveStoredJsKey), 'No stored live JS fileKey exposed');
 
   assert.equal(jsUploadCalls, 1, 'JS upload called exactly once');
   assert.equal(cssUploadCalls, 1, 'CSS upload called exactly once');
   assert.equal(putPreviewCalls, 1, 'Preview PUT called exactly once');
   assert.equal(deployPostCalls, 1, 'Deploy POST called exactly once');
   assert.equal(deployPollCalls, 1, 'Deploy status polling succeeded');
-  assert.equal(getLiveCalls, 2, 'Live customization read at preflight and final convergence');
-  assert.equal(getPreviewCalls, 3, 'Preview read at preflight, read-back verification, and final convergence');
+  assert.equal(getLiveCalls, 3, 'Live customization read at preflight, final convergence, and stability check');
+  assert.equal(getPreviewCalls, 5, 'Preview read at preflight, read-back, preview stability check, final convergence, and final stability check');
+  assert.equal(downloadCalls.length, 6, 'Target files downloaded: 2 in Preview verification + 4 in final convergence');
+  assert.equal(downloadCalls.filter(d => d.filename === 'mbo-employee-app.js').length, 3, '3 JS downloads (1 preview + 1 live + 1 final preview)');
+  assert.equal(downloadCalls.filter(d => d.filename === 'mbo-employee.css').length, 3, '3 CSS downloads (1 preview + 1 live + 1 final preview)');
 });
 
 test('REGRESSION_FINDING_2: CALLER_ARTIFACT_OVERRIDE_CANNOT_BYPASS_IDENTITY_GUARD', async () => {
@@ -1991,5 +2059,720 @@ test('REGRESSION_FINDING_3: CALLER_CLEAN_OVERRIDE_CANNOT_BYPASS_DIRTY_WORKTREE_G
     }),
     /DIRTY_WORKTREE_BLOCKED_BEFORE_BUILD_AND_NETWORK/
   );
+});
+
+test('TARGET_CONTENT_IDENTITY_VERIFICATION: Keys differ, but bytes/hash/size match => passes; Keys match, but bytes mismatch => STOP fail-closed', () => {
+  const canonicalJsBuf = fs.readFileSync('dist/mbo-employee-app.js');
+  const canonicalCssBuf = fs.readFileSync('dist/mbo-employee.css');
+  const jsSha = crypto.createHash('sha256').update(canonicalJsBuf).digest('hex');
+  const cssSha = crypto.createHash('sha256').update(canonicalCssBuf).digest('hex');
+
+  // 1. Exact bytes match passes verification regardless of what fileKey was used
+  const jsRes = verifyTargetContentIdentity({
+    content: canonicalJsBuf,
+    expectedSha256: jsSha,
+    expectedByteLength: canonicalJsBuf.length,
+    targetFileName: 'mbo-employee-app.js',
+    location: 'Preview'
+  });
+  assert.equal(jsRes.verified, true);
+  assert.equal(jsRes.sha256, jsSha);
+  assert.equal(jsRes.byteLength, canonicalJsBuf.length);
+
+  const cssRes = verifyTargetContentIdentity({
+    content: canonicalCssBuf,
+    expectedSha256: cssSha,
+    expectedByteLength: canonicalCssBuf.length,
+    targetFileName: 'mbo-employee.css',
+    location: 'Preview'
+  });
+  assert.equal(cssRes.verified, true);
+  assert.equal(cssRes.sha256, cssSha);
+  assert.equal(cssRes.byteLength, canonicalCssBuf.length);
+
+  // 2. Keys match but content bytes mismatch => STOP fail-closed
+  const corruptedJs = Buffer.from(canonicalJsBuf);
+  corruptedJs[0] = corruptedJs[0] ^ 0xff;
+  assert.throws(
+    () => verifyTargetContentIdentity({
+      content: corruptedJs,
+      expectedSha256: jsSha,
+      expectedByteLength: canonicalJsBuf.length,
+      targetFileName: 'mbo-employee-app.js',
+      location: 'Preview'
+    }),
+    /PREVIEW_CONTENT_IDENTITY_MISMATCH/
+  );
+
+  // 3. Byte length mismatch => STOP fail-closed
+  const truncatedJs = canonicalJsBuf.subarray(0, 100);
+  assert.throws(
+    () => verifyTargetContentIdentity({
+      content: truncatedJs,
+      expectedSha256: jsSha,
+      expectedByteLength: canonicalJsBuf.length,
+      targetFileName: 'mbo-employee-app.js',
+      location: 'Live'
+    }),
+    /LIVE_CONTENT_IDENTITY_MISMATCH/
+  );
+
+  // 4. Empty or malformed content => STOP fail-closed
+  assert.throws(
+    () => verifyTargetContentIdentity({
+      content: null,
+      expectedSha256: jsSha,
+      expectedByteLength: canonicalJsBuf.length,
+      targetFileName: 'mbo-employee-app.js',
+      location: 'Preview'
+    }),
+    /PREVIEW_CONTENT_IDENTITY_MISMATCH: Downloaded content for mbo-employee-app.js in Preview is empty or malformed/
+  );
+  assert.throws(
+    () => verifyTargetContentIdentity({
+      content: 'not a buffer',
+      expectedSha256: jsSha,
+      expectedByteLength: canonicalJsBuf.length,
+      targetFileName: 'mbo-employee-app.js',
+      location: 'Preview'
+    }),
+    /PREVIEW_CONTENT_IDENTITY_MISMATCH/
+  );
+});
+
+test('PREVIEW_CONTENT_MISMATCH_INDEPENDENTLY_BLOCKS_DEPLOY_POST: JS or CSS content mismatch independently causes deploy POST = 0', async () => {
+  const currentHead = getCurrentGitHead();
+  const canonicalJsBuf = fs.readFileSync('dist/mbo-employee-app.js');
+  const canonicalCssBuf = fs.readFileSync('dist/mbo-employee.css');
+
+  // Subtest A: Preview JS content mismatch causes deploy POST = 0
+  let deployPostCountA = 0;
+  let cssDownloadCalledA = false;
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794,
+        activeWindow: true,
+        explicitUserAuthorization: true,
+        authorizationId: `AUTH_PREVIEW_JS_MISMATCH_${Date.now()}`
+      },
+      requestConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794
+      },
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      kintoneRequest: async (path, opts) => {
+        if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
+        if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') return {};
+        if (path.includes('/k/v1/preview/app/customize.json')) {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'SERVER_KEY_JS' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'SERVER_KEY_CSS' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/deploy.json')) {
+          deployPostCountA++;
+          return {};
+        }
+        return {};
+      },
+      uploadFile: async () => 'UPLOAD_KEY',
+      downloadFile: async (fileKey, filename) => {
+        if (filename === 'mbo-employee-app.js') {
+          return Buffer.from('corrupted-preview-js');
+        }
+        if (filename === 'mbo-employee.css') {
+          cssDownloadCalledA = true;
+          return canonicalCssBuf;
+        }
+      }
+    }),
+    /PREVIEW_CONTENT_IDENTITY_MISMATCH/
+  );
+  assert.equal(deployPostCountA, 0, 'Deploy POST was NOT called when Preview JS content mismatched');
+  assert.equal(cssDownloadCalledA, false, 'CSS download was NOT called after JS content mismatch failed closed');
+
+  // Subtest B: Preview CSS content mismatch causes deploy POST = 0
+  let deployPostCountB = 0;
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794,
+        activeWindow: true,
+        explicitUserAuthorization: true,
+        authorizationId: `AUTH_PREVIEW_CSS_MISMATCH_${Date.now()}`
+      },
+      requestConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794
+      },
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      kintoneRequest: async (path, opts) => {
+        if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
+        if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') return {};
+        if (path.includes('/k/v1/preview/app/customize.json')) {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'SERVER_KEY_JS' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'SERVER_KEY_CSS' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/deploy.json')) {
+          deployPostCountB++;
+          return {};
+        }
+        return {};
+      },
+      uploadFile: async () => 'UPLOAD_KEY',
+      downloadFile: async (fileKey, filename) => {
+        if (filename === 'mbo-employee-app.js') {
+          return canonicalJsBuf;
+        }
+        if (filename === 'mbo-employee.css') {
+          return Buffer.from('corrupted-preview-css');
+        }
+      }
+    }),
+    /PREVIEW_CONTENT_IDENTITY_MISMATCH/
+  );
+  assert.equal(deployPostCountB, 0, 'Deploy POST was NOT called when Preview CSS content mismatched');
+});
+
+test('DOWNLOAD_ERROR_STOPS_WITH_ZERO_RETRY: Preview JS or CSS download failure causes immediate fail-closed and deploy POST = 0', async () => {
+  const currentHead = getCurrentGitHead();
+
+  // Subtest A: JS download failure
+  let jsDownloadAttemptsA = 0;
+  let deployPostCountA = 0;
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794,
+        activeWindow: true,
+        explicitUserAuthorization: true,
+        authorizationId: `AUTH_DL_JS_FAIL_${Date.now()}`
+      },
+      requestConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794
+      },
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      kintoneRequest: async (path, opts) => {
+        if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
+        if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') return {};
+        if (path.includes('/k/v1/preview/app/customize.json')) {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'SERVER_KEY_JS' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'SERVER_KEY_CSS' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/deploy.json')) {
+          deployPostCountA++;
+          return {};
+        }
+        return {};
+      },
+      uploadFile: async () => 'UPLOAD_KEY',
+      downloadFile: async (fileKey, filename) => {
+        if (filename === 'mbo-employee-app.js') {
+          jsDownloadAttemptsA++;
+          throw { status: 500, data: { code: 'GAIA_RE01', message: 'Internal Server Error' } };
+        }
+      }
+    }),
+    /DOWNLOAD_FAILED: mbo-employee-app.js - HTTP 500/
+  );
+  assert.equal(jsDownloadAttemptsA, 1, 'Download attempted exactly once (zero retry)');
+  assert.equal(deployPostCountA, 0, 'Deploy POST was NEVER called');
+
+  // Subtest B: CSS download failure
+  let cssDownloadAttemptsB = 0;
+  let deployPostCountB = 0;
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794,
+        activeWindow: true,
+        explicitUserAuthorization: true,
+        authorizationId: `AUTH_DL_CSS_FAIL_${Date.now()}`
+      },
+      requestConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794
+      },
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      kintoneRequest: async (path, opts) => {
+        if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
+        if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') return {};
+        if (path.includes('/k/v1/preview/app/customize.json')) {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'SERVER_KEY_JS' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'SERVER_KEY_CSS' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/deploy.json')) {
+          deployPostCountB++;
+          return {};
+        }
+        return {};
+      },
+      uploadFile: async () => 'UPLOAD_KEY',
+      downloadFile: async (fileKey, filename) => {
+        if (filename === 'mbo-employee-app.js') {
+          return fs.readFileSync('dist/mbo-employee-app.js');
+        }
+        if (filename === 'mbo-employee.css') {
+          cssDownloadAttemptsB++;
+          throw { status: 404, data: { code: 'CB_NO02', message: 'File not found' } };
+        }
+      }
+    }),
+    /DOWNLOAD_FAILED: mbo-employee.css - HTTP 404/
+  );
+  assert.equal(cssDownloadAttemptsB, 1, 'Download attempted exactly once (zero retry)');
+  assert.equal(deployPostCountB, 0, 'Deploy POST was NEVER called');
+});
+
+test('PREVIEW_STABILITY_DRIFT_STOPS_BEFORE_DEPLOY_POST: Revision, fileKey, scope, or topology drift after download stops deploy POST', async () => {
+  const currentHead = getCurrentGitHead();
+  const canonicalJsBuf = fs.readFileSync('dist/mbo-employee-app.js');
+  const canonicalCssBuf = fs.readFileSync('dist/mbo-employee.css');
+
+  const createStabilityDriftTest = async (getDriftedStability) => {
+    let deployPostCalls = 0;
+    let previewReadCount = 0;
+    await assert.rejects(
+      async () => executeDeployCustomUi({
+        isBuildOnly: false,
+        authConfig: {
+          workPackageId: 'D3-SBX-DEPLOY-01',
+          stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+          operation: 'APP794_CUSTOMIZATION_DEPLOY',
+          appId: 794,
+          activeWindow: true,
+          explicitUserAuthorization: true,
+          authorizationId: `AUTH_STABILITY_${Date.now()}_${Math.random()}`
+        },
+        requestConfig: {
+          workPackageId: 'D3-SBX-DEPLOY-01',
+          stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+          operation: 'APP794_CUSTOMIZATION_DEPLOY',
+          appId: 794
+        },
+        releaseManifest: {
+          ...getValidManifestFixture(),
+          sourceCommit: currentHead,
+          expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+          expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+        },
+        kintoneRequest: async (path, opts) => {
+          if (path.includes('/k/v1/app/customize.json')) return getValidLiveFixture();
+          if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') return {};
+          if (path.includes('/k/v1/preview/app/customize.json')) {
+            previewReadCount++;
+            if (previewReadCount === 1) return getValidPreviewFixture();
+            if (previewReadCount === 2) {
+              return {
+                revision: '43',
+                scope: 'ALL',
+                desktop: {
+                  js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+                  css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+                },
+                mobile: { js: [], css: [] }
+              };
+            }
+            if (previewReadCount === 3) {
+              return getDriftedStability();
+            }
+          }
+          if (path.includes('/k/v1/preview/app/deploy.json')) {
+            deployPostCalls++;
+            return {};
+          }
+          return {};
+        },
+        uploadFile: async () => 'UPLOAD_KEY',
+        downloadFile: async (fileKey, filename) => {
+          if (filename === 'mbo-employee-app.js') return canonicalJsBuf;
+          if (filename === 'mbo-employee.css') return canonicalCssBuf;
+        }
+      }),
+      /PREVIEW_STABILITY_DRIFT/
+    );
+    assert.equal(deployPostCalls, 0, 'Deploy POST was NEVER called on stability drift');
+  };
+
+  // Subtest A: Revision drift
+  await createStabilityDriftTest(() => ({
+    revision: '44',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  }));
+
+  // Subtest B: Target JS fileKey drift
+  await createStabilityDriftTest(() => ({
+    revision: '43',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'DRIFTED_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  }));
+
+  // Subtest C: Target CSS fileKey drift
+  await createStabilityDriftTest(() => ({
+    revision: '43',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'DRIFTED_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  }));
+
+  // Subtest D: Scope drift
+  await createStabilityDriftTest(() => ({
+    revision: '43',
+    scope: 'ADMIN',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  }));
+
+  // Subtest E: Topology entry count drift
+  await createStabilityDriftTest(() => ({
+    revision: '43',
+    scope: 'ALL',
+    desktop: {
+      js: [
+        { type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } },
+        { type: 'FILE', file: { name: 'extra.js', fileKey: 'EXTRA_KEY' } }
+      ],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+    },
+    mobile: { js: [], css: [] }
+  }));
+});
+
+test('FINAL_CONVERGENCE_CONTENT_MISMATCH_OR_DRIFT_FAILS: Live or Preview byte mismatch or post-download stability drift causes convergence to fail', async () => {
+  const currentHead = getCurrentGitHead();
+  const canonicalJsBuf = fs.readFileSync('dist/mbo-employee-app.js');
+  const canonicalCssBuf = fs.readFileSync('dist/mbo-employee.css');
+
+  // Subtest A: Live JS content mismatch during final convergence
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794,
+        activeWindow: true,
+        explicitUserAuthorization: true,
+        authorizationId: `AUTH_CONV_LIVE_JS_FAIL_${Date.now()}`
+      },
+      requestConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794
+      },
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      pollDelayMs: 0,
+      sleep: () => Promise.resolve(),
+      uploadFile: async () => 'KEY',
+      downloadFile: async (fileKey, filename) => {
+        if (filename === 'mbo-employee-app.js' && fileKey === 'LIVE_JS_KEY') {
+          return Buffer.from('corrupted-live-js');
+        }
+        if (filename === 'mbo-employee-app.js') return canonicalJsBuf;
+        if (filename === 'mbo-employee.css') return canonicalCssBuf;
+      },
+      kintoneRequest: async (path, opts) => {
+        if (path === '/k/v1/app/customize.json?app=794') {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/customize.json')) {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/deploy.json?apps[0]=794')) {
+          return { apps: [{ app: '794', status: 'SUCCESS' }] };
+        }
+        return {};
+      }
+    }),
+    /LIVE_CONTENT_IDENTITY_MISMATCH/
+  );
+
+  // Subtest B: Live revision drift during final stability check
+  let liveReadCount = 0;
+  await assert.rejects(
+    async () => executeDeployCustomUi({
+      isBuildOnly: false,
+      authConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794,
+        activeWindow: true,
+        explicitUserAuthorization: true,
+        authorizationId: `AUTH_CONV_LIVE_REV_DRIFT_${Date.now()}`
+      },
+      requestConfig: {
+        workPackageId: 'D3-SBX-DEPLOY-01',
+        stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+        operation: 'APP794_CUSTOMIZATION_DEPLOY',
+        appId: 794
+      },
+      releaseManifest: {
+        ...getValidManifestFixture(),
+        sourceCommit: currentHead,
+        expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+        expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+      },
+      pollDelayMs: 0,
+      sleep: () => Promise.resolve(),
+      uploadFile: async () => 'KEY',
+      downloadFile: async (fileKey, filename) => {
+        if (filename === 'mbo-employee-app.js') return canonicalJsBuf;
+        if (filename === 'mbo-employee.css') return canonicalCssBuf;
+      },
+      kintoneRequest: async (path, opts) => {
+        if (path === '/k/v1/app/customize.json?app=794') {
+          liveReadCount++;
+          if (liveReadCount === 1) return getValidLiveFixture();
+          if (liveReadCount === 2) {
+            return {
+              revision: '43',
+              scope: 'ALL',
+              desktop: {
+                js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+                css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY' } }]
+              },
+              mobile: { js: [], css: [] }
+            };
+          }
+          if (liveReadCount === 3) {
+            return {
+              revision: '44', // DRIFTED
+              scope: 'ALL',
+              desktop: {
+                js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'LIVE_JS_KEY' } }],
+                css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'LIVE_CSS_KEY' } }]
+              },
+              mobile: { js: [], css: [] }
+            };
+          }
+        }
+        if (path.includes('/k/v1/preview/app/customize.json')) {
+          return {
+            revision: '43',
+            scope: 'ALL',
+            desktop: {
+              js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: 'PREVIEW_JS_KEY' } }],
+              css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: 'PREVIEW_CSS_KEY' } }]
+            },
+            mobile: { js: [], css: [] }
+          };
+        }
+        if (path.includes('/k/v1/preview/app/deploy.json?apps[0]=794')) {
+          return { apps: [{ app: '794', status: 'SUCCESS' }] };
+        }
+        return {};
+      }
+    }),
+    /FINAL_CONVERGENCE_DRIFT: Live revision drifted from "43" to "44"/
+  );
+});
+
+test('DIFFERENT_FILEKEYS_WITH_MATCHING_BYTES_PASS_DEPLOYMENT: Keys differ across upload, preview, and live, but bytes match canonical => PASS', async () => {
+  const currentHead = getCurrentGitHead();
+  const authId = `AUTH_DIFF_KEYS_TEST_${Date.now()}`;
+
+  const canonicalJsBuf = fs.readFileSync('dist/mbo-employee-app.js');
+  const canonicalCssBuf = fs.readFileSync('dist/mbo-employee.css');
+
+  const uploadJsToken = 'UPLOAD_TOKEN_JS_AAA';
+  const uploadCssToken = 'UPLOAD_TOKEN_CSS_BBB';
+  const previewInternalJsKey = 'PREVIEW_INTERNAL_JS_CCC';
+  const previewInternalCssKey = 'PREVIEW_INTERNAL_CSS_DDD';
+  const liveInternalJsKey = 'LIVE_INTERNAL_JS_EEE';
+  const liveInternalCssKey = 'LIVE_INTERNAL_CSS_FFF';
+
+  let deployPostCalls = 0;
+  const downloadedKeys = [];
+
+  const previewCustomization = {
+    revision: '43',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: previewInternalJsKey } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: previewInternalCssKey } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+
+  const liveCustomization = {
+    revision: '43',
+    scope: 'ALL',
+    desktop: {
+      js: [{ type: 'FILE', file: { name: 'mbo-employee-app.js', fileKey: liveInternalJsKey } }],
+      css: [{ type: 'FILE', file: { name: 'mbo-employee.css', fileKey: liveInternalCssKey } }]
+    },
+    mobile: { js: [], css: [] }
+  };
+
+  const result = await executeDeployCustomUi({
+    isBuildOnly: false,
+    authConfig: {
+      workPackageId: 'D3-SBX-DEPLOY-01',
+      stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+      operation: 'APP794_CUSTOMIZATION_DEPLOY',
+      appId: 794,
+      activeWindow: true,
+      explicitUserAuthorization: true,
+      authorizationId: authId
+    },
+    requestConfig: {
+      workPackageId: 'D3-SBX-DEPLOY-01',
+      stage: 'STAGE_D3_APP794_CUSTOMIZATION_DEPLOY',
+      operation: 'APP794_CUSTOMIZATION_DEPLOY',
+      appId: 794
+    },
+    releaseManifest: {
+      ...getValidManifestFixture(),
+      sourceCommit: currentHead,
+      expectedJsBlobSha: '6a29a0e652ab8bb210589583b2a2ebfa2754aafa',
+      expectedCssBlobSha: '0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61'
+    },
+    pollDelayMs: 0,
+    sleep: () => Promise.resolve(),
+    uploadFile: async (name) => (name === 'mbo-employee-app.js' ? uploadJsToken : uploadCssToken),
+    downloadFile: async (fileKey, filename) => {
+      downloadedKeys.push(fileKey);
+      if (filename === 'mbo-employee-app.js') return canonicalJsBuf;
+      if (filename === 'mbo-employee.css') return canonicalCssBuf;
+    },
+    kintoneRequest: async (path, opts) => {
+      if (path === '/k/v1/app/customize.json?app=794') {
+        return (deployPostCalls > 0) ? liveCustomization : getValidLiveFixture();
+      }
+      if (path === '/k/v1/preview/app/customize.json?app=794') {
+        return previewCustomization;
+      }
+      if (path === '/k/v1/preview/app/customize.json' && opts?.method === 'PUT') {
+        return { revision: '43' };
+      }
+      if (path === '/k/v1/preview/app/deploy.json' && opts?.method === 'POST') {
+        deployPostCalls++;
+        return {};
+      }
+      if (path.startsWith('/k/v1/preview/app/deploy.json?apps[0]=794')) {
+        return { apps: [{ app: '794', status: 'SUCCESS' }] };
+      }
+      return {};
+    }
+  });
+
+  assert.equal(result.deployed, true);
+  assert.equal(result.converged, true);
+  assert.equal(deployPostCalls, 1);
+  assert.ok(downloadedKeys.includes(previewInternalJsKey), 'Preview internal JS key was downloaded');
+  assert.ok(downloadedKeys.includes(previewInternalCssKey), 'Preview internal CSS key was downloaded');
+  assert.ok(downloadedKeys.includes(liveInternalJsKey), 'Live internal JS key was downloaded');
+  assert.ok(downloadedKeys.includes(liveInternalCssKey), 'Live internal CSS key was downloaded');
 });
 

@@ -779,9 +779,210 @@ export function formatSanitizedUploadError(error, filename = 'file') {
 }
 
 /**
+ * Sanitizes and formats safe diagnostic server metadata from download/network errors.
+ * Preserves HTTP status, safe provider/Kintone error code, and sanitized server message.
+ * Strictly redacts tokens, passwords, authorization, cookies, credentials, fileKeys, and secrets.
+ * Never propagates raw response bodies containing sensitive data.
+ */
+export function formatSanitizedDownloadError(error, filename = 'file') {
+  const GENERIC_FAILURE = `DOWNLOAD_FAILED: Download failed for ${filename}.`;
+
+  if (!error || (typeof error !== 'object' && typeof error !== 'string')) {
+    return GENERIC_FAILURE;
+  }
+
+  let httpStatus = null;
+  const rawStatus = error?.status ?? error?.statusCode ?? error?.response?.status;
+  if (typeof rawStatus === 'number' && Number.isInteger(rawStatus) && rawStatus >= 100 && rawStatus <= 599) {
+    httpStatus = rawStatus;
+  } else if (typeof rawStatus === 'string' && /^[1-5]\d\d$/.test(rawStatus.trim())) {
+    httpStatus = parseInt(rawStatus.trim(), 10);
+  }
+
+  let safeCode = null;
+  const rawCode =
+    error?.code ??
+    error?.data?.code ??
+    error?.response?.data?.code ??
+    error?.error?.code ??
+    error?.kintoneCode;
+
+  if (typeof rawCode === 'string') {
+    const trimmedCode = rawCode.trim();
+    if (
+      !NON_SERVER_ERROR_CODES.has(trimmedCode) &&
+      /^[A-Za-z0-9_.-]{2,64}$/.test(trimmedCode)
+    ) {
+      safeCode = trimmedCode;
+    }
+  }
+
+  let safeMessage = null;
+  const explicitServerMessage =
+    error?.data?.message ??
+    error?.response?.data?.message ??
+    error?.error?.message ??
+    error?.serverMessage;
+
+  const rawMessage =
+    explicitServerMessage ??
+    (typeof error?.message === 'string' ? error.message : typeof error === 'string' ? error : null);
+
+  if (typeof rawMessage === 'string' && rawMessage.trim()) {
+    let msg = rawMessage.trim();
+
+    if (!httpStatus) {
+      const statusMatch = msg.match(/\bHTTP\s+([1-5]\d\d)\b/i);
+      if (statusMatch) {
+        httpStatus = parseInt(statusMatch[1], 10);
+      }
+    }
+
+    if (!safeCode) {
+      const codeMatches = [...msg.matchAll(/\b([A-Z0-9_]{2,30})\b/g)];
+      for (const m of codeMatches) {
+        const candidate = m[1];
+        if (
+          candidate !== 'HTTP' &&
+          candidate !== 'CODE' &&
+          candidate !== 'MESSAGE' &&
+          candidate !== 'DOWNLOAD' &&
+          candidate !== 'FAILED' &&
+          !NON_SERVER_ERROR_CODES.has(candidate) &&
+          /^[A-Z][A-Z0-9_]+$/.test(candidate) &&
+          /[0-9_]/.test(candidate)
+        ) {
+          safeCode = candidate;
+          break;
+        }
+      }
+    }
+
+    msg = msg
+      .replace(/bearer\s+[a-zA-Z0-9_\-.]+/gi, 'Bearer [REDACTED]')
+      .replace(/basic\s+[a-zA-Z0-9+/=]+/gi, 'Basic [REDACTED]')
+      .replace(/(authorization|x-cybozu-[a-z0-9-]+)\s*[:=]\s*[^\s,;]+/gi, '$1: [REDACTED]')
+      .replace(/(api[-_]?token|auth[-_]?token|token|password|secret|cookie|session|credential)\s*[:=]\s*[^\s,;]+/gi, '$1=[REDACTED]')
+      .replace(/fileKey\s*[:=]\s*["']?[a-zA-Z0-9_\-.]+["']?/gi, 'fileKey=[REDACTED]')
+      .replace(/https?:\/\/[^\s]+/gi, (url) => {
+        try {
+          const parsed = new URL(url);
+          return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
+        } catch {
+          return '[URL]';
+        }
+      })
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (msg.length > 256) {
+      msg = msg.slice(0, 253) + '...';
+    }
+
+    if (msg) {
+      safeMessage = msg;
+    }
+  }
+
+  const parts = [];
+  if (httpStatus) {
+    parts.push(`HTTP ${httpStatus}`);
+  }
+  if (safeCode) {
+    parts.push(`CODE ${safeCode}`);
+  }
+  if (safeMessage) {
+    parts.push(`MESSAGE ${safeMessage}`);
+  }
+
+  if (parts.length === 0) {
+    return GENERIC_FAILURE;
+  }
+
+  return `DOWNLOAD_FAILED: ${filename} - ${parts.join(' / ')}`;
+}
+
+/**
+ * Pure helper to verify downloaded raw byte identity against canonical release artifacts.
+ * Compares exact byte length and SHA-256 hash.
+ * Upload-key equality is NOT proof of content identity; actual byte comparison is required.
+ * Fails closed on mismatch, malformed bytes, or missing content.
+ */
+export function verifyTargetContentIdentity({
+  content,
+  expectedSha256,
+  expectedByteLength,
+  targetFileName = 'file',
+  location = 'Preview'
+}) {
+  if (!content || (!Buffer.isBuffer(content) && !(content instanceof Uint8Array))) {
+    throw new Error(`${location.toUpperCase()}_CONTENT_IDENTITY_MISMATCH: Downloaded content for ${targetFileName} in ${location} is empty or malformed.`);
+  }
+
+  const buf = Buffer.isBuffer(content) ? content : Buffer.from(content);
+  const actualByteLength = buf.length;
+  const actualSha256 = crypto.createHash('sha256').update(buf).digest('hex');
+
+  if (actualByteLength !== expectedByteLength || actualSha256 !== expectedSha256) {
+    throw new Error(`${location.toUpperCase()}_CONTENT_IDENTITY_MISMATCH: Content identity verification failed for ${targetFileName} in ${location} (expected size: ${expectedByteLength}, actual: ${actualByteLength}; expected sha256: ${expectedSha256}, actual: ${actualSha256}).`);
+  }
+
+  return {
+    verified: true,
+    sha256: actualSha256,
+    byteLength: actualByteLength
+  };
+}
+
+/**
+ * Pure validator for preview metadata stability across content verification.
+ * Verifies revision, attached target fileKeys, scope, and topology did not drift.
+ */
+export function validatePreviewStability(
+  initialPreview,
+  stabilityPreview,
+  targetFileName = 'mbo-employee-app.js',
+  targetCssFileName = 'mbo-employee.css'
+) {
+  if (!stabilityPreview || typeof stabilityPreview !== 'object') {
+    throw new Error('PREVIEW_STABILITY_DRIFT: Stability preview customization is missing or invalid.');
+  }
+  validateContainers(stabilityPreview, 'Preview Stability');
+
+  if (stabilityPreview.revision !== initialPreview.revision) {
+    throw new Error(`PREVIEW_STABILITY_DRIFT: Preview revision drifted from "${initialPreview.revision}" to "${stabilityPreview.revision}".`);
+  }
+  if (stabilityPreview.scope !== initialPreview.scope) {
+    throw new Error(`PREVIEW_STABILITY_DRIFT: Preview scope drifted from "${initialPreview.scope}" to "${stabilityPreview.scope}".`);
+  }
+
+  const initJs = initialPreview.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
+  const stabJs = stabilityPreview.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
+  if (!stabJs?.file?.fileKey || stabJs.file.fileKey !== initJs?.file?.fileKey) {
+    throw new Error('PREVIEW_STABILITY_DRIFT: Target JS attached fileKey drifted during verification.');
+  }
+
+  const initCss = initialPreview.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
+  const stabCss = stabilityPreview.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
+  if (!stabCss?.file?.fileKey || stabCss.file.fileKey !== initCss?.file?.fileKey) {
+    throw new Error('PREVIEW_STABILITY_DRIFT: Target CSS attached fileKey drifted during verification.');
+  }
+
+  try {
+    validateTopologyAlignment(initialPreview, stabilityPreview);
+  } catch (err) {
+    throw new Error(`PREVIEW_STABILITY_DRIFT: Preview topology drifted during verification: ${err.message}`);
+  }
+  return true;
+}
+
+/**
  * Validates App794 PREVIEW customization read-back after preview PUT.
- * Verifies scope, complete topology, exact new JS and CSS pair attachment,
+ * Verifies scope, complete topology, exact target JS and CSS pair attachment,
  * and preserves retained entries unchanged without exposing raw fileKeys.
+ * Attached fileKeys are validated for non-empty string presence; upload-key equality
+ * is not required since content identity is proven via raw byte verification.
  */
 export function validatePreviewReadback({
   previewCustomize,
@@ -823,7 +1024,7 @@ export function validatePreviewReadback({
     }
   }
 
-  // 3. Newly uploaded JS attached exactly once
+  // 3. Target JS attached exactly once and has non-empty fileKey
   const previewDesktopJs = previewCustomize.desktop.js;
   const targetJsEntries = previewDesktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
   if (targetJsEntries.length === 0) {
@@ -832,11 +1033,11 @@ export function validatePreviewReadback({
   if (targetJsEntries.length > 1) {
     throw new Error(`PREVIEW_READBACK_MISMATCH: Target JS "${targetFileName}" is duplicated in preview desktop.js (count: ${targetJsEntries.length}).`);
   }
-  if (newJsFileKey && targetJsEntries[0].file?.fileKey !== newJsFileKey) {
-    throw new Error('PREVIEW_READBACK_MISMATCH: Target JS attached fileKey does not match newly uploaded JS key.');
+  if (!targetJsEntries[0].file?.fileKey || typeof targetJsEntries[0].file.fileKey !== 'string' || !targetJsEntries[0].file.fileKey.trim()) {
+    throw new Error(`PREVIEW_READBACK_MISMATCH: Target JS "${targetFileName}" is missing preview fileKey.`);
   }
 
-  // 4. Newly uploaded CSS attached exactly once
+  // 4. Target CSS attached exactly once and has non-empty fileKey
   const previewDesktopCss = previewCustomize.desktop.css;
   const targetCssEntries = previewDesktopCss.filter(e => e && e.type === 'FILE' && e.file?.name === targetCssFileName);
   if (targetCssEntries.length === 0) {
@@ -845,8 +1046,8 @@ export function validatePreviewReadback({
   if (targetCssEntries.length > 1) {
     throw new Error(`PREVIEW_READBACK_MISMATCH: Target CSS "${targetCssFileName}" is duplicated in preview desktop.css (count: ${targetCssEntries.length}).`);
   }
-  if (newCssFileKey && targetCssEntries[0].file?.fileKey !== newCssFileKey) {
-    throw new Error('PREVIEW_READBACK_MISMATCH: Target CSS attached fileKey does not match newly uploaded CSS key.');
+  if (!targetCssEntries[0].file?.fileKey || typeof targetCssEntries[0].file.fileKey !== 'string' || !targetCssEntries[0].file.fileKey.trim()) {
+    throw new Error(`PREVIEW_READBACK_MISMATCH: Target CSS "${targetCssFileName}" is missing preview fileKey.`);
   }
 
   // 5. Retained entries remain unchanged and ordering preserved
@@ -987,8 +1188,53 @@ export function sanitizeTopologyForEvidence(customization) {
 }
 
 /**
+ * Pure validator for live metadata stability across content verification.
+ * Verifies revision, attached target fileKeys, scope, and topology did not drift.
+ */
+export function validateLiveStability(
+  initialLive,
+  stabilityLive,
+  targetFileName = 'mbo-employee-app.js',
+  targetCssFileName = 'mbo-employee.css'
+) {
+  if (!stabilityLive || typeof stabilityLive !== 'object') {
+    throw new Error('FINAL_CONVERGENCE_DRIFT: Stability live customization is missing or invalid.');
+  }
+  validateContainers(stabilityLive, 'Live Stability');
+
+  if (stabilityLive.revision !== initialLive.revision) {
+    throw new Error(`FINAL_CONVERGENCE_DRIFT: Live revision drifted from "${initialLive.revision}" to "${stabilityLive.revision}".`);
+  }
+  if (stabilityLive.scope !== initialLive.scope) {
+    throw new Error(`FINAL_CONVERGENCE_DRIFT: Live scope drifted from "${initialLive.scope}" to "${stabilityLive.scope}".`);
+  }
+
+  const initJs = initialLive.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
+  const stabJs = stabilityLive.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
+  if (!stabJs?.file?.fileKey || stabJs.file.fileKey !== initJs?.file?.fileKey) {
+    throw new Error('FINAL_CONVERGENCE_DRIFT: Live target JS attached fileKey drifted during verification.');
+  }
+
+  const initCss = initialLive.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
+  const stabCss = stabilityLive.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
+  if (!stabCss?.file?.fileKey || stabCss.file.fileKey !== initCss?.file?.fileKey) {
+    throw new Error('FINAL_CONVERGENCE_DRIFT: Live target CSS attached fileKey drifted during verification.');
+  }
+
+  try {
+    validateTopologyAlignment(initialLive, stabilityLive);
+  } catch (err) {
+    throw new Error(`FINAL_CONVERGENCE_DRIFT: Live topology drifted during verification: ${err.message}`);
+  }
+  return true;
+}
+
+/**
  * Validates final LIVE and PREVIEW convergence after deployment SUCCESS.
- * Compares sensitive file identity internally but publishes only sanitized hashes/metadata.
+ * Validates scope, complete topology, exact target JS and CSS pair attachment,
+ * preserved retained entries, and optional raw byte content verification.
+ * Does NOT require target LIVE/PREVIEW/upload fileKey strings to be identical.
+ * Publishes only sanitized hashes/metadata (zero raw fileKeys).
  */
 export function validateCustomizationConvergence({
   liveCustomize,
@@ -998,7 +1244,15 @@ export function validateCustomizationConvergence({
   newJsFileKey,
   newCssFileKey,
   baselinePreview = null,
-  expectedScope = 'ALL'
+  expectedScope = 'ALL',
+  liveJsContent = null,
+  liveCssContent = null,
+  previewJsContent = null,
+  previewCssContent = null,
+  expectedJsSha256 = null,
+  expectedJsByteLength = null,
+  expectedCssSha256 = null,
+  expectedCssByteLength = null
 }) {
   if (!liveCustomize || typeof liveCustomize !== 'object') {
     throw new Error('FINAL_CONVERGENCE_MISMATCH: Missing or invalid live customization.');
@@ -1021,18 +1275,16 @@ export function validateCustomizationConvergence({
     throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live scope "${liveCustomize.scope}" and preview scope "${previewCustomize.scope}" do not converge.`);
   }
 
-  // 2. Validate PREVIEW against baseline & new JS/CSS pair
+  // 2. Validate PREVIEW against baseline & target pair presence
   validatePreviewReadback({
     previewCustomize,
     targetFileName,
     targetCssFileName,
-    newJsFileKey,
-    newCssFileKey,
     baselinePreview,
     expectedScope
   });
 
-  // 3. Verify LIVE has exact new JS and CSS pair
+  // 3. Verify LIVE has exact target JS and CSS pair with valid fileKey
   const liveDesktopJs = liveCustomize.desktop.js;
   const targetLiveJsEntries = liveDesktopJs.filter(e => e && e.type === 'FILE' && e.file?.name === targetFileName);
   if (targetLiveJsEntries.length === 0) {
@@ -1041,8 +1293,8 @@ export function validateCustomizationConvergence({
   if (targetLiveJsEntries.length > 1) {
     throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live desktop.js has multiple entries for "${targetFileName}".`);
   }
-  if (newJsFileKey && targetLiveJsEntries[0].file?.fileKey !== newJsFileKey) {
-    throw new Error('FINAL_CONVERGENCE_MISMATCH: Live desktop.js target fileKey does not match uploaded JS key.');
+  if (!targetLiveJsEntries[0].file?.fileKey || typeof targetLiveJsEntries[0].file.fileKey !== 'string' || !targetLiveJsEntries[0].file.fileKey.trim()) {
+    throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live desktop.js target JS "${targetFileName}" is missing fileKey.`);
   }
 
   const liveDesktopCss = liveCustomize.desktop.css;
@@ -1053,8 +1305,8 @@ export function validateCustomizationConvergence({
   if (targetLiveCssEntries.length > 1) {
     throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live desktop.css has multiple entries for "${targetCssFileName}".`);
   }
-  if (newCssFileKey && targetLiveCssEntries[0].file?.fileKey !== newCssFileKey) {
-    throw new Error('FINAL_CONVERGENCE_MISMATCH: Live desktop.css target fileKey does not match uploaded CSS key.');
+  if (!targetLiveCssEntries[0].file?.fileKey || typeof targetLiveCssEntries[0].file.fileKey !== 'string' || !targetLiveCssEntries[0].file.fileKey.trim()) {
+    throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live desktop.css target CSS "${targetCssFileName}" is missing fileKey.`);
   }
 
   // 4. Verify retained entries in LIVE match baseline
@@ -1097,6 +1349,44 @@ export function validateCustomizationConvergence({
 
   // 5. Final Live and Preview topology alignment
   validateTopologyAlignment(liveCustomize, previewCustomize);
+
+  // 6. Optional content identity verification if buffers are supplied
+  if (liveJsContent !== null && expectedJsSha256 && expectedJsByteLength) {
+    verifyTargetContentIdentity({
+      content: liveJsContent,
+      expectedSha256: expectedJsSha256,
+      expectedByteLength: expectedJsByteLength,
+      targetFileName,
+      location: 'Live'
+    });
+  }
+  if (liveCssContent !== null && expectedCssSha256 && expectedCssByteLength) {
+    verifyTargetContentIdentity({
+      content: liveCssContent,
+      expectedSha256: expectedCssSha256,
+      expectedByteLength: expectedCssByteLength,
+      targetFileName: targetCssFileName,
+      location: 'Live'
+    });
+  }
+  if (previewJsContent !== null && expectedJsSha256 && expectedJsByteLength) {
+    verifyTargetContentIdentity({
+      content: previewJsContent,
+      expectedSha256: expectedJsSha256,
+      expectedByteLength: expectedJsByteLength,
+      targetFileName,
+      location: 'Preview'
+    });
+  }
+  if (previewCssContent !== null && expectedCssSha256 && expectedCssByteLength) {
+    verifyTargetContentIdentity({
+      content: previewCssContent,
+      expectedSha256: expectedCssSha256,
+      expectedByteLength: expectedCssByteLength,
+      targetFileName: targetCssFileName,
+      location: 'Preview'
+    });
+  }
 
   const sanitizedLive = sanitizeTopologyForEvidence(liveCustomize);
   const sanitizedPreview = sanitizeTopologyForEvidence(previewCustomize);
@@ -1171,6 +1461,14 @@ export async function executeDeployCustomUi(options = {}) {
   // 6. ONLY AFTER PRE-BUILD GATE PASSES: Build candidate artifacts
   const artifacts = await prepareDeploymentArtifacts({ appId: 794, buildOptions: options.buildOptions });
   console.log('Dist bundle generated: dist/mbo-employee-app.js & dist/mbo-employee.css');
+
+  const canonicalJsBytes = Buffer.from(artifacts.fullJs, 'utf8');
+  const canonicalJsSha256 = crypto.createHash('sha256').update(canonicalJsBytes).digest('hex');
+  const canonicalJsByteLength = canonicalJsBytes.length;
+
+  const canonicalCssBytes = Buffer.from(artifacts.cssContent, 'utf8');
+  const canonicalCssSha256 = crypto.createHash('sha256').update(canonicalCssBytes).digest('hex');
+  const canonicalCssByteLength = canonicalCssBytes.length;
 
   // 7. ONLY AFTER BUILD: Read live and preview customization from Kintone
   const defaultClient = options.kintoneRequest ? null : await import('../../src/core/kintone-client.js');
@@ -1288,36 +1586,107 @@ export async function executeDeployCustomUi(options = {}) {
 
   console.log('Customization preview updated.');
 
-  // 13. PREVIEW READ-BACK BEFORE DEPLOY
+  // File download helper
+  async function defaultDownloadFile(fileKey, filename = 'file') {
+    if (!fileKey || typeof fileKey !== 'string' || !fileKey.trim()) {
+      throw new Error(`DOWNLOAD_FAILED: Missing fileKey for ${filename}.`);
+    }
+    const { getKintoneConnection } = await import('../../src/core/kintone-client.js');
+    const { baseUrl, headers } = getKintoneConnection();
+
+    let resp;
+    try {
+      const fetchFn = options.fetch || globalThis.fetch;
+      resp = await fetchFn(`${baseUrl}/k/v1/file.json?fileKey=${encodeURIComponent(fileKey)}`, {
+        method: 'GET',
+        headers
+      });
+    } catch (networkError) {
+      throw new Error(formatSanitizedDownloadError(networkError, filename));
+    }
+
+    if (!resp.ok) {
+      let errBody = null;
+      try {
+        errBody = await resp.json();
+      } catch {
+        try {
+          errBody = await resp.text();
+        } catch {
+          errBody = null;
+        }
+      }
+      throw new Error(formatSanitizedDownloadError({ status: resp.status, data: errBody }, filename));
+    }
+
+    try {
+      const arrayBuffer = await resp.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    } catch (readError) {
+      throw new Error(formatSanitizedDownloadError(readError, filename));
+    }
+  }
+
+  const downloadFn = options.downloadFile || defaultDownloadFile;
+
+  async function safeDownload(fileKey, filename) {
+    let content;
+    try {
+      content = await downloadFn(fileKey, filename);
+    } catch (err) {
+      if (err instanceof Error && err.message.startsWith('DOWNLOAD_FAILED:')) {
+        throw err;
+      }
+      throw new Error(formatSanitizedDownloadError(err, filename));
+    }
+    if (!content || (!Buffer.isBuffer(content) && !(content instanceof Uint8Array))) {
+      throw new Error(`DOWNLOAD_FAILED: ${filename} - empty or invalid binary response`);
+    }
+    return Buffer.isBuffer(content) ? content : Buffer.from(content);
+  }
+
+  // 13. PREVIEW READ-BACK & CONTENT IDENTITY VERIFICATION BEFORE DEPLOY POST
   const previewReadback = await requestFn(`/k/v1/preview/app/customize.json?app=${app}`);
   validatePreviewReadback({
     previewCustomize: previewReadback,
     targetFileName: 'mbo-employee-app.js',
     targetCssFileName: 'mbo-employee.css',
-    newJsFileKey: jsFileKey,
-    newCssFileKey: cssFileKey,
     baselinePreview: previewCustomize,
     expectedScope: options.releaseManifest?.expectedScope || previewCustomize.scope || 'ALL'
   });
 
-  console.log('Preview read-back verified. Proceeding to deploy POST.');
+  const targetPreviewJsEntry = previewReadback.desktop.js.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee-app.js');
+  const targetPreviewCssEntry = previewReadback.desktop.css.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee.css');
 
-  // 14. Deploy Live Sandbox App 794 (max 1 attempt, zero retry)
-  let deployResponse;
-  try {
-    deployResponse = await requestFn(
-      '/k/v1/preview/app/deploy.json',
-      getApp794DeployRequestOptions('/k/v1/preview/app/deploy.json', 'POST', { apps: [{ app }] })
-    );
-  } catch (deployErr) {
-    throw new Error(formatSanitizedUploadError(deployErr, 'preview-deploy-post'));
-  }
+  // Download raw bytes for attached preview targets (max 1 attempt each, zero retry)
+  const previewJsBytes = await safeDownload(targetPreviewJsEntry.file.fileKey, 'mbo-employee-app.js');
+  verifyTargetContentIdentity({
+    content: previewJsBytes,
+    expectedSha256: canonicalJsSha256,
+    expectedByteLength: canonicalJsByteLength,
+    targetFileName: 'mbo-employee-app.js',
+    location: 'Preview'
+  });
 
-  if (deployResponse && typeof deployResponse === 'object' && deployResponse.status && deployResponse.status >= 400) {
-    throw new Error('DEPLOY_POST_FAILED: Deploy POST returned error status.');
-  }
+  const previewCssBytes = await safeDownload(targetPreviewCssEntry.file.fileKey, 'mbo-employee.css');
+  verifyTargetContentIdentity({
+    content: previewCssBytes,
+    expectedSha256: canonicalCssSha256,
+    expectedByteLength: canonicalCssByteLength,
+    targetFileName: 'mbo-employee.css',
+    location: 'Preview'
+  });
 
-  console.log(`Live deployment requested for App ${app}. Polling status...`);
+  // Re-read preview metadata immediately after content verification to prove stability (zero-drift)
+  const previewStability = await requestFn(`/k/v1/preview/app/customize.json?app=${app}`);
+  validatePreviewStability(previewReadback, previewStability);
+  console.log('Preview target content identity and stability verified. Proceeding to deploy POST.');
+
+  // 14. DEPLOY POST (EXACTLY ONCE, FAIL-CLOSED BEFORE POST IF ANY STEP ABOVE FAILED)
+  const deployPostResult = await requestFn('/k/v1/preview/app/deploy.json', {
+    method: 'POST',
+    body: JSON.stringify({ apps: [{ app, revision: previewStability.revision }] })
+  });
 
   // 15. BOUNDED EXACT-APP DEPLOY POLLING
   const pollResult = await pollApp794DeployStatus({
@@ -1330,7 +1699,7 @@ export async function executeDeployCustomUi(options = {}) {
 
   console.log(`Deploy polling completed successfully (${pollResult.checks} checks).`);
 
-  // 16. FINAL CONVERGENCE VERIFICATION
+  // 16. FINAL LIVE AND PREVIEW METADATA AND CONTENT CONVERGENCE VERIFICATION
   const finalLive = await requestFn(`/k/v1/app/customize.json?app=${app}`);
   const finalPreview = await requestFn(`/k/v1/preview/app/customize.json?app=${app}`);
 
@@ -1339,11 +1708,61 @@ export async function executeDeployCustomUi(options = {}) {
     previewCustomize: finalPreview,
     targetFileName: 'mbo-employee-app.js',
     targetCssFileName: 'mbo-employee.css',
-    newJsFileKey: jsFileKey,
-    newCssFileKey: cssFileKey,
-    baselinePreview: previewCustomize,
-    expectedScope: options.releaseManifest?.expectedScope || previewCustomize.scope || 'ALL'
+    expectedScope: options.releaseManifest?.expectedScope || 'ALL',
+    expectedDesktopJsCount: 1,
+    expectedDesktopCssCount: 1,
+    expectedMobileJsCount: 0,
+    expectedMobileCssCount: 0
   });
+
+  const liveTargetJs = finalLive.desktop.js.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee-app.js');
+  const liveTargetCss = finalLive.desktop.css.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee.css');
+  const previewFinalJs = finalPreview.desktop.js.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee-app.js');
+  const previewFinalCss = finalPreview.desktop.css.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee.css');
+
+  // Download raw bytes for targets on BOTH Live and Preview (max 1 attempt each, zero retry)
+  const liveJsBytes = await safeDownload(liveTargetJs.file.fileKey, 'mbo-employee-app.js');
+  verifyTargetContentIdentity({
+    content: liveJsBytes,
+    expectedSha256: canonicalJsSha256,
+    expectedByteLength: canonicalJsByteLength,
+    targetFileName: 'mbo-employee-app.js',
+    location: 'Live'
+  });
+
+  const liveCssBytes = await safeDownload(liveTargetCss.file.fileKey, 'mbo-employee.css');
+  verifyTargetContentIdentity({
+    content: liveCssBytes,
+    expectedSha256: canonicalCssSha256,
+    expectedByteLength: canonicalCssByteLength,
+    targetFileName: 'mbo-employee.css',
+    location: 'Live'
+  });
+
+  const previewFinalJsBytes = await safeDownload(previewFinalJs.file.fileKey, 'mbo-employee-app.js');
+  verifyTargetContentIdentity({
+    content: previewFinalJsBytes,
+    expectedSha256: canonicalJsSha256,
+    expectedByteLength: canonicalJsByteLength,
+    targetFileName: 'mbo-employee-app.js',
+    location: 'Preview'
+  });
+
+  const previewFinalCssBytes = await safeDownload(previewFinalCss.file.fileKey, 'mbo-employee.css');
+  verifyTargetContentIdentity({
+    content: previewFinalCssBytes,
+    expectedSha256: canonicalCssSha256,
+    expectedByteLength: canonicalCssByteLength,
+    targetFileName: 'mbo-employee.css',
+    location: 'Preview'
+  });
+
+  // Re-read metadata to verify stability after download
+  const stabilityLive = await requestFn(`/k/v1/app/customize.json?app=${app}`);
+  const stabilityPreview = await requestFn(`/k/v1/preview/app/customize.json?app=${app}`);
+
+  validateLiveStability(finalLive, stabilityLive, 'mbo-employee-app.js', 'mbo-employee.css');
+  validatePreviewStability(finalPreview, stabilityPreview, 'mbo-employee-app.js', 'mbo-employee.css');
 
   console.log(`MBO V2 Sandbox (App ${app}) Custom UI successfully deployed to LIVE! (topologyHash: ${convergence.topologyHash})`);
 
