@@ -5,7 +5,7 @@ Updated: 2026-09-13 ICT
 ## Current task
 ```text
 CURRENT_WORK_PACKAGE = NONE
-STATUS = NO ACTIVE AUTHORIZATION / D3-SBX-UAT-02 STOPPED SAFELY / BLOCKED / REVIEW REQUIRED
+STATUS = NO ACTIVE AUTHORIZATION / D3-SBX-UAT-02 PASS / FOUR CASES VERIFIED / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
 LAST_ATTEMPTED_PACKAGE = D3-SBX-UAT-02
 LAST_CLOSED_WORK_PACKAGE = D3-SBX-DEPLOY-01-EXE2-R5
 NEXT_GATE_AUTHORIZED = NO
@@ -61,7 +61,7 @@ D3-SBX-DEPLOY-01-EXE2-R3 = REQUEST CORRECTIVE / REKEYING HYPOTHESIS OVER-ASSERTE
 D3-SBX-DEPLOY-01-EXE2-R4 = PASS / LOCAL EXACT BLOCKER CORRECTIVE COMPLETE / TARGETED TESTS PASS (58/58) / ARTIFACT IDENTITY UNCHANGED / ZERO KINTONE I/O / ZERO DEPLOYMENT / INDEPENDENTLY REVIEWED / CLOSED
 D3-SBX-DEPLOY-01-EXE2-R5 = PASS / APP794 UI CUSTOMIZATION DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED (REV 74) / TARGET JS+CSS BYTE IDENTITY VERIFIED / PROCESS 19/40 PRESERVED / REVIEW REQUIRED
 D3-SBX-UAT-01 = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
-D3-SBX-UAT-02 = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
+D3-SBX-UAT-02 = PASS / FOUR CASES VERIFIED / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
 
 PRE1_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 PREWRITE_BACKUP_SHA256 = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
@@ -85,13 +85,13 @@ UAT02_COUNTERS:
 - LOCAL_STORAGE_INJECTIONS = 0
 - MUTATION_CLICKS = 0
 - TOTAL_MUTATIONS = 0
-- CASE_UAT02_01 = BLOCKED (App 794 UI redirected to /login; unauthenticated browser session)
-- CASE_UAT02_02 = BLOCKED (Cannot open details or inspect record ID / revision / workflow state without authenticated session)
-- CASE_UAT02_03 = BLOCKED (Cannot verify appraiser identities or sequence without accessible authenticated record)
-- CASE_UAT02_04 = BLOCKED (Cannot verify routing version, frozen profile, or scorer snapshot without accessible authenticated record)
-- STOP_CONDITION = MISSING_AUTHENTICATED_BROWSER_SESSION
+- CASE_UAT02_01 = PASS (App 794 UI loaded cleanly in authenticated Chrome session; custom JS/CSS verified; 0 console errors)
+- CASE_UAT02_02 = PASS (Existing record #15 opened; confirmed record ID 15, key FY2026-0187, persisted status 01 Draft Objective matches UI; 0 create/edit/save/process transitions)
+- CASE_UAT02_03 = PASS (Appraiser sequence verified for M1_G1 against accepted mapping [1,2]: 1st Ms.Chatrawee, 2nd Ms.Pattama, HR Final Check HR Control Center)
+- CASE_UAT02_04 = PASS (Contract-aware: snapshots not enforced for 01 Draft Objective per DEFER_REQUIREDNESS_NO_BACKFILL; dynamic App795 route M1_G1 2 Slots verified)
+- STOP_CONDITION = NONE
 - EVIDENCE_FILE = project-docs/evidence/D3_SBX_UAT_02_EVIDENCE.md
-- EVIDENCE_SCREENSHOT = project-docs/evidence/D3_SBX_UAT_02/UAT02_LOGIN_REQUIRED_EVIDENCE.png
+- EVIDENCE_SCREENSHOTS = project-docs/evidence/D3_SBX_UAT_02/UAT02_M1_G1_RECORD_DETAIL_EVIDENCE.png, project-docs/evidence/D3_SBX_UAT_02/UAT02_APP794_INDEX_EVIDENCE.png
 - VERDICT = REVIEW REQUIRED
 
 UAT01_COUNTERS:
@@ -292,4 +292,4 @@ PRODUCTION_READY = NO
 FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 ```
 
-No execution task is active. D3 sandbox migration is closed. D3-SBX-DEPLOY-01-EXE2-R5 completed live Kintone sandbox deployment execution of App 794 UI customization under authorization MBO2026-D3-EXE2-R5-20260913-OWNER-01. Subsequent real browser read-only UAT packages D3-SBX-UAT-01 and D3-SBX-UAT-02 both stopped safely at mandatory stop condition MISSING_AUTHENTICATED_BROWSER_SESSION with zero credentials entered, zero session mutations, zero Kintone writes, and zero substitute mocks. All gates remain stopped; REVIEW REQUIRED. D3 SANDBOX MIGRATION COMPLETE != PRODUCTION READY.
+No execution task is active. D3 sandbox migration is closed. D3-SBX-DEPLOY-01-EXE2-R5 completed live Kintone sandbox deployment execution of App 794 UI customization under authorization MBO2026-D3-EXE2-R5-20260913-OWNER-01. Real browser read-only UAT package D3-SBX-UAT-02 completed all 4 read-only verification cases (PASS) on the authenticated Google Chrome user session (PID 30516) inspecting existing saved App 794 M1_G1 record #15 (FY2026-0187) with zero Kintone API reads, zero Kintone writes, zero mutations, and zero substitute mocks. All gates remain stopped; REVIEW REQUIRED. D3 SANDBOX MIGRATION COMPLETE != PRODUCTION READY.
