@@ -2,6 +2,16 @@
 
 Updated: 2026-09-13 ICT
 
+> [!WARNING]
+> **CORRECTIVE NOTICE (2026-09-13 ICT)**:
+> Independent Control Plane review of R3 recorded verdict: **REQUEST CORRECTIVE**.
+> - Blocker 1: Deploy POST transport contract did not use `getApp794DeployRequestOptions`, serialized body twice, and lacked sanitized error handling.
+> - Blocker 2: Final convergence did not verify retained entries against `baselinePreview`, and stability checks did not verify retained entries.
+> - Blocker 3: Step 16 read ceiling was miscounted as 7 GET calls instead of 8 (2 initial metadata + 4 downloads + 2 final stability metadata). Preflight GETs (2) and bounded polling status GETs must be separated from Step 13 (4) and Step 16 (8); their sum (12) is not total execution reads.
+> - Rekeying mechanism qualification: `SERVER_REKEYING_MECHANISM = UNVERIFIED`. Claims asserting proof of server key issuance mechanisms are qualified.
+> - Identity-01-R1 acceptance synced as evidence clarification accepted, without deleting historical stop-condition violation.
+> Superseded by package `D3-SBX-DEPLOY-01-EXE2-R4`.
+
 ## 1. Package & Execution Metadata
 ```text
 PACKAGE = D3-SBX-DEPLOY-01-EXE2-R3
@@ -16,7 +26,7 @@ ORCHESTRATION_CHANNEL = HERMES / TELEGRAM
 TARGET_APP = 794
 COMPONENT = APP794 UI CUSTOMIZATION TARGET CONTENT-IDENTITY VERIFICATION
 MODE = LOCAL SOURCE + TARGETED MOCK TESTS + CONTROL/EVIDENCE ONLY
-STATUS = PASS / LOCAL TARGET CONTENT-IDENTITY CORRECTIVE COMPLETE / TARGETED TESTS PASS / ARTIFACT IDENTITY UNCHANGED / ZERO KINTONE I/O / ZERO DEPLOYMENT / REVIEW REQUIRED
+STATUS = REQUEST CORRECTIVE / SUPERSEDED BY EXE2-R4
 ```
 
 ## 2. Hard Operational Accounting & Zero-I/O Verification
@@ -92,7 +102,8 @@ CORRECTIVE RESOLUTION (EXE2-R3):
 5. Strict Read Accounting & Ceilings:
    - Max 1 download attempt per target file, zero retry.
    - Step 13 reads: 1 preview readback GET + 2 downloads (JS, CSS) + 1 preview stability GET = 4 GETs max.
-   - Step 16 reads: 1 live GET + 1 preview GET + 4 downloads (Live JS, Live CSS, Preview JS, Preview CSS) + 1 live stability GET = 7 GETs max.
+   - Step 16 reads: 2 initial metadata GETs (Live, Preview) + 4 target downloads (Live JS, Live CSS, Preview JS, Preview CSS) + 2 final stability metadata GETs (Live, Preview) = 8 GETs max.
+   - Preflight reads (2 GETs: Live, Preview before writes) and bounded deploy polling (up to 20 GETs) are separated from Step 13 and Step 16; their sum (12 GETs) is NOT total execution reads.
 ```
 
 ## 6. Historical Governance Acceptance (Identity-01-R1 Findings)
@@ -100,7 +111,8 @@ CORRECTIVE RESOLUTION (EXE2-R3):
 - STOP_CONDITION_COMPLIANCE = VIOLATED: Honestly documented for historical Identity-01 execution; script proceeded with 5 reads after Seq 3 buffer arrival and 2 reads after console comparison.
 - HISTORICAL_LIVE_BYTE_IDENTITY = UNVERIFIED: Honestly documented due to lack of pre-EXE2 cryptographic hash baseline; no retroactive claims of LIVE byte immutability based solely on revision 72 metadata.
 - PREVIEW_BYTE_IDENTITY = EMPIRICAL FINDING: Preview JS (640,471 bytes, SHA-256 cc80a23f...) and Preview CSS (43,728 bytes, SHA-256 c0257969...) match canonical artifacts bit-for-bit without overriding package governance verdict.
-- SERVER_REKEYING_MECHANISM = UNVERIFIED PLATFORM BEHAVIOR: Empirical token resolution observed; internal server mechanics not proven.
+- SERVER_REKEYING_MECHANISM = UNVERIFIED: Empirical token resolution observed; internal server key issuance mechanisms are not proven.
+- IDENTITY_01_R1_ACCEPTANCE = EVIDENCE CLARIFICATION ACCEPTED (historical stop-condition violation retained)
 ```
 
 ## 7. Test Accounting & Verification

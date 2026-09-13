@@ -105,6 +105,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_EVIDENCE.md` — App 794 UI customization raw-byte content identity verification record, 8 GET read accounting, bit-for-bit preview match, and stability recheck evidence.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_IDENTITY_01_R1_EVIDENCE.md` — App 794 UI customization local evidence clarification record, stop-condition chronology (reads after LIVE JS mismatch), and LIVE historical byte identity qualification.
 - `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R3_EVIDENCE.md` — App 794 UI customization target content-identity verification corrective (raw-byte SHA-256 and byte length verification in preview and convergence, post-download stability recheck, fail-closed without retry), targeted regression test results (53/53 PASS), zero-drift artifact identity, and zero-I/O accounting evidence.
+- `project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_R4_EVIDENCE.md` — App 794 UI customization exact blocker corrective record (deploy POST transport contract restoration with object body and single serialization, retained-entry preservation with baseline preview in convergence and section-wide stability, 8 GET Step 16 ceiling, SERVER_REKEYING_MECHANISM qualified as UNVERIFIED), targeted regression test results (58/58 PASS), zero-drift artifact identity, and zero-I/O accounting evidence.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

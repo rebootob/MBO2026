@@ -957,17 +957,43 @@ export function validatePreviewStability(
     throw new Error(`PREVIEW_STABILITY_DRIFT: Preview scope drifted from "${initialPreview.scope}" to "${stabilityPreview.scope}".`);
   }
 
-  const initJs = initialPreview.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
-  const stabJs = stabilityPreview.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
-  if (!stabJs?.file?.fileKey || stabJs.file.fileKey !== initJs?.file?.fileKey) {
-    throw new Error('PREVIEW_STABILITY_DRIFT: Target JS attached fileKey drifted during verification.');
-  }
+  const checkStabilityList = (initList = [], stabList = [], sectionName) => {
+    if (initList.length !== stabList.length) {
+      throw new Error(`PREVIEW_STABILITY_DRIFT: ${sectionName} entry count drifted (${initList.length} vs ${stabList.length}).`);
+    }
+    for (let i = 0; i < initList.length; i++) {
+      const init = initList[i];
+      const stab = stabList[i];
+      if (init.type !== stab.type) {
+        throw new Error(`PREVIEW_STABILITY_DRIFT: ${sectionName}[${i}] type drifted (${init.type} vs ${stab.type}).`);
+      }
+      if (init.type === 'URL') {
+        if (init.url !== stab.url) {
+          throw new Error(`PREVIEW_STABILITY_DRIFT: ${sectionName}[${i}] URL drifted.`);
+        }
+      } else if (init.type === 'FILE') {
+        if (init.file?.name !== stab.file?.name) {
+          throw new Error(`PREVIEW_STABILITY_DRIFT: ${sectionName}[${i}] FILE name drifted (${init.file?.name} vs ${stab.file?.name}).`);
+        }
+        if (!stab.file?.fileKey || stab.file.fileKey !== init.file?.fileKey) {
+          const isTarget = (
+            (sectionName === 'desktop.js' && init.file?.name === targetFileName) ||
+            (sectionName === 'desktop.css' && init.file?.name === targetCssFileName)
+          );
+          if (isTarget) {
+            throw new Error(`PREVIEW_STABILITY_DRIFT: Target ${sectionName.includes('css') ? 'CSS' : 'JS'} attached fileKey drifted during verification.`);
+          } else {
+            throw new Error(`PREVIEW_STABILITY_DRIFT: Retained ${sectionName}[${i}] FILE key drifted.`);
+          }
+        }
+      }
+    }
+  };
 
-  const initCss = initialPreview.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
-  const stabCss = stabilityPreview.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
-  if (!stabCss?.file?.fileKey || stabCss.file.fileKey !== initCss?.file?.fileKey) {
-    throw new Error('PREVIEW_STABILITY_DRIFT: Target CSS attached fileKey drifted during verification.');
-  }
+  checkStabilityList(initialPreview.desktop?.js, stabilityPreview.desktop?.js, 'desktop.js');
+  checkStabilityList(initialPreview.desktop?.css, stabilityPreview.desktop?.css, 'desktop.css');
+  checkStabilityList(initialPreview.mobile?.js, stabilityPreview.mobile?.js, 'mobile.js');
+  checkStabilityList(initialPreview.mobile?.css, stabilityPreview.mobile?.css, 'mobile.css');
 
   try {
     validateTopologyAlignment(initialPreview, stabilityPreview);
@@ -1056,11 +1082,18 @@ export function validatePreviewReadback({
       for (let i = 0; i < readbackList.length; i++) {
         const r = readbackList[i];
         const b = baselineList[i];
-        const isTarget = (
+        const isRTarget = (
           (sectionName === 'desktop.js' && r.file?.name === targetFileName) ||
           (sectionName === 'desktop.css' && r.file?.name === targetCssFileName)
         );
-        if (!isTarget) {
+        const isBTarget = (
+          (sectionName === 'desktop.js' && b.file?.name === targetFileName) ||
+          (sectionName === 'desktop.css' && b.file?.name === targetCssFileName)
+        );
+        if (isRTarget !== isBTarget) {
+          throw new Error(`PREVIEW_READBACK_MISMATCH: Retained ${sectionName}[${i}] order changed.`);
+        }
+        if (!isRTarget) {
           if (r.type !== b.type) {
             throw new Error(`PREVIEW_READBACK_MISMATCH: Retained ${sectionName}[${i}] type changed (${r.type} vs ${b.type}).`);
           }
@@ -1209,17 +1242,43 @@ export function validateLiveStability(
     throw new Error(`FINAL_CONVERGENCE_DRIFT: Live scope drifted from "${initialLive.scope}" to "${stabilityLive.scope}".`);
   }
 
-  const initJs = initialLive.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
-  const stabJs = stabilityLive.desktop?.js?.find(e => e?.type === 'FILE' && e.file?.name === targetFileName);
-  if (!stabJs?.file?.fileKey || stabJs.file.fileKey !== initJs?.file?.fileKey) {
-    throw new Error('FINAL_CONVERGENCE_DRIFT: Live target JS attached fileKey drifted during verification.');
-  }
+  const checkLiveStabilityList = (initList = [], stabList = [], sectionName) => {
+    if (initList.length !== stabList.length) {
+      throw new Error(`FINAL_CONVERGENCE_DRIFT: Live ${sectionName} entry count drifted (${initList.length} vs ${stabList.length}).`);
+    }
+    for (let i = 0; i < initList.length; i++) {
+      const init = initList[i];
+      const stab = stabList[i];
+      if (init.type !== stab.type) {
+        throw new Error(`FINAL_CONVERGENCE_DRIFT: Live ${sectionName}[${i}] type drifted (${init.type} vs ${stab.type}).`);
+      }
+      if (init.type === 'URL') {
+        if (init.url !== stab.url) {
+          throw new Error(`FINAL_CONVERGENCE_DRIFT: Live ${sectionName}[${i}] URL drifted.`);
+        }
+      } else if (init.type === 'FILE') {
+        if (init.file?.name !== stab.file?.name) {
+          throw new Error(`FINAL_CONVERGENCE_DRIFT: Live ${sectionName}[${i}] FILE name drifted (${init.file?.name} vs ${stab.file?.name}).`);
+        }
+        if (!stab.file?.fileKey || stab.file.fileKey !== init.file?.fileKey) {
+          const isTarget = (
+            (sectionName === 'desktop.js' && init.file?.name === targetFileName) ||
+            (sectionName === 'desktop.css' && init.file?.name === targetCssFileName)
+          );
+          if (isTarget) {
+            throw new Error(`FINAL_CONVERGENCE_DRIFT: Live target ${sectionName.includes('css') ? 'CSS' : 'JS'} attached fileKey drifted during verification.`);
+          } else {
+            throw new Error(`FINAL_CONVERGENCE_DRIFT: Live retained ${sectionName}[${i}] FILE key drifted.`);
+          }
+        }
+      }
+    }
+  };
 
-  const initCss = initialLive.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
-  const stabCss = stabilityLive.desktop?.css?.find(e => e?.type === 'FILE' && e.file?.name === targetCssFileName);
-  if (!stabCss?.file?.fileKey || stabCss.file.fileKey !== initCss?.file?.fileKey) {
-    throw new Error('FINAL_CONVERGENCE_DRIFT: Live target CSS attached fileKey drifted during verification.');
-  }
+  checkLiveStabilityList(initialLive.desktop?.js, stabilityLive.desktop?.js, 'desktop.js');
+  checkLiveStabilityList(initialLive.desktop?.css, stabilityLive.desktop?.css, 'desktop.css');
+  checkLiveStabilityList(initialLive.mobile?.js, stabilityLive.mobile?.js, 'mobile.js');
+  checkLiveStabilityList(initialLive.mobile?.css, stabilityLive.mobile?.css, 'mobile.css');
 
   try {
     validateTopologyAlignment(initialLive, stabilityLive);
@@ -1318,11 +1377,18 @@ export function validateCustomizationConvergence({
       for (let i = 0; i < liveList.length; i++) {
         const l = liveList[i];
         const b = baselineList[i];
-        const isTarget = (
+        const isLTarget = (
           (sectionName === 'desktop.js' && l.file?.name === targetFileName) ||
           (sectionName === 'desktop.css' && l.file?.name === targetCssFileName)
         );
-        if (!isTarget) {
+        const isBTarget = (
+          (sectionName === 'desktop.js' && b.file?.name === targetFileName) ||
+          (sectionName === 'desktop.css' && b.file?.name === targetCssFileName)
+        );
+        if (isLTarget !== isBTarget) {
+          throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live retained ${sectionName}[${i}] order changed.`);
+        }
+        if (!isLTarget) {
           if (l.type !== b.type) {
             throw new Error(`FINAL_CONVERGENCE_MISMATCH: Live retained ${sectionName}[${i}] type changed (${l.type} vs ${b.type}).`);
           }
@@ -1683,10 +1749,24 @@ export async function executeDeployCustomUi(options = {}) {
   console.log('Preview target content identity and stability verified. Proceeding to deploy POST.');
 
   // 14. DEPLOY POST (EXACTLY ONCE, FAIL-CLOSED BEFORE POST IF ANY STEP ABOVE FAILED)
-  const deployPostResult = await requestFn('/k/v1/preview/app/deploy.json', {
-    method: 'POST',
-    body: JSON.stringify({ apps: [{ app, revision: previewStability.revision }] })
-  });
+  let deployResponse;
+  try {
+    deployResponse = await requestFn(
+      '/k/v1/preview/app/deploy.json',
+      getApp794DeployRequestOptions('/k/v1/preview/app/deploy.json', 'POST', {
+        apps: [{ app, revision: previewStability.revision }]
+      })
+    );
+  } catch (deployErr) {
+    if (deployErr instanceof Error && deployErr.message.startsWith('UPLOAD_FAILED:')) {
+      throw deployErr;
+    }
+    throw new Error(formatSanitizedUploadError(deployErr, 'preview-deploy-post'));
+  }
+
+  if (deployResponse && typeof deployResponse === 'object' && deployResponse.status && deployResponse.status >= 400) {
+    throw new Error('DEPLOY_POST_FAILED: Deploy POST returned error status.');
+  }
 
   // 15. BOUNDED EXACT-APP DEPLOY POLLING
   const pollResult = await pollApp794DeployStatus({
@@ -1708,11 +1788,8 @@ export async function executeDeployCustomUi(options = {}) {
     previewCustomize: finalPreview,
     targetFileName: 'mbo-employee-app.js',
     targetCssFileName: 'mbo-employee.css',
-    expectedScope: options.releaseManifest?.expectedScope || 'ALL',
-    expectedDesktopJsCount: 1,
-    expectedDesktopCssCount: 1,
-    expectedMobileJsCount: 0,
-    expectedMobileCssCount: 0
+    baselinePreview: previewCustomize,
+    expectedScope: options.releaseManifest?.expectedScope || previewCustomize.scope || 'ALL'
   });
 
   const liveTargetJs = finalLive.desktop.js.find(e => e?.type === 'FILE' && e.file?.name === 'mbo-employee-app.js');
