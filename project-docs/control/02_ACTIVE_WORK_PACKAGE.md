@@ -9,9 +9,9 @@ Updated: 2026-09-13 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-DEPLOY-01-EXE2 CLOSED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE2
-LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-EXE2
+ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1 CLOSED
+LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1
+LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 
@@ -27,27 +27,35 @@ PRODUCTION_READY = NO
 ```
 
 ## Latest Owner authorization
-Owner explicitly authorized execution package `D3-SBX-DEPLOY-01-EXE2` (APP794 UI CUSTOMIZATION SANDBOX DEPLOYMENT) with single-use authorization ID `MBO2026-D3-EXE2-20260913-OWNER-01` on canonical base HEAD `2a6a216481c80523cbc39064a6579b20fcc731d4` (parent: `f7d8ecdedab15ca784944d3178725c3e26963015`, tree: `5c4b8c4a15009a5e0ad7fcad84a77397f0608b26`).
-Preceding control plane verdict accepted: `EXE2-R2 = PASS / INDEPENDENTLY REVIEWED / LOCAL CORRECTIVE ACCEPTED`. Control Plane rerun confirmed 7/7 guard tests PASS (customization suite could not load on fresh checkout lacking esbuild; executor verified 47/47 targeted tests PASS). FULL_REPOSITORY_INTEGRATION_TEST is NOT CLAIMED.
+Owner explicitly authorized evidence clarification package `D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1` (LOCAL EVIDENCE CLARIFICATION) in `EXISTING LOCAL EVIDENCE + DOCS ONLY` mode on canonical base HEAD `8b436f03c52c791a01200952c3b2e0611b7e1b82` (parent: `2a6a216481c80523cbc39064a6579b20fcc731d4`, tree: `dcd27eaf75b03b5a722c691fc0af1891e79696cc`).
+Preceding control plane verdict: `EXE2 = PASS AS SAFETY STOP / DEPLOYMENT NOT COMPLETED; REQUEST CORRECTIVE = ROOT-CAUSE EVIDENCE + READ ACCOUNTING ONLY`.
 
 ## Execution result
 ```text
-PACKAGE = D3-SBX-DEPLOY-01-EXE2
-TITLE = APP794 UI CUSTOMIZATION SANDBOX DEPLOYMENT
-MODE = LIVE UI CUSTOMIZATION DEPLOYMENT / BOUNDED WRITE BUDGET
-STATUS = STOPPED / PREVIEW_READBACK_MISMATCH / TARGET JS ATTACHED FILEKEY MISMATCH / PARTIAL WRITE HALTED BEFORE DEPLOY POST / REVIEW REQUIRED
-SOURCE_HEAD = 2a6a216481c80523cbc39064a6579b20fcc731d4 (MATCH)
+PACKAGE = D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1
+TITLE = LOCAL EVIDENCE CLARIFICATION
+MODE = EXISTING LOCAL EVIDENCE + DOCS ONLY
+STATUS = PASS / LOCAL EVIDENCE CLARIFICATION COMPLETE / REVIEW REQUIRED
+BASE_HEAD = 8b436f03c52c791a01200952c3b2e0611b7e1b82 (MATCH)
 TARGET_APP = 794
-COMPONENT = UI CUSTOMIZATION ONLY
-ONE_SHOT_AUTHORIZATION_ID = MBO2026-D3-EXE2-20260913-OWNER-01 (CONSUMED)
+COMPONENT = UI CUSTOMIZATION EVIDENCE ONLY
 
-DIST_ARTIFACT_IDENTITY:
-- dist/mbo-employee-app.js = 6a29a0e652ab8bb210589583b2a2ebfa2754aafa (MATCH)
-- dist/mbo-employee.css = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61 (MATCH)
-- DIST_DRIFT = 0 BYTES / BIT-FOR-BIT IDENTICAL
+OPERATIONAL_COUNTERS (PACKAGE R1):
+- KINTONE_READS = 0
+- KINTONE_WRITES = 0
+- FILE_UPLOADS = 0
+- CUSTOMIZATION_PUTS = 0
+- DEPLOY_POSTS = 0
+- LIVE_POLLS = 0
+- SOURCE_TEST_CHANGES = 0
+- FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 
-OPERATIONAL_COUNTERS:
-- KINTONE_READS = 3 (executeDeployCustomUi preflight + readback)
+HISTORICAL_EXE2_RECONCILIATION:
+- ONE_SHOT_AUTHORIZATION_ID = MBO2026-D3-EXE2-20260913-OWNER-01 (CONSUMED IN EXE2 / NOT REUSED)
+- TOTAL_HISTORICAL_GET_READS = 11 (VERIFIED by transcript)
+  * IN_EXECUTOR_READS = 3 (preflight [2] + preview read-back [1])
+  * AUXILIARY_PRE_EXECUTION_READS = 4 (Step 63 manual JIT [2] + Step 65 topology [2])
+  * AUXILIARY_POST_STOP_READS = 4 (Step 71 inspection [1] + Step 73 live check [1] + Step 75 topology [2])
 - JS_UPLOADS_ATTEMPTED = 1
 - JS_UPLOADS_ACCEPTED = 1
 - CSS_UPLOADS_ATTEMPTED = 1
@@ -60,41 +68,34 @@ OPERATIONAL_COUNTERS:
 - AUTOMATIC_ROLLBACK_WRITES = 0
 - PARTIAL_WRITE = TRUE (Uploads and Preview PUT accepted; Deploy POST blocked fail-closed)
 - ZERO_WRITE_FAIL_CLOSED = ENFORCED_BEFORE_DEPLOY_POST
-- FINAL_LIVE_REVISION = 72 (UNCHANGED)
-- FINAL_PREVIEW_REVISION = 73
+- FINAL_LIVE_REVISION = 72 (POST_STOP_LIVE_REOBSERVED / LIVE_CONTENT_IDENTITY_UNVERIFIED_BY_DOWNLOAD)
+- FINAL_PREVIEW_REVISION = 73 (POST_STOP_PREVIEW_REVERIFIED / ATTACHED_CONTENT_IDENTITY_UNVERIFIED)
 - FINAL_LIVE_TOPOLOGY_HASH = 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35
 - FINAL_PREVIEW_TOPOLOGY_HASH = 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35
-- SCHEMA_WRITES = 0
+- FINAL_CONVERGENCE = NOT_REACHED (Topology hash confirms structure only, not content digest)
+- ROOT_CAUSE = REKEYING_HYPOTHESIS / UNVERIFIED (Upload key vs attached key string inequality confirmed; internal re-keying remains unverified hypothesis)
 - PROCESS_WRITES = 0 (App 794 Process 19/40 untouched)
+- SCHEMA_WRITES = 0
 - RECORD_WRITES = 0
 - ACL_WRITES = 0
 - UAT = 0
-
-STOP_DIAGNOSTIC:
-- Failure occurred at Step 13 (validatePreviewReadback before deploy POST):
-  `PREVIEW_READBACK_MISMATCH: Target JS attached fileKey does not match newly uploaded JS key.`
-- Real Kintone storage re-keys uploaded fileKeys upon preview PUT ingest.
-- Strict read-back equality comparison between preview read-back fileKey and uploaded fileKey failed closed.
-- Deploy POST was NOT executed. Zero retries. Zero automatic rollback writes.
-- Live App 794 remains unaffected at revision 72. Preview is staged at revision 73.
 
 LIFECYCLE_PROVENANCE:
 - D3-SBX-DEPLOY-01-EXE1-R2 = PASS / APP794 PROCESS 19/40 DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED / PROCESS ONLY / REVIEW REQUIRED
 - D3-SBX-DEPLOY-01-EXE2-R1 = REQUEST CORRECTIVE / SAFETY BYPASS FINDINGS IDENTIFIED / RESOLVED BY EXE2-R2
 - D3-SBX-DEPLOY-01-EXE2-R2 = PASS / LOCAL SAFETY BYPASS CORRECTIVE COMPLETE / TARGETED TESTS PASS / ARTIFACT IDENTITY UNCHANGED / ZERO KINTONE I/O / ZERO DEPLOYMENT / REVIEW REQUIRED
 - D3-SBX-DEPLOY-01-EXE2 = STOPPED / PREVIEW_READBACK_MISMATCH / TARGET JS ATTACHED FILEKEY MISMATCH / PARTIAL WRITE HALTED BEFORE DEPLOY POST / REVIEW REQUIRED
+- D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1 = PASS / LOCAL EVIDENCE CLARIFICATION COMPLETE / TOTAL READ ACCOUNTING VERIFIED (11 READS) / REKEYING HYPOTHESIS QUALIFIED / ATTACHED CONTENT IDENTITY UNVERIFIED / ZERO I/O / REVIEW REQUIRED
 
-VERDICT = D3-SBX-DEPLOY-01-EXE2 = STOPPED / PREVIEW_READBACK_MISMATCH / TARGET JS ATTACHED FILEKEY MISMATCH / PARTIAL WRITE HALTED BEFORE DEPLOY POST / REVIEW REQUIRED
+VERDICT = D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1 = PASS / LOCAL EVIDENCE CLARIFICATION COMPLETE / REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-SBX-DEPLOY-01-EXE2 halted safely and fail-closed at Step 13 before the deploy POST:
-- Single-use authorization `MBO2026-D3-EXE2-20260913-OWNER-01` was consumed at write boundary.
-- File uploads for JS and CSS succeeded.
-- Preview customization PUT succeeded, staging preview revision 73.
-- Preview readback guard identified attached target JS fileKey divergence from upload token (Kintone internal storage re-keying).
-- Deploy POST was blocked; zero deploy POST calls made.
-- Live Sandbox App 794 customization remains at revision 72 with zero live drift.
-- Process Management 19/40 deployed in EXE1-R2 remains untouched.
-- Partial write state honestly reported; no claim of zero state modified.
+D3-SBX-DEPLOY-01-EXE2-EVIDENCE-R1 closed with docs-only clarifications based on existing local evidence:
+- Historical read accounting itemized from transcript logs: 11 total GET calls (3 in-executor + 8 auxiliary).
+- Root-cause classification qualified as `REKEYING_HYPOTHESIS / UNVERIFIED`.
+- Attached content identity and live content identity qualified as unverified by download.
+- Final convergence confirmed as `NOT_REACHED`.
+- Zero I/O executed in this package (zero reads, zero writes, zero builds, zero tests rerun).
+- Historical EXE2 facts preserved honestly: partial write = true, staged preview revision 73, deploy POST = 0, process 19/40 untouched, single-use auth ID not reused.
 - All gates remain stopped. Next work package, write execution, UAT, and deployment remain strictly NOT AUTHORIZED without explicit Owner authorization.

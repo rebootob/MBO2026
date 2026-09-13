@@ -2,6 +2,10 @@
 
 Updated: 2026-09-13 ICT
 
+> [!NOTE]
+> **Forward Correction & Qualification Notice (R1):**
+> See [`D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md`](file:///C:/Users/allda/Desktop/Dev/git/MBO2026/project-docs/evidence/D3_SBX_DEPLOY_01_EXE2_EVIDENCE_R1.md) for full root-cause investigation, exhaustive itemized read accounting (11 total GET calls vs. 3 in-executor calls), qualification of the Kintone re-keying hypothesis, and content identity qualifications.
+
 ## 1. Package & Execution Metadata
 ```text
 PACKAGE = D3-SBX-DEPLOY-01-EXE2
@@ -74,6 +78,9 @@ WRITE_RETRY_COUNT = 0
 AUTOMATIC_ROLLBACK_WRITES = 0
 PARTIAL_WRITE = TRUE (File uploads and Preview PUT accepted; Deploy POST blocked fail-closed before execution)
 ZERO_WRITE_FAIL_CLOSED = ENFORCED_BEFORE_DEPLOY_POST
+IN_EXECUTOR_READS = 3 (executeDeployCustomUi preflight [2] + preview readback [1])
+AUXILIARY_SESSION_READS = 8 (Pre-exec manual JIT [4] + Post-stop diagnostics [4])
+TOTAL_HISTORICAL_SESSION_READS = 11 (VERIFIED by transcript log; see R1 for itemized breakdown)
 PROCESS_WRITES = 0 (App 794 Process 19/40 untouched)
 SCHEMA_WRITES = 0
 RECORD_WRITES = 0
@@ -88,13 +95,13 @@ PRODUCTION_CUTOVER = 0
 STOP_REASON = PREVIEW_READBACK_MISMATCH: Target JS attached fileKey does not match newly uploaded JS key.
 STOP_BOUNDARY = STEP_13_PREVIEW_READBACK_BEFORE_DEPLOY
 DEPLOY_POST_EXECUTED = NO (0 calls)
-FINAL_LIVE_REVISION = 72 (UNCHANGED / ZERO LIVE PRODUCTION/SANDBOX IMPACT)
-FINAL_PREVIEW_REVISION = 73 (STAGED VIA PUT)
+FINAL_LIVE_REVISION = 72 (POST_STOP_LIVE_REOBSERVED / LIVE_CONTENT_IDENTITY_UNVERIFIED_BY_DOWNLOAD)
+FINAL_PREVIEW_REVISION = 73 (POST_STOP_PREVIEW_REVERIFIED / ATTACHED_CONTENT_IDENTITY_UNVERIFIED)
 FINAL_LIVE_SCOPE = ALL
 FINAL_PREVIEW_SCOPE = ALL
 FINAL_LIVE_TOPOLOGY_HASH = 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35
 FINAL_PREVIEW_TOPOLOGY_HASH = 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35
-FINAL_CONVERGENCE = NOT_REACHED (Deploy POST blocked fail-closed; LIVE remains at revision 72 while PREVIEW is at revision 73)
+FINAL_CONVERGENCE = NOT_REACHED (Deploy POST blocked fail-closed; LIVE remains at revision 72 while PREVIEW is at revision 73; topology hash verifies structure only, not content hash)
 SANITIZED_TOPOLOGY_STRUCTURE:
 {
   "scope": "ALL",
@@ -115,7 +122,7 @@ SANITIZED_TOPOLOGY_STRUCTURE:
 3. **Preflight**: JIT baseline verified Live revision 72, Preview revision 72, scope ALL, topology aligned.
 4. **Authorization & Uploads**: Single-use authorization `MBO2026-D3-EXE2-20260913-OWNER-01` was consumed at write boundary. JS and CSS were uploaded cleanly (1 attempt each, zero retry).
 5. **Preview PUT**: `PUT /k/v1/preview/app/customize.json` was dispatched with captured revision 72 and new upload fileKeys. Kintone accepted the payload and staged preview revision 73.
-6. **Preview Readback Guard Halt**: Step 13 read back preview customization (`GET /k/v1/preview/app/customize.json?app=794`). Kintone returns an internal storage fileKey upon ingest rather than echoing the temporary `POST /k/v1/file.json` upload token. Line 836 of `scripts/kintone/deploy-custom-ui.js` strictly checks `targetJsEntries[0].file?.fileKey === newJsFileKey`. Because Kintone's attached fileKey differed from the upload fileKey, `validatePreviewReadback` threw `PREVIEW_READBACK_MISMATCH: Target JS attached fileKey does not match newly uploaded JS key.`
+6. **Preview Readback Guard Halt**: Step 13 read back preview customization (`GET /k/v1/preview/app/customize.json?app=794`). It is hypothesized that Kintone internal storage re-keys uploaded files upon preview PUT ingest (`REKEYING_HYPOTHESIS / UNVERIFIED`); a fileKey mismatch alone does not prove attached content identity or confirm server-side re-keying mechanism. Line 836 of `scripts/kintone/deploy-custom-ui.js` strictly checks `targetJsEntries[0].file?.fileKey === newJsFileKey`. Because Kintone's attached fileKey differed from the upload fileKey, `validatePreviewReadback` threw `PREVIEW_READBACK_MISMATCH: Target JS attached fileKey does not match newly uploaded JS key.` The strict guard failed closed as designed. Filename or topology alone does not suffice for identity.
 7. **Strict Fail-Closed Stop**: The deploy POST was completely blocked. No retries, no automatic rollback writes, and zero mutations occurred on Live Sandbox App 794 (retained at revision 72). App 794 Process Management (19 states / 40 actions deployed in EXE1-R2) remains untouched.
 8. **Credential & Secret Redaction**: Zero secrets, tokens, credentials, passwords, or raw fileKeys are exposed in this evidence record or committed files.
 
