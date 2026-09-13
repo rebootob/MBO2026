@@ -9,8 +9,8 @@ Updated: 2026-09-13 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-DEPLOY-01-EXE2-R5 CLOSED / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-DEPLOY-01-EXE2-R5
+ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-UAT-01 STOPPED SAFELY / BLOCKED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-SBX-UAT-01
 LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-DEPLOY-01-EXE2-R5
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -27,67 +27,52 @@ PRODUCTION_READY = NO
 ```
 
 ## Latest Owner authorization
-Owner explicitly authorized package `D3-SBX-DEPLOY-01-EXE2-R5` (APP794 UI CUSTOMIZATION DEPLOYMENT RETRY) under Authorization ID `MBO2026-D3-EXE2-R5-20260913-OWNER-01` in `LIVE KINTONE SANDBOX DEPLOYMENT EXECUTION + CONTROL/EVIDENCE` mode on canonical base HEAD `22e7c788200bc05c36e2a10a971e0e15b3fe2bbe` (parent: `a42c194254f2f015d429ab8ddc83013734eefc40`, tree: `a4d3f624559c35f505a5dc22749e33740797cd3a`).
-Preceding package status: `D3-SBX-DEPLOY-01-EXE2-R4` review = PASS / INDEPENDENTLY REVIEWED / ACCEPTED.
+Owner explicitly authorized package `D3-SBX-UAT-01` (REAL BROWSER UI + EXISTING M1_G1 READ-ONLY UAT) under Authorization ID `MBO2026-D3-SBX-UAT01-20260913-OWNER-01` in `REAL BROWSER UI READ-ONLY UAT` mode on canonical base HEAD `037757065729a1a28fc75f1fbc9d155753d9f8cd` (parent: `22e7c788200bc05c36e2a10a971e0e15b3fe2bbe`, tree: `683aedc17f9acb72ac16556eef0cb3a95b3a8191`).
+Preceding package status: `D3-SBX-DEPLOY-01-EXE2-R5` review = PASS / INDEPENDENTLY REVIEWED / DEPLOYMENT ACCEPTED.
 
 ## Execution result
 ```text
-PACKAGE = D3-SBX-DEPLOY-01-EXE2-R5
-TITLE = APP794 UI CUSTOMIZATION DEPLOYMENT RETRY
-AUTHORIZATION_ID = MBO2026-D3-EXE2-R5-20260913-OWNER-01
-MODE = LIVE KINTONE SANDBOX DEPLOYMENT EXECUTION + CONTROL/EVIDENCE
-STATUS = PASS / APP794 UI CUSTOMIZATION DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED / PROCESS PRESERVED / REVIEW REQUIRED
-BASE_HEAD = 22e7c788200bc05c36e2a10a971e0e15b3fe2bbe (MATCH)
+PACKAGE = D3-SBX-UAT-01
+TITLE = REAL BROWSER UI + EXISTING M1_G1 READ-ONLY UAT
+AUTHORIZATION_ID = MBO2026-D3-SBX-UAT01-20260913-OWNER-01
+MODE = REAL BROWSER UI READ-ONLY UAT
+STATUS = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
+BASE_HEAD = 037757065729a1a28fc75f1fbc9d155753d9f8cd (MATCH)
 TARGET_APP = 794
-COMPONENT = APP794 UI CUSTOMIZATION ONLY
+COMPONENT = APP794 UI CUSTOMIZATION + REAL BROWSER READ-ONLY UAT
 
-OPERATIONAL_COUNTERS (PACKAGE EXE2-R5):
-- PROCESS_BASELINE_READS = 2 (CEILING: 2 GET max)
-- CUSTOMIZATION_PREFLIGHT_READS = 2 (CEILING: 2 GET max)
-- STEP_13_PREVIEW_READS = 4 (1 metadata + 2 downloads + 1 stability; CEILING: 4 GET max)
-- DEPLOY_POLLING_READS = 3 (CEILING: 20 GET max)
-- STEP_16_CONVERGENCE_READS = 8 (2 metadata + 4 downloads + 2 stability; CEILING: 8 GET max)
-- PROCESS_FINAL_READS = 2 (CEILING: 2 GET max)
-- TOTAL_KINTONE_GET_READS = 21 (CEILING: 38 GET max)
-- PROCESS_READS_TOTAL = 4 (CEILING: 4 GET max)
-- READ_RETRIES = 0
-- AUXILIARY_READS = 0
-- KINTONE_WRITES = 4 (JS UPLOAD 1, CSS UPLOAD 1, PREVIEW PUT 1, DEPLOY POST 1; CEILING: 4 max)
-- FILE_UPLOADS = 2
-- CUSTOMIZATION_PUTS = 1 (STAGED_PREVIEW_REVISION = 74)
-- DEPLOY_POSTS = 1 (DISPATCHED: app 794, revision 74)
-- DEPLOY_STATUS_POLLS = 3 (TERMINAL_STATUS = SUCCESS)
-- WRITE_RETRIES = 0
-- AUTOMATIC_ROLLBACK_WRITES = 0
-- PARTIAL_WRITE = FALSE
-- ZERO_WRITE_FAIL_CLOSED = ENFORCED
-- FINAL_LIVE_REVISION = 74
-- FINAL_PREVIEW_REVISION = 74
-- FINAL_TOPOLOGY_HASH = 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35
-- LIVE_JS_BYTE_VERIFICATION = PASS (640,471 bytes, SHA-256 cc80a23fa1adcd71fd8eae1ba95d78faa0694115aa672937c97c009b77e31bf3)
-- LIVE_CSS_BYTE_VERIFICATION = PASS (43,728 bytes, SHA-256 c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd)
-- PREVIEW_JS_BYTE_VERIFICATION = PASS (640,471 bytes, SHA-256 cc80a23fa1adcd71fd8eae1ba95d78faa0694115aa672937c97c009b77e31bf3)
-- PREVIEW_CSS_BYTE_VERIFICATION = PASS (43,728 bytes, SHA-256 c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd)
-- SAME_SIDE_STABILITY_RECHECK = PASS
-- PROCESS_WRITES = 0 (App 794 Process 19/40 preserved; baseline & final fingerprint bc22d11c3f89959178d8c3aac1b2c008d1c13d93f815bae2b746f800c523fdbd)
-- SCHEMA_WRITES = 0
+OPERATIONAL_COUNTERS (PACKAGE UAT-01):
+- KINTONE_API_READS = 0 (CEILING: 0 max)
+- KINTONE_API_WRITES = 0 (CEILING: 0 max)
 - RECORD_WRITES = 0
+- SCHEMA_WRITES = 0
+- PROCESS_WRITES = 0
 - ACL_WRITES = 0
-- UAT = 0
-- PRODUCTION_CUTOVER = 0
-- BUILDS_RERUN = 0 (Candidate build inside executor verified identical to invariant)
-- TARGETED_TESTS = 58/58 PASS (51 deploy-customization-preservation, 7 sandbox-write-guard)
+- CUSTOMIZATION_WRITES = 0
+- DEPLOYMENT_POSTS = 0
+- CREDENTIAL_ENTRIES = 0
+- SESSION_MUTATIONS = 0
+- LOCAL_STORAGE_INJECTIONS = 0
+- MUTATION_CLICKS = 0
+- TOTAL_MUTATIONS = 0
+- ZERO_WRITE_FAIL_CLOSED = ENFORCED
+- READ_ONLY_ENFORCEMENT = ENFORCED
+
+TEST_CASE_OUTCOMES:
+- CASE_UAT01_01 = BLOCKED (Redirected to /login; unauthenticated browser session)
+- CASE_UAT01_02 = BLOCKED (No authenticated session to navigate existing MBO)
+- CASE_UAT01_03 = BLOCKED (No accessible record without authentication)
+- CASE_UAT01_04 = BLOCKED (No accessible record without authentication)
+
+STOP_CONDITION_ACCOUNTING:
+- STOP_CONDITION = MISSING_AUTHENTICATED_BROWSER_SESSION
+- STOP_CONDITION_COMPLIANCE = ENFORCED (Stopped immediately upon login redirect; no credential entry or bypass attempted)
+- VISUAL_EVIDENCE = project-docs/evidence/D3_SBX_UAT_01/UAT01_LOGIN_REQUIRED_EVIDENCE.png
+- EVIDENCE_FILE = project-docs/evidence/D3_SBX_UAT_01_EVIDENCE.md
 - FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
-
-DIST ARTIFACT INVARIANT:
-- dist/mbo-employee-app.js: 6a29a0e652ab8bb210589583b2a2ebfa2754aafa (MATCHES EXACTLY)
-- dist/mbo-employee.css: 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61 (MATCHES EXACTLY)
-- DIST_DRIFT = 0 BYTES / BIT-FOR-BIT IDENTICAL
-
-HISTORICAL FINDINGS ACCEPTED:
-- STOP_CONDITION_COMPLIANCE = VIOLATED: Honestly recorded for historical Identity-01 execution.
-- HISTORICAL_LIVE_BYTE_IDENTITY = UNVERIFIED: Honestly qualified due to lack of pre-EXE2 hash baseline.
-- SERVER_REKEYING_MECHANISM = UNVERIFIED: Empirical token resolution observed; internal server-side rekeying mechanics remain unverified.
+- FULL_D3_BUSINESS_UAT = NOT CLAIMED
+- D3_CLOSURE = NOT CLAIMED
+- PRODUCTION_READY = NO
 
 LIFECYCLE_PROVENANCE:
 - D3-SBX-DEPLOY-01-EXE1-R2 = PASS / APP794 PROCESS 19/40 DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED / PROCESS ONLY / REVIEW REQUIRED
@@ -100,20 +85,18 @@ LIFECYCLE_PROVENANCE:
 - D3-SBX-DEPLOY-01-EXE2-R3 = REQUEST CORRECTIVE / REKEYING HYPOTHESIS OVER-ASSERTED / STEP 16 CEILING UNDERSTATED / PREVIEW READBACK ORDER DRIFT RISK / RESOLVED BY EXE2-R4
 - D3-SBX-DEPLOY-01-EXE2-R4 = PASS / LOCAL EXACT BLOCKER CORRECTIVE COMPLETE / TARGETED TESTS PASS (58/58) / ARTIFACT IDENTITY UNCHANGED / ZERO KINTONE I/O / ZERO DEPLOYMENT / INDEPENDENTLY REVIEWED / CLOSED
 - D3-SBX-DEPLOY-01-EXE2-R5 = PASS / APP794 UI CUSTOMIZATION DEPLOYED / PREVIEW VERIFIED / DEPLOY SUCCESS / LIVE+PREVIEW CONVERGENCE VERIFIED (REV 74) / TARGET JS+CSS BYTE IDENTITY VERIFIED / PROCESS 19/40 PRESERVED / REVIEW REQUIRED
+- D3-SBX-UAT-01 = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
 
-VERDICT = D3-SBX-DEPLOY-01-EXE2-R5 = REVIEW REQUIRED
+VERDICT = D3-SBX-UAT-01 = REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-SBX-DEPLOY-01-EXE2-R5 closed with live Kintone sandbox deployment of App 794 UI customization:
-- Pre-write process baseline confirmed 19 states / 40 actions and semantic fingerprint bc22d11c3f89959178d8c3aac1b2c008d1c13d93f815bae2b746f800c523fdbd.
-- Exactly 4 writes executed: JS upload, CSS upload, preview customize PUT, deploy POST.
-- Preview attached JS and CSS raw bytes verified bit-for-bit against canonical artifacts.
-- Deploy POST dispatched using getApp794DeployRequestOptions with object body and revision 74.
-- Bounded polling completed on check 3 with status SUCCESS.
-- Final Live and Preview customization converged at revision 74 (topologyHash 20a414c96d016ccd9a94a37f35aa0fa87ac636c07cc3b13cc5028e221bb99d35).
-- All 4 target files on Live and Preview downloaded and verified bit-for-bit identical in SHA-256 and byte length.
-- Post-deployment process final audit confirmed 19 states / 40 actions preserved at revision 74 with identical semantic fingerprint.
-- Total 21 GET reads (within 38 GET ceiling), zero read retries, zero auxiliary reads.
-- Dist artifacts invariant maintained with zero drift.
+D3-SBX-UAT-01 stopped safely at the mandatory stop condition `MISSING_AUTHENTICATED_BROWSER_SESSION`:
+- The executor attached directly to physical interactive desktop session `WinSta0\Default` via Win32 STA thread desktop switch.
+- Running Google Chrome instance (PID 30516) was brought to the foreground and navigated to `https://ttmet.cybozu.com/k/794/`.
+- The real browser immediately redirected to `https://ttmet.cybozu.com/login?redirect=https%3A%2F%2Fttmet.cybozu.com%2Fk%2F794%2F`.
+- No active authenticated Kintone user session was present in the browser; portal admin session was under `Admin-Form`, which fails closed as `TECHNICAL_ADMIN` in App 794.
+- In strict adherence to owner instructions, executor entered zero credentials, performed zero session mutations, executed zero Kintone writes, and substituted zero mock tests.
+- All 4 test cases (`UAT01-01` through `UAT01-04`) are recorded honestly as `BLOCKED`.
+- Sanitized visual evidence artifact saved at `project-docs/evidence/D3_SBX_UAT_01/UAT01_LOGIN_REQUIRED_EVIDENCE.png` with bookmarks, tabs, and taskbars fully redacted.
 - All gates remain stopped. Next work package, write execution, UAT, and deployment remain strictly NOT AUTHORIZED without explicit Owner authorization.
