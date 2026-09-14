@@ -1,12 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "D3-SBX-UAT-03-R2 Minimal Sanitized Record 15 Comparison Excerpt",
-  "description": "Minimal sanitized comparison excerpt of persisted App 794 Record 15 provenance, route topology, approvers, and revision. Real names, user codes, and start dates sanitized to stable aliases.",
+  "title": "D3-SBX-UAT-03-R2 Minimal Sanitized Record 15 REST Excerpt (Executor Report)",
+  "description": "Sanitized REST excerpt according to executor report for App 794 Record 15 provenance, route topology, approvers, and revision. Real names, user codes, and start dates sanitized to stable aliases. NOT a two-sided comparative proof, NOT a fresh baseline, and does NOT confirm current live state.",
   "provenance": {
-    "source": "call1_record.json (REST API GET /k/v1/record.json?app=794&id=15, Attempt 6)",
+    "source": "call1_record.json (REST API GET /k/v1/record.json?app=794&id=15, Attempt 6 - Executor Report)",
+    "classification": "SANITIZED_REST_EXCERPT_ACCORDING_TO_EXECUTOR_REPORT",
     "targetAppId": 794,
     "targetRecordId": 15,
-    "sanitizationPolicy": "SOLID_OPAQUE_ALIASING_NO_PII_NO_START_DATE"
+    "sanitizationPolicy": "SOLID_OPAQUE_ALIASING_NO_PII_NO_START_DATE",
+    "qualification": "Reported by executor. Not a two-sided comparative proof; not a fresh baseline; does not confirm current live state. Persisted field presence is reported by executor and is distinguished from independently verified runtime/Decision 008 compliance."
   },
   "record": {
     "$id": { "type": "__ID__", "value": "15" },

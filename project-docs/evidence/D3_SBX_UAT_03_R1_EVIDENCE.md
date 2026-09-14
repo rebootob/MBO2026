@@ -16,7 +16,8 @@ EXECUTION_PLANE = ANTIGRAVITY CLI
 ORCHESTRATION_CHANNEL = HERMES (ORCHESTRATOR ONLY)
 TARGET_APP = 794
 TARGET_RECORD_ID = 15
-RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R2)
+RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R2 & R3)
+CORRECTIVE_PACKAGE = D3-SBX-UAT-03-R3
 ```
 
 > **Owner Authorization Scope Note:**
@@ -207,25 +208,25 @@ Forward-only sanitization cannot erase historical Git commits (`70070c25b8f91eff
 
 ## 4. Visual Evidence References (Sanitized)
 
-All links are repository-relative. Local `file:///` paths are forbidden.
+All links resolve repository-relative from file location. Local `file:///` paths are forbidden.
 
 1. **Record Identity & Top UI (Sanitized)**:
-   - Path: [D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png)
+   - Path: [D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png](D3_SBX_UAT_03/D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png)
    - Byte Length: `83,797` bytes
    - SHA-256: `6579ECC180CA77672B4B17CA97F9EB3D957C8ED89D42F45F0E48317E3AE34F97`
    - Description: Top view of Record 15 showing URL `#record=15`, Status `01 Draft Objective`, process transition button, stepper, and 76-day overdue banner. Personal tabs, bookmarks, and user profile opaquely redacted.
 2. **Persisted Route Actors UI (Sanitized)**:
-   - Path: [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png)
+   - Path: [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png)
    - Byte Length: `62,721` bytes
    - SHA-256: `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF`
    - Description: Section `TMH3`, Position `Accounting Staff`, Department `Corporate`, and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box, EMP ID, and NAME opaquely redacted.
 3. **Part A MBO Objectives Table (Sanitized)**:
-   - Path: [D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png)
+   - Path: [D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png](D3_SBX_UAT_03/D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png)
    - Byte Length: `87,370` bytes
    - SHA-256: `DE2B29678F9080E542F9741414064EF37062025B4310C9FCDE0C9DF4AC1D01C6`
    - Description: Part A MBO objectives table showing 4 objectives (30%, 30%, 30%, 10%), 100% total weight, native comment mirror, and workflow audit trail. Profile area opaquely redacted.
 4. **DevTools Runtime Console Audit (Audit Evidence Preserved)**:
-   - Path: [D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png)
+   - Path: [D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png](D3_SBX_UAT_03/D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png)
    - Byte Length: `135,157` bytes
    - SHA-256: `5EFC8CBDF1D91B88968C90BFCFCDC717E6AFBE512C5184B33D1BC6A4F9837DBE`
    - Description: Chrome DevTools console showing executed GET calls, multiple `CALL1_STORED_SUCCESS` logs, 22 issues, 2 hidden, and 1 error. Preserved intact for historical accounting audit.
@@ -238,7 +239,8 @@ All links are repository-relative. Local `file:///` paths are forbidden.
 - `D3-SBX-UAT-02-R1` = `PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED`
 - `D3-SBX-UAT-03` = `REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY`
 - `D3-SBX-UAT-03-R1` = `REQUEST CORRECTIVE`
-- `D3-SBX-UAT-03-R2` = `CORRECTIVE DELIVERED / REVIEW REQUIRED`
+- `D3-SBX-UAT-03-R2` = `REQUEST CORRECTIVE`
+- `D3-SBX-UAT-03-R3` = `CORRECTIVE DELIVERED / REVIEW REQUIRED`
 
 ---
 
@@ -248,14 +250,14 @@ FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 FULL_D3_BUSINESS_UAT = NOT CLAIMED
 D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
-R1_INDEPENDENT_REVIEW = REVIEWED / REQUEST CORRECTIVE (SUPERSEDED BY R2)
+R1_INDEPENDENT_REVIEW = REVIEWED / REQUEST CORRECTIVE (SUPERSEDED BY R2 & R3)
 ```
 
 ---
 
 ## 7. Terminal Governance State
 ```text
-RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R2)
+RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R2 & R3)
 ACTIVE_WORK_PACKAGE = NONE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO

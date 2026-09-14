@@ -1,6 +1,15 @@
-# D3-SBX-UAT-03-R2 Evidence Record
+# D3-SBX-UAT-03-R2 Evidence Record (CORRECTED / SUPERSEDED BY R3)
 
 Updated: 2026-09-14 ICT
+
+> [!IMPORTANT]
+> **SUPERSEDED AND CORRECTED BY D3-SBX-UAT-03-R3**
+> This document is historical evidence superseded by `D3-SBX-UAT-03-R3` ([D3_SBX_UAT_03_R3_EVIDENCE.md](D3_SBX_UAT_03_R3_EVIDENCE.md)) under Authorization `MBO2026-D3-SBX-UAT03-R3-20260914-OWNER-01`.
+> Control Plane review issued verdict `REQUEST CORRECTIVE` on R2 due to:
+> 1. Discrepancy between earlier reported `$revision = 1` and R2's reported `$revision = 2` without reconciliation evidence (`REVISION_RECONCILIATION = UNVERIFIED`).
+> 2. Over-assertion of "REST-TO-DOM MATCH VERIFIED" when independent evidence for both raw REST capture and DOM object is missing from Git (`REST_TO_DOM_MATCH = UNVERIFIED`).
+> 3. Required classification of sanitized JSON excerpt strictly as an executor report rather than two-sided comparative proof.
+> All accepted privacy fixes, historical GET accounting distinction, and workflow progression claim withdrawal from R2 are preserved and carried forward into R3.
 
 ## 1. Package & Execution Metadata
 ```text
@@ -17,7 +26,8 @@ EXECUTION_PLANE = ANTIGRAVITY CLI
 ORCHESTRATION_CHANNEL = HERMES (ORCHESTRATOR ONLY)
 TARGET_APP = 794
 TARGET_RECORD_ID = 15
-RESULT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R3)
+CORRECTIVE_PACKAGE = D3-SBX-UAT-03-R3
 ```
 
 > **Owner Authorization Scope Note:**
@@ -169,22 +179,23 @@ READ_ONLY_ENFORCEMENT = ENFORCED
   - `D3-SBX-UAT-02-R1` = `PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED` (Accepted baseline preserved)
   - `D3-SBX-UAT-03` = `REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY` (Aggregate PASS rejected)
   - `D3-SBX-UAT-03-R1` = `REQUEST CORRECTIVE` (Control Plane review finding recorded)
-  - `D3-SBX-UAT-03-R2` = `CORRECTIVE DELIVERED / REVIEW REQUIRED` (Delivered forward corrective)
-- **Review Boundary:** R2 is NOT claimed to be independently reviewed prior to ChatGPT review.
+  - `D3-SBX-UAT-03-R2` = `REQUEST CORRECTIVE` (Control Plane review verdict recorded)
+  - `D3-SBX-UAT-03-R3` = `CORRECTIVE DELIVERED / REVIEW REQUIRED` (Delivered forward corrective)
+- **Review Boundary:** R2 was reviewed by Control Plane (REQUEST CORRECTIVE); R3 is NOT claimed to be independently reviewed prior to ChatGPT review.
 
 ---
 
 ## 4. Visual Evidence Artifacts & Cryptographic Digests (Sanitized)
 
-All visual artifacts have been sanitized per privacy governance. Real names, employee IDs, personal account codes, employee start dates, browser tabs, and bookmarks are opaquely redacted (`rgba(0, 0, 0, 255)` solid black rectangles). All links are repository-relative.
+All visual artifacts have been sanitized per privacy governance. Real names, employee IDs, personal account codes, employee start dates, browser tabs, and bookmarks are opaquely redacted (`rgba(0, 0, 0, 255)` solid black rectangles). All links resolve repository-relative from file location.
 
 | File Name | Byte Length | SHA-256 Digest | Description & Verification Tokens |
 |:---|:---:|:---|:---|
-| [D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png) | 83,797 bytes | `6579ECC180CA77672B4B17CA97F9EB3D957C8ED89D42F45F0E48317E3AE34F97` | Top view of Record 15: URL bar (`#record=15`), Breadcrumb (`FY2026`), Status `01 Draft Objective`, Process action `Submit Objective to Manager`, 5-stage stepper, 76-day overdue urgency banner. Personal tabs, bookmarks, and user profile opaquely redacted. |
-| [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png) | 62,721 bytes | `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF` | Close-up of Step 2 Employee Info (`TMH3`, `Accounting Staff`, `Corporate`) and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box, EMP ID, and NAME opaquely redacted. |
-| [D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png) | 87,370 bytes | `DE2B29678F9080E542F9741414064EF37062025B4310C9FCDE0C9DF4AC1D01C6` | Step 3 Part A MBO table showing 4 objectives, weights (30%, 30%, 30%, 10%), Total Weight banner (100% Complete), native comments mirror, and audit trail. Profile area opaquely redacted. |
-| [D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png) | 135,157 bytes | `5EFC8CBDF1D91B88968C90BFCFCDC717E6AFBE512C5184B33D1BC6A4F9837DBE` | Docked Chrome DevTools console showing executed GET calls, `CALL1_STORED_SUCCESS` logs, 22 issues, 2 hidden, 1 error. Console audit evidence preserved intact. |
-| [D3_UAT03_R2_MINIMAL_SANATIZED_RECORD_15.json](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_R2_MINIMAL_SANATIZED_RECORD_15.json) | 1,460 bytes | — | Minimal sanitized JSON excerpt of persisted Record 15 containing actual `$revision = 2`, routing topology, approver slots, rules, and 5 provenance fields. |
+| [D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png](D3_SBX_UAT_03/D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png) | 83,797 bytes | `6579ECC180CA77672B4B17CA97F9EB3D957C8ED89D42F45F0E48317E3AE34F97` | Top view of Record 15: URL bar (`#record=15`), Breadcrumb (`FY2026`), Status `01 Draft Objective`, Process action `Submit Objective to Manager`, 5-stage stepper, 76-day overdue urgency banner. Personal tabs, bookmarks, and user profile opaquely redacted. |
+| [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png) | 62,721 bytes | `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF` | Close-up of Step 2 Employee Info (`TMH3`, `Accounting Staff`, `Corporate`) and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box, EMP ID, and NAME opaquely redacted. |
+| [D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png](D3_SBX_UAT_03/D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png) | 87,370 bytes | `DE2B29678F9080E542F9741414064EF37062025B4310C9FCDE0C9DF4AC1D01C6` | Step 3 Part A MBO table showing 4 objectives, weights (30%, 30%, 30%, 10%), Total Weight banner (100% Complete), native comments mirror, and audit trail. Profile area opaquely redacted. |
+| [D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png](D3_SBX_UAT_03/D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png) | 135,157 bytes | `5EFC8CBDF1D91B88968C90BFCFCDC717E6AFBE512C5184B33D1BC6A4F9837DBE` | Docked Chrome DevTools console showing executed GET calls, `CALL1_STORED_SUCCESS` logs, 22 issues, 2 hidden, 1 error. Console audit evidence preserved intact. |
+| [D3_UAT03_R2_MINIMAL_SANATIZED_RECORD_15.json](D3_SBX_UAT_03/D3_UAT03_R2_MINIMAL_SANATIZED_RECORD_15.json) | 2,130 bytes | — | Sanitized REST excerpt according to executor report for Record 15 containing actual `$revision = 2`, routing topology, approver slots, rules, and 5 provenance fields. |
 
 ---
 
@@ -194,14 +205,14 @@ FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 FULL_D3_BUSINESS_UAT = NOT CLAIMED
 D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
-R2_INDEPENDENT_REVIEW = NOT CLAIMED (AWAITING OWNER / CONTROL PLANE / CHATGPT REVIEW)
+R2_INDEPENDENT_REVIEW = REVIEWED / REQUEST CORRECTIVE (SUPERSEDED BY R3)
 ```
 
 ---
 
 ## 6. Terminal Governance State
 ```text
-RESULT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R3)
 ACTIVE_WORK_PACKAGE = NONE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
