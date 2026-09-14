@@ -1,3 +1,16 @@
+param(
+    [Parameter(Position = 0)]
+    [string]$Action,
+    [Parameter(Position = 1)]
+    [string]$EvidenceDir = $PSScriptRoot,
+    [Parameter(Position = 2)]
+    [string]$ScratchDir = "",
+    [Parameter(Position = 3)]
+    [string]$DownloadDir = "",
+    [Parameter(Position = 4)]
+    [IntPtr]$TargetHwnd = [IntPtr]0x130EBA
+)
+
 Add-Type -ReferencedAssemblies "System.Drawing", "System.Windows.Forms" @"
 using System;
 using System.Drawing;
@@ -181,23 +194,29 @@ public class UatRunner {
 }
 "@
 
-$Action = $args[0]
 if (-not $Action) {
     Write-Error "Action argument required: Get1 | Client | Get2"
     exit 1
 }
 
-$evidenceDir = "C:\Users\allda\Desktop\Dev\git\MBO2026\project-docs\evidence\D3_SBX_UAT_04_R1"
-$scratch = "C:\Users\allda\.gemini\antigravity-cli\brain\468b7e0f-92f7-461a-9b38-f5d749e52ce1\scratch"
-$targetHwnd = [IntPtr]0x130EBA
+if (-not $ScratchDir) {
+    $ScratchDir = Join-Path $EvidenceDir "scratch"
+}
+if (-not $DownloadDir) {
+    $DownloadDir = [System.IO.Path]::GetTempPath()
+}
+
+$evidenceDir = $EvidenceDir
+$scratch = $ScratchDir
+$targetHwnd = $TargetHwnd
 
 if ($Action -eq "Get1") {
-    $scriptPath = "$evidenceDir\capture_get1.js"
+    $scriptPath = Join-Path $evidenceDir "capture_get1.js"
     $expectedDigest = "0bffbf7c91e968662164778b7a1404d1a79f1bf7883b614430bae4c602843fd3"
-    $downloadTarget = "C:\Users\allda\Downloads\uat04_r1_get1_record.json"
-    $downloadError = "C:\Users\allda\Downloads\uat04_r1_get1_error.json"
-    $screenCapture = "$scratch\uat04_r1_get1_screen.png"
-    $capturedDest = "$scratch\raw_uat04_r1_get1_record.json"
+    $downloadTarget = Join-Path $DownloadDir "uat04_r1_get1_record.json"
+    $downloadError = Join-Path $DownloadDir "uat04_r1_get1_error.json"
+    $screenCapture = Join-Path $scratch "uat04_r1_get1_screen.png"
+    $capturedDest = Join-Path $scratch "raw_uat04_r1_get1_record.json"
 
     if (Test-Path $downloadTarget) { Remove-Item $downloadTarget -Force }
     if (Test-Path $downloadError) { Remove-Item $downloadError -Force }
@@ -220,19 +239,20 @@ if ($Action -eq "Get1") {
         Write-Output "GET1_CAPTURED_SUCCESS: $capturedDest"
         Get-Item $capturedDest | Select-Object Name, Length, LastWriteTime | Format-List
     } elseif (Test-Path $downloadError) {
-        Copy-Item $downloadError "$scratch\raw_uat04_r1_get1_error.json" -Force
-        Write-Output "GET1_CAPTURED_ERROR: $scratch\raw_uat04_r1_get1_error.json"
+        $capturedError = Join-Path $scratch "raw_uat04_r1_get1_error.json"
+        Copy-Item $downloadError $capturedError -Force
+        Write-Output "GET1_CAPTURED_ERROR: $capturedError"
     } else {
         Write-Output "GET1_DOWNLOAD_FILE_MISSING"
     }
 }
 elseif ($Action -eq "Client") {
-    $scriptPath = "$evidenceDir\capture_client.js"
+    $scriptPath = Join-Path $evidenceDir "capture_client.js"
     $expectedDigest = "34e679eb5635519c73332839046f2ff378ad35367f6d78c2314bf2269f17113a"
-    $downloadTarget = "C:\Users\allda\Downloads\uat04_r1_client_record.json"
-    $downloadError = "C:\Users\allda\Downloads\uat04_r1_client_error.json"
-    $screenCapture = "$scratch\uat04_r1_client_screen.png"
-    $capturedDest = "$scratch\raw_uat04_r1_client_record.json"
+    $downloadTarget = Join-Path $DownloadDir "uat04_r1_client_record.json"
+    $downloadError = Join-Path $DownloadDir "uat04_r1_client_error.json"
+    $screenCapture = Join-Path $scratch "uat04_r1_client_screen.png"
+    $capturedDest = Join-Path $scratch "raw_uat04_r1_client_record.json"
 
     if (Test-Path $downloadTarget) { Remove-Item $downloadTarget -Force }
     if (Test-Path $downloadError) { Remove-Item $downloadError -Force }
@@ -255,19 +275,20 @@ elseif ($Action -eq "Client") {
         Write-Output "CLIENT_CAPTURED_SUCCESS: $capturedDest"
         Get-Item $capturedDest | Select-Object Name, Length, LastWriteTime | Format-List
     } elseif (Test-Path $downloadError) {
-        Copy-Item $downloadError "$scratch\raw_uat04_r1_client_error.json" -Force
-        Write-Output "CLIENT_CAPTURED_ERROR: $scratch\raw_uat04_r1_client_error.json"
+        $capturedError = Join-Path $scratch "raw_uat04_r1_client_error.json"
+        Copy-Item $downloadError $capturedError -Force
+        Write-Output "CLIENT_CAPTURED_ERROR: $capturedError"
     } else {
         Write-Output "CLIENT_DOWNLOAD_FILE_MISSING"
     }
 }
 elseif ($Action -eq "Get2") {
-    $scriptPath = "$evidenceDir\capture_get2.js"
+    $scriptPath = Join-Path $evidenceDir "capture_get2.js"
     $expectedDigest = "7bb6c989779e7f52e90c2fd3a6906875c1c0f8639b6a0dc319c96ca32e495ca8"
-    $downloadTarget = "C:\Users\allda\Downloads\uat04_r1_get2_record.json"
-    $downloadError = "C:\Users\allda\Downloads\uat04_r1_get2_error.json"
-    $screenCapture = "$scratch\uat04_r1_get2_screen.png"
-    $capturedDest = "$scratch\raw_uat04_r1_get2_record.json"
+    $downloadTarget = Join-Path $DownloadDir "uat04_r1_get2_record.json"
+    $downloadError = Join-Path $DownloadDir "uat04_r1_get2_error.json"
+    $screenCapture = Join-Path $scratch "uat04_r1_get2_screen.png"
+    $capturedDest = Join-Path $scratch "raw_uat04_r1_get2_record.json"
 
     if (Test-Path $downloadTarget) { Remove-Item $downloadTarget -Force }
     if (Test-Path $downloadError) { Remove-Item $downloadError -Force }
@@ -290,8 +311,9 @@ elseif ($Action -eq "Get2") {
         Write-Output "GET2_CAPTURED_SUCCESS: $capturedDest"
         Get-Item $capturedDest | Select-Object Name, Length, LastWriteTime | Format-List
     } elseif (Test-Path $downloadError) {
-        Copy-Item $downloadError "$scratch\raw_uat04_r1_get2_error.json" -Force
-        Write-Output "GET2_CAPTURED_ERROR: $scratch\raw_uat04_r1_get2_error.json"
+        $capturedError = Join-Path $scratch "raw_uat04_r1_get2_error.json"
+        Copy-Item $downloadError $capturedError -Force
+        Write-Output "GET2_CAPTURED_ERROR: $capturedError"
     } else {
         Write-Output "GET2_DOWNLOAD_FILE_MISSING"
     }
