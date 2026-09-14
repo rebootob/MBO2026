@@ -1,14 +1,14 @@
-# D3-SBX-UAT-03 Evidence Record (CORRECTED / SUPERSEDED BY R1)
+# D3-SBX-UAT-03 Evidence Record (CORRECTED / SUPERSEDED BY R1 & R2)
 
 Updated: 2026-09-14 ICT
 
 > [!IMPORTANT]
-> **SUPERSEDED AND CORRECTED BY D3-SBX-UAT-03-R1**
-> This document is historical evidence superseded by `D3-SBX-UAT-03-R1` ([D3_SBX_UAT_03_R1_EVIDENCE.md](project-docs/evidence/D3_SBX_UAT_03_R1_EVIDENCE.md)) under Authorization `MBO2026-D3-SBX-UAT03-R1-20260913-OWNER-01`.
+> **SUPERSEDED AND CORRECTED BY D3-SBX-UAT-03-R2**
+> This document is historical evidence superseded by `D3-SBX-UAT-03-R2` ([D3_SBX_UAT_03_R2_EVIDENCE.md](project-docs/evidence/D3_SBX_UAT_03_R2_EVIDENCE.md)) under Authorization `MBO2026-D3-SBX-UAT03-R2-20260914-OWNER-01`. Prior corrective R1 ([D3_SBX_UAT_03_R1_EVIDENCE.md](project-docs/evidence/D3_SBX_UAT_03_R1_EVIDENCE.md)) received Control Plane verdict `REQUEST CORRECTIVE`.
 > The original aggregate verdict `4/4 PASS` and counter "2 GETs within 2 ceiling" have been **WITHDRAWN** and **DOWNGRADED** to `REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY` per Control Plane audit.
-> **Historical GET Accounting Finding:** Original authorization permitted a ceiling of up to 2 GET attempts and zero retries. Reconstructed historical evidence proves that at least 5 to 7 GET attempts were dispatched to `/k/v1/record.json?app=794&id=15` from DevTools console due to repeated script invocations following clipboard extraction uncertainty, violating the 2-GET ceiling.
+> **Historical GET Accounting Finding:** Original authorization permitted a ceiling of up to 2 GET attempts and zero retries. Evidence visible in Git (DevTools screenshot) confirms AT LEAST 3 successful GET executions. The claim of 5 to 7 attempts is an executor reconstruction from uncommitted local execution transcripts and scratch files, unverified by the Control Plane.
 > **Captured Response Finding:** Only one REST API response was captured (`call1_record.json`); distinct Call 2 REST download failed. Reported stability was evaluated against client in-memory DOM record state (`page_record_dom.json`), NOT against two distinct REST API captures.
-> **Privacy Sanitization:** All PII (user codes, real names, employee start dates, personal browser tabs/bookmarks) has been permanently redacted using 100% opaque, irreversible, flattened black rectangles. Stable actor aliases (`Actor_Requester`, `Actor_Mgr1`, `Actor_Mgr2`, `Actor_HR`) are used throughout.
+> **Privacy Sanitization:** All PII (user codes, real names, employee start dates, personal browser tabs/bookmarks) has been permanently redacted using 100% opaque, irreversible, flattened black rectangles. Stable functional aliases (`Requester`, `Approver 1`, `GM Approver 1`, `HR Admin`) are used throughout. No alias-to-real-identity mapping is published. Forward-only redaction does not erase data from historical Git commits; no history rewrite.
 
 ---
 
@@ -29,7 +29,7 @@ TARGET_APP = 794
 TARGET_RECORD_ID = 15
 TARGET_RECORD_URL = https://ttmet.cybozu.com/k/794/show#record=15
 STATUS = REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY
-CORRECTIVE_PACKAGE = D3-SBX-UAT-03-R1
+CORRECTIVE_PACKAGE = D3-SBX-UAT-03-R2 (SUPERSEDES R1)
 ```
 
 > **Owner Authorization Scope Note:**
@@ -40,7 +40,7 @@ CORRECTIVE_PACKAGE = D3-SBX-UAT-03-R1
 
 ## 2. Hard Operational Accounting & Ceiling Compliance
 ```text
-KINTONE_API_READS = UNVERIFIED (DISPATCHED: 5-7 GET ATTEMPTS PROVEN; CEILING 2 VIOLATED)
+KINTONE_API_READS = UNVERIFIED (GIT CONFIRMS AT LEAST 3 SUCCESSFUL; LOCAL RECONSTRUCTION CLAIMS 5-7; CEILING 2 VIOLATED)
 KINTONE_API_WRITES = 0 (CEILING: 0 max)
 KINTONE_IO_MUTATIONS = 0
 RECORD_CREATIONS = 0
@@ -66,10 +66,10 @@ READ_ONLY_ENFORCEMENT = ENFORCED (ZERO WRITES / READ SCOPE VIOLATED)
 ## 3. Re-Evaluated UAT-03 Verification Cases
 
 ### UAT03-01: Record Identity, Persisted Revision & Stability Check
-- **Objective:** Verify record identity (`$id = 15`), persisted revision (`$revision = 1`), and workflow state (`Status = 01 Draft Objective`) against native and custom UI, confirming consistency across baseline capture and rendered DOM.
+- **Objective:** Verify record identity (`$id = 15`), actual persisted revision (`$revision = 2`), and workflow state (`Status = 01 Draft Objective`) against native and custom UI, confirming consistency across baseline capture and rendered DOM.
 - **Persisted REST API Evidence (`call1_record.json`):**
   - `$id`: `15`
-  - `$revision`: `1`
+  - `$revision`: `2`
   - `Status`: `01 Draft Objective`
   - `Created_datetime`: `2026-09-13T11:42:00Z`
   - `Updated_datetime`: `2026-09-13T11:42:00Z`
@@ -81,7 +81,7 @@ READ_ONLY_ENFORCEMENT = ENFORCED (ZERO WRITES / READ SCOPE VIOLATED)
   - Stepper Card 1: `1. เป้าหมาย / Objectives [ Current / ปัจจุบัน ] (76 days overdue)`
   - Form Header Badge: `01 Draft Objective`
 - **Re-evaluated Stability Finding:**
-  - Record ID 15, Revision 1, and Status match between REST capture `call1_record.json` and in-memory DOM object `page_record_dom.json`.
+  - Record ID 15, actual Revision 2, and Status match between REST capture `call1_record.json` and in-memory DOM object `page_record_dom.json`.
   - Stability across two distinct REST API captures was NOT verified because Call 2 download failed.
   - Unchanged revision on Record 15 does not prove absence of background mutations elsewhere.
 - **Verdict:** **PARTIAL / REST-TO-DOM MATCH VERIFIED, TWO-REST STABILITY UNVERIFIED**
@@ -92,27 +92,27 @@ READ_ONLY_ENFORCEMENT = ENFORCED (ZERO WRITES / READ SCOPE VIOLATED)
 - **Objective:** Inspect stored routing topology, requester, appraiser actors, and approval rules in App 794; compare against rendered UI route cards.
 - **Persisted REST API Data (`call1_record.json`):**
   - `Routing_Topology`: `M1_G1`
-  - `Requester_User`: `Actor_Requester`
-  - `Manager_Level1_Approvers`: `[{"code": "Actor_Mgr1"}]`
+  - `Requester_User`: `Requester`
+  - `Manager_Level1_Approvers`: `[{"code": "Approver 1"}]`
   - `Manager_Level1_Approval_Rule`: `ALL`
   - `Manager_Level2_Approvers`: `[]` (unassigned)
   - `Manager_Level2_Approval_Rule`: `ALL`
-  - `GM_Level1_Approvers`: `[{"code": "Actor_Mgr2"}]` (acting in 2nd appraiser slot)
+  - `GM_Level1_Approvers`: `[{"code": "GM Approver 1"}]` (acting in 2nd appraiser slot)
   - `GM_Level1_Approval_Rule`: `ALL`
   - `GM_Level2_Approvers`: `[]` (unassigned)
   - `GM_Level2_Approval_Rule`: `ALL`
 - **Rendered UI Route Cards:**
   - Header: `Technical Details: M1_G1 (2 Slots) | Pos: Accounting Staff | Sec: TMH3 | Rule: TMH3`
-  - Card 1: `พนักงาน / Employee: [กำลังดำเนินการ / Current]` (Actor_Requester)
-  - Card 2: `ผู้ประเมินลำดับที่ 1 / 1st Appraiser: [รอดำเนินการ / Waiting]` (Actor_Mgr1)
-  - Card 3: `ผู้ประเมินลำดับที่ 2 / 2nd Appraiser: [รอดำเนินการ / Waiting]` (Actor_Mgr2)
-  - Card 4: `HR Final Check / HR Final / HR Admin: ฝ่ายทรัพยากรบุคคล / HR Control Center [รอดำเนินการ / Waiting]` (Actor_HR)
+  - Card 1: `พนักงาน / Employee: [กำลังดำเนินการ / Current]` (Requester)
+  - Card 2: `ผู้ประเมินลำดับที่ 1 / 1st Appraiser: [รอดำเนินการ / Waiting]` (Approver 1)
+  - Card 3: `ผู้ประเมินลำดับที่ 2 / 2nd Appraiser: [รอดำเนินการ / Waiting]` (GM Approver 1)
+  - Card 4: `HR Final Check / HR Final / HR Admin: ฝ่ายทรัพยากรบุคคล / HR Control Center [รอดำเนินการ / Waiting]` (HR Admin)
 - **Comparison & Findings:**
   - 1 user per slot: Verified.
   - Approval rules: Both Manager and GM approval rules are persisted as `ALL`.
-  - Sequential progression: Requester is current; 1st Appraiser, 2nd Appraiser, and HR Final are in waiting state.
   - Slot mapping: In `M1_G1` (2 Slots), `GM_Level1_Approvers` serves as the 2nd appraiser slot in workflow progression, aligned with the technical header.
-- **Verdict:** **PASS / BUSINESS MAPPING VERIFIED**
+  - Workflow progression claim is WITHDRAWN: Current/Waiting status proves UI rendering only, NOT active workflow progression. No process actions were clicked.
+- **Verdict:** **PARTIAL / UI RENDERING OF ROUTE SLOTS VERIFIED, WORKFLOW PROGRESSION NOT TESTED**
 
 ---
 
@@ -125,7 +125,7 @@ READ_ONLY_ENFORCEMENT = ENFORCED (ZERO WRITES / READ SCOPE VIOLATED)
   - `Effective_Route_Version_Key`: `"TMH3#v1"`
   - `Effective_Scorer_Slots_Snapshot`: `"[1,2]"`
 - **Re-evaluated Findings & Scope Qualifications:**
-  - *Provenance Population:* Record 15 has all 5 provenance and snapshot fields persisted in App 794 database storage at initial creation (Revision 1).
+  - *Provenance Population:* Record 15 has all 5 provenance and snapshot fields persisted in App 794 database storage at actual Revision 2.
   - *Profile Binding:* `Frozen_Profile_Code` is bound to `PROF_STAFF_CHIEF`.
   - *Routing Master Binding:* `Effective_Routing_Key` (`TMH3`) and `Effective_Route_Version_Key` (`TMH3#v1`) record the exact version of the routing rule.
   - *Scorer Snapshot:* `K_expected_Snapshot = 2` and `Effective_Scorer_Slots_Snapshot = [1,2]` bind the required 2 scorer slots directly to the record.
@@ -155,8 +155,8 @@ READ_ONLY_ENFORCEMENT = ENFORCED (ZERO WRITES / READ SCOPE VIOLATED)
 
 | Case ID | Test Scope | Supported Findings | Historical Gap / Accounting Discrepancy | Re-Evaluated Status |
 |:---:|:---|:---|:---|:---:|
-| `UAT03-01` | Record ID, Persisted Revision & Stability | ID 15, Revision 1, Status 01 Draft Objective match UI exactly | 2 distinct REST calls were not verified; comparison was against DOM object | **PARTIAL / REST-TO-DOM MATCH VERIFIED, TWO-REST STABILITY UNVERIFIED** |
-| `UAT03-02` | Persisted Routing Topology & Approver Actors vs UI Cards | M1_G1 topology, Requester + 2 Appraiser slots + HR Admin match UI cards | Real names and codes sanitized; business mapping verified | **PASS / BUSINESS MAPPING VERIFIED** |
+| `UAT03-01` | Record ID, Persisted Revision & Stability | ID 15, actual Revision 2, Status 01 Draft Objective match UI exactly | 2 distinct REST calls were not verified; comparison was against DOM object | **PARTIAL / REST-TO-DOM MATCH VERIFIED, TWO-REST STABILITY UNVERIFIED** |
+| `UAT03-02` | Persisted Routing Topology & Approver Actors vs UI Cards | M1_G1 topology, Requester + 2 Appraiser slots + HR Admin match UI cards | Workflow progression withdrawn: Current/Waiting status proves UI rendering only, not workflow progression. Real names and user codes sanitized to stable aliases. | **PARTIAL / UI RENDERING OF ROUTE SLOTS VERIFIED, WORKFLOW PROGRESSION NOT TESTED** |
 | `UAT03-03` | Persisted Provenance & Stage Snapshot Contract | Frozen Profile, Routing Keys, and Scorer Snapshot [1,2] persisted in App 794 | Snapshot presence does not prove UI never queries App 795 or immutability | **PASS / RECORD SNAPSHOT PERSISTENCE VERIFIED (CONTRACTUAL SCOPE QUALIFIED)** |
 | `UAT03-04` | Runtime Console Audit & Temporal Simulation | 0 app bundle runtime errors; Simulated date 2026-06-15 drives 76-day overdue banner | Console has 2 hidden messages; 1 synthetic script error; scope limited to Stage 1 | **PARTIAL / ZERO APPLICATION BUNDLE EXCEPTIONS OBSERVED (FILTER & SIMULATION LIMITS QUALIFIED)** |
 
@@ -169,7 +169,7 @@ All visual artifacts have been sanitized per privacy governance. Real names, emp
 | File Name | Byte Length | SHA-256 Digest | Description & Verification Tokens |
 |:---|:---:|:---|:---|
 | [D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_01_RECORD_IDENTITY_AND_TOP_UI.png) | 83,797 bytes | `6579ECC180CA77672B4B17CA97F9EB3D957C8ED89D42F45F0E48317E3AE34F97` | Top view of Record 15: URL bar (`#record=15`), Breadcrumb (`FY2026`), Status `01 Draft Objective`, Process action `Submit Objective to Manager`, 5-stage stepper, 76-day overdue urgency banner. Personal tabs, bookmarks, and user profile opaquely redacted. |
-| [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png) | 62,721 bytes | `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF` | Close-up of Step 2 Employee Info (`TMH3`, `Accounting Staff`, `Corporate`) and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box (`2024-10-01`), EMP ID, and NAME opaquely redacted. |
+| [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png) | 62,721 bytes | `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF` | Close-up of Step 2 Employee Info (`TMH3`, `Accounting Staff`, `Corporate`) and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box, EMP ID, and NAME opaquely redacted. |
 | [D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png) | 87,370 bytes | `DE2B29678F9080E542F9741414064EF37062025B4310C9FCDE0C9DF4AC1D01C6` | Step 3 Part A MBO table showing 4 objectives, weights (30%, 30%, 30%, 10%), Total Weight banner (100% Complete), native comments mirror, and audit trail. Profile area opaquely redacted. |
 | [D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_04_DEVTOOLS_RUNTIME_AUDIT.png) | 135,157 bytes | `5EFC8CBDF1D91B88968C90BFCFCDC717E6AFBE512C5184B33D1BC6A4F9837DBE` | Docked Chrome DevTools console showing executed GET calls, `CALL1_STORED_SUCCESS` logs, 22 issues, 2 hidden, 1 error. Console audit evidence preserved intact. |
 
@@ -188,7 +188,7 @@ UAT03_INDEPENDENT_REVIEW = NOT CLAIMED (AWAITING OWNER / CONTROL PLANE REVIEW)
 
 ## 7. Terminal Governance State
 ```text
-RESULT = REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY / SUPERSEDED BY R1
+RESULT = REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY / SUPERSEDED BY R1 & R2
 ACTIVE_WORK_PACKAGE = NONE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO

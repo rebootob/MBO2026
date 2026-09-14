@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "D3-SBX-UAT-03-R2 Minimal Sanitized Record 15 Comparison Excerpt",
+  "description": "Minimal sanitized comparison excerpt of persisted App 794 Record 15 provenance, route topology, approvers, and revision. Real names, user codes, and start dates sanitized to stable aliases.",
+  "provenance": {
+    "source": "call1_record.json (REST API GET /k/v1/record.json?app=794&id=15, Attempt 6)",
+    "targetAppId": 794,
+    "targetRecordId": 15,
+    "sanitizationPolicy": "SOLID_OPAQUE_ALIASING_NO_PII_NO_START_DATE"
+  },
+  "record": {
+    "$id": { "type": "__ID__", "value": "15" },
+    "$revision": { "type": "__REVISION__", "value": "2" },
+    "Status": { "type": "STATUS", "value": "01 Draft Objective" },
+    "Routing_Topology": { "type": "DROP_DOWN", "value": "M1_G1" },
+    "Requester_User": { "type": "USER_SELECT", "value": [{ "code": "Requester" }] },
+    "Manager_Level1_Approvers": { "type": "USER_SELECT", "value": [{ "code": "Approver 1" }] },
+    "Manager_Level1_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
+    "Manager_Level2_Approvers": { "type": "USER_SELECT", "value": [] },
+    "Manager_Level2_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
+    "GM_Level1_Approvers": { "type": "USER_SELECT", "value": [{ "code": "GM Approver 1" }] },
+    "GM_Level1_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
+    "GM_Level2_Approvers": { "type": "USER_SELECT", "value": [] },
+    "GM_Level2_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
+    "Frozen_Profile_Code": { "type": "SINGLE_LINE_TEXT", "value": "PROF_STAFF_CHIEF" },
+    "K_expected_Snapshot": { "type": "NUMBER", "value": "2" },
+    "Effective_Routing_Key": { "type": "SINGLE_LINE_TEXT", "value": "TMH3" },
+    "Effective_Route_Version_Key": { "type": "SINGLE_LINE_TEXT", "value": "TMH3#v1" },
+    "Effective_Scorer_Slots_Snapshot": { "type": "SINGLE_LINE_TEXT", "value": "[1,2]" }
+  }
+}

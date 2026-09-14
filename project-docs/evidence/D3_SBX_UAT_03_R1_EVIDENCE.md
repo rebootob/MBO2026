@@ -16,7 +16,7 @@ EXECUTION_PLANE = ANTIGRAVITY CLI
 ORCHESTRATION_CHANNEL = HERMES (ORCHESTRATOR ONLY)
 TARGET_APP = 794
 TARGET_RECORD_ID = 15
-RESULT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R2)
 ```
 
 > **Owner Authorization Scope Note:**
@@ -76,15 +76,14 @@ Investigation of the existing local execution transcript (`b2752a31-eac5-4a10-a4
 
 #### C. Total GET Accounting & Historical Scope Violation
 - **Authorization Ceiling:** Original authorization `MBO2026-D3-SBX-UAT03-20260913-OWNER-01` permitted a strict ceiling of **UP TO 2 GET ATTEMPTS, ZERO RETRIES**.
-- **Actual Historical Execution:**
-  - Independent request dispatches: At least **5 to 7 GET requests** were dispatched to endpoint `/k/v1/record.json?app=794&id=15` from Google Chrome DevTools.
-  - Lower Bound: **5 GET requests proven** by distinct VM execution tags in DevTools console (`VM470`, `VM484`, `VM496`, `VM508`, `VM518`).
-  - Upper Limit: Up to **7 GET requests indicated** by script executions (Attempts 1, 2, 3, 4, 5, 6, 7).
-  - Scope / STOP Violation: Historical UAT03 execution violated the 2-GET ceiling by +3 to +5 excess calls. It failed to halt safely upon initial extraction failure and executed unauthorized retries.
-  - Ceiling Integrity: The original ceiling is NOT raised retroactively, and excess calls are NOT relabeled as authorized.
-  - Total Accounting Classification:
+- **Actual Historical Execution Accounting:**
+  - *Evidence Visible in Git and Inspectable by Control Plane:* The committed DevTools console screenshot confirms **AT LEAST 3 successful GET executions** (three distinct `CALL1_STORED_SUCCESS` outputs at `VM484:1`, `VM496:1`, `VM508:1`) plus 1 prior synthetic error (`VM470:1`).
+  - *Executor Reconstruction from Local History:* The assertion of 5 to 7 GET attempts represents an executor reconstruction derived from uncommitted local execution transcripts and scratch scripts. It is **NOT independently verified by the Control Plane**.
+  - *Scope / STOP Violation:* Historical UAT03 execution violated the 2-GET ceiling and failed to halt safely upon initial extraction failure.
+  - *Ceiling Integrity:* The original ceiling is NOT raised retroactively, and excess calls are NOT relabeled as authorized.
+  - *Total Accounting Classification:*
     ```text
-    TOTAL_GET_ATTEMPTS = UNVERIFIED (LOWER_BOUND: 5, UPPER_BOUND: 7)
+    TOTAL_GET_ATTEMPTS = UNVERIFIED (GIT CONFIRMS AT LEAST 3 SUCCESSFUL; LOCAL RECONSTRUCTION CLAIMS 5-7)
     AUTHORIZED_CEILING = 2
     SCOPE_COMPLIANCE = VIOLATED (EXCESS ATTEMPTS & REPEATED RETRIES)
     SAFETY_STOP_COMPLIANCE = VIOLATED (CONTINUED EXECUTION AFTER EXTRACTION UNCERTAINTY)
@@ -105,10 +104,12 @@ Per repository governance, all personal identifying information (PII), user cred
 
 #### B. Stable Actor Aliases
 To preserve order and equality comparisons across workflow steps without disclosing real identity:
-- `Actor_Requester`: Employee / Requester (replaces real user account code `tmh` and employee name)
-- `Actor_Mgr1`: 1st Appraiser / Manager Level 1 (replaces real user account code `chatrawee` and name `Ms.Chatrawee`)
-- `Actor_Mgr2`: 2nd Appraiser / GM Level 1 (replaces real user account code `pattama` and name `Ms.Pattama`)
-- `Actor_HR`: HR Final Check / HR Admin (`ฝ่ายทรัพยากรบุคคล / HR Control Center`)
+- `Requester`: Employee / Requester
+- `Approver 1`: 1st Appraiser / Manager Level 1
+- `GM Approver 1`: 2nd Appraiser / GM Level 1
+- `HR Admin`: HR Final Check / HR Admin (`ฝ่ายทรัพยากรบุคคล / HR Control Center`)
+
+No alias-to-real-identity mapping tables are published.
 
 #### C. Non-Personal Provenance Retained
 Essential non-personal verification tokens are retained:
@@ -131,7 +132,7 @@ All 4 image artifacts under `project-docs/evidence/D3_SBX_UAT_03/` have been ins
    - Byte Length: `83,797` bytes
    - SHA-256: `6579ECC180CA77672B4B17CA97F9EB3D957C8ED89D42F45F0E48317E3AE34F97`
 2. `D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png`:
-   - Redactions: Start Date input box containing `2024-10-01` (x: 995–1150, y: 154–194) opaquely blacked out, matching EMP ID and NAME redactions. Field label "วันเริ่มงาน / START DATE" retained.
+   - Redactions: Start Date input box (x: 995–1150, y: 154–194) opaquely blacked out, matching EMP ID and NAME redactions. Field label "วันเริ่มงาน / START DATE" retained.
    - Result: Employee start date permanently removed; Section `TMH3`, Position `Accounting Staff`, Department `Corporate`, and M1_G1 route cards preserved.
    - Byte Length: `62,721` bytes
    - SHA-256: `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF`
@@ -161,15 +162,15 @@ Forward-only sanitization cannot erase historical Git commits (`70070c25b8f91eff
 {
   "record": {
     "$id": { "type": "__ID__", "value": "15" },
-    "$revision": { "type": "__REVISION__", "value": "1" },
+    "$revision": { "type": "__REVISION__", "value": "2" },
     "Status": { "type": "STATUS", "value": "01 Draft Objective" },
     "Routing_Topology": { "type": "DROP_DOWN", "value": "M1_G1" },
-    "Requester_User": { "type": "USER_SELECT", "value": [{ "code": "Actor_Requester" }] },
-    "Manager_Level1_Approvers": { "type": "USER_SELECT", "value": [{ "code": "Actor_Mgr1" }] },
+    "Requester_User": { "type": "USER_SELECT", "value": [{ "code": "Requester" }] },
+    "Manager_Level1_Approvers": { "type": "USER_SELECT", "value": [{ "code": "Approver 1" }] },
     "Manager_Level1_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
     "Manager_Level2_Approvers": { "type": "USER_SELECT", "value": [] },
     "Manager_Level2_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
-    "GM_Level1_Approvers": { "type": "USER_SELECT", "value": [{ "code": "Actor_Mgr2" }] },
+    "GM_Level1_Approvers": { "type": "USER_SELECT", "value": [{ "code": "GM Approver 1" }] },
     "GM_Level1_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
     "GM_Level2_Approvers": { "type": "USER_SELECT", "value": [] },
     "GM_Level2_Approval_Rule": { "type": "RADIO_BUTTON", "value": "ALL" },
@@ -197,9 +198,9 @@ Forward-only sanitization cannot erase historical Git commits (`70070c25b8f91eff
 
 | Case ID | Original Scope | Supported Existing Observations | Historical Discrepancy / Gap | Re-Evaluated Status |
 |:---:|:---|:---|:---|:---:|
-| `UAT03-01` | Record ID, Persisted Revision & Stability Check | Record ID `15`, Revision `1`, and Status `01 Draft Objective` confirmed from REST capture `call1_record.json` and UI DOM. | Stability across 2 distinct REST API calls was NOT verified (Call 2 download failed; comparison was evaluated against in-memory DOM object `page_record_dom.json`). Revision invariance on one record does not prove zero mutations everywhere. | **PARTIAL / REST-TO-DOM MATCH VERIFIED, TWO-REST STABILITY UNVERIFIED** |
-| `UAT03-02` | Persisted Routing Topology & Approver Actors vs UI Cards | Persisted topology `M1_G1`, active approver `Actor_Mgr1` in Slot 1, `Actor_Mgr2` in Slot 2, and approval rules `ALL` match the 4 rendered UI route cards. Sequential progression verified. | None on business mapping. Real names and user codes sanitized per privacy rules. | **PASS / BUSINESS MAPPING VERIFIED** |
-| `UAT03-03` | Persisted Provenance & Stage Snapshot Contract | Record 15 has all 5 provenance/snapshot fields (`PROF_STAFF_CHIEF`, `2`, `TMH3`, `TMH3#v1`, `[1,2]`) persisted in App 794 database storage at Revision 1. | Persisted snapshot presence does not prove UI never dynamically resolves from App 795, nor does field existence prove immutability against all runtime updates. | **PASS / RECORD SNAPSHOT PERSISTENCE VERIFIED (CONTRACTUAL SCOPE QUALIFIED)** |
+| `UAT03-01` | Record ID, Persisted Revision & Stability Check | Record ID `15`, actual Revision `2`, and Status `01 Draft Objective` confirmed from REST capture `call1_record.json` and UI DOM. | Stability across 2 distinct REST API calls was NOT verified (Call 2 download failed; comparison was evaluated against in-memory DOM object `page_record_dom.json`). Revision invariance on one record does not prove zero mutations everywhere. | **PARTIAL / REST-TO-DOM MATCH VERIFIED, TWO-REST STABILITY UNVERIFIED** |
+| `UAT03-02` | Persisted Routing Topology & Approver Actors vs UI Cards | Persisted topology `M1_G1`, active approver `Approver 1` in Slot 1, `GM Approver 1` in Slot 2, and approval rules `ALL` match the 4 rendered UI route cards. | Workflow progression claim is WITHDRAWN: Current/Waiting status proves UI rendering only, not active workflow progression. Real names and user codes sanitized to stable aliases. | **PARTIAL / UI RENDERING OF ROUTE SLOTS VERIFIED, WORKFLOW PROGRESSION NOT TESTED** |
+| `UAT03-03` | Persisted Provenance & Stage Snapshot Contract | Record 15 has all 5 provenance/snapshot fields (`PROF_STAFF_CHIEF`, `2`, `TMH3`, `TMH3#v1`, `[1,2]`) persisted in App 794 database storage at actual Revision 2. | Persisted snapshot presence does not prove UI never dynamically resolves from App 795, nor does field existence prove immutability against all runtime updates. | **PASS / RECORD SNAPSHOT PERSISTENCE VERIFIED (CONTRACTUAL SCOPE QUALIFIED)** |
 | `UAT03-04` | Runtime Observation Limits, Console Audit & Date Simulation | Zero exceptions originating from `desktop-bundle.js`/`css`. Urgency math (`2026-06-15` vs `2026-03-31` = 76 days overdue) operates on simulated date. | Console toolbar shows "2 hidden" and "1 error" (the latter from synthetic CLI evaluation `copy is not defined`). Single banner math does not prove all app badges decouple across all states. | **PARTIAL / ZERO APPLICATION BUNDLE EXCEPTIONS OBSERVED (FILTER & SIMULATION LIMITS QUALIFIED)** |
 
 ---
@@ -217,7 +218,7 @@ All links are repository-relative. Local `file:///` paths are forbidden.
    - Path: [D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_02_PERSISTED_ROUTE_ACTORS_UI.png)
    - Byte Length: `62,721` bytes
    - SHA-256: `CE015D7E17564903349F6472149B5F67C9C5F0BBB12BF17947294FE3B3884CEF`
-   - Description: Section `TMH3`, Position `Accounting Staff`, Department `Corporate`, and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box (`2024-10-01`), EMP ID, and NAME opaquely redacted.
+   - Description: Section `TMH3`, Position `Accounting Staff`, Department `Corporate`, and M1_G1 route cards (`Employee`, `1st Appraiser`, `2nd Appraiser`, `HR Final Check`). Start date box, EMP ID, and NAME opaquely redacted.
 3. **Part A MBO Objectives Table (Sanitized)**:
    - Path: [D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png](project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_03_PART_A_MBO_OBJECTIVES_TABLE.png)
    - Byte Length: `87,370` bytes
@@ -236,7 +237,8 @@ All links are repository-relative. Local `file:///` paths are forbidden.
 - `D3-SBX-UAT-02` = `REQUEST CORRECTIVE / ALL-FOUR-PASS NOT ACCEPTED / SUPERSEDED BY R1`
 - `D3-SBX-UAT-02-R1` = `PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED`
 - `D3-SBX-UAT-03` = `REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY`
-- `D3-SBX-UAT-03-R1` = `CORRECTIVE DELIVERED / REVIEW REQUIRED`
+- `D3-SBX-UAT-03-R1` = `REQUEST CORRECTIVE`
+- `D3-SBX-UAT-03-R2` = `CORRECTIVE DELIVERED / REVIEW REQUIRED`
 
 ---
 
@@ -246,14 +248,14 @@ FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 FULL_D3_BUSINESS_UAT = NOT CLAIMED
 D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
-R1_INDEPENDENT_REVIEW = NOT CLAIMED (AWAITING CONTROL PLANE / CHATGPT REVIEW)
+R1_INDEPENDENT_REVIEW = REVIEWED / REQUEST CORRECTIVE (SUPERSEDED BY R2)
 ```
 
 ---
 
 ## 7. Terminal Governance State
 ```text
-RESULT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+RESULT = REQUEST CORRECTIVE (SUPERSEDED BY R2)
 ACTIVE_WORK_PACKAGE = NONE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
