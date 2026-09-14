@@ -115,6 +115,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_UAT_03_R2_EVIDENCE.md` — D3-SBX-UAT-03-R2 forward-only corrective evidence record (GET accounting distinction, text privacy sanitization with stable aliases; minimal comparison excerpt at reported $revision = 2; workflow progression withdrawn; REQUEST CORRECTIVE; superseded by R3).
 - `project-docs/evidence/D3_SBX_UAT_03_R3_EVIDENCE.md` — D3-SBX-UAT-03-R3 forward-only corrective evidence record (revision reconciliation UNVERIFIED, REST-to-DOM match withdrawn/UNVERIFIED, sanitized JSON excerpt classified as executor report, zero Kintone I/O; CORRECTIVE DELIVERED / REVIEW REQUIRED).
 - `project-docs/evidence/D3_SBX_UAT_03/D3_UAT03_R2_MINIMAL_SANATIZED_RECORD_15.json` — Sanitized REST excerpt according to executor report for Record 15 at reported $revision = 2 with stable aliases and zero PII.
+- `project-docs/evidence/D3_SBX_UAT_04_EVIDENCE.md` — Real browser UI read-only vs REST baseline verification evidence record (physical desktop WinSta0\Default attach, Chrome PID 30516 authenticated session on App 794 Record 15, Attempt 1 client V8 syntax error before network dispatch, fail-closed stop, zero HTTP responses, zero retries, zero Kintone writes, zero mutations; STOPPED SAFELY / EVIDENCE_CAPTURE_EXPORT_FAILED / ZERO MUTATIONS / REVIEW REQUIRED; opaque sanitized screenshots).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
