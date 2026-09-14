@@ -18,7 +18,7 @@ ORCHESTRATION_CHANNEL = HERMES (ORCHESTRATOR ONLY)
 TARGET_APP = 794
 TARGET_RECORD_ID = 15
 TARGET_RECORD_URL = https://ttmet.cybozu.com/k/794/show#record=15
-RESULT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+RESULT = REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED (SUPERSEDED BY R3)
 ```
 
 > **Owner Authorization Scope Note:**
@@ -68,8 +68,7 @@ R2_EXECUTION_STATE = CORRECTIVE DELIVERED / ZERO LIVE I/O
 
 ### Item 1: Privacy in Helper Files & Text
 - **`test_preflight_verification.cjs` Sanitization:**
-  - Replaced real employee code (`0187`) with genuinely fictional opaque test identifier (`mock_emp_101`).
-  - Replaced personal user codes and names (`tmh`/`TMH`, `chatawee`/`Ms.Chatrawee`, `pattama`/`Ms.Pattama`) with opaque mock test tokens:
+  - Replaced previously embedded employee code and personal user identifiers with opaque mock test tokens (`mock_emp_101`, `mock_user_101..103`):
     - `Requester_User`: `[{ code: 'mock_user_101', name: 'Mock User 101' }]`
     - `Appraiser_1_User`: `[{ code: 'mock_user_102', name: 'Mock User 102' }]`
     - `Appraiser_2_User`: `[{ code: 'mock_user_103', name: 'Mock User 103' }]`
@@ -77,7 +76,7 @@ R2_EXECUTION_STATE = CORRECTIVE DELIVERED / ZERO LIVE I/O
   - No alias-to-real-identity mapping table created.
   - Mock field/value types and test logic preserved verbatim without test redesign or expansion.
 - **`dispatch_runner.ps1` Sanitization:**
-  - Removed all hardcoded personal user paths (`C:\Users\allda\...`).
+  - Removed all hardcoded personal user filesystem paths.
   - Parameterized runner with explicit `param(...)` block supporting optional `-EvidenceDir`, `-ScratchDir`, `-DownloadDir`, and `-TargetHwnd`.
   - Used script-relative path `$PSScriptRoot` as default for evidence directory, and temporary directory for scratch/downloads.
   - Preserved exact runner structure, Windows API interop, clipboard injection, and error handling without generic runner redesign or framework refactor.
@@ -136,8 +135,9 @@ R2_EXECUTION_STATE = CORRECTIVE DELIVERED / ZERO LIVE I/O
   - `D3-SBX-UAT-04` = `PASS AS SAFETY STOP / INDEPENDENTLY REVIEWED / UAT NOT COMPLETED`
   - Historical UAT03 scope violation and revision reconciliation remain `UNVERIFIED`.
 - **Package Status Synchronization:**
-  - `D3-SBX-UAT-04-R1` = `REQUEST CORRECTIVE / CONTROL PLANE REVIEWED (SUPERSEDED BY R2)`
-  - `D3-SBX-UAT-04-R2` = `CORRECTIVE DELIVERED / REVIEW REQUIRED`
+  - `D3-SBX-UAT-04-R1` = `REQUEST CORRECTIVE / CONTROL PLANE REVIEWED (SUPERSEDED BY R2 & R3)`
+  - `D3-SBX-UAT-04-R2` = `REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED (SUPERSEDED BY R3)`
+  - `D3-SBX-UAT-04-R3` = `CORRECTIVE DELIVERED / REVIEW REQUIRED`
 
 ---
 
@@ -174,7 +174,7 @@ R2_EXECUTION_STATE = CORRECTIVE DELIVERED / ZERO LIVE I/O
 | File Name | Byte Length | SHA-256 Digest | Description & R2 Corrective Note |
 |:---|:---:|:---|:---|
 | [test_preflight_verification.cjs](D3_SBX_UAT_04_R1/test_preflight_verification.cjs) | 8,536 bytes | `A5D65F39CB15D45B0E2B45C578E8A8BEF3157CDE9727AD947F96FEF144405AB3` | Sanitized person/account identifiers with opaque mock test data (`mock_emp_101`, `mock_user_101..103`). Test logic unchanged. Historical preflight execution belongs strictly to original R1 version; not rerun under R2. |
-| [dispatch_runner.ps1](D3_SBX_UAT_04_R1/dispatch_runner.ps1) | 12,321 bytes | `2E64E59A6087E7F70CF31E5469B7A49B2A0B9A6D4DA1951C930550E885A4F836` | Sanitized personal user paths (`C:\Users\allda\...`) with explicit `param(...)` block and script-relative paths. NOT executed under R2. |
+| [dispatch_runner.ps1](D3_SBX_UAT_04_R1/dispatch_runner.ps1) | 12,321 bytes | `2E64E59A6087E7F70CF31E5469B7A49B2A0B9A6D4DA1951C930550E885A4F836` | Sanitized personal user filesystem paths with explicit `param(...)` block and script-relative paths. NOT executed under R2. |
 
 ---
 
@@ -214,7 +214,7 @@ FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 FULL_D3_BUSINESS_UAT = NOT CLAIMED
 D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
-R2_INDEPENDENT_REVIEW = NOT CLAIMED / AWAITING CHATGPT REVIEW
+R2_INDEPENDENT_REVIEW = COMPLETE / VERDICT: REQUEST CORRECTIVE
 ```
 
 ---
