@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "D3-SBX-UAT-04-R1 Minimal Sanitized Client In-Memory Record Excerpt",
+  "provenance": {
+    "source": "kintone.app.record.get() (Client In-Memory)",
+    "package": "D3-SBX-UAT-04-R1",
+    "authorizationId": "MBO2026-D3-SBX-UAT04-R1-20260914-OWNER-01",
+    "capturedUtc": "2026-09-14T04:34:32.794Z",
+    "targetAppId": 794,
+    "targetRecordId": 15,
+    "sanitizationPolicy": "SOLID_OPAQUE_ALIASING_NO_PII_NO_START_DATE",
+    "rawByteLength": 32389,
+    "rawSha256": "5d640a075d8764fb6fa0032632b349eea0c13fa351c9aa1e670ea97951cc3dda"
+  },
+  "record": {
+    "$id": {
+      "type": "__ID__",
+      "value": "15"
+    },
+    "$revision": {
+      "type": "__REVISION__",
+      "value": "1"
+    },
+    "Status": {
+      "type": "STATUS",
+      "value": "01 Draft Objective"
+    },
+    "Routing_Topology": {
+      "type": "SINGLE_LINE_TEXT",
+      "value": "M1_G1"
+    },
+    "Requester_User": {
+      "type": "USER_SELECT",
+      "value": [
+        {
+          "code": "Requester",
+          "name": "Requester"
+        }
+      ]
+    },
+    "Manager_User": {
+      "type": "USER_SELECT",
+      "value": [
+        {
+          "code": "Approver 1",
+          "name": "1st Appraiser"
+        }
+      ]
+    },
+    "GM_User": {
+      "type": "USER_SELECT",
+      "value": [
+        {
+          "code": "GM Approver 1",
+          "name": "2nd Appraiser"
+        }
+      ]
+    },
+    "Manager_Level1_Approvers": {
+      "type": "USER_SELECT",
+      "value": [
+        {
+          "code": "Approver 1",
+          "name": "1st Appraiser"
+        }
+      ]
+    },
+    "Manager_Level1_Approval_Rule": {
+      "type": "DROP_DOWN",
+      "value": "ALL"
+    },
+    "GM_Level1_Approvers": {
+      "type": "USER_SELECT",
+      "value": [
+        {
+          "code": "GM Approver 1",
+          "name": "2nd Appraiser"
+        }
+      ]
+    },
+    "GM_Level1_Approval_Rule": {
+      "type": "DROP_DOWN",
+      "value": "ALL"
+    },
+    "Manager_Level2_Approvers": {
+      "type": "USER_SELECT",
+      "value": []
+    },
+    "Manager_Level2_Approval_Rule": {
+      "type": "DROP_DOWN",
+      "value": "ALL"
+    },
+    "GM_Level2_Approvers": {
+      "type": "USER_SELECT",
+      "value": []
+    },
+    "GM_Level2_Approval_Rule": {
+      "type": "DROP_DOWN",
+      "value": "ALL"
+    },
+    "Frozen_Profile_Code": {
+      "type": "SINGLE_LINE_TEXT",
+      "value": "PROF_STAFF_CHIEF"
+    },
+    "K_expected_Snapshot": {
+      "type": "NUMBER",
+      "value": "2"
+    },
+    "Effective_Routing_Key": {
+      "type": "SINGLE_LINE_TEXT",
+      "value": "TMH3"
+    },
+    "Effective_Route_Version_Key": {
+      "type": "SINGLE_LINE_TEXT",
+      "value": "TMH3#v1"
+    },
+    "Effective_Scorer_Slots_Snapshot": {
+      "type": "SINGLE_LINE_TEXT",
+      "value": "[1,2]"
+    }
+  }
+}
