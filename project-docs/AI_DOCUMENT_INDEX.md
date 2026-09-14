@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-14 ICT
+Updated: 2026-09-15 ICT
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -118,6 +118,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_SBX_UAT_04_R1_EVIDENCE.md` — Real browser UI read-only vs REST baseline verification evidence record under D3-SBX-UAT-04-R1 (physical desktop WinSta0\Default attach, Chrome PID 30516 authenticated session on App 794 Record 15, 6 local preflight checks, 2 explicit REST GET attempts, 1 client in-memory capture, $revision = 1; REQUEST CORRECTIVE / CONTROL PLANE REVIEWED; superseded by R2 & R3).
 - `project-docs/evidence/D3_SBX_UAT_04_R2_EVIDENCE.md` — D3-SBX-UAT-04-R2 corrective evidence record (privacy sanitization of helper scripts with opaque mock data and path parameterization, comparison conclusions bounded to 20 published fields, REST/client/UI evidence separation, console/clock qualifications, zero Kintone I/O; REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED; superseded by R3).
 - `project-docs/evidence/D3_SBX_UAT_04_R3_EVIDENCE.md` — D3-SBX-UAT-04-R3 docs-only privacy and accounting corrective evidence record (narrative privacy sanitization, R1 distinct historical accounting, zero Kintone I/O in R2/R3, control sync; CORRECTIVE DELIVERED / REVIEW REQUIRED).
+- `project-docs/evidence/D3_UAT_NOTIFICATION_ISOLATION_READONLY_01_EVIDENCE.md` — App 794 Process Management and Notification live configuration read-only inspection evidence and combined Objective UAT proposal record (4 REST GETs, all HTTP 200, zero retries, zero writes; read-only UAT verified safe; workflow transition UAT not verified / blocked without explicit authorization).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

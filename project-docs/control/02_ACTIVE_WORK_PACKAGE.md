@@ -1,6 +1,6 @@
 # MBO2026 Active Work Package Contract
 
-Updated: 2026-09-14 ICT
+Updated: 2026-09-15 ICT
 
 > **Role:** exact active authorization/scope authority.
 
@@ -9,8 +9,8 @@ Updated: 2026-09-14 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-SBX-UAT-04-R3 CORRECTIVE DELIVERED / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-UAT-04-R3
+ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 DELIVERED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-UAT-NOTIFICATION-ISOLATION-READONLY-01
 LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-UAT-03-R3
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -27,36 +27,34 @@ PRODUCTION_READY = NO
 ```
 
 ## Latest Owner authorization
-Owner explicitly approved “อนุมัติ” ต่อข้อเสนอ R3 ที่รออยู่เพียงงานเดียว under Authorization ID `MBO2026-D3-SBX-UAT04-R3-20260914-OWNER-01` in mode `DOCS-ONLY PRIVACY & ACCOUNTING CORRECTIVE` on canonical base HEAD `b98084cec68fa64130b55784c5c77304a1df7cc3` (parent: `233509b48392a2269cd2bd1eb1f917257eb9f779`, tree: `55113ba5e2dac58724ddfc6f06a99b52e8316da4`).
-Scope Note: Deliver forward-only docs-only privacy sanitization in narrative and text (removing quoted personal identifiers and personal filesystem paths; using generic high-level descriptions without mapping tables or revealing original values; forward-only limitation noted), accounting corrections in control docs (replacing misleading R1 KINTONE_IO=0 with distinct historical counters: 2 explicit REST GET attempts/successes, 1 client capture, 0 retries, 0 writes/mutations, total/background browser requests not claimed; R2 and R3 zero Kintone I/O), and control document synchronization (D3-SBX-UAT-04-R2 = REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED, D3-SBX-UAT-04-R3 = CORRECTIVE DELIVERED / REVIEW REQUIRED). Strictly ZERO Kintone reads/writes/I/O, ZERO browser UAT/new collection/runner execution, ZERO test/build reruns, ZERO script/JSON/PNG changes, ZERO app source/test/config/dist changes.
+Owner explicitly authorized package `D3-UAT-NOTIFICATION-ISOLATION-READONLY-01` under Authorization ID `MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01` in mode `EXACT APP794 LIVE CONFIG READ-ONLY + COMBINED UAT PROPOSAL` on canonical base HEAD `a383aa3c0a188dabebf91f773e63f03568062674` (parent: `b98084cec68fa64130b55784c5c77304a1df7cc3`, tree: `e560126e72af8a4d346f71ea445a0df157962c95`).
+Scope: Inspect LIVE configuration of App 794 to evaluate how to perform a combined Objective UAT without sending notifications to real approvers. Workflow testing strictly not authorized. Maximum 4 explicit REST GET attempts, 0 retries, 0 auxiliary reads. Zero record reads, zero writes, zero process transitions.
 
 ## Execution result
 ```text
-PACKAGE = D3-SBX-UAT-04-R3
-TITLE = DOCS-ONLY PRIVACY & ACCOUNTING CORRECTIVE (R3)
-AUTHORIZATION_ID = MBO2026-D3-SBX-UAT04-R3-20260914-OWNER-01
-MODE = DOCS-ONLY PRIVACY & ACCOUNTING CORRECTIVE
-STATUS = CORRECTIVE DELIVERED / REVIEW REQUIRED
-BASE_HEAD = b98084cec68fa64130b55784c5c77304a1df7cc3 (MATCH)
+PACKAGE = D3-UAT-NOTIFICATION-ISOLATION-READONLY-01
+TITLE = APP 794 LIVE CONFIG NOTIFICATION ISOLATION READ-ONLY & COMBINED UAT PROPOSAL
+AUTHORIZATION_ID = MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01
+MODE = EXACT APP794 LIVE CONFIG READ-ONLY + COMBINED UAT PROPOSAL
+STATUS = DELIVERED / REVIEW REQUIRED
+BASE_HEAD = a383aa3c0a188dabebf91f773e63f03568062674 (MATCH)
 TARGET_APP = 794
-TARGET_RECORD_ID = 15
-COMPONENT = APP 794 RECORD 15 DOCS-ONLY PRIVACY & ACCOUNTING CORRECTIVE
+COMPONENT = APP 794 PROCESS AND NOTIFICATION LIVE CONFIGURATION INSPECTION
 
-OPERATIONAL_COUNTERS (PACKAGE UAT-04-R3):
-- KINTONE_API_READS = 0 (CEILING: 0 max)
+OPERATIONAL_COUNTERS (PACKAGE D3-UAT-NOTIFICATION-ISOLATION-READONLY-01):
+- EXPLICIT_REST_GET_ATTEMPTS = 4 (CEILING: 4 max; ENFORCED)
+  Attempt 1: /k/v1/app/status.json?app=794 -> HTTP 200
+  Attempt 2: /k/v1/app/notifications/general.json?app=794 -> HTTP 200
+  Attempt 3: /k/v1/app/notifications/perRecord.json?app=794 -> HTTP 200
+  Attempt 4: /k/v1/app/notifications/reminder.json?app=794 -> HTTP 200
+- EXPLICIT_REST_GET_SUCCESSES = 4
+- READ_RETRIES = 0 (CEILING: 0 max; ENFORCED)
+- AUXILIARY_LIVE_READS = 0
+- RECORD_READS = 0 (FORBIDDEN; ENFORCED)
 - KINTONE_API_WRITES = 0 (CEILING: 0 max)
-- KINTONE_IO = 0
-- BROWSER_UAT = 0
-- NEW_BROWSER_COLLECTION = 0
-- CAPTURE_RUNNER_EXECUTIONS = 0
-- BUILDS_AND_TEST_RERUNS = 0
-- SCRIPT_CHANGES = 0
-- JSON_CAPTURE_CHANGES = 0
-- PNG_IMAGE_CHANGES = 0
-- RECORD_CREATIONS = 0
-- RECORD_WRITES = 0
+- KINTONE_IO_MUTATIONS = 0
+- PROCESS_WRITES_OR_TRANSITIONS = 0 (FORBIDDEN; ENFORCED)
 - SCHEMA_WRITES = 0
-- PROCESS_WRITES = 0
 - ACL_WRITES = 0
 - CUSTOMIZATION_WRITES = 0
 - DEPLOYMENT_POSTS = 0
@@ -65,55 +63,49 @@ OPERATIONAL_COUNTERS (PACKAGE UAT-04-R3):
 - LOCAL_STORAGE_INJECTIONS = 0
 - MUTATION_CLICKS = 0
 - TOTAL_MUTATIONS = 0
+- BUILDS_AND_TEST_RERUNS = 0
 - SOURCE_TEST_CONFIG_DEPENDENCY_DIST_CHANGES = 0
 - HISTORY_REWRITE = 0
 - ZERO_WRITE_FAIL_CLOSED = ENFORCED
 - READ_ONLY_ENFORCEMENT = ENFORCED
-- STOP_CONDITION = NONE
 
-VERIFICATION_OUTCOMES:
-- CASE_UAT04_01 = PARTIAL / 20 SCOPED FIELDS BASELINE VERIFIED ($rev=1); 350-FIELD TOTAL EQUALITY EXECUTOR-REPORTED ONLY; REVISION RECONCILIATION UNVERIFIED
-- CASE_UAT04_02 = PARTIAL / TOPOLOGY PERSISTENCE & UI RENDERING OBSERVED; ACTOR IDENTITY IN MASKED UI NOT INDEPENDENTLY VERIFIED; WORKFLOW PROGRESSION NOT TESTED
-- CASE_UAT04_03 = PASS / FIVE PROVENANCE FIELDS PERSISTENCE VERIFIED; DYNAMIC RUNTIME QUERY SUPPRESSION NOT TESTED
-- CASE_UAT04_04 = PARTIAL / ZERO VISIBLE APPLICATION ERRORS IN INSPECTED SCREENSHOT; DATE SIMULATION OBSERVED ON STAGE 1 BANNER; SYSTEM-WIDE TEMPORAL DECOUPLING NOT CLAIMED
+LIVE_CONFIG_FINDINGS:
+- APP_794_LIVE_REVISION = 74 (CONVERGED ACROSS ALL 4 ENDPOINTS)
+- PROCESS_STATES = 19 STATES / 40 ACTIONS (APPROVER STATES USE FIELD_ENTITY ASSIGNEE SELECTORS; STATE 15 HR FINAL CHECK USES LITERAL USER:hr)
+- GENERAL_NOTIFICATIONS = COMMENT ADDED TRIGGERS TO Created_by AND Updated_by; STATUS CHANGED TRIGGERS TO Assignee (FIELD_ENTITY); notifyToCommenter = true
+- PER_RECORD_NOTIFICATIONS = EMPTY (ZERO RISK)
+- REMINDER_NOTIFICATIONS = EMPTY (ZERO RISK)
+- CUSTOM_JS = kintone.showNotification USED EXCLUSIVELY FOR CLIENT-SIDE UI TOAST (ZERO SERVER-SIDE NOTIFICATION / ZERO EMAIL / ZERO WEBHOOK)
+
+ISOLATION_VERDICTS:
+- READ_ONLY_UAT = VERIFIED SAFE (Cases 01-04 as executed in D3-SBX-UAT-04-R1 without workflow transitions or comments trigger zero notifications)
+- WORKFLOW_TRANSITION_UAT = NOT VERIFIED / LIVE UAT BLOCKED (Status change triggers notifications to Assignee FIELD_ENTITY users; workflow transitions strictly NOT AUTHORIZED; requires Owner-selected test record with safe approvers, hr account identity confirmation, and explicit transition authorization)
+- GLOBAL_NOTIFICATION_SUPPRESSION = NOT PROPOSED / NOT NEEDED (record-level isolation is smallest sufficient method)
 
 EVIDENCE_ARTIFACTS:
-- EVIDENCE_FILE = project-docs/evidence/D3_SBX_UAT_04_R3_EVIDENCE.md
-- PRIOR_R2_EVIDENCE_FILE = project-docs/evidence/D3_SBX_UAT_04_R2_EVIDENCE.md
-- PRIOR_R1_EVIDENCE_FILE = project-docs/evidence/D3_SBX_UAT_04_R1_EVIDENCE.md
-- SCRIPT_GET1 = project-docs/evidence/D3_SBX_UAT_04_R1/capture_get1.js (2,015 bytes, SHA-256 0BFFBF7C91E968662164778B7A1404D1A79F1BF7883B614430BAE4C602843FD3)
-- SCRIPT_CLIENT = project-docs/evidence/D3_SBX_UAT_04_R1/capture_client.js (1,591 bytes, SHA-256 34E679EB5635519C73332839046F2FF378AD35367F6D78C2314BF2269F17113A)
-- SCRIPT_GET2 = project-docs/evidence/D3_SBX_UAT_04_R1/capture_get2.js (2,015 bytes, SHA-256 7BB6C989779E7F52E90C2FD3A6906875C1C0F8639B6A0DC319C96CA32E495CA8)
-- SCRIPT_TEST = project-docs/evidence/D3_SBX_UAT_04_R1/test_preflight_verification.cjs (8,536 bytes, SHA-256 A5D65F39CB15D45B0E2B45C578E8A8BEF3157CDE9727AD947F96FEF144405AB3)
-- SCRIPT_RUNNER = project-docs/evidence/D3_SBX_UAT_04_R1/dispatch_runner.ps1 (12,321 bytes, SHA-256 2E64E59A6087E7F70CF31E5469B7A49B2A0B9A6D4DA1951C930550E885A4F836)
-- SANITIZED_JSON_GET1 = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_MINIMAL_SANITIZED_GET1_RECORD_15.json (2,871 bytes, SHA-256 6DEA72256A7A4CE992B340238BC764461B7028DB31CF31A3984423BB6491C2CF)
-- SANITIZED_JSON_CLIENT = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_MINIMAL_SANITIZED_CLIENT_RECORD_15.json (2,817 bytes, SHA-256 9DB418F90C24524A6AAE963D7C5012D3CA795B58B4112BB8F46DAA39167FB55C)
-- SANITIZED_JSON_GET2 = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_MINIMAL_SANITIZED_GET2_RECORD_15.json (2,897 bytes, SHA-256 5E762BE2BBBBDA8623EC9D8B02C4793C059B64AE2B96F8714DFDFAED2811ACFE)
-- SANITIZED_IMAGE_1 = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_01_RECORD_IDENTITY_AND_TOP_UI.png (76,510 bytes, SHA-256 9E3F2292F4A8F7F28C556772B6FBDCBD3F340F059DF610BAAAC113C0BA7BC91C)
-- SANITIZED_IMAGE_2 = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_02_PERSISTED_ROUTE_ACTORS_UI.png (57,532 bytes, SHA-256 6983102C6AD5792F90A80E16C443802D490B68F1C7BB241B9E60B208A4704CA0)
-- SANITIZED_IMAGE_3 = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_03_DEVTOOLS_EXECUTION_AUDIT.png (274,835 bytes, SHA-256 AFA82BCC4C606AC6BCED1F894E7A8EC175C8AA52B98C8DC493105D95FBBA5A26)
-- SANITIZED_IMAGE_4 = project-docs/evidence/D3_SBX_UAT_04_R1/D3_UAT04_R1_04_SESSION_INTEGRITY_AUDIT.png (326,491 bytes, SHA-256 7D8F23C0143CAE7FCB9BE1F8918050E6C6FB2932DFA9776835FC1BFE542F7D50)
+- EVIDENCE_FILE = project-docs/evidence/D3_UAT_NOTIFICATION_ISOLATION_READONLY_01_EVIDENCE.md
+- RAW_JSON_LOCAL_ONLY = project-docs/evidence/scratch_d3_uat_notif_iso_ro01_RAW_LOCAL_ONLY.json (LOCAL ONLY, GITIGNORED, NOT COMMITTED)
 
 LIFECYCLE_PROVENANCE:
-- D3-SBX-DEPLOY-01-EXE2-R5 = PASS / INDEPENDENTLY REVIEWED / DEPLOYMENT ACCEPTED
-- D3-SBX-UAT-01 = STOPPED SAFELY / BLOCKED / MISSING_AUTHENTICATED_BROWSER_SESSION / ZERO KINTONE WRITES / ZERO MUTATIONS / REVIEW REQUIRED
-- D3-SBX-UAT-02 = REQUEST CORRECTIVE / ALL-FOUR-PASS NOT ACCEPTED / SUPERSEDED BY R1
-- D3-SBX-UAT-02-R1 = PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED
-- D3-SBX-UAT-03 = REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY
-- D3-SBX-UAT-03-R1 = REQUEST CORRECTIVE
-- D3-SBX-UAT-03-R2 = REQUEST CORRECTIVE
-- D3-SBX-UAT-03-R3 = PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED
-- D3-SBX-UAT-04 = PASS AS SAFETY STOP / INDEPENDENTLY REVIEWED / UAT NOT COMPLETED
-- D3-SBX-UAT-04-R1 = REQUEST CORRECTIVE / CONTROL PLANE REVIEWED
-- D3-SBX-UAT-04-R2 = REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED
 - D3-SBX-UAT-04-R3 = CORRECTIVE DELIVERED / REVIEW REQUIRED
+- D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 = DELIVERED / REVIEW REQUIRED
 
-VERDICT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+VERDICT = DELIVERED / REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-SBX-UAT-04-R3 executed under Owner authorization `MBO2026-D3-SBX-UAT04-R3-20260914-OWNER-01`:
-1. **Helper File & Narrative Privacy Sanitization:** Removed any real personal names, accounts, employee codes, and personal user filesystem paths that were quoted in documentation and evidence narratives. Used generic, high-level descriptions only without revealing original values or constructing mapping tables. Forward-only updates do not erase data from historical Git commits; NO history rewrite.
-2. **Accounting In Control Docs:** Corrected historical UAT04_R1 counters in control documents to remove the contradictory `KINTONE_IO = 0` line. Set distinct counters based strictly on historical executor evidence: `EXPLICIT_REST_GET_ATTEMPTS = 2`, `EXPLICIT_REST_GET_SUCCESSES = 2`, `CLIENT_IN_MEMORY_CAPTURES = 1`, `READ_RETRIES = 0`, `KINTONE_API_WRITES = 0`, `KINTONE_IO_MUTATIONS = 0`, `TOTAL_BROWSER_NETWORK_REQUESTS = NOT CLAIMED`, `NATIVE_BACKGROUND_REQUEST_COUNT = NOT CLAIMED`. Clearly distinguished that R2 and R3 perform ZERO Kintone I/O (`KINTONE_IO = 0`).
-3. **Evidence-Bounded Comparison & Control Sync:** Preserved conclusions bounded strictly to the 20 published scoped fields and maintained distinctions between REST, client in-memory, and rendered UI evidence. Synchronized package verdicts: `D3-SBX-UAT-04-R2 = REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED` and `D3-SBX-UAT-04-R3 = CORRECTIVE DELIVERED / REVIEW REQUIRED`.
-4. All gates remain stopped. Next work package, write execution, UAT, and deployment remain strictly NOT AUTHORIZED without explicit Owner authorization.
+D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 executed under Owner authorization `MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01`:
+1. **Live Config Read Budget & Execution:** Exactly 4 authorized REST GETs executed against App 794 (Process Management status, General Notifications, Per-Record Notifications, Reminder Notifications); all 4 returned HTTP 200 at revision 74. Zero retries, zero auxiliary reads, zero record reads, zero writes, zero mutations.
+2. **Notification Trigger Analysis:** Process status change triggers notifications to Assignee (resolved dynamically via `FIELD_ENTITY` on the record). General notifications trigger on comments to `Updated_by`, `Created_by`, and prior commenters. Per-Record and Reminder notifications are unconfigured (empty). Custom JS uses `kintone.showNotification` solely for client-side UI toasts (zero server dispatch).
+3. **UAT Isolation Verdict:** Read-only UAT (inspecting fields, topology UI, provenance, date simulation banner) is verified safe against notification generation provided no workflow transitions occur and no comments are added. Workflow transition UAT is NOT VERIFIED / LIVE UAT BLOCKED because advancing process status triggers notifications to whoever is assigned in the record's approver fields; workflow transitions were strictly not authorized. A combined UAT approach using record-level isolation with safe-user approvers was proposed for future separate authorization.
+4. **Terminal State:**
+```text
+ACTIVE_WORK_PACKAGE = NONE
+NEXT_GATE_AUTHORIZED = NO
+AUTO_START_NEXT_WORK_PACKAGE = NO
+LIVE_UAT_AUTHORIZED = NO
+FULL_D3_BUSINESS_UAT = NOT CLAIMED
+D3_CLOSURE = NOT CLAIMED
+PRODUCTION_READY = NO
+REVIEW_REQUIRED = YES
+```

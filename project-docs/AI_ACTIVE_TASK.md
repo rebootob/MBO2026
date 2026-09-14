@@ -1,12 +1,12 @@
 # AI ACTIVE TASK — MBO2026
 
-Updated: 2026-09-14 ICT
+Updated: 2026-09-15 ICT
 
 ## Current task
 ```text
 CURRENT_WORK_PACKAGE = NONE
-STATUS = NO ACTIVE AUTHORIZATION / D3-SBX-UAT-04-R3 CORRECTIVE DELIVERED / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-SBX-UAT-04-R3
+STATUS = NO ACTIVE AUTHORIZATION / D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 DELIVERED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-UAT-NOTIFICATION-ISOLATION-READONLY-01
 LAST_CLOSED_WORK_PACKAGE = D3-SBX-UAT-03-R3
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -71,12 +71,44 @@ D3-SBX-UAT-04 = PASS AS SAFETY STOP / INDEPENDENTLY REVIEWED / UAT NOT COMPLETED
 D3-SBX-UAT-04-R1 = REQUEST CORRECTIVE / CONTROL PLANE REVIEWED
 D3-SBX-UAT-04-R2 = REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED
 D3-SBX-UAT-04-R3 = CORRECTIVE DELIVERED / REVIEW REQUIRED
+D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 = DELIVERED / REVIEW REQUIRED
 
 PRE1_MANIFEST_SHA256 = 0e2cfdebe9e25d443f1b20139b018dffe9468c4819aedd071f4aa9940277a72e
 PREWRITE_BACKUP_SHA256 = 75ee58bf110529f8809f0b6cf6a946bbe5d77f24c52cb01271913ba2a2229c73
 APP795_COMPARISON_SHA256 = a502bc0e5cd35eece5578512fb2675fe8516981ea21e7e884514151cee91735a
 SCORER_MAPPING = M1_G1->[1,2], M1_ONLY->[1]
 APP794_HISTORICAL_BACKFILL_POLICY = DEFER_REQUIREDNESS_NO_BACKFILL
+
+D3_UAT_NOTIFICATION_ISOLATION_READONLY_01_COUNTERS:
+- AUTHORIZATION_ID = MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01
+- MODE = EXACT APP794 LIVE CONFIG READ-ONLY + COMBINED UAT PROPOSAL
+- TARGET_APP = 794
+- EXPLICIT_REST_GET_ATTEMPTS = 4
+- EXPLICIT_REST_GET_SUCCESSES = 4
+- READ_RETRIES = 0
+- AUXILIARY_LIVE_READS = 0
+- RECORD_READS = 0
+- KINTONE_API_WRITES = 0
+- KINTONE_IO_MUTATIONS = 0
+- PROCESS_WRITES_OR_TRANSITIONS = 0
+- SCHEMA_WRITES = 0
+- ACL_WRITES = 0
+- CUSTOMIZATION_WRITES = 0
+- DEPLOYMENT_POSTS = 0
+- CREDENTIAL_ENTRIES = 0
+- SESSION_MUTATIONS = 0
+- LOCAL_STORAGE_INJECTIONS = 0
+- MUTATION_CLICKS = 0
+- TOTAL_MUTATIONS = 0
+- BUILDS_AND_TEST_RERUNS = 0
+- SOURCE_TEST_CONFIG_DEPENDENCY_DIST_CHANGES = 0
+- HISTORY_REWRITE = 0
+- ZERO_WRITE_FAIL_CLOSED = ENFORCED
+- READ_ONLY_ENFORCEMENT = ENFORCED
+- ISOLATION_VERDICT_READ_ONLY_UAT = VERIFIED SAFE / NO WORKFLOW TRANSITIONS / NO COMMENTS POSTED
+- ISOLATION_VERDICT_WORKFLOW_TRANSITION_UAT = NOT VERIFIED / LIVE UAT BLOCKED (WORKFLOW TESTING NOT AUTHORIZED)
+- EVIDENCE_FILE = project-docs/evidence/D3_UAT_NOTIFICATION_ISOLATION_READONLY_01_EVIDENCE.md
+- VERDICT = DELIVERED / REVIEW REQUIRED
 
 UAT04_R3_COUNTERS:
 - AUTHORIZATION_ID = MBO2026-D3-SBX-UAT04-R3-20260914-OWNER-01
@@ -591,4 +623,4 @@ PRODUCTION_READY = NO
 FULL_REPOSITORY_INTEGRATION_TEST = NOT CLAIMED
 ```
 
-No execution task is active. D3 sandbox migration is closed. D3-SBX-DEPLOY-01-EXE2-R5 completed live Kintone sandbox deployment execution of App 794 UI customization under authorization MBO2026-D3-EXE2-R5-20260913-OWNER-01 (INDEPENDENTLY REVIEWED / DEPLOYMENT ACCEPTED). Real browser read-only UAT package D3-SBX-UAT-02 verdict was downgraded to REQUEST CORRECTIVE / ALL-FOUR-PASS NOT ACCEPTED per Control Plane audit. Corrective package D3-SBX-UAT-02-R1 delivered evidence corrections, opaque privacy sanitization, and control doc synchronization under authorization MBO2026-D3-SBX-UAT02-R1-20260913-OWNER-01 (PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED). UAT package D3-SBX-UAT-03 verdict was downgraded to REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY due to historical 2-GET ceiling violation. Corrective package D3-SBX-UAT-03-R1 received Control Plane review verdict REQUEST CORRECTIVE. Corrective package D3-SBX-UAT-03-R2 received Control Plane review verdict REQUEST CORRECTIVE. Corrective package D3-SBX-UAT-03-R3 delivers revision reconciliation (UNVERIFIED), formal withdrawal of unsupported REST-to-DOM match assertion (UNVERIFIED), classification of sanitized REST excerpt strictly as executor report, preservation of accepted privacy and historical GET baselines, and control synchronization under authorization MBO2026-D3-SBX-UAT03-R3-20260914-OWNER-01 (PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED). Package D3-SBX-UAT-04 was executed under authorization MBO2026-D3-SBX-UAT04-20260914-OWNER-01 in mode BOUNDED REAL BROWSER + REST READ-ONLY BASELINE VERIFICATION on canonical base ab1b6c21a1e2b8e2cb0b135fe0bb0eed7bb1fbe3 targeting App 794 Record 15 in Owner-authenticated normal browser session. Attempt 1 encountered a client V8 SyntaxError before network dispatch, receiving 0 HTTP responses; execution immediately stopped fail-closed with zero retries (READ_RETRIES = 0), zero mutations, and zero Kintone writes (PASS AS SAFETY STOP / INDEPENDENTLY REVIEWED / UAT NOT COMPLETED). Corrective package D3-SBX-UAT-04-R1 was executed under authorization MBO2026-D3-SBX-UAT04-R1-20260914-OWNER-01 in mode EXACT CAPTURE CORRECTIVE + BOUNDED READ-ONLY BASELINE VERIFICATION on canonical base d493374d541c3458258f95b4a65632bddac85375 targeting App 794 Record 15 in Owner-authenticated normal browser session (2 explicit REST GET attempts, 1 client capture, 0 retries, 0 writes). Control Plane audit returned REQUEST CORRECTIVE due to helper file PII/paths and over-broad 350-field bit-for-bit equality claims. Corrective package D3-SBX-UAT-04-R2 was executed under authorization MBO2026-D3-SBX-UAT04-R2-20260914-OWNER-01 in mode EXISTING EVIDENCE / PRIVACY / EVIDENCE-BOUNDED CONTROL CORRECTIVE on canonical base 233509b48392a2269cd2bd1eb1f917257eb9f779 (REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED). Corrective package D3-SBX-UAT-04-R3 was executed under authorization MBO2026-D3-SBX-UAT04-R3-20260914-OWNER-01 in mode DOCS-ONLY PRIVACY & ACCOUNTING CORRECTIVE on canonical base b98084cec68fa64130b55784c5c77304a1df7cc3. R3 delivered forward-only privacy sanitization in narrative documentation by removing quoted personal identifiers and personal user filesystem paths without revealing original values or creating mapping tables, noted the forward-only limitation (no history rewrite), fixed UAT04_R1 counters in control docs to eliminate misleading KINTONE_IO = 0 and accurately record historical executor evidence (2 explicit REST GET attempts/successes, 1 client capture, 0 retries, 0 writes/mutations, browser totals not claimed), clearly established zero Kintone I/O for R2 and R3, maintained 20-published-field comparison boundaries, and synchronized control documents (CORRECTIVE DELIVERED / REVIEW REQUIRED). All gates remain stopped; REVIEW REQUIRED. D3 SANDBOX MIGRATION COMPLETE != PRODUCTION READY.
+No execution task is active. D3 sandbox migration is closed. D3-SBX-DEPLOY-01-EXE2-R5 completed live Kintone sandbox deployment execution of App 794 UI customization under authorization MBO2026-D3-EXE2-R5-20260913-OWNER-01 (INDEPENDENTLY REVIEWED / DEPLOYMENT ACCEPTED). Real browser read-only UAT package D3-SBX-UAT-02 verdict was downgraded to REQUEST CORRECTIVE / ALL-FOUR-PASS NOT ACCEPTED per Control Plane audit. Corrective package D3-SBX-UAT-02-R1 delivered evidence corrections, opaque privacy sanitization, and control doc synchronization under authorization MBO2026-D3-SBX-UAT02-R1-20260913-OWNER-01 (PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED). UAT package D3-SBX-UAT-03 verdict was downgraded to REQUEST CORRECTIVE / AGGREGATE PASS NOT ACCEPTED / HISTORICAL ACCOUNTING DISCREPANCY due to historical 2-GET ceiling violation. Corrective package D3-SBX-UAT-03-R1 received Control Plane review verdict REQUEST CORRECTIVE. Corrective package D3-SBX-UAT-03-R2 received Control Plane review verdict REQUEST CORRECTIVE. Corrective package D3-SBX-UAT-03-R3 delivers revision reconciliation (UNVERIFIED), formal withdrawal of unsupported REST-to-DOM match assertion (UNVERIFIED), classification of sanitized REST excerpt strictly as executor report, preservation of accepted privacy and historical GET baselines, and control synchronization under authorization MBO2026-D3-SBX-UAT03-R3-20260914-OWNER-01 (PASS / INDEPENDENTLY REVIEWED / EVIDENCE CORRECTIVE ACCEPTED). Package D3-SBX-UAT-04 was executed under authorization MBO2026-D3-SBX-UAT04-20260914-OWNER-01 in mode BOUNDED REAL BROWSER + REST READ-ONLY BASELINE VERIFICATION on canonical base ab1b6c21a1e2b8e2cb0b135fe0bb0eed7bb1fbe3 targeting App 794 Record 15 in Owner-authenticated normal browser session. Attempt 1 encountered a client V8 SyntaxError before network dispatch, receiving 0 HTTP responses; execution immediately stopped fail-closed with zero retries (READ_RETRIES = 0), zero mutations, and zero Kintone writes (PASS AS SAFETY STOP / INDEPENDENTLY REVIEWED / UAT NOT COMPLETED). Corrective package D3-SBX-UAT-04-R1 was executed under authorization MBO2026-D3-SBX-UAT04-R1-20260914-OWNER-01 in mode EXACT CAPTURE CORRECTIVE + BOUNDED READ-ONLY BASELINE VERIFICATION on canonical base d493374d541c3458258f95b4a65632bddac85375 targeting App 794 Record 15 in Owner-authenticated normal browser session (2 explicit REST GET attempts, 1 client capture, 0 retries, 0 writes). Control Plane audit returned REQUEST CORRECTIVE due to helper file PII/paths and over-broad 350-field bit-for-bit equality claims. Corrective package D3-SBX-UAT-04-R2 was executed under authorization MBO2026-D3-SBX-UAT04-R2-20260914-OWNER-01 in mode EXISTING EVIDENCE / PRIVACY / EVIDENCE-BOUNDED CONTROL CORRECTIVE on canonical base 233509b48392a2269cd2bd1eb1f917257eb9f779 (REQUEST CORRECTIVE / INDEPENDENTLY REVIEWED). Corrective package D3-SBX-UAT-04-R3 was executed under authorization MBO2026-D3-SBX-UAT04-R3-20260914-OWNER-01 in mode DOCS-ONLY PRIVACY & ACCOUNTING CORRECTIVE on canonical base b98084cec68fa64130b55784c5c77304a1df7cc3. R3 delivered forward-only privacy sanitization in narrative documentation by removing quoted personal identifiers and personal user filesystem paths without revealing original values or creating mapping tables, noted the forward-only limitation (no history rewrite), fixed UAT04_R1 counters in control docs to eliminate misleading KINTONE_IO = 0 and accurately record historical executor evidence (2 explicit REST GET attempts/successes, 1 client capture, 0 retries, 0 writes/mutations, browser totals not claimed), clearly established zero Kintone I/O for R2 and R3, maintained 20-published-field comparison boundaries, and synchronized control documents (CORRECTIVE DELIVERED / REVIEW REQUIRED). Package D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 was executed under authorization MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01 in mode EXACT APP794 LIVE CONFIG READ-ONLY + COMBINED UAT PROPOSAL on canonical base a383aa3c0a188dabebf91f773e63f03568062674. It executed exactly 4 authorized REST GETs (all HTTP 200) inspecting App 794 Process Management (status), General Notifications, Per-Record Notifications, and Reminder Notifications (4 attempts, 4 successes, 0 retries, 0 auxiliary reads, 0 writes). It identified that Process status change triggers notifications to Assignee (FIELD_ENTITY resolved), while General notifications trigger on comments to Updated_by, Created_by, and commenters; Per-Record and Reminder notifications are empty. Custom JS notification usage is strictly client-side UI toast. Read-only UAT (Cases 01-04 without workflow transitions) is VERIFIED SAFE. Workflow transition UAT is NOT VERIFIED / LIVE UAT BLOCKED as workflow testing was strictly not authorized and requires Owner-selected test record with safe approvers and explicit transition authorization. All gates remain stopped; REVIEW REQUIRED. D3 SANDBOX MIGRATION COMPLETE != PRODUCTION READY.
