@@ -9,8 +9,8 @@ Updated: 2026-09-15 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 DELIVERED / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-UAT-NOTIFICATION-ISOLATION-READONLY-01
+ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-OBJECTIVE-UAT-COMBINED-01 DELIVERED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-OBJECTIVE-UAT-COMBINED-01
 LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-UAT-03-R3
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -27,84 +27,66 @@ PRODUCTION_READY = NO
 ```
 
 ## Latest Owner authorization
-Owner explicitly authorized package `D3-UAT-NOTIFICATION-ISOLATION-READONLY-01` under Authorization ID `MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01` in mode `EXACT APP794 LIVE CONFIG READ-ONLY + COMBINED UAT PROPOSAL` on canonical base HEAD `a383aa3c0a188dabebf91f773e63f03568062674` (parent: `b98084cec68fa64130b55784c5c77304a1df7cc3`, tree: `e560126e72af8a4d346f71ea445a0df157962c95`).
-Scope: Inspect LIVE configuration of App 794 to evaluate how to perform a combined Objective UAT without sending notifications to real approvers. Workflow testing strictly not authorized. Maximum 4 explicit REST GET attempts, 0 retries, 0 auxiliary reads. Zero record reads, zero writes, zero process transitions.
+Owner explicitly authorized package `D3-OBJECTIVE-UAT-COMBINED-01` under Authorization ID `MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-20260915-OWNER-01` in mode `NOTIFICATION-SAFE CONTROLLED OBJECTIVE WORKFLOW UAT` on canonical base HEAD `173a2171266041fe117b63bf6a493b86c8f85b84` (parent: `a383aa3c0a188dabebf91f773e63f03568062674`, tree: `98cb0ba1d82df0880ca65fb4f4c4045e53b78f59`).
+Scope: Notification-safe controlled Objective workflow UAT with read ceiling <= 12, mutation ceilings <= 1 creation, 0 edits, <= 3 transitions, 0 comments, 0 deletions. Strict fail-closed route and provenance integrity (FORBIDDEN: forged provenance, route overriding, master edits, record 15 interaction, or other persons' records). If normal resolution does not naturally resolve active Objective recipients exclusively to safe test account hr: STOP = SAFE_ROUTE_NOT_AVAILABLE.
 
 ## Execution result
 ```text
-PACKAGE = D3-UAT-NOTIFICATION-ISOLATION-READONLY-01
-TITLE = APP 794 LIVE CONFIG NOTIFICATION ISOLATION READ-ONLY & COMBINED UAT PROPOSAL
-AUTHORIZATION_ID = MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01
-MODE = EXACT APP794 LIVE CONFIG READ-ONLY + COMBINED UAT PROPOSAL
-STATUS = DELIVERED / REVIEW REQUIRED
-BASE_HEAD = a383aa3c0a188dabebf91f773e63f03568062674 (MATCH)
+PACKAGE = D3-OBJECTIVE-UAT-COMBINED-01
+TITLE = NOTIFICATION-SAFE CONTROLLED OBJECTIVE WORKFLOW UAT
+AUTHORIZATION_ID = MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-20260915-OWNER-01
+MODE = NOTIFICATION-SAFE CONTROLLED OBJECTIVE WORKFLOW UAT
+STATUS = DELIVERED / STOPPED SAFELY / SAFE_ROUTE_NOT_AVAILABLE / REVIEW REQUIRED
+BASE_HEAD = 173a2171266041fe117b63bf6a493b86c8f85b84 (MATCH)
 TARGET_APP = 794
-COMPONENT = APP 794 PROCESS AND NOTIFICATION LIVE CONFIGURATION INSPECTION
+COMPONENT = APP 794 CONTROLLED OBJECTIVE WORKFLOW UAT & PROVENANCE INTEGRITY
 
-OPERATIONAL_COUNTERS (PACKAGE D3-UAT-NOTIFICATION-ISOLATION-READONLY-01):
-- EXPLICIT_REST_GET_ATTEMPTS = 4 (CEILING: 4 max; ENFORCED)
-  Attempt 1: /k/v1/app/status.json?app=794 -> HTTP 200
-  Attempt 2: /k/v1/app/notifications/general.json?app=794 -> HTTP 200
-  Attempt 3: /k/v1/app/notifications/perRecord.json?app=794 -> HTTP 200
-  Attempt 4: /k/v1/app/notifications/reminder.json?app=794 -> HTTP 200
-- EXPLICIT_REST_GET_SUCCESSES = 4
+OPERATIONAL_COUNTERS (PACKAGE D3-OBJECTIVE-UAT-COMBINED-01):
+- EXPLICIT_REST_GET_ATTEMPTS = 5 (CEILING: <= 12; ENFORCED)
+  Attempt 1: /k/v1/app/webhooks.json?app=794 -> HTTP 404 (endpoint unconfigured / 0 webhooks = SAFE)
+  Attempt 2: /k/v1/app/status.json?app=794 -> HTTP 200 (19 states, 40 actions, rev 74, M1_G1 chain verified)
+  Attempt 3: /k/v1/app/notifications/general.json?app=794 -> HTTP 200 (creation/edit disabled, status change targets Assignee = SAFE)
+  Attempt 4: /k/v1/records.json?app=53&query=MBO_Kintone_User in ("hr") limit 1 -> HTTP 200 (0 records returned)
+  Attempt 5: /k/v1/records.json?app=795&query=Requester_User in ("hr") and Active in ("Active") limit 1 -> HTTP 200 (0 records returned)
+- EXPLICIT_REST_GET_SUCCESSES = 5
 - READ_RETRIES = 0 (CEILING: 0 max; ENFORCED)
 - AUXILIARY_LIVE_READS = 0
-- RECORD_READS = 0 (FORBIDDEN; ENFORCED)
-- KINTONE_API_WRITES = 0 (CEILING: 0 max)
-- KINTONE_IO_MUTATIONS = 0
-- PROCESS_WRITES_OR_TRANSITIONS = 0 (FORBIDDEN; ENFORCED)
-- SCHEMA_WRITES = 0
-- ACL_WRITES = 0
-- CUSTOMIZATION_WRITES = 0
-- DEPLOYMENT_POSTS = 0
-- CREDENTIAL_ENTRIES = 0
-- SESSION_MUTATIONS = 0
-- LOCAL_STORAGE_INJECTIONS = 0
-- MUTATION_CLICKS = 0
+- APP794_RECORD_CREATIONS = 0 (CEILING: <= 1)
+- APP794_RECORD_EDITS = 0 (CEILING: 0)
+- APP794_PROCESS_TRANSITIONS = 0 (CEILING: <= 3)
+- COMMENTS = 0 (FORBIDDEN; ENFORCED)
+- DELETIONS = 0 (FORBIDDEN; ENFORCED)
+- APP53_WRITES = 0, APP795_WRITES = 0, APP796_WRITES = 0, APP798_WRITES = 0
+- SCHEMA_WRITES = 0, ACL_WRITES = 0, CUSTOMIZATION_WRITES = 0, DEPLOYMENTS = 0
+- RECORD_15_INTERACTIONS = 0 (READS = 0, WRITES = 0, TRANSITIONS = 0)
 - TOTAL_MUTATIONS = 0
-- BUILDS_AND_TEST_RERUNS = 0
-- SOURCE_TEST_CONFIG_DEPENDENCY_DIST_CHANGES = 0
-- HISTORY_REWRITE = 0
 - ZERO_WRITE_FAIL_CLOSED = ENFORCED
-- READ_ONLY_ENFORCEMENT = ENFORCED
-
-LIVE_CONFIG_FINDINGS:
-- APP_794_LIVE_REVISION = 74 (CONVERGED ACROSS ALL 4 ENDPOINTS)
-- PROCESS_STATES = 19 STATES / 40 ACTIONS (APPROVER STATES USE FIELD_ENTITY ASSIGNEE SELECTORS; STATE 15 HR FINAL CHECK USES LITERAL USER:hr)
-- GENERAL_NOTIFICATIONS = COMMENT ADDED TRIGGERS TO Created_by AND Updated_by; STATUS CHANGED TRIGGERS TO Assignee (FIELD_ENTITY); notifyToCommenter = true
-- PER_RECORD_NOTIFICATIONS = EMPTY (ZERO RISK)
-- REMINDER_NOTIFICATIONS = EMPTY (ZERO RISK)
-- CUSTOM_JS = kintone.showNotification USED EXCLUSIVELY FOR CLIENT-SIDE UI TOAST (ZERO SERVER-SIDE NOTIFICATION / ZERO EMAIL / ZERO WEBHOOK)
-
-ISOLATION_VERDICTS:
-- READ_ONLY_UAT = VERIFIED SAFE (Cases 01-04 as executed in D3-SBX-UAT-04-R1 without workflow transitions or comments trigger zero notifications)
-- WORKFLOW_TRANSITION_UAT = NOT VERIFIED / LIVE UAT BLOCKED (Status change triggers notifications to Assignee FIELD_ENTITY users; workflow transitions strictly NOT AUTHORIZED; requires Owner-selected test record with safe approvers, hr account identity confirmation, and explicit transition authorization)
-- GLOBAL_NOTIFICATION_SUPPRESSION = NOT PROPOSED / NOT NEEDED (record-level isolation is smallest sufficient method)
+- STOP_CONDITION = SAFE_ROUTE_NOT_AVAILABLE
+- STOP_REASON = Normal resolution for safe account hr does not naturally resolve all active Objective recipients exclusively to hr. App 53 contains zero employee profiles mapped to user hr; App 795 contains zero routes where Requester_User is hr (all 20 routes resolve to real organization members). Per Rule 4 & Rule 3: Manual route overriding, provenance forging, and test record reuse are FORBIDDEN. Execution stopped fail-closed before any mutation.
 
 EVIDENCE_ARTIFACTS:
-- EVIDENCE_FILE = project-docs/evidence/D3_UAT_NOTIFICATION_ISOLATION_READONLY_01_EVIDENCE.md
-- RAW_JSON_LOCAL_ONLY = project-docs/evidence/scratch_d3_uat_notif_iso_ro01_RAW_LOCAL_ONLY.json (LOCAL ONLY, GITIGNORED, NOT COMMITTED)
+- EVIDENCE_FILE = project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_EVIDENCE.md
+- RAW_JSON_LOCAL_ONLY = SECURE LOCAL ONLY (NO RAW PII OR TOKENS COMMITTED)
 
 LIFECYCLE_PROVENANCE:
-- D3-SBX-UAT-04-R3 = CORRECTIVE DELIVERED / REVIEW REQUIRED
-- D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 = DELIVERED / REVIEW REQUIRED
+- D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 = PASS / INDEPENDENTLY REVIEWED / ACCEPTED WITH EVIDENCE LIMITS
+- D3-OBJECTIVE-UAT-COMBINED-01 = DELIVERED / STOPPED SAFELY / SAFE_ROUTE_NOT_AVAILABLE / REVIEW REQUIRED
 
 VERDICT = DELIVERED / REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 executed under Owner authorization `MBO2026-D3-UAT-NOTIFICATION-ISOLATION-RO01-20260914-OWNER-01`:
-1. **Live Config Read Budget & Execution:** Exactly 4 authorized REST GETs executed against App 794 (Process Management status, General Notifications, Per-Record Notifications, Reminder Notifications); all 4 returned HTTP 200 at revision 74. Zero retries, zero auxiliary reads, zero record reads, zero writes, zero mutations.
-2. **Notification Trigger Analysis:** Process status change triggers notifications to Assignee (resolved dynamically via `FIELD_ENTITY` on the record). General notifications trigger on comments to `Updated_by`, `Created_by`, and prior commenters. Per-Record and Reminder notifications are unconfigured (empty). Custom JS uses `kintone.showNotification` solely for client-side UI toasts (zero server dispatch).
-3. **UAT Isolation Verdict:** Read-only UAT (inspecting fields, topology UI, provenance, date simulation banner) is verified safe against notification generation provided no workflow transitions occur and no comments are added. Workflow transition UAT is NOT VERIFIED / LIVE UAT BLOCKED because advancing process status triggers notifications to whoever is assigned in the record's approver fields; workflow transitions were strictly not authorized. A combined UAT approach using record-level isolation with safe-user approvers was proposed for future separate authorization.
+D3-OBJECTIVE-UAT-COMBINED-01 executed under Owner authorization `MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-20260915-OWNER-01`:
+1. **Read Budget & Safety Preflight:** Exactly 5 authorized REST GETs executed (all successful, 0 retries) well within the 12-read ceiling. Execution identity confirmed as Owner-controlled safe account `hr`. App 794 webhooks confirmed inactive (0 enabled). Live process verified at revision 74 (19 states, 40 actions, M1_G1 chain verified). General notifications confirmed safe (record creation/edit notifications disabled; status change targets `Assignee` only).
+2. **Route Resolution & Provenance Integrity:** Exact lookups revealed App 53 has 0 employee profiles linked to `hr`, and App 795 has 0 routes linked to `hr` (all 20 active routes resolve to other employees). Per Rule 4 and Rule 3, manual overriding of route fields, provenance forging, and master edits are strictly forbidden.
+3. **Fail-Closed Stop:** Execution stopped safely before any mutation (`STOP = SAFE_ROUTE_NOT_AVAILABLE`). Zero records created, zero edits, zero transitions, zero comments, zero deletions, zero writes to any app.
 4. **Terminal State:**
 ```text
 ACTIVE_WORK_PACKAGE = NONE
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
-LIVE_UAT_AUTHORIZED = NO
-FULL_D3_BUSINESS_UAT = NOT CLAIMED
+MID_YEAR_UAT_AUTHORIZED = NO
+FINAL_UAT_AUTHORIZED = NO
 D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
 REVIEW_REQUIRED = YES
