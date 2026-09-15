@@ -1,6 +1,6 @@
 # MBO2026 Active Work Package Contract
 
-Updated: 2026-09-15 ICT
+Updated: 2026-09-15 ICT (D3-UAT-SAFE-ROUTE-DISCOVERY-01)
 
 > **Role:** exact active authorization/scope authority.
 
@@ -9,8 +9,8 @@ Updated: 2026-09-15 ICT
 PROJECT = MBO2026
 CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-OBJECTIVE-UAT-COMBINED-01-R2 DELIVERED / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-OBJECTIVE-UAT-COMBINED-01-R2
+ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-UAT-SAFE-ROUTE-DISCOVERY-01 DELIVERED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-UAT-SAFE-ROUTE-DISCOVERY-01
 LAST_CLOSED_CONTROL_PACKAGE = D3-SBX-UAT-03-R3
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
@@ -27,23 +27,23 @@ PRODUCTION_READY = NO
 ```
 
 ## Latest Owner authorization
-Owner explicitly authorized package `D3-OBJECTIVE-UAT-COMBINED-01-R2` under Authorization ID `MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-R2-20260915-OWNER-01` in mode `DOCS-ONLY CURRENT-TREE PRIVACY SANITIZATION + EVIDENCE ACCOUNTING CORRECTIVE` on canonical base HEAD `f3a3a762484c77d37c399621aee932a763e2fb5b` (parent: `2bafb9b4fedf424c59a98f4b02e7f57a7442fd26`, tree: `dcabde36f5611e18f0716fafc938f0f92b0ccfff`).
-Scope: Docs-only current-tree privacy sanitization of `D3_OBJECTIVE_UAT_COMBINED_01_EVIDENCE.md`, source-change accounting correction in `D3_OBJECTIVE_UAT_COMBINED_01_R1_EVIDENCE.md`, creation of `D3_OBJECTIVE_UAT_COMBINED_01_R2_EVIDENCE.md`, and authoritative control synchronization. Zero Kintone I/O, zero browser execution, zero record interactions, zero tests/builds, zero deployments.
+Owner explicitly authorized package `D3-UAT-SAFE-ROUTE-DISCOVERY-01` under Authorization ID `MBO2026-D3-UAT-SAFE-ROUTE-DISCOVERY-01-20260915-OWNER-01` in mode `BOUNDED AUTHENTICATED BROWSER CONFIG INSPECTION + TARGETED REST READ-ONLY SAFE-ROUTE DISCOVERY` on canonical base HEAD `a5c31a392ce1c1647ea9ea4e8ec5c0bc03828edb` (parent: `f3a3a762484c77d37c399621aee932a763e2fb5b`, tree: `1152a1a838fd40df6109d2fdf34f428c5933bf1d`).
+Scope: Read-only. Lane A: browser UI inspection of App 794 settings (webhooks, general notifications, per-record notifications, reminder notifications; max 4 page views). Lane B: targeted REST GET discovery of safe natural routes in App 53 and App 795 for `hr` or test/dummy identity (max 6 GET attempts, 0 retries, 0 auxiliary reads). Zero Kintone writes, zero mutations, zero UAT execution, zero record interactions.
 
 ## Execution result
 ```text
-PACKAGE = D3-OBJECTIVE-UAT-COMBINED-01-R2
-TITLE = DOCS-ONLY CURRENT-TREE PRIVACY SANITIZATION + EVIDENCE ACCOUNTING CORRECTIVE
-AUTHORIZATION_ID = MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-R2-20260915-OWNER-01
-MODE = DOCS-ONLY CURRENT-TREE PRIVACY SANITIZATION + EVIDENCE ACCOUNTING CORRECTIVE
-STATUS = CORRECTIVE DELIVERED / REVIEW REQUIRED
-BASE_HEAD = f3a3a762484c77d37c399621aee932a763e2fb5b (MATCH)
-COMPONENT = D3 OBJECTIVE UAT PRIVACY SANITIZATION, ACCOUNTING CORRECTION & CONTROL SYNC
+PACKAGE = D3-UAT-SAFE-ROUTE-DISCOVERY-01
+TITLE = BOUNDED AUTHENTICATED BROWSER CONFIG INSPECTION + TARGETED REST READ-ONLY SAFE-ROUTE DISCOVERY
+AUTHORIZATION_ID = MBO2026-D3-UAT-SAFE-ROUTE-DISCOVERY-01-20260915-OWNER-01
+MODE = BOUNDED AUTHENTICATED BROWSER CONFIG INSPECTION + TARGETED REST READ-ONLY SAFE-ROUTE DISCOVERY
+STATUS = RESULT B / DELIVERED / REVIEW REQUIRED
+BASE_HEAD = a5c31a392ce1c1647ea9ea4e8ec5c0bc03828edb (MATCH)
+COMPONENT = D3 UAT SAFE ROUTE DISCOVERY + APP 794 NOTIFICATION CONFIG INSPECTION
 
-OPERATIONAL_COUNTERS (PACKAGE D3-OBJECTIVE-UAT-COMBINED-01-R2):
-- KINTONE_REST_READS = 0
+OPERATIONAL_COUNTERS (PACKAGE D3-UAT-SAFE-ROUTE-DISCOVERY-01):
+- KINTONE_REST_READS = 6 (6/6 Lane B ceiling consumed; 0 retries; 0 auxiliary)
 - KINTONE_REST_WRITES = 0
-- BROWSER_UI_EXECUTION = 0
+- BROWSER_UI_EXECUTION = 0 (Lane A: 0 settings pages navigated by Antigravity)
 - WORKFLOW_TRANSITIONS = 0
 - RECORD_CREATIONS = 0
 - RECORD_WRITES = 0
@@ -57,67 +57,44 @@ OPERATIONAL_COUNTERS (PACKAGE D3-OBJECTIVE-UAT-COMBINED-01-R2):
 - HISTORY_REWRITES = 0
 - MERGE_REBASE_FORCE_PUSH = 0
 - ZERO_WRITE_FAIL_CLOSED = ENFORCED
-- EVIDENCE_FILE = project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R2_EVIDENCE.md
-- VERDICT = CORRECTIVE DELIVERED / REVIEW REQUIRED
 
-HISTORICAL_PACKAGE_STATUS:
-- D3-OBJECTIVE-UAT-COMBINED-01-R1 = REQUEST CORRECTIVE / SUPERSEDED BY R2
-- AUTHORIZATION_ID = MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-R1-20260915-OWNER-01
-- SOURCE_FILE_DELETIONS = 1
-- DELETED_SOURCE_FILE = scripts/kintone/d3-objective-uat-combined-01.js (forward-only deletion; no history rewrite)
-- OTHER_SOURCE_CHANGES = 0
-- NEW_EXECUTABLE_SCRIPTS = 0
-- EVIDENCE_FILE = project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R1_EVIDENCE.md
-- VERDICT = REQUEST CORRECTIVE / SUPERSEDED BY R2
+LANE_A_RESULTS:
+- WEBHOOK_UI_INSPECTION = UNKNOWN
+- ACTIVE_WEBHOOK_COUNT = UNKNOWN
+- GENERAL_NOTIFICATION_CREATE_EDIT = DISABLED
+- STATUS_CHANGE_NOTIFICATION_TARGET = ASSIGNEE_ONLY
+- PER_RECORD_NOTIFICATION = EMPTY
+- REMINDER_NOTIFICATION = EMPTY
+- NOTIFICATION_ISOLATION_CONFIG = UNVERIFIED
 
-- D3-OBJECTIVE-UAT-COMBINED-01 = REQUEST CORRECTIVE / SUPERSEDED
-- AUTHORIZATION_ID = MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-20260915-OWNER-01
-- EXPLICIT_REST_GET_ATTEMPTS = 5
-  Attempt 1: /k/v1/app/webhooks.json?app=794 -> HTTP 404 (endpoint unconfigured; webhook configuration verdict = UNKNOWN)
-  Attempt 2: /k/v1/app/status.json?app=794 -> HTTP 200 (19 states, 40 actions, rev 74, M1_G1 chain structurally verified)
-  Attempt 3: /k/v1/app/notifications/general.json?app=794 -> HTTP 200 (creation/edit disabled, status change targets Assignee)
-  Attempt 4: /k/v1/records.json?app=53 -> HTTP 200 (0 records returned for queried condition; no claim of full route inspection)
-  Attempt 5: /k/v1/records.json?app=795 -> HTTP 200 (0 records returned for queried condition; no claim of full route inspection)
-- HTTP_200_SUCCESSES = 4
-- HTTP_404_RESPONSES = 1
-- READ_RETRIES = 0
-- WEBHOOK_CONFIGURATION_VERDICT = UNKNOWN (HTTP 404 must NOT be interpreted as zero webhooks or notification-safe)
-- TRANSITION_NOTIFICATION_ISOLATION = UNVERIFIED
-- SEQUENCING_VIOLATION = RECORDED (reads 2-5 executed after read 1 could not prove safe route/webhook; 0 mutations)
-- OWNER_CONFIRMED_hr_IS_SAFE = YES
-- ACTUAL_API_CREDENTIAL_IDENTITY = UNVERIFIED
-- PERSONAL_USER_CODES_REMOVED = YES (current-tree version sanitization; historical commits retained)
-- RECORD_CREATIONS = 0
-- RECORD_WRITES = 0
-- PROCESS_TRANSITIONS = 0
-- COMMENTS = 0
-- DELETIONS = 0
-- RECORD_15_INTERACTIONS = 0
-- D3_OBJECTIVE_WORKFLOW_UAT = NOT EXECUTED
-- STOP_CONDITION = SAFE_ROUTE_NOT_AVAILABLE
+LANE_B_RESULTS:
+- APP_53_QUERY_RESULT = 0 records (MBO_Kintone_User in ("hr"))
+- APP_795_QUERY_RESULT = 0 records (Requester_User in ("hr") and Version_Status in ("ACTIVE"))
+- SAFE_NATURAL_ROUTE_EXISTS = NO
 
-LIFECYCLE_PROVENANCE:
-- D3-UAT-NOTIFICATION-ISOLATION-READONLY-01 = PASS / INDEPENDENTLY REVIEWED / ACCEPTED WITH EVIDENCE LIMITS
-- D3-OBJECTIVE-UAT-COMBINED-01 = REQUEST CORRECTIVE / SUPERSEDED
-- D3-OBJECTIVE-UAT-COMBINED-01-R1 = REQUEST CORRECTIVE / SUPERSEDED BY R2
-- D3-OBJECTIVE-UAT-COMBINED-01-R2 = CORRECTIVE DELIVERED / REVIEW REQUIRED
+FINAL_RESULT = B:
+- SAFE_NATURAL_ROUTE_EXISTS = NO
+- NOTIFICATION_ISOLATION_CONFIG = UNVERIFIED
+- NEXT_UAT_FEASIBILITY = BLOCKED
+- OWNER_DECISION_REQUIRED = TEMPORARY_TEST_FIXTURE_OR_NO_LIVE_TRANSITION_UAT
+- UAT_EXECUTED = NO
 
-VERDICT = CORRECTIVE DELIVERED / REVIEW REQUIRED
+EVIDENCE_FILE = project-docs/evidence/D3_UAT_SAFE_ROUTE_DISCOVERY_01_EVIDENCE.md
+VERDICT = RESULT B / DELIVERED / REVIEW REQUIRED
 ```
 
 ## Governance note
-D3-OBJECTIVE-UAT-COMBINED-01-R2 executed under Owner authorization `MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-R2-20260915-OWNER-01`:
-1. **Current-Tree Privacy Sanitization:** Sanitized `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_EVIDENCE.md` forward-only by removing all real person Kintone user codes, individual employee names, and mapping tables, replacing them with generic role-based terms while retaining `hr` strictly as the Owner-confirmed safe test account. Explicitly noted that original values remain in historical Git commits (no history rewrite). Corrected historical conclusions and verdicts to match evidence.
-2. **Source-Change Accounting Correction:** Corrected conflicting accounting in `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R1_EVIDENCE.md` from `SOURCE_CHANGES = 0 (script removal only)` to explicit fields `SOURCE_FILE_DELETIONS = 1`, `DELETED_SOURCE_FILE = scripts/kintone/d3-objective-uat-combined-01.js`, `OTHER_SOURCE_CHANGES = 0`, and `NEW_EXECUTABLE_SCRIPTS = 0` (forward-only deletion, no history rewrite).
-3. **R2 Evidence Delivery:** Delivered `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R2_EVIDENCE.md` documenting base identity, privacy sanitization, corrected historical accounting, sequencing violation, zero-I/O verification, and classifying external evidence strictly as EXECUTOR-REPORTED.
-4. **Control Synchronization:** Synchronized all authoritative control documents. Zero Kintone I/O, zero browser execution, zero record interactions, zero mutations, zero tests, zero deployments.
-5. **Terminal State:**
+D3-UAT-SAFE-ROUTE-DISCOVERY-01 executed under Owner authorization `MBO2026-D3-UAT-SAFE-ROUTE-DISCOVERY-01-20260915-OWNER-01`:
+1. **Lane A:** App 794 notification config inspected via REST (general, per-record, reminder: independently reviewed prior evidence). Webhook inspection returned HTTP 404 (non-JSON HTML page) from both live and preview endpoints, consistent across all credential contexts and prior package findings. `WEBHOOK_UI_INSPECTION = UNKNOWN`.
+2. **Lane B:** App 53 queried for `hr` Kintone user profile (`MBO_Kintone_User in ("hr")`) — 0 records. App 795 queried for active routes with `hr` as requester — 0 records. All 20 known routes have real employee codes as requesters. No natural safe route exists for `hr` as requester.
+3. **Result B:** `SAFE_NATURAL_ROUTE_EXISTS = NO`, `NOTIFICATION_ISOLATION_CONFIG = UNVERIFIED`, `NEXT_UAT_FEASIBILITY = BLOCKED`. Owner decision required: create temporary test fixture or proceed without live transition UAT.
+4. **Terminal State:**
 ```text
 ACTIVE_WORK_PACKAGE = NONE
-LAST_ATTEMPTED_PACKAGE = D3-OBJECTIVE-UAT-COMBINED-01-R2
-D3-OBJECTIVE-UAT-COMBINED-01 = REQUEST CORRECTIVE / SUPERSEDED
-D3-OBJECTIVE-UAT-COMBINED-01-R1 = REQUEST CORRECTIVE / SUPERSEDED BY R2
-D3-OBJECTIVE-UAT-COMBINED-01-R2 = CORRECTIVE DELIVERED / REVIEW REQUIRED
+LAST_ATTEMPTED_PACKAGE = D3-UAT-SAFE-ROUTE-DISCOVERY-01
+SAFE_NATURAL_ROUTE_EXISTS = NO
+NOTIFICATION_ISOLATION_CONFIG = UNVERIFIED
+NEXT_UAT_FEASIBILITY = BLOCKED
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
 KINTONE_READ_AUTHORIZED = NO
@@ -128,3 +105,8 @@ D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
 REVIEW_REQUIRED = YES
 ```
+
+## Prior package provenance
+Owner explicitly authorized prior package `D3-OBJECTIVE-UAT-COMBINED-01-R2` under Authorization ID `MBO2026-D3-OBJECTIVE-UAT-COMBINED-01-R2-20260915-OWNER-01` in mode `DOCS-ONLY CURRENT-TREE PRIVACY SANITIZATION + EVIDENCE ACCOUNTING CORRECTIVE` on canonical base HEAD `f3a3a762484c77d37c399621aee932a763e2fb5b` (parent: `2bafb9b4fedf424c59a98f4b02e7f57a7442fd26`, tree: `dcabde36f5611e18f0716fafc938f0f92b0ccfff`).
+Scope: Docs-only current-tree privacy sanitization of `D3_OBJECTIVE_UAT_COMBINED_01_EVIDENCE.md`, source-change accounting correction in `D3_OBJECTIVE_UAT_COMBINED_01_R1_EVIDENCE.md`, creation of `D3_OBJECTIVE_UAT_COMBINED_01_R2_EVIDENCE.md`, and authoritative control synchronization. Zero Kintone I/O, zero browser execution, zero record interactions, zero tests/builds, zero deployments.
+Status: CORRECTIVE DELIVERED / REVIEW REQUIRED

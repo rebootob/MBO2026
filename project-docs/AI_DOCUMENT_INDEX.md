@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-15 ICT
+Updated: 2026-09-15 ICT (D3-UAT-SAFE-ROUTE-DISCOVERY-01)
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -122,6 +122,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_EVIDENCE.md` — App 794 controlled Objective workflow UAT preflight inspection, route and provenance integrity verification, and fail-closed stop evidence record (5 REST GETs, 0 retries; SAFE_ROUTE_NOT_AVAILABLE fail-closed stop enforced before first mutation; zero writes, zero transitions; superseded by R1 and R2; current-tree privacy sanitized).
 - `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R1_EVIDENCE.md` — App 794 controlled Objective workflow UAT evidence correction, unauthorized script removal (forward-only deletion; no history rewrite), corrected accounting (4 HTTP 200, 1 HTTP 404), webhook UNKNOWN verdict, transition isolation UNVERIFIED, and control synchronization record (zero Kintone I/O, zero browser execution, zero mutations; superseded by R2).
 - `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R2_EVIDENCE.md` — App 794 controlled Objective workflow UAT current-tree privacy sanitization, source-change accounting correction, sequencing violation record, zero-I/O verification, and authoritative control synchronization record (CORRECTIVE DELIVERED / REVIEW REQUIRED).
+- `project-docs/evidence/D3_UAT_SAFE_ROUTE_DISCOVERY_01_EVIDENCE.md` — App 794 notification config inspection (Lane A: webhook UNKNOWN, general notifications disabled/ASSIGNEE_ONLY, per-record/reminder EMPTY) and targeted safe natural route discovery (Lane B: 6 REST GETs; App 53 MBO_Kintone_User in ("hr") → 0 records; App 795 Requester_User in ("hr") ACTIVE → 0 records; SAFE_NATURAL_ROUTE_EXISTS = NO; RESULT B / NEXT_UAT_FEASIBILITY = BLOCKED / REVIEW REQUIRED).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
