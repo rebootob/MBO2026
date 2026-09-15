@@ -16,7 +16,7 @@
 
 ```text
 D3-OBJECTIVE-UAT-COMBINED-01 = REQUEST CORRECTIVE / SUPERSEDED BY R1
-D3-OBJECTIVE-UAT-COMBINED-01-R1 = CORRECTIVE DELIVERED / REVIEW REQUIRED
+D3-OBJECTIVE-UAT-COMBINED-01-R1 = REQUEST CORRECTIVE / SUPERSEDED BY R2
 ```
 
 R1 is an evidence correction and unauthorized-script removal package only. No UAT was executed. No Kintone I/O occurred. This package does not supersede any historical execution counters or mutation accounting from the original D3-OBJECTIVE-UAT-COMBINED-01 package; it corrects evidence defects, removes a tracked script added in violation of authorized scope, and synchronizes control documents forward-only.
@@ -196,7 +196,9 @@ NOTIFICATION_SETTING_CHANGES  = 0
 TESTS_OR_BUILDS               = 0
 DEPLOYMENTS                   = 0
 NEW_EXECUTABLE_SCRIPTS        = 0
-SOURCE_CHANGES                = 0 (script removal only)
+SOURCE_FILE_DELETIONS         = 1
+DELETED_SOURCE_FILE           = scripts/kintone/d3-objective-uat-combined-01.js
+OTHER_SOURCE_CHANGES          = 0
 DEPENDENCY_CHANGES            = 0
 CONFIG_CHANGES                = 0
 RECORD_15_INTERACTIONS        = 0
@@ -205,8 +207,10 @@ MERGE_REBASE_FORCE_PUSH       = 0
 ZERO_WRITE_FAIL_CLOSED        = ENFORCED
 ```
 
+> **Accounting note (corrected by R2):** The original counter `SOURCE_CHANGES = 0 (script removal only)` was internally conflicting — the deletion of `scripts/kintone/d3-objective-uat-combined-01.js` is itself a source-file change. The corrected accounting splits this into `SOURCE_FILE_DELETIONS = 1`, `DELETED_SOURCE_FILE = scripts/kintone/d3-objective-uat-combined-01.js`, `OTHER_SOURCE_CHANGES = 0`, and `NEW_EXECUTABLE_SCRIPTS = 0`. This was a forward-only deletion (`git rm`); no Git history rewrite was performed or authorized.
+
 **File changes in this R1 package:**
-- `scripts/kintone/d3-objective-uat-combined-01.js` — **DELETED** (git rm, forward-only)
+- `scripts/kintone/d3-objective-uat-combined-01.js` — **DELETED** (git rm, forward-only deletion; no history rewrite)
 - `project-docs/evidence/D3_OBJECTIVE_UAT_COMBINED_01_R1_EVIDENCE.md` — **CREATED** (this file)
 - `project-docs/AI_CONTROL_CENTER.md` — **UPDATED** (control sync)
 - `project-docs/AI_ACTIVE_TASK.md` — **UPDATED** (control sync)
@@ -228,5 +232,6 @@ FINAL_UAT_AUTHORIZED          = NO
 D3_CLOSURE                    = NOT CLAIMED
 PRODUCTION_READY              = NO
 REVIEW_REQUIRED               = YES
+HISTORICAL_VERDICT            = REQUEST CORRECTIVE / SUPERSEDED BY R2
 CONTROL_PLANE_REVIEW_PASSED   = NOT CLAIMED / AWAITING CHATGPT REVIEW
 ```
