@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-16 ICT (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R1)
+Updated: 2026-09-16 ICT (D3-WEBHOOK-UI-VERIFICATION-01)
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -125,6 +125,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_UAT_SAFE_ROUTE_DISCOVERY_01_EVIDENCE.md` — App 794 notification config inspection (Lane A: browser preflight NOT SUCCESSFULLY EXECUTED; webhook UNKNOWN, general notifications disabled/ASSIGNEE_ONLY, per-record/reminder EMPTY) and targeted safe natural route discovery (Lane B: 6 REST GETs total; 4 route reads — App 53 MBO_Kintone_User in ("hr") → 0 records; App 795 Requester_User in ("hr") ACTIVE → 0 records; 2 webhook calls OUTSIDE Lane B definition — HTTP 404; SAFE_NATURAL_ROUTE_EXISTS = NO; REQUEST CORRECTIVE / PARTIAL RESULT ACCEPTED — forward-only corrective applied 2026-09-16 ICT).
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_EVIDENCE.md` — Combined D3 final business UAT safety pre-inspection, browser session assessment (MISSING_AUTHENTICATED_BROWSER_SESSION / EXECUTION_IDENTITY_UNVERIFIED), notification isolation unproven stop (NOTIFICATION_ISOLATION_NOT_PROVEN), operational ledger (0 REST calls, 0 browser mutations, 0 fixtures), and non-claims record (REVIEW REQUIRED).
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R1_EVIDENCE.md` — D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R1 retry final business UAT safety pre-inspection under Owner-prepared sessions; Owner-confirmed session verification (PARTIAL — Owner declaration accepted per R1 mode); notification isolation assessment (29 non-webhook REST reads, all HTTP 200, non-webhook channels verified safe); webhook status UNKNOWN all four apps (53, 795, 794, 798 — HTTP 404 non-JSON for all webhook endpoints); prewrite baseline reads (35 total GET requests, ZERO writes); stop at NOTIFICATION_ISOLATION_NOT_PROVEN / WEBHOOK_STATUS_UNKNOWN_ALL_FOUR_APPS; forward-only corrective accounting for D3_UAT_SAFE_ROUTE_DISCOVERY_01_EVIDENCE.md; terminal state REVIEW REQUIRED.
+- `project-docs/evidence/D3_WEBHOOK_UI_VERIFICATION_01_EVIDENCE.md` — Owner-observed App Settings → Webhooks read-only UI inspection findings for Apps 53, 795, 794, and 798 (all 4 are NONE; table empty with (None) for App 53 and App 795; confirmed empty for App 794 and App 798); WEBHOOK_CONFIGURATION_UNKNOWN blocker cleared based specifically on Owner-observed UI evidence; zero Kintone REST reads, zero Kintone writes, zero browser mutations by Antigravity, zero config changes; terminal state REVIEW REQUIRED.
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
