@@ -1,6 +1,6 @@
 # MBO2026 Master Delivery Control V3 — D1-D7 Stage Scoreboard
 
-Updated: 2026-09-16 ICT (D3-WEBHOOK-UI-VERIFICATION-01)
+Updated: 2026-09-16 ICT (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2)
 
 > **Role:** authoritative D1-D7 stage-level scoreboard only. For current gate/authorization read `AI_CONTROL_CENTER.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
 
@@ -16,7 +16,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | PASS / CLOSED / DURABLE | Accepted live App794 baseline remains revision 70. |
 | D2 | ENGINEERING PASS / CLOSED / DURABLE | Owner runtime UAT remains paused. |
-| D3 | D3-SBX-MIGRATION-01 PASS / CLOSED; SANDBOX MIGRATION COMPLETE | App795 revision 13 (fully finalized) and App794 revision 71 (provenance added, zero backfill) independently reviewed. Deployment and cutover remain unauthorized. |
+| D3 | D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2 DELIVERED / FIXTURE_READY_FOR_OWNER_UI / REVIEW REQUIRED | Synthetic safe fixtures created and read-back verified. Full business UAT and D3 closure not claimed. Deployment and cutover remain unauthorized. |
 | D4 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D5 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D6 | UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED | No current D6 authorization. |
