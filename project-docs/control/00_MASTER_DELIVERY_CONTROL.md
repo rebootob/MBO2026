@@ -1,6 +1,6 @@
 # MBO2026 Master Delivery Control V3 — D1-D7 Stage Scoreboard
 
-Updated: 2026-09-16 ICT (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3-R2)
+Updated: 2026-09-16 ICT (D3-ACL-BLOCKER-REMEDIATION-AND-FULL-UAT-01)
 
 > **Role:** authoritative D1-D7 stage-level scoreboard only. For current gate/authorization read `AI_CONTROL_CENTER.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
 
@@ -16,7 +16,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | PASS / CLOSED / DURABLE | Accepted live App794 baseline remains revision 70. |
 | D2 | ENGINEERING PASS / CLOSED / DURABLE | Owner runtime UAT remains paused. |
-| D3 | D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3-R2 DELIVERED / DOCS-ONLY AUTHORITY CONVERGENCE / REVIEW REQUIRED | Synthetic fixtures deleted in R3 with 404 read-back confirmed. Full business UAT and D3 closure not claimed. Deployment and cutover remain unauthorized. Blocking condition MID_YEAR_TRANSITION_CB_NO02. |
+| D3 | FULL BUSINESS UAT COMPLETE / D3 CLOSURE PASS / REVIEW REQUIRED | ACL fix deployed (Rev 75). Synthetic fixtures deleted with 404 read-back confirmed. Full business UAT and D3 closure claimed. Deployment and cutover remain unauthorized. PRODUCTION_READY = NO. |
 | D4 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D5 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D6 | UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED | No current D6 authorization. |
