@@ -1,42 +1,42 @@
 # MBO2026 Active Work Package Contract
 
-Updated: 2026-09-16 ICT (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2)
-
+> **Governance Level:** STRICT ORBIS GOVERNANCE
+> **Authority:** Project Owner (`Simple`) / ChatGPT Control Plane
 > **Role:** exact active authorization/scope authority.
 
 ## Current contract
 ```text
-PROJECT = MBO2026
-CANONICAL_BRANCH = ai/antigravity-wp002c
 ACTIVE_WORK_PACKAGE = NONE
-ACTIVE_WORK_PACKAGE_STATUS = NONE / D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2 DELIVERED / FIXTURE_READY_FOR_OWNER_UI / REVIEW REQUIRED
-LAST_ATTEMPTED_PACKAGE = D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2
-LAST_CLOSED_CONTROL_PACKAGE = D3-WEBHOOK-UI-VERIFICATION-01
+LAST_ATTEMPTED_PACKAGE = D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3-R2
+R3_R2_STATUS = DOCS-ONLY AUTHORITY CONVERGENCE DELIVERED / REVIEW REQUIRED
+OWNER_UI_ACTION_REQUIRED = NO
+REMAINING_SYNTHETIC_FIXTURES = 0
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
-
 KINTONE_READ_AUTHORIZED = NO
 KINTONE_WRITE_AUTHORIZED = NO
 PROCESS_WRITE_AUTHORIZED = NO
-SCHEMA_WRITE_AUTHORIZED = NO
-RECORD_WRITE_AUTHORIZED = NO
-ACL_WRITE_AUTHORIZED = NO
 DEPLOYMENT_AUTHORIZED = NO
 UAT_AUTHORIZED = NO
-OWNER_UI_ACTION_REQUIRED = YES
-FULL_D3_BUSINESS_UAT = NOT CLAIMED
+
+OBJECTIVE_APPROVAL_CYCLE = PASS
+OBJECTIVE_FINAL_STATUS = 05 Objective Approved
+MID_YEAR_TRANSITION = BLOCKED / CB_NO02
+MID_YEAR_UAT = NOT COMPLETED
+FINAL_EVALUATION_UAT = NOT EXECUTED
+APP798_ARCHIVAL = NOT EXERCISED / ZERO RECORDS OBSERVED
+FULL_D3_BUSINESS_UAT = NOT COMPLETED
 D3_CLOSURE = NOT CLAIMED
 PRODUCTION_READY = NO
+BLOCKING_CONDITION = MID_YEAR_TRANSITION_CB_NO02
 REVIEW_REQUIRED = YES
 ```
 
-## Latest Owner authorization
-Owner explicitly authorized package `D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2` under Authorization ID `MBO2026-D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2-20260916-OWNER-01` in mode `BOUNDED SYNTHETIC SAFE FIXTURE CREATION & OWNER UI HANDOFF` on canonical base HEAD `0ba2e0e76fec013722e58a1f5699fabdfc84df0a`.
-Scope: Create bounded synthetic safe fixtures (App 53 Record 650, App 795 Record 33, App 794 Record 17) via Antigravity (`~/.gemini/bin/agy.exe`) using model `gemini-3.8-flash-high` with `FIXTURE_SET_KEY = MBO2026_D3_FINAL_R2_OWNER01`, all user/approver roles strictly mapped to `hr`, read-back verification, zero touches to Record 15 or 20 production routes, and handoff to Owner for UI testing.
+## Historical Execution Result (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2)
+> **HISTORICAL NOTICE:** The fixtures created in R2 (Record 17, 33, 650) were subsequently deleted in R3, confirmed by HTTP 404 read-backs. They are no longer active or ready for Owner UI.
 
-## Execution result
 ```text
-PACKAGE = D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2
+PACKAGE = D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2 (HISTORICAL)
 TITLE = D3 FINAL BUSINESS UAT ROUND 2 SYNTHETIC FIXTURES & OWNER UI HANDOFF
 AUTHORIZATION_ID = MBO2026-D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2-20260916-OWNER-01
 MODE = BOUNDED SYNTHETIC SAFE FIXTURE CREATION & OWNER UI HANDOFF
@@ -85,9 +85,11 @@ VERDICT = PASS / FIXTURE_READY_FOR_OWNER_UI / REVIEW REQUIRED
 ## D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3 & R3-R1 Summary
 
 ### Package Provenance
-- Original R3 authorization: Combined notification-safe Owner UI UAT, evidence, archival verification and cleanup.
-- Later continuation: Evidence correction, control sync, commit, and push only.
-- R3-R1 authorization: Docs-only corrective for R3 accounting, scope, and provenance (Zero I/O).
+1. **R2 Fixture Creation (Historical):** Bounded creation of synthetic fixtures (App 53 Rec 650, App 795 Rec 33, App 794 Rec 17); subsequently deleted in R3 with 404 read-back confirmed.
+2. **Original R3 Combined Owner UI UAT (Historical Execution):** Preflight inspection (including Record 15 read), Phase A REST status PUT on Record 17, Owner UI objective approval flow (03 -> 04 -> 05 PASS), Mid-Year transition blocked at CB_NO02, zero-record App 798 inspection, and fixture deletion cleanup.
+3. **R3 Continuation (Docs/Evidence Delivery):** Evidence artifact generation, control file synchronization, commit, and push.
+4. **R3-R1 (Accounting / Scope / Provenance Corrective):** Superseding evidence artifact restoring full control history, disclosing Record 15 read (1 interaction) and Phase A REST status PUT (1 write), updating minimum proven REST reads to 12 (exact total unverified), and redacting CB_NO02 correlation identifier.
+5. **R3-R2 (Current Docs-Only Authority Convergence):** Harmonization across all 5 control surfaces, removal of stale R2/fixture references, evidence cross-link repair, and document index routing sync.
 
 ### Corrected Accounting & Findings
 - RECORD_15_INTERACTIONS = 1 (1 read during Phase A preflight; 0 writes; SCOPE_VIOLATION_RECORD_15_READ = YES)
@@ -104,8 +106,35 @@ VERDICT = PASS / FIXTURE_READY_FOR_OWNER_UI / REVIEW REQUIRED
 - FULL_D3_BUSINESS_UAT = NOT COMPLETED
 - OVERALL_R3_VERDICT = PARTIAL UAT / PASS AS SAFETY STOP / ACCOUNTING AND SCOPE CORRECTED BY R3-R1
 - R3-R1_STATUS = DOCS-ONLY CORRECTIVE DELIVERED / REVIEW REQUIRED
+- R3_R2_STATUS = DOCS-ONLY AUTHORITY CONVERGENCE DELIVERED / REVIEW REQUIRED
 - D3_CLOSURE = NOT CLAIMED
 - PRODUCTION_READY = NO
 - BLOCKING_CONDITION = MID_YEAR_TRANSITION_CB_NO02
 
 ### Current Terminal Contract
+```text
+ACTIVE_WORK_PACKAGE = NONE
+LAST_ATTEMPTED_PACKAGE = D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3-R2
+R3_R2_STATUS = DOCS-ONLY AUTHORITY CONVERGENCE DELIVERED / REVIEW REQUIRED
+OWNER_UI_ACTION_REQUIRED = NO
+REMAINING_SYNTHETIC_FIXTURES = 0
+NEXT_GATE_AUTHORIZED = NO
+AUTO_START_NEXT_WORK_PACKAGE = NO
+KINTONE_READ_AUTHORIZED = NO
+KINTONE_WRITE_AUTHORIZED = NO
+PROCESS_WRITE_AUTHORIZED = NO
+DEPLOYMENT_AUTHORIZED = NO
+UAT_AUTHORIZED = NO
+
+OBJECTIVE_APPROVAL_CYCLE = PASS
+OBJECTIVE_FINAL_STATUS = 05 Objective Approved
+MID_YEAR_TRANSITION = BLOCKED / CB_NO02
+MID_YEAR_UAT = NOT COMPLETED
+FINAL_EVALUATION_UAT = NOT EXECUTED
+APP798_ARCHIVAL = NOT EXERCISED / ZERO RECORDS OBSERVED
+FULL_D3_BUSINESS_UAT = NOT COMPLETED
+D3_CLOSURE = NOT CLAIMED
+PRODUCTION_READY = NO
+BLOCKING_CONDITION = MID_YEAR_TRANSITION_CB_NO02
+REVIEW_REQUIRED = YES
+```

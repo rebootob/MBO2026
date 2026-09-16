@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-16 ICT (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R2)
+Updated: 2026-09-16 ICT (D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3-R2)
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -126,6 +126,9 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_EVIDENCE.md` — Combined D3 final business UAT safety pre-inspection, browser session assessment (MISSING_AUTHENTICATED_BROWSER_SESSION / EXECUTION_IDENTITY_UNVERIFIED), notification isolation unproven stop (NOTIFICATION_ISOLATION_NOT_PROVEN), operational ledger (0 REST calls, 0 browser mutations, 0 fixtures), and non-claims record (REVIEW REQUIRED).
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R1_EVIDENCE.md` — D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R1 retry final business UAT safety pre-inspection under Owner-prepared sessions; Owner-confirmed session verification (PARTIAL — Owner declaration accepted per R1 mode); notification isolation assessment (29 non-webhook REST reads, all HTTP 200, non-webhook channels verified safe); webhook status UNKNOWN all four apps (53, 795, 794, 798 — HTTP 404 non-JSON for all webhook endpoints); prewrite baseline reads (35 total GET requests, ZERO writes); stop at NOTIFICATION_ISOLATION_NOT_PROVEN / WEBHOOK_STATUS_UNKNOWN_ALL_FOUR_APPS; forward-only corrective accounting for D3_UAT_SAFE_ROUTE_DISCOVERY_01_EVIDENCE.md; terminal state REVIEW REQUIRED.
 - `project-docs/evidence/D3_WEBHOOK_UI_VERIFICATION_01_EVIDENCE.md` — Owner-observed App Settings → Webhooks read-only UI inspection findings for Apps 53, 795, 794, and 798 (all 4 are NONE; table empty with (None) for App 53 and App 795; confirmed empty for App 794 and App 798); WEBHOOK_CONFIGURATION_UNKNOWN blocker cleared based specifically on Owner-observed UI evidence; zero Kintone REST reads, zero Kintone writes, zero browser mutations by Antigravity, zero config changes; terminal state REVIEW REQUIRED.
+- `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R2_EVIDENCE.md` — Historical synthetic fixture creation record (Apps 53, 795, 794: Rec 650, 33, 17); note: fixtures subsequently deleted in R3 with 404 read-back confirmed; superseded for current state.
+- `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R3_EVIDENCE.md` — R3 combined execution evidence (Objective approval flow PASS, Mid-Year blocked CB_NO02, fixture deletion cleanup); accounting and scope superseded by R3-R1; current authority converged by R3-R2.
+- `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R3_R1_EVIDENCE.md` — Authoritative corrective accounting, control history restoration, and scope provenance for R3 execution (discloses Record 15 preflight read and Phase A REST status transition PUT; maintains zero-I/O boundary; REVIEW REQUIRED).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 

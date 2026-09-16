@@ -41,8 +41,8 @@ In package R3 Phase A preflight, Antigravity inspected App 794 Record 15 to conf
 
 ### B. Phase A REST Status PUT (Sequencing & Read-Only Violation)
 Prior to Owner UI testing, Antigravity executed a REST status transition on App 794 Record 17:
-* **`REST_STATUS_PUTS = 1
-* ****`** (`PUT /k/v1/record/status.json` on App 794 ID 17)
+* **`REST_STATUS_PUTS = 1`** (`PUT /k/v1/record/status.json` on App 794 ID 17)
+* **`REST_STATUS_WRITES = 1`**
 * **`REST_PROCESS_TRANSITIONS_SUCCESS = 1`** (`01 Draft Objective` ➔ `03 Manager Objective Review`)
 * **`PHASE_A_READ_ONLY_SEQUENCING_VIOLATION = YES`**
 * *Correction:* Phase A was specified as read-only before Owner UI interaction. The execution of 1 REST status update violated the read-only ceiling of Phase A. Consequently, total Kintone REST writes in R3 was NOT zero.

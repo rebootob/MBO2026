@@ -1,7 +1,7 @@
 # D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R3 Evidence Artifact
 
 > **HISTORICAL NOTICE / SUPERSEDED:**
-> This evidence artifact is superseded in part regarding its REST accounting totals, Record 15 interaction claims, and Phase A mutation provenance by .
+> This evidence artifact is superseded in part regarding its REST accounting totals, Record 15 interaction claims, and Phase A mutation provenance by `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R3_R1_EVIDENCE.md`.
 > The recorded business observations and safety-stop findings are preserved historically below.
 
 ## 1. Executive Summary
