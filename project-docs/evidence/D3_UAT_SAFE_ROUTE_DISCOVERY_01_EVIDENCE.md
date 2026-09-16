@@ -10,6 +10,14 @@
 **Base Parent:** `f3a3a762484c77d37c399621aee932a763e2fb5b` (MATCH — AUTHORIZED_BASE_PARENT)  
 **Base Tree:** `1152a1a838fd40df6109d2fdf34f428c5933bf1d` (MATCH — AUTHORIZED_BASE_TREE)
 
+> **CORRECTIVE ACCOUNTING NOTICE (forward-only, applied 2026-09-16 ICT per D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R1 Section 10):**
+> This document has been updated with forward-only corrective accounting. The following corrections are applied without history rewrite:
+> 1. Browser preflight in this package was NOT successfully executed by Antigravity (clarified in Section 3.1).
+> 2. Webhook REST calls (HTTP 404, entries 5 and 6) are separated from Lane B route reads — they are OUTSIDE Lane B definition.
+> 3. Retry count was previously recorded as 0; corrected to NOT CLAIMED as the same webhook endpoint was called repeatedly across multiple packages.
+> 4. Only App 53 and App 795 exact query results (entries 1–4) are retained as Lane B route reads.
+> 5. Terminal status: REQUEST CORRECTIVE / PARTIAL RESULT ACCEPTED.
+
 ---
 
 ## 1. Preflight Identity
@@ -47,13 +55,15 @@ Prior state confirmed: `ACTIVE_WORK_PACKAGE = NONE`, `LAST_ATTEMPTED_PACKAGE = D
 
 ### 3.1 Browser Navigation Accounting
 
-Lane A is authorized for up to 4 browser settings page navigations. Browser UI navigation to App 794 settings was not independently conducted in this execution context: Antigravity does not have direct interactive browser navigation capability to App 794 settings pages without Owner session interaction. This is consistent with prior package behaviour (`D3-SBX-UAT-01`: `STOP = MISSING_AUTHENTICATED_BROWSER_SESSION` when session absent).
+Lane A is authorized for up to 4 browser settings page navigations. Browser UI preflight and navigation to App 794 settings was NOT SUCCESSFULLY EXECUTED in this execution context: Antigravity does not have direct interactive browser navigation capability to App 794 settings pages without Owner session interaction. This is consistent with prior package behaviour (`D3-SBX-UAT-01`: `STOP = MISSING_AUTHENTICATED_BROWSER_SESSION` when session absent).
+
+> **CORRECTIVE (forward-only):** Prior text stated navigation was "not independently conducted." Corrected to: browser preflight was NOT SUCCESSFULLY EXECUTED by Antigravity in this package. The distinction matters for accounting purposes: this is not a choice not to navigate — Antigravity lacks the capability to independently navigate Owner's browser to settings pages.
 
 However, three of four Lane A items (General Notifications, Per-Record Notifications, Reminder Notifications) were already independently verified in the prior independently-reviewed package `D3-UAT-NOTIFICATION-ISOLATION-READONLY-01` (4 REST GETs, HTTP 200, revision 74, PASS / INDEPENDENTLY REVIEWED / ACCEPTED WITH EVIDENCE LIMITS). Those findings are carried forward as the authoritative baseline at revision 74.
 
 The fourth Lane A item (Webhooks) was not verifiable via REST (`/k/v1/app/webhooks.json?app=794` returns HTTP 404 non-JSON HTML page in this environment, both live and preview endpoints, for all credential contexts tested). This is consistent with the prior package finding.
 
-**Browser navigation page view count this package: 0 (Antigravity did not independently navigate App 794 browser settings pages in this execution).**
+**Browser navigation page view count this package: 0 (NOT SUCCESSFULLY EXECUTED — Antigravity did not independently navigate App 794 browser settings pages in this execution).**
 
 > Note: Browser-generated background traffic is not counted or claimed. No browser settings page views were executed by Antigravity in this package. REST reads are accounted separately in the REST Read Ledger (Section 4).
 
@@ -115,7 +125,11 @@ NOTIFICATION_ISOLATION_CONFIG        = UNVERIFIED
 
 ### 4.1 REST Read Ledger (Explicit Attempts)
 
-**Maximum authorized:** 6 REST GET attempts. READ_RETRIES = 0. AUXILIARY_OR_BROAD_READS = 0.
+**Maximum authorized:** 6 REST GET attempts.
+
+> **CORRECTIVE (forward-only):** READ_RETRIES was previously recorded as 0. Corrected to NOT CLAIMED: the webhook endpoint `/k/v1/app/webhooks.json?app=794` was called repeatedly across multiple packages (D3-OBJECTIVE-UAT-COMBINED-01, D3-UAT-SAFE-ROUTE-DISCOVERY-01, and D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R1). Claiming READ_RETRIES = 0 within this package when the same endpoint had already been called in prior packages is misleading. Corrected accounting separates Lane B route reads (entries 1–4) from webhook REST calls (entries 5–6) which are OUTSIDE Lane B definition.
+
+**Lane B Route Reads (App 53 and App 795 exact queries — within Lane B definition):**
 
 | Attempt | Endpoint | App | Purpose | HTTP Status | Finding |
 |---|---|---|---|---|---|
@@ -123,10 +137,19 @@ NOTIFICATION_ISOLATION_CONFIG        = UNVERIFIED
 | **2** | `GET /k/v1/records.json?app=53&query=MBO_Kintone_User in ("hr")` | 53 | Query App 53 for employee profile linked to `hr` Kintone user account | HTTP 200 | **0 records returned** — no App 53 profile is linked to `hr` |
 | **3** | `GET /k/v1/app/form/fields.json?app=795` | 795 | Discover App 795 field codes to identify correct requester/approver fields | HTTP 200 | `Requester_User` (USER_SELECT), `Manager_Level1_Approvers`, `Manager_Level2_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers` (all USER_SELECT), `Version_Status` (DROP_DOWN) identified |
 | **4** | `GET /k/v1/records.json?app=795&query=Requester_User in ("hr") and Version_Status in ("ACTIVE")` | 795 | Query App 795 for active routes where `hr` is the requester | HTTP 200 | **0 records returned** — no active App 795 route has `hr` as Requester_User |
+
+**LANE_B_ROUTE_READS = 4 (entries 1–4 above). These are the accepted Lane B findings.**
+
+**Webhook REST Calls (OUTSIDE Lane B definition — separated per forward-only corrective):**
+
+| Attempt | Endpoint | App | Purpose | HTTP Status | Finding |
+|---|---|---|---|---|---|
 | **5** | `GET /k/v1/app/webhooks.json?app=794` (live) | 794 | Retry webhook endpoint with admin account credential | HTTP 404 (non-JSON HTML) | Platform returns HTML error page "This link is not valid" — endpoint not available in this environment |
 | **6** | `GET /k/v1/preview/app/webhooks.json?app=794` (preview) | 794 | Retry webhook endpoint (preview) with admin account | HTTP 404 (non-JSON HTML) | Same result — platform HTML error page |
 
-**REST ceiling reached: 6/6 attempts consumed. READ_RETRIES = 0 (ENFORCED). AUXILIARY_OR_BROAD_READS = 0 (ENFORCED).**
+**WEBHOOK_REST_CALLS = 2 (entries 5–6 above). These are OUTSIDE Lane B definition. They are accounted here for completeness but do NOT constitute Lane B route reads. The webhook endpoint was also called in prior packages; per-package retry = 0 claim is NOT CLAIMED (cross-package repeated calls; claiming 0 retries per-package while same endpoint is called across packages is misleading).**
+
+**TOTAL_REST_ATTEMPTS_THIS_PACKAGE = 6 (6/6 ceiling consumed). AUXILIARY_OR_BROAD_READS = 0 (ENFORCED).**
 
 ### 4.2 App 53 Finding
 
@@ -349,4 +372,10 @@ FULL_D3_BUSINESS_UAT                 = NOT CLAIMED
 D3_CLOSURE                           = NOT CLAIMED
 PRODUCTION_READY                     = NO
 REVIEW_REQUIRED                      = YES
+PACKAGE_STATUS                       = REQUEST CORRECTIVE / PARTIAL RESULT ACCEPTED
+  (Forward-only corrective applied 2026-09-16 ICT per D3-FINAL-BUSINESS-UAT-AND-CLOSURE-01-R1 Section 10:
+   browser preflight NOT SUCCESSFULLY EXECUTED clarified;
+   webhook REST calls separated from Lane B route reads;
+   READ_RETRIES corrected to NOT CLAIMED (endpoint called across multiple packages);
+   only App 53 / App 795 exact query results retained as Lane B findings)
 ```
