@@ -19,6 +19,8 @@ import { ApproverTaskIndexUI } from './ui/approver-task-index-ui.js';
 import { MboApprovalTaskService } from './services/mbo-approval-task-service.js';
 import { EmployeeRecordNavigation } from './ui/employee-record-navigation.js';
 import { DeleteGuardPolicy } from './security/delete-guard-policy.js';
+import { RevisionArchiveService } from './services/revision-archive-service.js';
+import { RevisionArchiveKintoneRepository } from './services/revision-archive-kintone-repository.js';
 
 let activeUiInstance = null;
 let currentEmployeeSelfContext = null;
@@ -53,6 +55,16 @@ const kintoneApiWrapper = {
       : '/v1/user/groups.json';
     const resp = await kintone.api(url, 'GET', { code: userCode });
     return resp ? resp.groups : [];
+  },
+  addRecord: async (appId, recordData) => {
+    if (typeof kintone === 'undefined' || typeof kintone.api !== 'function') {
+      throw new Error('Kintone API is unavailable');
+    }
+    const url = (typeof kintone.api.url === 'function')
+      ? kintone.api.url('/k/v1/record.json', true)
+      : '/k/v1/record.json';
+    const resp = await kintone.api(url, 'POST', { app: appId, record: recordData });
+    return resp;
   }
 };
 
@@ -1297,6 +1309,23 @@ if (typeof kintone !== 'undefined') {
       return false; // Cancel transition
     }
 
+    // 3. Stage Completion Snapshot Archive for D3 Lifecycle Transitions
+    const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+      apiAdapter: kintoneApiWrapper
+    });
+    if (archiveOutcome && archiveOutcome.success === false) {
+      const errDetail = archiveOutcome.error || 'Archive verification failed';
+      if (activeUiInstance && typeof activeUiInstance.showValidationErrors === 'function') {
+        activeUiInstance.showValidationErrors([{
+          field: 'Record_Key',
+          message: `Stage Archive Failed: ${errDetail}`,
+          messageTH: `การบันทึกประวัติสถานะ (Stage Archive) ไม่สำเร็จ: ${errDetail}`,
+          messageEN: `Stage Archive Failed: ${errDetail}`
+        }]);
+      }
+      return false; // Fail-closed: block transition
+    }
+
     return event;
   });
 
@@ -1308,4 +1337,191 @@ if (typeof kintone !== 'undefined') {
     });
     return policy.evaluateDeleteSubmit(event);
   });
+}
+
+/**
+ * D3 Stage Completion Archive Integration: Builds coherent logical snapshot from record data
+ */
+export function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
+  const getVal = (f) => (record && record[f] && typeof record[f] === 'object' && 'value' in record[f]) ? record[f].value : record?.[f];
+
+  const sourceRecordKey = String(getVal('Record_Key') || '').trim();
+  const employeeCode = String(getVal('Employee_Code') || '').trim();
+  const fiscalYear = String(getVal('Fiscal_Year') || 'FY2026').trim();
+  const rawRecordId = Number(getVal('$id') || getVal('Record_ID') || 0);
+  const revisionNumber = Number(getVal('Revision_Number') || getVal('Current_Revision_Number') || 1);
+
+  // Workflow appraisers
+  let workflowAppraisers = [];
+  const rawAppraisers = getVal('Workflow_Appraisers');
+  if (Array.isArray(rawAppraisers) && rawAppraisers.length > 0) {
+    workflowAppraisers = rawAppraisers.map((a) => (typeof a === 'string' ? { code: a.trim() } : { code: String(a?.code || a?.value || '').trim() }));
+  } else {
+    const approverCandidates = [
+      getVal('Manager_Level1_Approvers'),
+      getVal('Manager_Level2_Approvers'),
+      getVal('GM_Level1_Approvers'),
+      getVal('GM_Level2_Approvers'),
+      getVal('First_Manager_User'),
+      getVal('Manager_User'),
+      getVal('GM_User')
+    ];
+    const seen = new Set();
+    for (const cand of approverCandidates) {
+      if (Array.isArray(cand)) {
+        for (const item of cand) {
+          const code = String(item?.code || item?.value || item || '').trim();
+          if (code && !seen.has(code)) {
+            seen.add(code);
+            workflowAppraisers.push({ code });
+          }
+        }
+      } else if (cand) {
+        const code = String(cand?.code || cand?.value || cand || '').trim();
+        if (code && !seen.has(code)) {
+          seen.add(code);
+          workflowAppraisers.push({ code });
+        }
+      }
+    }
+  }
+
+  // Scorers
+  let scorers = [];
+  const rawScorers = getVal('Scorers');
+  if (Array.isArray(rawScorers) && rawScorers.length > 0) {
+    scorers = rawScorers.map((s) => {
+      const code = String(s?.code || s?.value || s || '').trim();
+      const weight = Number(s?.weight || (100 / rawScorers.length));
+      return { code, weight };
+    });
+  } else {
+    const kExp = Number(getVal('K_expected_Snapshot') || (workflowAppraisers.length > 1 ? 2 : 1));
+    const targetK = (kExp === 2) ? 2 : 1;
+    const selected = workflowAppraisers.slice(0, targetK);
+    scorers = selected.map((a) => ({ code: a.code, weight: 100 / Math.max(1, selected.length) }));
+  }
+
+  const kExpected = Number(getVal('K_expected_Snapshot') || scorers.length || 1);
+  const normalizedK = (kExpected === 2) ? 2 : 1;
+
+  if (scorers.length !== normalizedK) {
+    if (scorers.length > normalizedK) {
+      scorers = scorers.slice(0, normalizedK);
+    } else if (scorers.length < normalizedK) {
+      for (const a of workflowAppraisers) {
+        if (!scorers.some((s) => s.code === a.code)) {
+          scorers.push({ code: a.code, weight: 50 });
+          if (scorers.length === normalizedK) break;
+        }
+      }
+    }
+  }
+
+  const effectiveRoutingKey = String(getVal('Effective_Routing_Key') || 'TME1').trim();
+  const effectiveRouteVersionKey = String(getVal('Effective_Route_Version_Key') || `${effectiveRoutingKey}#v1`).trim();
+  const routePattern = String(getVal('Route_Pattern') || (normalizedK === 2 ? 'PATTERN_2_M1_G1' : 'PATTERN_1_M1')).trim();
+  const routingTopology = String(getVal('Routing_Topology') || (normalizedK === 2 ? 'M1_G1' : 'M1')).trim();
+  const frozenProfileCode = String(getVal('Frozen_Profile_Code') || getVal('Profile_Code') || 'PROF_MBO_2026').trim();
+
+  return {
+    source: {
+      Record_Key: sourceRecordKey,
+      Employee_Code: employeeCode,
+      Fiscal_Year: fiscalYear,
+      ...(rawRecordId > 0 ? { Record_ID: rawRecordId } : {})
+    },
+    stage: {
+      Evaluation_Stage: targetStage,
+      Revision_Number: revisionNumber,
+      Previous_Status: String(currentStatus || '').trim()
+    },
+    profile: {
+      Frozen_Profile_Code: frozenProfileCode,
+      K_expected_Snapshot: normalizedK
+    },
+    route: {
+      Effective_Routing_Key: effectiveRoutingKey,
+      Effective_Route_Version_Key: effectiveRouteVersionKey,
+      Route_Pattern: routePattern,
+      Routing_Topology: routingTopology,
+      Workflow_Appraisers: workflowAppraisers
+    },
+    scoring: {
+      Scorers: scorers
+    },
+    hoshin: {
+      Department_Hoshin_Key: String(getVal('Department_Hoshin_Key') || 'DHK_DEFAULT').trim()
+    },
+    config: {
+      Configuration_Hash: String(getVal('Configuration_Hash') || 'CONFIG_HASH_DEFAULT').trim()
+    },
+    business: {
+      Objective_Count: Array.isArray(getVal('Objective_Table')) ? getVal('Objective_Table').length : 0,
+      Objectives: Array.isArray(getVal('Objective_Table')) ? getVal('Objective_Table') : []
+    },
+    computed: {
+      PartA_Raw_Score: Number(getVal('PartA_Raw_Score') || 0)
+    }
+  };
+}
+
+/**
+ * Executes stage archive persistence upon authorized workflow action transition.
+ * Returns { success: boolean, targetStage?: string, archiveResult?: object, skipped?: boolean, error?: string }
+ */
+export async function executeProcessTransitionArchive(record, event, options = {}) {
+  const currentStatus = String(event?.status?.value || event?.currentStatus || record?.Status?.value || '').trim();
+  const nextStatus = String(event?.nextStatus?.value || event?.nextStatus || '').trim();
+  const actionName = String(event?.action?.value || event?.action || '').trim();
+
+  let targetStage = null;
+  if (currentStatus.startsWith('05') && (nextStatus.startsWith('06') || actionName.includes('Mid'))) {
+    targetStage = 'OBJECTIVE';
+  } else if (currentStatus.startsWith('10') && (nextStatus.startsWith('11') || actionName.includes('Final'))) {
+    targetStage = 'MIDYEAR';
+  } else if (currentStatus.startsWith('15') && (nextStatus.startsWith('16') || actionName.includes('Complete'))) {
+    targetStage = 'FINAL';
+  }
+
+  if (!targetStage) {
+    return { skipped: true, reason: 'NOT_A_TARGET_TRANSITION' };
+  }
+
+  const apiAdapter = options.apiAdapter || kintoneApiWrapper;
+  const loginUser = options.loginUser || ((typeof kintone !== 'undefined' && typeof kintone.getLoginUser === 'function') ? kintone.getLoginUser() : null);
+  const actorCode = String(options.actor || loginUser?.code || '').trim();
+
+  if (!actorCode) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actor login identity for transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'ACTOR_IDENTITY_UNRESOLVED' };
+  }
+
+  try {
+    const archiveAppId = options.archiveAppId || 798;
+    const clock = options.clock || (() => new Date().toISOString());
+    const archiveService = options.archiveService || new RevisionArchiveService(apiAdapter, { archiveAppId, clock });
+    const logicalSnapshot = options.logicalSnapshot || buildStageLogicalSnapshot(record, targetStage, currentStatus);
+
+    const rawRecordId = Number(record?.$id?.value || record?.Record_ID?.value || record?.Record_ID || 0);
+
+    const archiveResult = await archiveService.archiveStageCompletion({
+      sourceRecordKey: String(record?.Record_Key?.value || record?.Record_Key || '').trim(),
+      employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || '').trim(),
+      fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || 'FY2026').trim(),
+      evaluationStage: targetStage,
+      revisionNumber: Number(record?.Revision_Number?.value || record?.Current_Revision_Number?.value || 1),
+      sourceRecordId: rawRecordId > 0 ? rawRecordId : undefined,
+      previousStatus: currentStatus,
+      actor: { userCode: actorCode },
+      archivedAt: options.archivedAt || new Date().toISOString(),
+      logicalSnapshot
+    });
+
+    return { success: true, targetStage, archiveResult };
+  } catch (err) {
+    console.error(`[D3 ARCHIVE ERROR] Failed to create ${targetStage} stage completion archive:`, err);
+    return { success: false, error: err.message || String(err), details: err };
+  }
 }

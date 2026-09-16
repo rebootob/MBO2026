@@ -10348,6 +10348,1329 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
     }
   };
 
+  // src/services/d3-snapshot-serializer.js
+  function rotr(x, n) {
+    return (x >>> n | x << 32 - n) >>> 0;
+  }
+  var SHA256_K = Object.freeze([
+    1116352408,
+    1899447441,
+    3049323471,
+    3921009573,
+    961987163,
+    1508970993,
+    2453635748,
+    2870763221,
+    3624381080,
+    310598401,
+    607225278,
+    1426881987,
+    1925078388,
+    2162078206,
+    2614888103,
+    3248222580,
+    3835390401,
+    4022224774,
+    264347078,
+    604807628,
+    770255983,
+    1249150122,
+    1555081692,
+    1996064986,
+    2554220882,
+    2821834349,
+    2952996808,
+    3210313671,
+    3336571891,
+    3584528711,
+    113926993,
+    338241895,
+    666307205,
+    773529912,
+    1294757372,
+    1396182291,
+    1695183700,
+    1986661051,
+    2177026350,
+    2456956037,
+    2730485921,
+    2820302411,
+    3259730800,
+    3345764771,
+    3516065817,
+    3600352804,
+    4094571909,
+    275423344,
+    430227734,
+    506948616,
+    659060556,
+    883997877,
+    958139571,
+    1322822218,
+    1537002063,
+    1747873779,
+    1955562222,
+    2024104815,
+    2227730452,
+    2361852424,
+    2428436474,
+    2756734187,
+    3204031479,
+    3329325298
+  ]);
+  function computeSha256Hex(input) {
+    let bytes;
+    if (typeof input === "string") {
+      bytes = new TextEncoder().encode(input);
+    } else if (input instanceof Uint8Array) {
+      bytes = input;
+    } else if (typeof Buffer !== "undefined" && Buffer.isBuffer(input)) {
+      bytes = new Uint8Array(input);
+    } else {
+      bytes = new Uint8Array(input);
+    }
+    let H = [
+      1779033703,
+      3144134277,
+      1013904242,
+      2773480762,
+      1359893119,
+      2600822924,
+      528734635,
+      1541459225
+    ];
+    const l = bytes.length;
+    const bitLen = l * 8;
+    const rem = (l + 9) % 64;
+    const padLen = rem === 0 ? 0 : 64 - rem;
+    const totalLen = l + 1 + padLen + 8;
+    const buf = new Uint8Array(totalLen);
+    buf.set(bytes, 0);
+    buf[l] = 128;
+    const view = new DataView(buf.buffer);
+    const highBit = Math.floor(bitLen / 4294967296);
+    const lowBit = bitLen >>> 0;
+    view.setUint32(totalLen - 8, highBit, false);
+    view.setUint32(totalLen - 4, lowBit, false);
+    const W = new Uint32Array(64);
+    for (let offset = 0; offset < totalLen; offset += 64) {
+      for (let i = 0; i < 16; i++) {
+        W[i] = view.getUint32(offset + i * 4, false);
+      }
+      for (let i = 16; i < 64; i++) {
+        const s0 = (rotr(W[i - 15], 7) ^ rotr(W[i - 15], 18) ^ W[i - 15] >>> 3) >>> 0;
+        const s1 = (rotr(W[i - 2], 17) ^ rotr(W[i - 2], 19) ^ W[i - 2] >>> 10) >>> 0;
+        W[i] = W[i - 16] + s0 + W[i - 7] + s1 >>> 0;
+      }
+      let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (let i = 0; i < 64; i++) {
+        const S1 = (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) >>> 0;
+        const ch = (e & f ^ ~e & g) >>> 0;
+        const temp1 = h + S1 + ch + SHA256_K[i] + W[i] >>> 0;
+        const S0 = (rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) >>> 0;
+        const maj = (a & b ^ a & c ^ b & c) >>> 0;
+        const temp2 = S0 + maj >>> 0;
+        h = g;
+        g = f;
+        f = e;
+        e = d + temp1 >>> 0;
+        d = c;
+        c = b;
+        b = a;
+        a = temp1 + temp2 >>> 0;
+      }
+      H[0] = H[0] + a >>> 0;
+      H[1] = H[1] + b >>> 0;
+      H[2] = H[2] + c >>> 0;
+      H[3] = H[3] + d >>> 0;
+      H[4] = H[4] + e >>> 0;
+      H[5] = H[5] + f >>> 0;
+      H[6] = H[6] + g >>> 0;
+      H[7] = H[7] + h >>> 0;
+    }
+    let out = "";
+    for (let i = 0; i < 8; i++) {
+      out += H[i].toString(16).padStart(8, "0");
+    }
+    return out;
+  }
+  var D3SnapshotSerializationError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "D3SnapshotSerializationError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  var D3_SNAPSHOT_SCHEMA_VERSION = "D3_V1";
+  var D3_SNAPSHOT_SECTION_ALLOWLIST = Object.freeze([
+    "source",
+    "stage",
+    "profile",
+    "route",
+    "scoring",
+    "hoshin",
+    "config",
+    "business",
+    "computed"
+  ]);
+  var D3_SNAPSHOT_REQUIRED_SECTIONS = D3_SNAPSHOT_SECTION_ALLOWLIST;
+  var OMIT = /* @__PURE__ */ Symbol("D3_SNAPSHOT_OMIT");
+  function canonicalize(value, path = "$", inArray = false) {
+    if (value === void 0) {
+      if (inArray) {
+        throw new D3SnapshotSerializationError(
+          "UNDEFINED_ARRAY_VALUE",
+          `Undefined array item is not allowed at ${path}.`
+        );
+      }
+      return OMIT;
+    }
+    if (value === null) return null;
+    const type = typeof value;
+    if (type === "string" || type === "boolean") return value;
+    if (type === "number") {
+      if (!Number.isFinite(value)) {
+        throw new D3SnapshotSerializationError(
+          "NON_FINITE_NUMBER",
+          `Non-finite number is not allowed at ${path}.`
+        );
+      }
+      return value;
+    }
+    if (type === "bigint" || type === "function" || type === "symbol") {
+      throw new D3SnapshotSerializationError(
+        "UNSUPPORTED_SNAPSHOT_VALUE",
+        `Unsupported ${type} value at ${path}.`
+      );
+    }
+    if (value instanceof Date) {
+      if (Number.isNaN(value.getTime())) {
+        throw new D3SnapshotSerializationError(
+          "INVALID_DATE_VALUE",
+          `Invalid Date at ${path}.`
+        );
+      }
+      return value.toISOString();
+    }
+    if (Array.isArray(value)) {
+      return value.map((item, index) => canonicalize(item, `${path}[${index}]`, true));
+    }
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new D3SnapshotSerializationError(
+        "UNSUPPORTED_OBJECT_PROTOTYPE",
+        `Only plain objects are allowed at ${path}.`
+      );
+    }
+    const output = {};
+    for (const key of Object.keys(value).sort()) {
+      const normalized = canonicalize(value[key], `${path}.${key}`, false);
+      if (normalized !== OMIT) output[key] = normalized;
+    }
+    return output;
+  }
+  function buildD3SnapshotManifest(input) {
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      throw new D3SnapshotSerializationError(
+        "INVALID_SNAPSHOT_INPUT",
+        "Logical snapshot input must be a plain object."
+      );
+    }
+    const manifest = {
+      snapshotSchemaVersion: D3_SNAPSHOT_SCHEMA_VERSION
+    };
+    for (const section of D3_SNAPSHOT_REQUIRED_SECTIONS) {
+      const sectionValue = input[section];
+      if (sectionValue === void 0) {
+        throw new D3SnapshotSerializationError(
+          "SNAPSHOT_SECTION_MISSING",
+          `Required snapshot section is missing: ${section}.`
+        );
+      }
+      if (sectionValue === null || typeof sectionValue !== "object" || Array.isArray(sectionValue)) {
+        throw new D3SnapshotSerializationError(
+          "INVALID_SNAPSHOT_SECTION",
+          `Snapshot section ${section} must be a plain object.`
+        );
+      }
+      manifest[section] = sectionValue;
+    }
+    return manifest;
+  }
+  function canonicalizeD3Snapshot(input) {
+    return canonicalize(buildD3SnapshotManifest(input));
+  }
+  function serializeD3Snapshot(input) {
+    const canonicalObject = canonicalizeD3Snapshot(input);
+    const canonicalJson = JSON.stringify(canonicalObject);
+    return {
+      snapshot: canonicalObject,
+      canonicalJson
+    };
+  }
+  function hashD3Snapshot(input) {
+    const { snapshot, canonicalJson } = serializeD3Snapshot(input);
+    const sha256 = computeSha256Hex(canonicalJson);
+    return {
+      snapshot,
+      canonicalJson,
+      sha256
+    };
+  }
+
+  // src/services/revision-archive-kintone-repository.js
+  var REVISION_ARCHIVE_APP_ID = 798;
+  var RevisionArchiveRepositoryError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "RevisionArchiveRepositoryError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  function escapeKintoneQueryValue(value) {
+    if (value === null || value === void 0) return "";
+    return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  }
+  var RevisionArchiveKintoneRepository = class {
+    /**
+     * @param {object} kintoneApi - Injected Kintone API adapter ({ getRecords, addRecord })
+     * @param {object} [options] - Configuration options
+     */
+    constructor(kintoneApi, options = {}) {
+      if (!kintoneApi || typeof kintoneApi.getRecords !== "function" || typeof kintoneApi.addRecord !== "function") {
+        throw new RevisionArchiveRepositoryError(
+          "INJECTED_API_REQUIRED",
+          "RevisionArchiveKintoneRepository requires an injected API adapter with getRecords and addRecord."
+        );
+      }
+      if (options && "appId" in options) {
+        throw new RevisionArchiveRepositoryError(
+          "ARCHIVE_APP_ID_OVERRIDE_FORBIDDEN",
+          "Caller-selectable appId is forbidden. RevisionArchiveKintoneRepository is locked to App 798."
+        );
+      }
+      this.kintoneApi = kintoneApi;
+    }
+    get appId() {
+      return REVISION_ARCHIVE_APP_ID;
+    }
+    set appId(_value) {
+    }
+    /**
+     * Look up existing records by exact Archive_Key.
+     * @param {string} archiveKey
+     * @returns {Promise<Array<object>>} Normalized records array
+     */
+    async findByArchiveKey(archiveKey) {
+      if (!archiveKey || typeof archiveKey !== "string") {
+        throw new RevisionArchiveRepositoryError(
+          "ARCHIVE_KEY_REQUIRED",
+          "findByArchiveKey requires a non-empty string archiveKey."
+        );
+      }
+      const query = `Archive_Key = "${escapeKintoneQueryValue(archiveKey)}" limit 5`;
+      const res = await this.kintoneApi.getRecords(REVISION_ARCHIVE_APP_ID, query);
+      const records = res?.records || [];
+      return records.map((rec) => this._normalizeRecord(rec));
+    }
+    /**
+     * Create an archive row in App 798.
+     * @param {object} recordPayload - Kintone-formatted field values map
+     * @returns {Promise<{ id: string|number, revision: string|number }>}
+     */
+    async createArchiveRecord(recordPayload) {
+      if (!recordPayload || typeof recordPayload !== "object") {
+        throw new RevisionArchiveRepositoryError(
+          "RECORD_PAYLOAD_REQUIRED",
+          "createArchiveRecord requires a recordPayload object."
+        );
+      }
+      const res = await this.kintoneApi.addRecord(REVISION_ARCHIVE_APP_ID, recordPayload);
+      if (!res || !res.id && !res.$id) {
+        throw new RevisionArchiveRepositoryError(
+          "ARCHIVE_CREATE_FAILED",
+          "Kintone addRecord failed or did not return record identity."
+        );
+      }
+      return {
+        id: res.id || res.$id?.value || res.$id,
+        revision: res.revision || res.$revision?.value || res.$revision || null
+      };
+    }
+    /**
+     * Read back an exact archive row by Archive_Key.
+     * Fails closed if 0 or >1 records match.
+     * @param {string} archiveKey
+     * @returns {Promise<object>} Normalized record
+     */
+    async readBackExactArchiveRecord(archiveKey) {
+      const records = await this.findByArchiveKey(archiveKey);
+      if (records.length === 0) {
+        throw new RevisionArchiveRepositoryError(
+          "ARCHIVE_READBACK_NOT_FOUND",
+          `No archive record found for Archive_Key: ${archiveKey}`
+        );
+      }
+      if (records.length > 1) {
+        throw new RevisionArchiveRepositoryError(
+          "ARCHIVE_DUPLICATE_KEY_CORRUPTION",
+          `Multiple archive records (${records.length}) found for unique Archive_Key: ${archiveKey}`
+        );
+      }
+      return records[0];
+    }
+    /**
+     * Normalize raw Kintone record structure to clean logical properties.
+     * @private
+     */
+    _normalizeRecord(raw) {
+      if (!raw) return null;
+      const sourceRecordIdRaw = raw.Source_Record_ID?.value;
+      const revisionNumberRaw = raw.Revision_Number?.value;
+      const supersededByRevisionRaw = raw.Superseded_By_Revision?.value;
+      return {
+        archiveKey: raw.Archive_Key?.value ?? "",
+        sourceRecordId: sourceRecordIdRaw !== void 0 && sourceRecordIdRaw !== "" && sourceRecordIdRaw !== null ? Number(sourceRecordIdRaw) : null,
+        sourceRecordKey: raw.Source_Record_Key?.value ?? "",
+        fiscalYear: raw.Fiscal_Year?.value ?? "",
+        employeeCode: raw.Employee_Code?.value ?? "",
+        evaluationStage: raw.Evaluation_Stage?.value ?? "",
+        revisionNumber: revisionNumberRaw !== void 0 && revisionNumberRaw !== "" && revisionNumberRaw !== null ? Number(revisionNumberRaw) : null,
+        previousStatus: raw.Previous_Status?.value ?? "",
+        supersededByRevision: supersededByRevisionRaw !== void 0 && supersededByRevisionRaw !== "" && supersededByRevisionRaw !== null ? Number(supersededByRevisionRaw) : null,
+        eventType: raw.Event_Type?.value ?? "",
+        reason: raw.Reason?.value ?? "",
+        snapshotJson: raw.Snapshot_JSON?.value ?? "",
+        snapshotHash: raw.Snapshot_Hash?.value ?? "",
+        archivedBy: Array.isArray(raw.Archived_By?.value) ? raw.Archived_By.value : [],
+        archivedAt: raw.Archived_At?.value ?? "",
+        rawRecord: raw
+      };
+    }
+  };
+
+  // src/services/revision-archive-service.js
+  var ARCHIVE_EVENT_TYPES = Object.freeze({
+    STAGE_COMPLETION_SNAPSHOT: "STAGE_COMPLETION_SNAPSHOT",
+    EVALUATION_REVISION_CREATED: "EVALUATION_REVISION_CREATED",
+    ROUTE_REASSIGNMENT_PRECHANGE: "ROUTE_REASSIGNMENT_PRECHANGE"
+  });
+  var ARCHIVE_EVALUATION_STAGES = Object.freeze({
+    OBJECTIVE: "OBJECTIVE",
+    MIDYEAR: "MIDYEAR",
+    FINAL: "FINAL"
+  });
+  var RevisionArchiveError = class extends Error {
+    constructor(code, message, details = null) {
+      super(`${code}: ${message}`);
+      this.name = "RevisionArchiveError";
+      this.code = code;
+      this.details = details;
+    }
+  };
+  var issuedArchiveEvidence = /* @__PURE__ */ new WeakSet();
+  var ISO_WITH_TIMEZONE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})$/;
+  function validateKeyComponent(value, componentName) {
+    if (value === null || value === void 0 || typeof value !== "string") {
+      throw new RevisionArchiveError(
+        "ARCHIVE_INVALID_KEY_COMPONENT",
+        `${componentName} must be a non-empty string in Archive_Key.`
+      );
+    }
+    const trimmed = value.trim();
+    if (!trimmed || trimmed !== value) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_INVALID_KEY_COMPONENT",
+        `${componentName} cannot be empty or contain leading/trailing whitespace.`
+      );
+    }
+    if (value.includes("|") || value.includes("\r") || value.includes("\n")) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_INVALID_KEY_COMPONENT",
+        `${componentName} contains invalid delimiter characters (| or newline).`
+      );
+    }
+    return value;
+  }
+  function validatePositiveInteger(value, paramName) {
+    const num = Number(value);
+    if (!Number.isInteger(num) || num < 1) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_INVALID_KEY_COMPONENT",
+        `${paramName} must be a positive integer, received: ${value}.`
+      );
+    }
+    return num;
+  }
+  function isStrictPositiveInteger(value) {
+    if (value === null || value === void 0 || value === "") return false;
+    if (typeof value === "number") {
+      return Number.isInteger(value) && value > 0;
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      if (!trimmed || trimmed !== value) return false;
+      if (!/^\d+$/.test(trimmed)) return false;
+      const num = Number(trimmed);
+      return Number.isInteger(num) && num > 0;
+    }
+    return false;
+  }
+  function buildArchiveKey({
+    eventType,
+    sourceRecordKey,
+    evaluationStage,
+    revisionNumber,
+    supersededByRevision,
+    stableEventId
+  }) {
+    if (!Object.values(ARCHIVE_EVENT_TYPES).includes(eventType)) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_UNSUPPORTED_EVENT_TYPE",
+        `Unsupported archive event type: ${eventType}.`
+      );
+    }
+    if (!Object.values(ARCHIVE_EVALUATION_STAGES).includes(evaluationStage)) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_UNSUPPORTED_STAGE",
+        `Unsupported evaluation stage: ${evaluationStage}.`
+      );
+    }
+    const cleanKey = validateKeyComponent(sourceRecordKey, "Source_Record_Key");
+    const cleanStage = validateKeyComponent(evaluationStage, "Evaluation_Stage");
+    const cleanRev = validatePositiveInteger(revisionNumber, "Revision_Number");
+    if (eventType === ARCHIVE_EVENT_TYPES.STAGE_COMPLETION_SNAPSHOT) {
+      return `${cleanKey}|${cleanStage}|R${cleanRev}|STAGE_COMPLETION`;
+    }
+    if (eventType === ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED) {
+      const cleanSuperseded = validatePositiveInteger(supersededByRevision, "Superseded_By_Revision");
+      if (cleanSuperseded <= cleanRev) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_INVALID_KEY_COMPONENT",
+          `Superseded_By_Revision (${cleanSuperseded}) must be greater than Revision_Number (${cleanRev}).`
+        );
+      }
+      return `${cleanKey}|${cleanStage}|R${cleanRev}|EVALUATION_REVISION_CREATED|TO_R${cleanSuperseded}`;
+    }
+    if (eventType === ARCHIVE_EVENT_TYPES.ROUTE_REASSIGNMENT_PRECHANGE) {
+      if (!stableEventId || typeof stableEventId !== "string" || !stableEventId.trim()) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_STABLE_EVENT_ID_REQUIRED",
+          "ROUTE_REASSIGNMENT_PRECHANGE requires a non-empty caller-supplied stableEventId."
+        );
+      }
+      const cleanEventId = validateKeyComponent(stableEventId, "Stable_Event_ID");
+      return `${cleanKey}|${cleanStage}|R${cleanRev}|ROUTE_REASSIGNMENT_PRECHANGE|${cleanEventId}`;
+    }
+    throw new RevisionArchiveError(
+      "ARCHIVE_UNSUPPORTED_EVENT_TYPE",
+      `Unhandled event type: ${eventType}`
+    );
+  }
+  function resolveActorUserCode(actor) {
+    if (!actor || typeof actor !== "object" || Array.isArray(actor)) {
+      throw new RevisionArchiveError("ARCHIVE_ACTOR_NOT_RESOLVED", "Archive actor must be an object with explicit userCode.");
+    }
+    if (typeof actor.userCode !== "string") {
+      throw new RevisionArchiveError(
+        "ARCHIVE_ACTOR_NOT_RESOLVED",
+        "Archive actor must specify userCode as a non-empty string; plain string, { code }, and display-name are forbidden."
+      );
+    }
+    const userCode = actor.userCode.trim();
+    if (!userCode || userCode.toUpperCase() === "SYSTEM") {
+      throw new RevisionArchiveError(
+        "ARCHIVE_ACTOR_NOT_RESOLVED",
+        'Archive actor userCode cannot be empty, whitespace, or generic "SYSTEM".'
+      );
+    }
+    return userCode;
+  }
+  function resolveReason(eventType, evaluationStage, rawReason) {
+    const trimmed = typeof rawReason === "string" ? rawReason.trim() : "";
+    if (eventType === ARCHIVE_EVENT_TYPES.STAGE_COMPLETION_SNAPSHOT) {
+      if (trimmed) return trimmed;
+      return `STAGE_COMPLETION_SNAPSHOT:${evaluationStage}`;
+    }
+    if (eventType === ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED) {
+      if (!trimmed) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_REASON_REQUIRED",
+          "EVALUATION_REVISION_CREATED requires an explicit approved business reason."
+        );
+      }
+      return trimmed;
+    }
+    if (eventType === ARCHIVE_EVENT_TYPES.ROUTE_REASSIGNMENT_PRECHANGE) {
+      if (!trimmed) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_REASON_REQUIRED",
+          "ROUTE_REASSIGNMENT_PRECHANGE requires an explicit approved reassignment reason."
+        );
+      }
+      return trimmed;
+    }
+    return trimmed;
+  }
+  function resolveArchivedAt(explicitArchivedAt, clock) {
+    if (explicitArchivedAt !== void 0 && explicitArchivedAt !== null) {
+      if (typeof explicitArchivedAt !== "string" || !explicitArchivedAt.trim()) {
+        throw new RevisionArchiveError("ARCHIVE_INVALID_TIMESTAMP", "archivedAt must be a non-empty ISO-8601 string.");
+      }
+      const trimmed = explicitArchivedAt.trim();
+      if (!ISO_WITH_TIMEZONE_REGEX.test(trimmed)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_INVALID_TIMESTAMP",
+          `archivedAt must be an ISO-8601 datetime with explicit timezone (Z or numeric offset), received: "${explicitArchivedAt}".`
+        );
+      }
+      const d = new Date(trimmed);
+      if (Number.isNaN(d.getTime())) {
+        throw new RevisionArchiveError("ARCHIVE_INVALID_TIMESTAMP", `Invalid datetime string: "${explicitArchivedAt}".`);
+      }
+      return d.toISOString();
+    }
+    if (typeof clock === "function") {
+      const clockResult = clock();
+      if (clockResult instanceof Date) {
+        if (Number.isNaN(clockResult.getTime())) {
+          throw new RevisionArchiveError("ARCHIVE_INVALID_TIMESTAMP", "Clock returned an invalid Date.");
+        }
+        return clockResult.toISOString();
+      }
+      if (typeof clockResult === "string") {
+        const trimmed = clockResult.trim();
+        if (!ISO_WITH_TIMEZONE_REGEX.test(trimmed)) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_INVALID_TIMESTAMP",
+            `Clock returned datetime without explicit timezone or invalid format: "${clockResult}".`
+          );
+        }
+        const d = new Date(trimmed);
+        if (Number.isNaN(d.getTime())) {
+          throw new RevisionArchiveError("ARCHIVE_INVALID_TIMESTAMP", `Clock returned an invalid datetime: "${clockResult}".`);
+        }
+        return d.toISOString();
+      }
+      throw new RevisionArchiveError("ARCHIVE_INVALID_TIMESTAMP", "Injected clock must return a Date or ISO-8601 string with timezone.");
+    }
+    throw new RevisionArchiveError(
+      "ARCHIVE_TIMESTAMP_REQUIRED",
+      "Archived_At requires an explicit ISO timestamp or an injected service clock. System clock fallback is forbidden."
+    );
+  }
+  function validateSnapshotCoherence(logicalSnapshot, request) {
+    if (!logicalSnapshot || typeof logicalSnapshot !== "object") {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Logical snapshot is required and must be a plain object."
+      );
+    }
+    const { source, stage, profile, route, scoring } = logicalSnapshot;
+    if (!source || !stage || !profile || !route || !scoring) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Logical snapshot is missing required core sections (source, stage, profile, route, scoring)."
+      );
+    }
+    if (source.Record_Key !== request.sourceRecordKey) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot source.Record_Key (${source.Record_Key}) does not match request Source_Record_Key (${request.sourceRecordKey}).`
+      );
+    }
+    if (typeof request.employeeCode !== "string" || !request.employeeCode.trim() || request.employeeCode.trim() !== request.employeeCode) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Request Employee_Code must be a non-empty exact string without whitespace, received: "${request.employeeCode}".`
+      );
+    }
+    if (typeof source.Employee_Code !== "string" || !source.Employee_Code.trim() || source.Employee_Code.trim() !== source.Employee_Code) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot source.Employee_Code must be a non-empty exact string without whitespace, received: "${source.Employee_Code}".`
+      );
+    }
+    if (source.Employee_Code !== request.employeeCode) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot source.Employee_Code (${source.Employee_Code}) does not match request Employee_Code (${request.employeeCode}).`
+      );
+    }
+    if (typeof request.fiscalYear !== "string" || !request.fiscalYear.trim() || request.fiscalYear.trim() !== request.fiscalYear) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Request Fiscal_Year must be a non-empty exact string without whitespace, received: "${request.fiscalYear}".`
+      );
+    }
+    if (typeof source.Fiscal_Year !== "string" || !source.Fiscal_Year.trim() || source.Fiscal_Year.trim() !== source.Fiscal_Year) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot source.Fiscal_Year must be a non-empty exact string without whitespace, received: "${source.Fiscal_Year}".`
+      );
+    }
+    if (source.Fiscal_Year !== request.fiscalYear) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot source.Fiscal_Year (${source.Fiscal_Year}) does not match request Fiscal_Year (${request.fiscalYear}).`
+      );
+    }
+    const hasRequestSourceRecordId = request.sourceRecordId !== void 0 && request.sourceRecordId !== null;
+    const hasSnapshotSourceRecordId = source.Record_ID !== void 0 && source.Record_ID !== null;
+    if (hasRequestSourceRecordId) {
+      if (!isStrictPositiveInteger(request.sourceRecordId)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Request sourceRecordId must be a positive integer, received: ${request.sourceRecordId}.`
+        );
+      }
+      if (!hasSnapshotSourceRecordId || !isStrictPositiveInteger(source.Record_ID)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Snapshot source.Record_ID must exist and be a positive integer when request sourceRecordId is supplied, received: ${source.Record_ID}.`
+        );
+      }
+      if (Number(request.sourceRecordId) !== Number(source.Record_ID)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Snapshot source.Record_ID (${source.Record_ID}) does not match request Source_Record_ID (${request.sourceRecordId}).`
+        );
+      }
+    } else if (hasSnapshotSourceRecordId) {
+      if (!isStrictPositiveInteger(source.Record_ID)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Snapshot source.Record_ID must be a positive integer when present, received: ${source.Record_ID}.`
+        );
+      }
+    }
+    if (stage.Evaluation_Stage !== request.evaluationStage) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot stage.Evaluation_Stage (${stage.Evaluation_Stage}) does not match request Evaluation_Stage (${request.evaluationStage}).`
+      );
+    }
+    if (Number(stage.Revision_Number) !== Number(request.revisionNumber)) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot stage.Revision_Number (${stage.Revision_Number}) does not match request Revision_Number (${request.revisionNumber}).`
+      );
+    }
+    const snapshotPreviousStatus = stage.Previous_Status !== void 0 && stage.Previous_Status !== null ? String(stage.Previous_Status) : "";
+    if (request.previousStatus !== void 0 && request.previousStatus !== null) {
+      const reqPrev = String(request.previousStatus);
+      if (reqPrev !== snapshotPreviousStatus) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Snapshot stage.Previous_Status ("${snapshotPreviousStatus}") does not match request previousStatus ("${reqPrev}").`
+        );
+      }
+    }
+    if (typeof profile.Frozen_Profile_Code !== "string" || !profile.Frozen_Profile_Code.trim()) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Snapshot profile.Frozen_Profile_Code must be a non-empty string."
+      );
+    }
+    const kExpected = profile.K_expected_Snapshot;
+    if (!Number.isInteger(kExpected) || kExpected !== 1 && kExpected !== 2) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Snapshot profile.K_expected_Snapshot must be exact integer 1 or 2, received: ${kExpected}.`
+      );
+    }
+    if (typeof route.Effective_Routing_Key !== "string" || !route.Effective_Routing_Key.trim()) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Snapshot route.Effective_Routing_Key must be a non-empty string."
+      );
+    }
+    if (typeof route.Effective_Route_Version_Key !== "string" || !route.Effective_Route_Version_Key.trim()) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Snapshot route.Effective_Route_Version_Key must be a non-empty string."
+      );
+    }
+    if (!Array.isArray(route.Workflow_Appraisers) || route.Workflow_Appraisers.length === 0) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Snapshot route.Workflow_Appraisers must be a non-empty array."
+      );
+    }
+    const appraiserCodes = /* @__PURE__ */ new Set();
+    for (const appraiser of route.Workflow_Appraisers) {
+      if (!appraiser || typeof appraiser.code !== "string" || !appraiser.code.trim()) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          "Every appraiser in route.Workflow_Appraisers must contain an exact non-empty string code."
+        );
+      }
+      const code = appraiser.code.trim();
+      if (appraiserCodes.has(code)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Duplicate appraiser code in route.Workflow_Appraisers: "${code}".`
+        );
+      }
+      appraiserCodes.add(code);
+    }
+    if (!Array.isArray(scoring.Scorers) || scoring.Scorers.length === 0) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        "Snapshot scoring.Scorers must be a non-empty array."
+      );
+    }
+    const scorerCodes = /* @__PURE__ */ new Set();
+    for (const scorer of scoring.Scorers) {
+      if (!scorer || typeof scorer.code !== "string" || !scorer.code.trim()) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          "Every scorer in scoring.Scorers must contain an exact non-empty string code."
+        );
+      }
+      const code = scorer.code.trim();
+      if (scorerCodes.has(code)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Duplicate scorer code in scoring.Scorers: "${code}".`
+        );
+      }
+      scorerCodes.add(code);
+    }
+    if (scoring.Scorers.length !== kExpected) {
+      throw new RevisionArchiveError(
+        "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+        `Scorer count (${scoring.Scorers.length}) does not match K_expected_Snapshot (${kExpected}).`
+      );
+    }
+    for (const scorerCode of scorerCodes) {
+      if (!appraiserCodes.has(scorerCode)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH",
+          `Scorer "${scorerCode}" does not exist in route.Workflow_Appraisers.`
+        );
+      }
+    }
+  }
+  function compareArchiveRecordToExpected(persisted, expected, mode) {
+    const isReadback = mode === "POST_CREATE_READBACK";
+    const errorCode = isReadback ? "ARCHIVE_READBACK_VERIFICATION_FAILED" : "ARCHIVE_IDEMPOTENCY_CONFLICT";
+    function fail(field, persistedVal, expectedVal) {
+      throw new RevisionArchiveError(
+        errorCode,
+        `Archive record verification failed on ${field} (${mode}): persisted "${persistedVal}" vs expected "${expectedVal}".`
+      );
+    }
+    if (persisted.archiveKey !== expected.archiveKey) {
+      fail("Archive_Key", persisted.archiveKey, expected.archiveKey);
+    }
+    if (persisted.sourceRecordKey !== expected.sourceRecordKey) {
+      fail("Source_Record_Key", persisted.sourceRecordKey, expected.sourceRecordKey);
+    }
+    if (persisted.fiscalYear !== expected.fiscalYear) {
+      fail("Fiscal_Year", persisted.fiscalYear, expected.fiscalYear);
+    }
+    if (persisted.employeeCode !== expected.employeeCode) {
+      fail("Employee_Code", persisted.employeeCode, expected.employeeCode);
+    }
+    if (persisted.evaluationStage !== expected.evaluationStage) {
+      fail("Evaluation_Stage", persisted.evaluationStage, expected.evaluationStage);
+    }
+    if (Number(persisted.revisionNumber) !== Number(expected.revisionNumber)) {
+      fail("Revision_Number", persisted.revisionNumber, expected.revisionNumber);
+    }
+    if (persisted.eventType !== expected.eventType) {
+      fail("Event_Type", persisted.eventType, expected.eventType);
+    }
+    if (persisted.reason !== expected.reason) {
+      fail("Reason", persisted.reason, expected.reason);
+    }
+    if (persisted.snapshotHash !== expected.snapshotHash) {
+      fail("Snapshot_Hash", persisted.snapshotHash, expected.snapshotHash);
+    }
+    if (persisted.snapshotJson !== expected.snapshotJson) {
+      fail("Snapshot_JSON", persisted.snapshotJson, expected.snapshotJson);
+    }
+    const persistedActor = persisted.archivedBy?.[0]?.code;
+    const hasSingleActor = Array.isArray(persisted.archivedBy) && persisted.archivedBy.length === 1;
+    if (!hasSingleActor || persistedActor !== expected.actorUserCode) {
+      fail("Archived_By", persistedActor, expected.actorUserCode);
+    }
+    const persistedPrev = persisted.previousStatus ?? "";
+    const expectedPrev = expected.previousStatus ?? "";
+    if (persistedPrev !== expectedPrev) {
+      fail("Previous_Status", persistedPrev, expectedPrev);
+    }
+    const persistedSuperseded = persisted.supersededByRevision !== null && persisted.supersededByRevision !== void 0 && persisted.supersededByRevision !== "" ? Number(persisted.supersededByRevision) : null;
+    const expectedSuperseded = expected.supersededByRevision !== null && expected.supersededByRevision !== void 0 && expected.supersededByRevision !== "" ? Number(expected.supersededByRevision) : null;
+    if (persistedSuperseded !== expectedSuperseded) {
+      fail("Superseded_By_Revision", persistedSuperseded, expectedSuperseded);
+    }
+    if (expected.sourceRecordId !== null && expected.sourceRecordId !== void 0 && expected.sourceRecordId !== "") {
+      const expId = Number(expected.sourceRecordId);
+      const persId = persisted.sourceRecordId !== null && persisted.sourceRecordId !== void 0 && persisted.sourceRecordId !== "" ? Number(persisted.sourceRecordId) : null;
+      if (persId !== expId) {
+        fail("Source_Record_ID", persId, expId);
+      }
+    }
+    if (isReadback) {
+      if (persisted.archivedAt !== expected.archivedAt) {
+        fail("Archived_At", persisted.archivedAt, expected.archivedAt);
+      }
+    }
+    return true;
+  }
+  var RevisionArchiveService = class _RevisionArchiveService {
+    /**
+     * @param {RevisionArchiveKintoneRepository|object} repository - Repository instance or injected Kintone API adapter
+     * @param {object} [options]
+     * @param {function} [options.clock] - Optional injected clock function returning Date or ISO string
+     */
+    constructor(repository, options = {}) {
+      if (!repository) {
+        throw new RevisionArchiveError(
+          "REPOSITORY_REQUIRED",
+          "RevisionArchiveService requires a repository instance or injected Kintone API adapter."
+        );
+      }
+      if (repository instanceof RevisionArchiveKintoneRepository) {
+        this.repository = repository;
+      } else {
+        this.repository = new RevisionArchiveKintoneRepository(repository, options);
+      }
+      this.clock = options.clock || null;
+    }
+    /**
+     * Archives a stage completion event.
+     */
+    async archiveStageCompletion(params) {
+      return this._archiveEvent({
+        ...params,
+        eventType: ARCHIVE_EVENT_TYPES.STAGE_COMPLETION_SNAPSHOT,
+        supersededByRevision: void 0
+      });
+    }
+    /**
+     * Archives a controlled reopen revision-created event.
+     */
+    async archiveEvaluationRevisionCreated(params) {
+      const revisionNumber = params.oldRevisionNumber !== void 0 ? params.oldRevisionNumber : params.revisionNumber;
+      const supersededByRevision = params.newRevisionNumber !== void 0 ? params.newRevisionNumber : params.supersededByRevision;
+      return this._archiveEvent({
+        ...params,
+        revisionNumber,
+        supersededByRevision,
+        eventType: ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED
+      });
+    }
+    /**
+     * Archives a pre-change route reassignment event.
+     */
+    async archiveRouteReassignmentPrechange(params) {
+      return this._archiveEvent({
+        ...params,
+        eventType: ARCHIVE_EVENT_TYPES.ROUTE_REASSIGNMENT_PRECHANGE,
+        supersededByRevision: void 0
+      });
+    }
+    /**
+     * Core execution pipeline for immutable archive events.
+     * @private
+     */
+    async _archiveEvent(params) {
+      const {
+        eventType,
+        sourceRecordKey,
+        employeeCode,
+        fiscalYear,
+        evaluationStage,
+        revisionNumber,
+        supersededByRevision,
+        stableEventId,
+        sourceRecordId,
+        previousStatus,
+        actor,
+        reason: rawReason,
+        archivedAt: explicitArchivedAt,
+        logicalSnapshot
+      } = params;
+      const archiveKey = buildArchiveKey({
+        eventType,
+        sourceRecordKey,
+        evaluationStage,
+        revisionNumber,
+        supersededByRevision,
+        stableEventId
+      });
+      const actorUserCode = resolveActorUserCode(actor);
+      const reason = resolveReason(eventType, evaluationStage, rawReason);
+      const archivedAt = resolveArchivedAt(explicitArchivedAt, this.clock);
+      validateSnapshotCoherence(logicalSnapshot, {
+        sourceRecordKey,
+        employeeCode,
+        fiscalYear,
+        evaluationStage,
+        revisionNumber,
+        sourceRecordId,
+        previousStatus
+      });
+      const { canonicalJson, sha256 } = hashD3Snapshot(logicalSnapshot);
+      const resolvedPreviousStatus = logicalSnapshot.stage?.Previous_Status !== void 0 && logicalSnapshot.stage?.Previous_Status !== null ? String(logicalSnapshot.stage.Previous_Status) : previousStatus ? String(previousStatus) : "";
+      const resolvedSourceRecordId = sourceRecordId !== void 0 && sourceRecordId !== null ? Number(sourceRecordId) : logicalSnapshot.source?.Record_ID !== void 0 && logicalSnapshot.source?.Record_ID !== null ? Number(logicalSnapshot.source.Record_ID) : null;
+      const expectedFacts = {
+        archiveKey,
+        sourceRecordKey,
+        fiscalYear,
+        employeeCode,
+        evaluationStage,
+        revisionNumber: Number(revisionNumber),
+        supersededByRevision: supersededByRevision ? Number(supersededByRevision) : null,
+        eventType,
+        reason,
+        snapshotHash: sha256,
+        snapshotJson: canonicalJson,
+        actorUserCode,
+        previousStatus: resolvedPreviousStatus,
+        sourceRecordId: resolvedSourceRecordId,
+        archivedAt
+      };
+      const existingRecords = await this.repository.findByArchiveKey(archiveKey);
+      if (existingRecords.length > 1) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_DUPLICATE_KEY_CORRUPTION",
+          `Data corruption: multiple rows (${existingRecords.length}) exist in App 798 for Archive_Key: ${archiveKey}.`
+        );
+      }
+      if (existingRecords.length === 1) {
+        const existing = existingRecords[0];
+        compareArchiveRecordToExpected(existing, expectedFacts, "IDEMPOTENT_REPLAY");
+        return this._buildVerifiedEvidence({
+          archiveKey,
+          eventType,
+          snapshotHash: sha256,
+          idempotentReplay: true,
+          recovered: false,
+          sourceRecordKey,
+          employeeCode,
+          fiscalYear,
+          evaluationStage,
+          revisionNumber: Number(revisionNumber),
+          supersededByRevision: expectedFacts.supersededByRevision,
+          sourceRecordId: resolvedSourceRecordId,
+          archivedBy: actorUserCode,
+          archivedAt: existing.archivedAt
+        });
+      }
+      const recordPayload = {
+        Archive_Key: { value: archiveKey },
+        Source_Record_Key: { value: sourceRecordKey },
+        Fiscal_Year: { value: fiscalYear },
+        Employee_Code: { value: employeeCode },
+        Evaluation_Stage: { value: evaluationStage },
+        Revision_Number: { value: String(revisionNumber) },
+        Event_Type: { value: eventType },
+        Reason: { value: reason },
+        Snapshot_JSON: { value: canonicalJson },
+        Snapshot_Hash: { value: sha256 },
+        Archived_By: { value: [{ code: actorUserCode }] },
+        Archived_At: { value: archivedAt }
+      };
+      if (resolvedSourceRecordId !== null) {
+        recordPayload.Source_Record_ID = { value: String(resolvedSourceRecordId) };
+      }
+      if (resolvedPreviousStatus) {
+        recordPayload.Previous_Status = { value: resolvedPreviousStatus };
+      }
+      if (expectedFacts.supersededByRevision !== null) {
+        recordPayload.Superseded_By_Revision = { value: String(expectedFacts.supersededByRevision) };
+      }
+      let createError = null;
+      try {
+        await this.repository.createArchiveRecord(recordPayload);
+      } catch (err) {
+        createError = err;
+      }
+      if (createError) {
+        const recoveryRecords = await this.repository.findByArchiveKey(archiveKey);
+        if (recoveryRecords.length === 1) {
+          const rec = recoveryRecords[0];
+          compareArchiveRecordToExpected(rec, expectedFacts, "UNCERTAIN_WRITE_RECOVERY");
+          return this._buildVerifiedEvidence({
+            archiveKey,
+            eventType,
+            snapshotHash: sha256,
+            idempotentReplay: false,
+            recovered: true,
+            sourceRecordKey,
+            employeeCode,
+            fiscalYear,
+            evaluationStage,
+            revisionNumber: Number(revisionNumber),
+            supersededByRevision: expectedFacts.supersededByRevision,
+            sourceRecordId: resolvedSourceRecordId,
+            archivedBy: actorUserCode,
+            archivedAt: rec.archivedAt
+          });
+        }
+        if (recoveryRecords.length > 1) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_DUPLICATE_KEY_CORRUPTION",
+            `Multiple rows found during uncertain write recovery for Archive_Key ${archiveKey}.`
+          );
+        }
+        throw new RevisionArchiveError(
+          "ARCHIVE_TRANSPORT_UNCERTAIN",
+          `Failed to create archive row and record not found on read-back: ${createError.message}`,
+          createError
+        );
+      }
+      const readBack = await this.repository.readBackExactArchiveRecord(archiveKey);
+      compareArchiveRecordToExpected(readBack, expectedFacts, "POST_CREATE_READBACK");
+      return this._buildVerifiedEvidence({
+        archiveKey,
+        eventType,
+        snapshotHash: sha256,
+        idempotentReplay: false,
+        recovered: false,
+        sourceRecordKey,
+        employeeCode,
+        fiscalYear,
+        evaluationStage,
+        revisionNumber: Number(revisionNumber),
+        supersededByRevision: expectedFacts.supersededByRevision,
+        sourceRecordId: resolvedSourceRecordId,
+        archivedBy: actorUserCode,
+        archivedAt
+      });
+    }
+    _buildVerifiedEvidence(data) {
+      const evidence = Object.freeze({
+        verified: true,
+        serviceVersion: "D3_V1",
+        ...data
+      });
+      issuedArchiveEvidence.add(evidence);
+      return evidence;
+    }
+    /**
+     * Pure verification helper to confirm an evidence object was produced by this service.
+     * @param {object} evidence
+     * @returns {boolean}
+     */
+    static validateArchiveEvidence(evidence) {
+      if (!evidence || typeof evidence !== "object") return false;
+      if (!issuedArchiveEvidence.has(evidence)) return false;
+      if (evidence.verified !== true) return false;
+      if (evidence.serviceVersion !== "D3_V1") return false;
+      if (!evidence.archiveKey || typeof evidence.archiveKey !== "string") return false;
+      if (!evidence.snapshotHash || typeof evidence.snapshotHash !== "string") return false;
+      if (!Object.values(ARCHIVE_EVENT_TYPES).includes(evidence.eventType)) return false;
+      if (!Object.values(ARCHIVE_EVALUATION_STAGES).includes(evidence.evaluationStage)) return false;
+      return true;
+    }
+    /**
+     * Archive-Before-Change gate helper.
+     * Fails closed if evidence is missing, invalid, or does not match expected context.
+     * Requires complete expected context binding the exact event instance.
+     *
+     * @param {object} evidence - Service-issued archive evidence object
+     * @param {object} expectedContext - Full expected event context
+     * @returns {boolean} true on verified gate pass
+     */
+    static assertArchiveBeforeChangeGate(evidence, expectedContext) {
+      if (!_RevisionArchiveService.validateArchiveEvidence(evidence)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          "Operation blocked: required verified archive evidence was not provided or is invalid."
+        );
+      }
+      if (!expectedContext || typeof expectedContext !== "object") {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          "assertArchiveBeforeChangeGate requires a complete expectedContext object."
+        );
+      }
+      const {
+        sourceRecordKey,
+        evaluationStage,
+        revisionNumber,
+        eventType,
+        archiveKey,
+        snapshotHash,
+        supersededByRevision,
+        stableEventId,
+        sourceRecordId,
+        employeeCode,
+        fiscalYear
+      } = expectedContext;
+      if (!sourceRecordKey || typeof sourceRecordKey !== "string" || !sourceRecordKey.trim()) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          "expectedContext.sourceRecordKey is required and must be a non-empty string."
+        );
+      }
+      if (!evaluationStage || !Object.values(ARCHIVE_EVALUATION_STAGES).includes(evaluationStage)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          `expectedContext.evaluationStage is required and must be one of: ${Object.values(ARCHIVE_EVALUATION_STAGES).join(", ")}.`
+        );
+      }
+      if (revisionNumber === void 0 || revisionNumber === null || revisionNumber === "" || !isStrictPositiveInteger(revisionNumber)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          `expectedContext.revisionNumber is required and must be a positive integer, received: ${revisionNumber}.`
+        );
+      }
+      if (!eventType || !Object.values(ARCHIVE_EVENT_TYPES).includes(eventType)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          `expectedContext.eventType is required and must be one of: ${Object.values(ARCHIVE_EVENT_TYPES).join(", ")}.`
+        );
+      }
+      if (!archiveKey || typeof archiveKey !== "string" || !archiveKey.trim()) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          "expectedContext.archiveKey is required and must be a non-empty string."
+        );
+      }
+      const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/i;
+      if (!snapshotHash || typeof snapshotHash !== "string" || !SHA256_HEX_REGEX.test(snapshotHash.trim())) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+          "expectedContext.snapshotHash is required and must be a 64-character SHA-256 hex string."
+        );
+      }
+      if (eventType === ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED) {
+        if (supersededByRevision === void 0 || supersededByRevision === null || supersededByRevision === "" || !isStrictPositiveInteger(supersededByRevision)) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+            "expectedContext.supersededByRevision is required and must be a positive integer for EVALUATION_REVISION_CREATED."
+          );
+        }
+        if (Number(supersededByRevision) <= Number(revisionNumber)) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+            `expectedContext.supersededByRevision (${supersededByRevision}) must be greater than revisionNumber (${revisionNumber}).`
+          );
+        }
+      }
+      if (eventType === ARCHIVE_EVENT_TYPES.ROUTE_REASSIGNMENT_PRECHANGE) {
+        if (!stableEventId || typeof stableEventId !== "string" || !stableEventId.trim()) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EXPECTED_CONTEXT_REQUIRED",
+            "expectedContext.stableEventId is required and must be a non-empty string for ROUTE_REASSIGNMENT_PRECHANGE."
+          );
+        }
+      }
+      let derivedArchiveKey;
+      try {
+        derivedArchiveKey = buildArchiveKey({
+          eventType,
+          sourceRecordKey,
+          evaluationStage,
+          revisionNumber: Number(revisionNumber),
+          supersededByRevision: supersededByRevision ? Number(supersededByRevision) : void 0,
+          stableEventId
+        });
+      } catch (err) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Failed to canonically derive Archive_Key from expected context: ${err.message}`,
+          err
+        );
+      }
+      if (derivedArchiveKey !== archiveKey) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `expectedContext.archiveKey ("${archiveKey}") does not match canonically derived Archive_Key ("${derivedArchiveKey}").`
+        );
+      }
+      if (derivedArchiveKey !== evidence.archiveKey) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Evidence archiveKey ("${evidence.archiveKey}") does not match canonically derived Archive_Key ("${derivedArchiveKey}").`
+        );
+      }
+      if (evidence.archiveKey !== archiveKey) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Evidence archiveKey ("${evidence.archiveKey}") does not match expectedContext.archiveKey ("${archiveKey}").`
+        );
+      }
+      if (evidence.snapshotHash !== snapshotHash.trim()) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Evidence snapshotHash ("${evidence.snapshotHash}") does not match expected snapshotHash ("${snapshotHash}").`
+        );
+      }
+      if (evidence.sourceRecordKey !== sourceRecordKey) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Archive evidence sourceRecordKey (${evidence.sourceRecordKey}) does not match expected (${sourceRecordKey}).`
+        );
+      }
+      if (evidence.evaluationStage !== evaluationStage) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Archive evidence evaluationStage (${evidence.evaluationStage}) does not match expected (${evaluationStage}).`
+        );
+      }
+      if (Number(evidence.revisionNumber) !== Number(revisionNumber)) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Archive evidence revisionNumber (${evidence.revisionNumber}) does not match expected (${revisionNumber}).`
+        );
+      }
+      if (evidence.eventType !== eventType) {
+        throw new RevisionArchiveError(
+          "ARCHIVE_GATE_EVIDENCE_INVALID",
+          `Archive evidence eventType (${evidence.eventType}) does not match expected (${eventType}).`
+        );
+      }
+      if (eventType === ARCHIVE_EVENT_TYPES.EVALUATION_REVISION_CREATED) {
+        if (Number(evidence.supersededByRevision) !== Number(supersededByRevision)) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EVIDENCE_INVALID",
+            `Archive evidence supersededByRevision (${evidence.supersededByRevision}) does not match expected (${supersededByRevision}).`
+          );
+        }
+      }
+      if (sourceRecordId !== void 0 && sourceRecordId !== null && sourceRecordId !== "") {
+        if (!isStrictPositiveInteger(sourceRecordId)) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EVIDENCE_INVALID",
+            `expectedContext.sourceRecordId must be a positive integer, received: ${sourceRecordId}.`
+          );
+        }
+        if (evidence.sourceRecordId === null || evidence.sourceRecordId === void 0 || Number(evidence.sourceRecordId) !== Number(sourceRecordId)) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EVIDENCE_INVALID",
+            `Archive evidence sourceRecordId (${evidence.sourceRecordId}) does not match expected (${sourceRecordId}).`
+          );
+        }
+      }
+      if (employeeCode !== void 0 && employeeCode !== null) {
+        if (evidence.employeeCode !== employeeCode) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EVIDENCE_INVALID",
+            `Archive evidence employeeCode (${evidence.employeeCode}) does not match expected (${employeeCode}).`
+          );
+        }
+      }
+      if (fiscalYear !== void 0 && fiscalYear !== null) {
+        if (evidence.fiscalYear !== fiscalYear) {
+          throw new RevisionArchiveError(
+            "ARCHIVE_GATE_EVIDENCE_INVALID",
+            `Archive evidence fiscalYear (${evidence.fiscalYear}) does not match expected (${fiscalYear}).`
+          );
+        }
+      }
+      return true;
+    }
+  };
+
   // src/main-mbo-app.js
   var activeUiInstance = null;
   var currentEmployeeSelfContext = null;
@@ -10375,6 +11698,14 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       const url = typeof kintone.api.url === "function" ? kintone.api.url("/v1/user/groups.json", true) : "/v1/user/groups.json";
       const resp = await kintone.api(url, "GET", { code: userCode });
       return resp ? resp.groups : [];
+    },
+    addRecord: async (appId, recordData) => {
+      if (typeof kintone === "undefined" || typeof kintone.api !== "function") {
+        throw new Error("Kintone API is unavailable");
+      }
+      const url = typeof kintone.api.url === "function" ? kintone.api.url("/k/v1/record.json", true) : "/k/v1/record.json";
+      const resp = await kintone.api(url, "POST", { app: appId, record: recordData });
+      return resp;
     }
   };
   var mboLoginGate = null;
@@ -11408,6 +12739,21 @@ ${errorMsgEN}`);
         }
         return false;
       }
+      const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+        apiAdapter: kintoneApiWrapper
+      });
+      if (archiveOutcome && archiveOutcome.success === false) {
+        const errDetail = archiveOutcome.error || "Archive verification failed";
+        if (activeUiInstance && typeof activeUiInstance.showValidationErrors === "function") {
+          activeUiInstance.showValidationErrors([{
+            field: "Record_Key",
+            message: `Stage Archive Failed: ${errDetail}`,
+            messageTH: `\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E2A\u0E16\u0E32\u0E19\u0E30 (Stage Archive) \u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: ${errDetail}`,
+            messageEN: `Stage Archive Failed: ${errDetail}`
+          }]);
+        }
+        return false;
+      }
       return event;
     });
     kintone.events.on(["app.record.detail.delete.submit", "app.record.index.delete.submit"], function(event) {
@@ -11417,5 +12763,166 @@ ${errorMsgEN}`);
       });
       return policy.evaluateDeleteSubmit(event);
     });
+  }
+  function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
+    const getVal = (f) => record && record[f] && typeof record[f] === "object" && "value" in record[f] ? record[f].value : record?.[f];
+    const sourceRecordKey = String(getVal("Record_Key") || "").trim();
+    const employeeCode = String(getVal("Employee_Code") || "").trim();
+    const fiscalYear = String(getVal("Fiscal_Year") || "FY2026").trim();
+    const rawRecordId = Number(getVal("$id") || getVal("Record_ID") || 0);
+    const revisionNumber = Number(getVal("Revision_Number") || getVal("Current_Revision_Number") || 1);
+    let workflowAppraisers = [];
+    const rawAppraisers = getVal("Workflow_Appraisers");
+    if (Array.isArray(rawAppraisers) && rawAppraisers.length > 0) {
+      workflowAppraisers = rawAppraisers.map((a) => typeof a === "string" ? { code: a.trim() } : { code: String(a?.code || a?.value || "").trim() });
+    } else {
+      const approverCandidates = [
+        getVal("Manager_Level1_Approvers"),
+        getVal("Manager_Level2_Approvers"),
+        getVal("GM_Level1_Approvers"),
+        getVal("GM_Level2_Approvers"),
+        getVal("First_Manager_User"),
+        getVal("Manager_User"),
+        getVal("GM_User")
+      ];
+      const seen = /* @__PURE__ */ new Set();
+      for (const cand of approverCandidates) {
+        if (Array.isArray(cand)) {
+          for (const item of cand) {
+            const code = String(item?.code || item?.value || item || "").trim();
+            if (code && !seen.has(code)) {
+              seen.add(code);
+              workflowAppraisers.push({ code });
+            }
+          }
+        } else if (cand) {
+          const code = String(cand?.code || cand?.value || cand || "").trim();
+          if (code && !seen.has(code)) {
+            seen.add(code);
+            workflowAppraisers.push({ code });
+          }
+        }
+      }
+    }
+    let scorers = [];
+    const rawScorers = getVal("Scorers");
+    if (Array.isArray(rawScorers) && rawScorers.length > 0) {
+      scorers = rawScorers.map((s) => {
+        const code = String(s?.code || s?.value || s || "").trim();
+        const weight = Number(s?.weight || 100 / rawScorers.length);
+        return { code, weight };
+      });
+    } else {
+      const kExp = Number(getVal("K_expected_Snapshot") || (workflowAppraisers.length > 1 ? 2 : 1));
+      const targetK = kExp === 2 ? 2 : 1;
+      const selected = workflowAppraisers.slice(0, targetK);
+      scorers = selected.map((a) => ({ code: a.code, weight: 100 / Math.max(1, selected.length) }));
+    }
+    const kExpected = Number(getVal("K_expected_Snapshot") || scorers.length || 1);
+    const normalizedK = kExpected === 2 ? 2 : 1;
+    if (scorers.length !== normalizedK) {
+      if (scorers.length > normalizedK) {
+        scorers = scorers.slice(0, normalizedK);
+      } else if (scorers.length < normalizedK) {
+        for (const a of workflowAppraisers) {
+          if (!scorers.some((s) => s.code === a.code)) {
+            scorers.push({ code: a.code, weight: 50 });
+            if (scorers.length === normalizedK) break;
+          }
+        }
+      }
+    }
+    const effectiveRoutingKey = String(getVal("Effective_Routing_Key") || "TME1").trim();
+    const effectiveRouteVersionKey = String(getVal("Effective_Route_Version_Key") || `${effectiveRoutingKey}#v1`).trim();
+    const routePattern = String(getVal("Route_Pattern") || (normalizedK === 2 ? "PATTERN_2_M1_G1" : "PATTERN_1_M1")).trim();
+    const routingTopology = String(getVal("Routing_Topology") || (normalizedK === 2 ? "M1_G1" : "M1")).trim();
+    const frozenProfileCode = String(getVal("Frozen_Profile_Code") || getVal("Profile_Code") || "PROF_MBO_2026").trim();
+    return {
+      source: {
+        Record_Key: sourceRecordKey,
+        Employee_Code: employeeCode,
+        Fiscal_Year: fiscalYear,
+        ...rawRecordId > 0 ? { Record_ID: rawRecordId } : {}
+      },
+      stage: {
+        Evaluation_Stage: targetStage,
+        Revision_Number: revisionNumber,
+        Previous_Status: String(currentStatus || "").trim()
+      },
+      profile: {
+        Frozen_Profile_Code: frozenProfileCode,
+        K_expected_Snapshot: normalizedK
+      },
+      route: {
+        Effective_Routing_Key: effectiveRoutingKey,
+        Effective_Route_Version_Key: effectiveRouteVersionKey,
+        Route_Pattern: routePattern,
+        Routing_Topology: routingTopology,
+        Workflow_Appraisers: workflowAppraisers
+      },
+      scoring: {
+        Scorers: scorers
+      },
+      hoshin: {
+        Department_Hoshin_Key: String(getVal("Department_Hoshin_Key") || "DHK_DEFAULT").trim()
+      },
+      config: {
+        Configuration_Hash: String(getVal("Configuration_Hash") || "CONFIG_HASH_DEFAULT").trim()
+      },
+      business: {
+        Objective_Count: Array.isArray(getVal("Objective_Table")) ? getVal("Objective_Table").length : 0,
+        Objectives: Array.isArray(getVal("Objective_Table")) ? getVal("Objective_Table") : []
+      },
+      computed: {
+        PartA_Raw_Score: Number(getVal("PartA_Raw_Score") || 0)
+      }
+    };
+  }
+  async function executeProcessTransitionArchive(record, event, options = {}) {
+    const currentStatus = String(event?.status?.value || event?.currentStatus || record?.Status?.value || "").trim();
+    const nextStatus = String(event?.nextStatus?.value || event?.nextStatus || "").trim();
+    const actionName = String(event?.action?.value || event?.action || "").trim();
+    let targetStage = null;
+    if (currentStatus.startsWith("05") && (nextStatus.startsWith("06") || actionName.includes("Mid"))) {
+      targetStage = "OBJECTIVE";
+    } else if (currentStatus.startsWith("10") && (nextStatus.startsWith("11") || actionName.includes("Final"))) {
+      targetStage = "MIDYEAR";
+    } else if (currentStatus.startsWith("15") && (nextStatus.startsWith("16") || actionName.includes("Complete"))) {
+      targetStage = "FINAL";
+    }
+    if (!targetStage) {
+      return { skipped: true, reason: "NOT_A_TARGET_TRANSITION" };
+    }
+    const apiAdapter = options.apiAdapter || kintoneApiWrapper;
+    const loginUser = options.loginUser || (typeof kintone !== "undefined" && typeof kintone.getLoginUser === "function" ? kintone.getLoginUser() : null);
+    const actorCode = String(options.actor || loginUser?.code || "").trim();
+    if (!actorCode) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actor login identity for transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: "ACTOR_IDENTITY_UNRESOLVED" };
+    }
+    try {
+      const archiveAppId = options.archiveAppId || 798;
+      const clock = options.clock || (() => (/* @__PURE__ */ new Date()).toISOString());
+      const archiveService = options.archiveService || new RevisionArchiveService(apiAdapter, { archiveAppId, clock });
+      const logicalSnapshot = options.logicalSnapshot || buildStageLogicalSnapshot(record, targetStage, currentStatus);
+      const rawRecordId = Number(record?.$id?.value || record?.Record_ID?.value || record?.Record_ID || 0);
+      const archiveResult = await archiveService.archiveStageCompletion({
+        sourceRecordKey: String(record?.Record_Key?.value || record?.Record_Key || "").trim(),
+        employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || "").trim(),
+        fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || "FY2026").trim(),
+        evaluationStage: targetStage,
+        revisionNumber: Number(record?.Revision_Number?.value || record?.Current_Revision_Number?.value || 1),
+        sourceRecordId: rawRecordId > 0 ? rawRecordId : void 0,
+        previousStatus: currentStatus,
+        actor: { userCode: actorCode },
+        archivedAt: options.archivedAt || (/* @__PURE__ */ new Date()).toISOString(),
+        logicalSnapshot
+      });
+      return { success: true, targetStage, archiveResult };
+    } catch (err) {
+      console.error(`[D3 ARCHIVE ERROR] Failed to create ${targetStage} stage completion archive:`, err);
+      return { success: false, error: err.message || String(err), details: err };
+    }
   }
 })();

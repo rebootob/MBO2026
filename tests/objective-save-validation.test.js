@@ -85,7 +85,37 @@ let currentFormRecord = null;
 let getApiOverride = null;
 let setApiOverride = null;
 
-const fakeApi = async () => ({ records: [] });
+const mockApp798Records = [];
+let nextApp798Id = 1001;
+
+const fakeApi = async (url, method, params) => {
+  const normMethod = (method || 'GET').toUpperCase();
+  const urlStr = String(url || '');
+  if (normMethod === 'POST' && urlStr.includes('/k/v1/record')) {
+    const id = String(nextApp798Id++);
+    const record = params?.record || {};
+    const created = {
+      $id: { type: '__ID__', value: id },
+      $revision: { type: '__REVISION__', value: '1' },
+      ...record
+    };
+    mockApp798Records.push(created);
+    return { id, revision: '1' };
+  }
+  if (normMethod === 'GET' && urlStr.includes('/k/v1/records')) {
+    if (params?.app === 798) {
+      const query = String(params.query || '');
+      const match = query.match(/Archive_Key\s*=\s*"([^"]+)"/);
+      if (match) {
+        const targetKey = match[1];
+        const filtered = mockApp798Records.filter(r => r.Archive_Key?.value === targetKey);
+        return { records: filtered };
+      }
+      return { records: [...mockApp798Records] };
+    }
+  }
+  return { records: [] };
+};
 fakeApi.url = (path) => path;
 
 globalThis.kintone = {
@@ -207,8 +237,31 @@ function setupMockKintoneApis() {
   getApiOverride = null;
   setApiOverride = null;
   const mockApi = async (path, method, body) => {
+    const normMethod = (method || 'GET').toUpperCase();
+    const urlStr = String(path || '');
+    if (normMethod === 'POST' && urlStr.includes('/k/v1/record')) {
+      const id = String(nextApp798Id++);
+      const record = body?.record || {};
+      const created = {
+        $id: { type: '__ID__', value: id },
+        $revision: { type: '__REVISION__', value: '1' },
+        ...record
+      };
+      mockApp798Records.push(created);
+      return { id, revision: '1' };
+    }
     if (path.includes('app/form/fields')) return { properties: {} };
     if (path.includes('/k/v1/records') || path.includes('records.json')) {
+      if (body?.app === 798 || path.includes('app=798')) {
+        const query = String(body?.query || '');
+        const match = query.match(/Archive_Key\s*=\s*"([^"]+)"/);
+        if (match) {
+          const targetKey = match[1];
+          const filtered = mockApp798Records.filter(r => r.Archive_Key?.value === targetKey);
+          return { records: filtered };
+        }
+        return { records: [...mockApp798Records] };
+      }
       if (body?.app === 53 || path.includes('app=53') || body?.query?.includes('emp_text')) {
         return {
           records: [{
