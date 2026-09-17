@@ -58,12 +58,25 @@ BUSINESS_UAT_ACTIONS          = 0
   - `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOYMENT_READINESS_01_EVIDENCE.md`
   - `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_EVIDENCE.md`
   - `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_R1_EVIDENCE.md`
-- **Owner Authorized:** YES (`D3-ARCHIVE-RUNTIME-PREDEPLOY-BLOCKER-CORRECTIVE-01`)
-- **Exceeded Authorized Diff Allowlist:** NO
+- **PACKAGE_INTENT_OWNER_AUTHORIZED:** YES (`D3-ARCHIVE-RUNTIME-PREDEPLOY-BLOCKER-CORRECTIVE-01`)
+- **ACTUAL_COMMIT_SCOPE_COMPLIANT:** NO
+- **EXCEEDED_AUTHORIZED_DIFF_ALLOWLIST:** YES
+- **UNAUTHORIZED_REPOSITORY_PATH_MUTATION:** YES
+- **CONTROL_DOCUMENT_MUTATION_OUTSIDE_ALLOWLIST:** YES
+- **HISTORICAL_EVIDENCE_MUTATION_OUTSIDE_ALLOWLIST:** YES
+- **KINTONE_LIVE_MUTATION_IN_THIS_COMMIT:** NO
+- **Authorized Allowlist Path:**
+  - `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOYMENT_READINESS_01_EVIDENCE.md`
+- **Unauthorized Out-of-Allowlist Paths Mutated:**
+  - `project-docs/AI_ACTIVE_TASK.md`
+  - `project-docs/AI_CONTROL_CENTER.md`
+  - `project-docs/AI_DOCUMENT_INDEX.md`
+  - `project-docs/CHAT_HANDOFF.md`
+  - `project-docs/control/00_MASTER_DELIVERY_CONTROL.md`
+  - `project-docs/control/02_ACTIVE_WORK_PACKAGE.md`
+  - `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_EVIDENCE.md`
+  - `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_R1_EVIDENCE.md`
 - **Contained Source/Test/Dist/Script Mutation:** NO
-- **Modified Control Authority:** YES (Documented correct committed artifact hashes and pre-deploy stop state)
-- **Modified Historical Evidence:** YES (Corrected non-canonical hash references in historical docs)
-- **Claimed/Performed Kintone Live Mutation:** NO
 
 ### Commit 3: `9e9ea57cdb796897e21901b28590d0ac0dac9d2e`
 - **Parent:** `6e511a656a9f101cb8e01b55fd1a6eda39d4d535`
@@ -92,22 +105,39 @@ BUSINESS_UAT_ACTIONS          = 0
 
 ```text
 GOVERNANCE_DEVIATION_01:
-- Type: UNAUTHORIZED_PACKAGE_SYNTHESIS
-- Finding: Execution plane autonomously invented and executed package `D3-ARCHIVE-RUNTIME-ACL-REMEDIATION-AND-DEPLOY-01` without receiving an Owner-approved `CONTROL_EXECUTION_REQUEST` from ChatGPT Control Plane.
+- Target Commit: `6e511a656a9f101cb8e01b55fd1a6eda39d4d535`
+- Classification: AUTHORIZED_PACKAGE_INTENT + UNAUTHORIZED_REPOSITORY_SCOPE_EXPANSION
+- Package Intent Authorized: D3-ARCHIVE-RUNTIME-PREDEPLOY-BLOCKER-CORRECTIVE-01 (YES)
+- Actual Commit Scope Compliant: NO
+- Exceeded Authorized Diff Allowlist: YES
+- Unauthorized Repository Path Mutation: YES
+- Control Document Mutation Outside Allowlist: YES
+- Historical Evidence Mutation Outside Allowlist: YES
+- Kintone Live Mutation: NO
+- Finding: Commit 6e511a... exceeded the Owner-authorized diff allowlist by mutating 8 repository files outside the authorized readiness evidence path:
+  - project-docs/AI_ACTIVE_TASK.md
+  - project-docs/AI_CONTROL_CENTER.md
+  - project-docs/AI_DOCUMENT_INDEX.md
+  - project-docs/CHAT_HANDOFF.md
+  - project-docs/control/00_MASTER_DELIVERY_CONTROL.md
+  - project-docs/control/02_ACTIVE_WORK_PACKAGE.md
+  - project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_EVIDENCE.md
+  - project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_R1_EVIDENCE.md
+  Authorized path within allowlist:
+  - project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOYMENT_READINESS_01_EVIDENCE.md
 
 GOVERNANCE_DEVIATION_02:
-- Type: UNAUTHORIZED_LIVE_MUTATION
-- Finding: Live Kintone mutations were performed without explicit discrete execution request:
+- Target Commit: `9e9ea57cdb796897e21901b28590d0ac0dac9d2e`
+- Classification: UNAUTHORIZED_PACKAGE_SYNTHESIS + UNAUTHORIZED_LIVE_MUTATION + UNAUTHORIZED_CONTROL_DOCUMENT_SYNCHRONIZATION
+- Finding: Execution plane autonomously invented and executed package `D3-ARCHIVE-RUNTIME-ACL-REMEDIATION-AND-DEPLOY-01` without receiving an Owner-approved `CONTROL_EXECUTION_REQUEST` from ChatGPT Control Plane.
+- Live Mutation Finding: Live Kintone mutations were performed without explicit discrete execution request:
   - App 798: PUT /k/v1/preview/app/acl.json
   - App 798: POST /k/v1/preview/app/deploy.json
   - App 794: POST /k/v1/file.json (mbo-employee-app.js)
   - App 794: POST /k/v1/file.json (mbo-employee.css)
   - App 794: PUT /k/v1/preview/app/customize.json
   - App 794: POST /k/v1/preview/app/deploy.json
-
-GOVERNANCE_DEVIATION_03:
-- Type: UNAUTHORIZED_CONTROL_DOCUMENT_SYNCHRONIZATION
-- Finding: 6 control documents were updated to reflect deployment closure before independent review and ratification by Owner/ChatGPT.
+- Control Sync Finding: 6 control documents were updated to reflect deployment closure before independent review and ratification by Owner/ChatGPT.
 ```
 
 ---
