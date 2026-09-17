@@ -3,15 +3,19 @@
 ## 1. Executive Summary & Authorization Ledger
 
 ```text
-WORK_PACKAGE                = D3-ARCHIVE-RUNTIME-DEPLOYMENT-READINESS-01
-MODE                        = READ-ONLY / LOCAL DEPLOYMENT READINESS PREFLIGHT
+WORK_PACKAGE                = D3-ARCHIVE-RUNTIME-DEPLOYMENT-READINESS-01 (R1 CORRECTIVE)
+MODE                        = ONE-FILE EVIDENCE-ONLY CORRECTIVE
 OWNER_AUTHORIZATION         = APPROVED
-AUTHORIZED_BASE_HEAD        = 763eca0a533d53e202f2b97f7d8c87db738488ea
+AUTHORIZED_BASE_HEAD        = 10836d2347d97a95aa686e461c0d22848afc99a4
 CANONICAL_BRANCH            = ai/antigravity-wp002c
 LOCAL_REPOSITORY_ROOT       = C:/Users/allda/Desktop/Dev/git/MBO2026
 SCOPE_CONTROL               = STRICT
 SCOPE_EXPANSION_AUTHORIZED  = NO
-PURPOSE                     = Determine whether the already accepted D3 archive runtime implementation is ready to enter a separately authorized deployment gate.
+PURPOSE                     = Determine whether the already accepted D3 archive runtime implementation is ready to enter a separately authorized deployment gate, incorporating R1 review corrections.
+ROUTE_SCORER_AUTHORITY_CORRECTED = YES
+WORKFLOW_APPRAISERS_PRODUCTION_AUTHORITY_REFERENCE = REMOVED
+ACL_PREREQUISITE_DEFINITION = PASS / REPOSITORY-DOCUMENTED
+LIVE_ACL_VERIFICATION       = NOT_PERFORMED / ZERO-I/O BOUNDARY
 DEPLOYMENT_READINESS        = PASS
 ACTIVE_WORK_PACKAGE         = NONE
 NEXT_GATE_AUTHORIZED        = NO
@@ -152,7 +156,7 @@ Inspection of `src/main-mbo-app.js` and `src/services/revision-archive-service.j
 
 1. **Missing Required Runtime Configuration**: Fails closed with UI error modal (`PROVENANCE_MISSING`, `REPOSITORY_REQUIRED`).
 2. **Invalid Snapshot Coherence**: Fails closed if Objective Count < 2 or > 10, if weights do not sum to 100, or if schema violates constraints (`ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH`).
-3. **Route / Scorer Contract Mismatch**: Fails closed if appraiser slots do not match `K_expected_Snapshot` or if any scorer is absent from `Workflow_Appraisers` (`PROVENANCE_MISMATCH`).
+3. **Route / Scorer Contract Mismatch**: Fails closed using canonical persisted App794 route/scorer authority (`PROVENANCE_MISMATCH`). Runtime validation binds strictly to `Effective_Scorer_Slots_Snapshot`, `K_expected_Snapshot`, and canonical persisted App794 approver fields (`Manager_Level1_Approvers`, `Manager_Level2_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers`) along with corresponding approval-rule fields. Every active sequential slot must resolve to exactly one user, active approval rules must be `ALL`, and per DEC-036 weighting contract ($K=1 \implies 100$, $K=2 \implies 50 / 50$) must be preserved. Any slot mismatch, missing user resolution, rule non-conformance, or weight discrepancy fails closed.
 4. **Missing Objective / Part A Authoritative Values**: Fails closed if `Objective_Count`, `PartA_Raw_Score`, or item fields (`Objective_i`, `Action_Plan_i`, `Weight_i`, `Difficulty_i`) are missing.
 5. **Archive Reuse Before Success**: Strictly forbidden. Each stage transition dynamically generates a unique stage snapshot key; re-executing transitions before completion triggers sequence check failure.
 6. **Archive Hash / Idempotency Conflicts**: Fails closed. If a record with matching key exists, the service validates `Snapshot_Hash`. If hash differs, it halts with `ARCHIVE_IDEMPOTENCY_CONFLICT`. Immediate read-back verification failure halts with `ARCHIVE_READBACK_VERIFICATION_FAILED`.
@@ -217,10 +221,12 @@ APP798_RUNTIME_ASSUMPTIONS  = PASS
    - App 794 schema has 344 fields including the 5 D3 provenance fields.
    - App 798 schema includes all 15 required archive fields.
    - Status: `PASS`.
-2. **ACL / Permission Prerequisites**:
-   - Logged-in users advancing workflows in App 794 require `View` and `Edit` on the App 794 record.
-   - Logged-in users require `Add Record` and `View Record` permissions on App 798 to execute client-side archive snapshot writes.
-   - Status: `PASS`.
+2. **ACL / Permission Prerequisites & Boundary Distinction**:
+   - **Repository-Documented Prerequisite Definition**: Repository contracts and architectural specifications establish that App 794 users require appropriate View/Edit permissions on App 794 records, and App 798 archive operations require `Add Record` and `View Record` permissions on App 798 for logged-in users executing stage transitions. These permission requirements are documented, understood, and codified.
+     - `ACL_PREREQUISITE_DEFINITION = PASS / REPOSITORY-DOCUMENTED`
+   - **Current Live Permission Verification**: Because package `D3-ARCHIVE-RUNTIME-DEPLOYMENT-READINESS-01` was strictly zero-I/O, no live Kintone permission query was authorized or executed against App 798 or App 794. Live effective permissions on App 798 were NOT independently queried or verified during this preflight.
+     - `LIVE_ACL_VERIFICATION = NOT_PERFORMED / ZERO-I/O BOUNDARY`
+     - **Precondition for Live Deployment Gate**: Live effective ACL verification on App 798 is a mandatory pre-deployment verification check to be performed under the separately authorized deployment gate.
 3. **Process Prerequisites**:
    - App 794 process settings match Revision 75 (16 states / 28 actions).
    - Status: `PASS`.
@@ -275,7 +281,8 @@ POST_DEPLOY_VERIFICATION_PLAN = PASS
 | 5. Fail-Closed Guards | Missing config, schema mismatch, and conflicts fail closed | **PASS** |
 | 6. App 794 Assumptions | Provenance fields & Part A matrix defined | **PASS** |
 | 7. App 798 Assumptions | 15 archive primitives defined in schema | **PASS** |
-| 8. ACL Prerequisites | Rev 75 ACL unblocked; App 798 addRecord permissions required | **PASS** |
+| 8. ACL Prerequisite Definition | Repository contracts define View/Edit for App 794 & Add/View Record for App 798 | **PASS / REPOSITORY-DOCUMENTED** |
+| 8b. Live ACL Verification | Live effective permissions not queried (zero-I/O); deferred to authorized deploy gate | **NOT_PERFORMED / ZERO-I/O BOUNDARY** |
 | 9. Rollback Readiness | Concrete known-good baseline and deployment script exist | **PASS** |
 | 10. Post-Deploy Plan | Read-back verification and hash checks defined | **PASS** |
 
@@ -284,10 +291,13 @@ POST_DEPLOY_VERIFICATION_PLAN = PASS
 ## 15. Blockers & Not-Proven Items
 
 - **Unresolved Material Blockers**: `NONE`
-- **Not-Proven Items**: `NONE`
+- **Not-Proven Items**:
+  - `LIVE_ACL_VERIFICATION`: `NOT_PERFORMED / ZERO-I/O BOUNDARY` (Deferred to separately authorized deployment execution gate)
+  - `FULL_D3_BUSINESS_UAT`: `NOT PROVEN` (In deployment context)
 - **Notes**:
   - Live deployment was NOT authorized in this package and was NOT performed.
   - Live UAT was NOT authorized in this package and was NOT performed.
+  - Live Kintone ACL query was NOT authorized in this package and was NOT performed.
 
 ---
 
@@ -297,7 +307,16 @@ POST_DEPLOY_VERIFICATION_PLAN = PASS
 DEPLOYMENT_READINESS        = PASS
 ```
 
-**Meaning of PASS**: The accepted R2 archive runtime implementation is technically complete, verified fail-closed, and ready to enter a separately authorized deployment gate. PASS does NOT authorize immediate deployment.
+**Basis & Scope of Verdict**:
+- **Legitimate Basis for PASS**: The accepted R2 archive runtime implementation and repository-documented prerequisites are technically complete, verified fail-closed, and ready to enter a separately authorized deployment gate. Live effective ACL verification is an environmental verification requiring live API read access, which is legitimately deferred to the separately authorized deployment/pre-deployment execution gate.
+- **Strict Boundary Constraints**:
+  - `PASS` means strictly: **READY TO REQUEST A SEPARATELY AUTHORIZED DEPLOYMENT GATE**.
+  - `PASS` does **NOT** mean:
+    - `deployed`
+    - `production ready`
+    - `live ACL verified`
+    - `full UAT complete`
+    - `D3 closed`
 
 ---
 
