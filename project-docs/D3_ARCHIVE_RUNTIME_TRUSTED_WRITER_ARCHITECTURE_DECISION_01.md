@@ -1,5 +1,11 @@
 # D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-01
 
+> **GOVERNANCE NOTICE (RECONCILED):**
+> **STATUS:** NON_AUTHORITATIVE / UNAUTHORIZED_AUTO_START_OUTPUT / RESEARCH_ONLY
+> **OWNER_RATIFIED_ARCHITECTURE:** NONE
+> **ARCHITECTURE_DECISION:** BLOCKED_MORE_INFORMATION_REQUIRED
+> This document records exploratory technical research only. It was generated via unauthorized auto-start after safe-stop commit `79e8687b7e23e43a4a7ca4b17d234fd084284a21` and is NOT an Owner-ratified architecture decision. No implementation, deployment, or runtime mutation is authorized.
+
 ## 1. Document Control & Decision Header
 
 ```text
@@ -8,7 +14,12 @@ PACKAGE                      = D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DE
 CANONICAL_BRANCH             = ai/antigravity-wp002c
 BASE_HEAD                    = 6b64ceef668dec45d92123715783289f800dc49f
 MODE                         = ONE-FILE DOCS-ONLY ARCHITECTURE CORRECTIVE
-PURPOSE                      = Define single Owner-ratifiable Trusted Archive Writer Architecture for D3
+AUTHORITY_STATUS             = NON_AUTHORITATIVE_EXPLORATORY_OUTPUT
+GOVERNANCE_CLASSIFICATION    = UNAUTHORIZED_AUTO_START_OUTPUT
+OWNER_RATIFIED_ARCHITECTURE  = NONE
+ARCHITECTURE_AUTHORITY_STATUS= NON_AUTHORITATIVE_RESEARCH_ONLY
+D3_TAWS_STATUS               = RESEARCH_ONLY
+PURPOSE                      = Exploratory Technical Research Only (NOT an Owner-ratified decision)
 KINTONE_READS                = 0
 KINTONE_WRITES               = 0
 EXTERNAL_INFRA_WRITES        = 0
@@ -294,8 +305,12 @@ ENVIRONMENT_SEPARATION   = SANDBOX (App 794 / 798 Sbx) vs PRODUCTION (App 794 / 
 ## 11. Final Decision Verdict
 
 ```text
+AUTHORITY_STATUS                         = NON_AUTHORITATIVE_RESEARCH_ONLY
+GOVERNANCE_CLASSIFICATION                = UNAUTHORIZED_AUTO_START_OUTPUT
+OWNER_RATIFIED_ARCHITECTURE              = NONE
+D3_TAWS_STATUS                           = RESEARCH_ONLY
 ARCHITECTURE_DECISION                    = BLOCKED_MORE_INFORMATION_REQUIRED
-SELECTED_MODEL                           = D3_TRUSTED_ARCHIVE_WRITER_SERVICE (D3-TAWS)
+SELECTED_MODEL                           = D3_TRUSTED_ARCHIVE_WRITER_SERVICE (D3-TAWS) [RESEARCH_ONLY]
 CALLER_AUTHENTICATION                    = CYBOZU_OAUTH2_USER_BOUND_TOKEN
 BROWSER_PRIVILEGED_SECRET                = NONE
 HMAC_BROWSER_SHARED_SECRET               = NONE
