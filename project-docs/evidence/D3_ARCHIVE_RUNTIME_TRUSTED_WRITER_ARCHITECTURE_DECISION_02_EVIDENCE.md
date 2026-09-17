@@ -1,41 +1,59 @@
 # Evidence: D3 Archive Runtime Trusted Writer Architecture Decision 02
 
 ## Document Control
-- **Package**: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-02-R1`
-- **Base HEAD**: `f4ef47379c4c403d49ecf27302d558009e5c7b49`
-- **Mode**: `ARCHITECTURE DECISION / DOCS-ONLY / NO IMPLEMENTATION / NO LIVE I/O`
-- **Owner Authorization**: `ALREADY APPROVED`
+- **Package**: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-02-R1-CLOSE`
+- **Base HEAD**: `798da943fdf66b3750900a8f4dcf4984ae5ee806`
+- **Mode**: `ONE_FILE_EVIDENCE_CONTRACT_CLOSURE`
+- **Owner Authorization**: `APPROVED`
 - **Scope Control**: `STRICT (SCOPE_EXPANSION_AUTHORIZED = NO)`
+- **SUPERSEDES_R1_EVIDENCE_CONTRACT_GAPS**: `YES`
 
 ---
 
-## 1. Executive Verdict & Summary Indicators
+## 1. Executive Verdict & Required Terminal Contract
 
-- **FAMILY_A_VERDICT**: `REJECTED_UNFEASIBLE_WITHOUT_EXTERNAL_IDP`
-- **FAMILY_B_VERDICT**: `REJECTED_ACTOR_IDENTITY_UNPROVEN_ON_SERVER`
-- **FAMILY_C_VERDICT**: `REJECTED_CRITICAL_SECURITY_FLAWS`
-- **ARCHITECTURE_DECISION_RESULT**: `ARCHITECTURE_DECISION_NOT_READY`
-- **RECOMMENDED_CANDIDATE_FOR_OWNER_RATIFICATION**: `NONE`
-- **SERVER_SIDE_EXACT_TRANSITION_ACTOR**: `UNPROVEN`
-- **LOCKED_DECISION_CHANGE_REQUIRED**: `YES` (if Family B or similar workflow redesign is pursued in the future)
-- **NEW_INFRASTRUCTURE_REQUIRED**: `YES`
-- **NEW_IDENTITY_INFRASTRUCTURE_REQUIRED**: `NO` (for Kintone-native paths, but actor proof is absent; YES for Family A)
-- **APP798_EVERYONE_ADD_REQUIRED**: `NO`
-- **APP798_EVERYONE_VIEW_REQUIRED**: `NO`
-- **BROWSER_PRIVILEGED_SECRET_REQUIRED**: `NO`
-- **CRITICAL_UNRESOLVED_SECURITY_BLOCKERS**: `YES`
-  1. *Actor Identity Verification Gap*: Server-side verification of the exact human transition actor is `UNPROVEN` in Kintone REST API.
-  2. *API Endpoint Invalidation*: `/k/v1/record/status.json` is strictly `PUT`-only (no `GET` endpoint exists), and process status history is exposed only to client-side JS (`kintone.app.record.getStatusHistory`) with no REST audit API.
-  3. *Client-side Forgery Vulnerability*: Family C permits arbitrary DevTools `POST` without payload or actor verification.
-- **OWNER_RATIFIED_ARCHITECTURE**: `NONE`
-- **IMPLEMENTATION_AUTHORIZED**: `NO`
-- **DEPLOYMENT_AUTHORIZED**: `NO`
-- **FULL_D3_BUSINESS_UAT**: `NOT_PROVEN`
-- **D3_CLOSURE**: `NOT_CLAIMED`
-- **PRODUCTION_READY**: `NO`
-- **NEXT_GATE_AUTHORIZED**: `NO`
-- **AUTO_START_NEXT_WORK_PACKAGE**: `NO`
-- **FINAL_STATE**: `STOP FOR INDEPENDENT CONTROL PLANE REVIEW`
+```yaml
+PACKAGE: D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-02-R1-CLOSE
+BASE_HEAD: 798da943fdf66b3750900a8f4dcf4984ae5ee806
+MODE: ONE_FILE_EVIDENCE_CONTRACT_CLOSURE
+SUPERSEDES_R1_EVIDENCE_CONTRACT_GAPS: YES
+
+RECORD_STATUS_REST_HISTORY_READ: PROVEN_UNSUPPORTED
+STATUS_HISTORY_SERVER_ACCESS: PROVEN_UNSUPPORTED
+STATUS_HISTORY_EXACT_ACTOR_FIELD: NONE
+WEBHOOK_EVENT_TYPE: UPDATE_STATUS
+WEBHOOK_EXACT_HUMAN_ACTOR: NOT_PROVEN
+WEBHOOK_SIGNING_MECHANISM: NO_DOCUMENTED_WEBHOOK_SIGNING_MECHANISM_ESTABLISHED_IN_REVIEWED_OFFICIAL_SOURCES
+UPDATED_BY_AS_TRANSITION_ACTOR: NOT_PROVEN
+SERVER_SIDE_EXACT_TRANSITION_ACTOR: NOT_PROVEN
+ARCHIVED_BY_EXACT_ACTOR_PROOF: NOT_PROVEN
+
+FAMILY_A_VERDICT: REJECTED_UNFEASIBLE_WITHOUT_EXTERNAL_IDP
+FAMILY_B_VERDICT: REJECTED_ACTOR_IDENTITY_UNPROVEN_ON_SERVER
+FAMILY_C_VERDICT: REJECTED_CRITICAL_SECURITY_FLAWS
+
+ARCHITECTURE_DECISION_RESULT: ARCHITECTURE_DECISION_NOT_READY
+RECOMMENDED_CANDIDATE_FOR_OWNER_RATIFICATION: NONE
+
+LOCKED_DECISION_CHANGE_REQUIRED: YES
+NEW_INFRASTRUCTURE_REQUIRED: YES
+NEW_IDENTITY_INFRASTRUCTURE_REQUIRED: NO
+APP798_EVERYONE_ADD_REQUIRED: NO
+APP798_EVERYONE_VIEW_REQUIRED: NO
+BROWSER_PRIVILEGED_SECRET_REQUIRED: NO
+
+CRITICAL_UNRESOLVED_SECURITY_BLOCKERS: YES
+OWNER_RATIFIED_ARCHITECTURE: NONE
+IMPLEMENTATION_AUTHORIZED: NO
+DEPLOYMENT_AUTHORIZED: NO
+FULL_D3_BUSINESS_UAT: NOT_PROVEN
+D3_CLOSURE: NOT_CLAIMED
+PRODUCTION_READY: NO
+
+NEXT_GATE_AUTHORIZED: NO
+AUTO_START_NEXT_WORK_PACKAGE: NO
+FINAL_STATE: STOP_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
+```
 
 ---
 
@@ -45,15 +63,16 @@
    - `D3-ARCHIVE-RUNTIME-AUTHORIZATION-MODEL-CORRECTIVE-01`: `PASS_SAFE_STOP` at commit `79e8687b7e23e43a4a7ca4b17d234fd084284a21`. Direct browser write to App798 is impossible for regular employees without exposing confidential evaluation archives (`GROUP everyone Add=NO, View=NO`).
    - `D3-ARCHIVE-RUNTIME-UNAUTHORIZED-AUTO-START-RECONCILIATION-01`: Reconciled exploratory commits `6b64ceef` and `a69034f2` as non-authoritative research (`bc86b97e793911ad71999288ee44928749978104`).
    - `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-IDENTITY-FEASIBILITY-01`: Independently reviewed and accepted at commit `8be55309732a7c6d99569e0716369fc74e2f0aa9`. Established `IDENTITY_FEASIBILITY_RESULT = IDENTITY_MODEL_NOT_PROVEN` from official Cybozu/Kintone platform documentation.
-   - `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-02`: Initial analysis committed at `f4ef47379c4c403d49ecf27302d558009e5c7b49`, identifying architectural families but relying on an unverified assumption regarding server-side status history retrieval.
+   - `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-02`: Initial analysis at `f4ef47379c4c403d49ecf27302d558009e5c7b49`.
+   - `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-ARCHITECTURE-DECISION-02-R1`: Corrective package at commit `798da943fdf66b3750900a8f4dcf4984ae5ee806` downgrading Family B and establishing unproven server-side transition actor identity.
 2. **Accepted Platform Truths (Official Cybozu/Kintone Documentation)**:
    - Cybozu OAuth supports Confidential Clients only; PKCE and Public Clients are unsupported.
    - Cybozu OAuth does not provide OpenID Connect `id_token` or token introspection.
    - `kintone.proxy()` is a CORS forward proxy without cryptographic user attestation.
    - Browser session cookies are `HttpOnly` and cannot be securely validated externally.
    - Browser privileged secrets (API tokens, admin passwords, shared HMAC keys) are strictly forbidden.
-   - **Correction on Status History REST API**: Cybozu REST API endpoint `/k/v1/record/status.json` supports **only `PUT`** (updating status). There is **NO `GET` method** for `/k/v1/record/status.json` or `/k/v1/records/status.json`.
-   - **Correction on Status History Access**: Status history is only accessible via the client-side JavaScript API (`kintone.app.record.getStatusHistory()`). There is no public, platform-supported REST endpoint to query granular historical process actions or historical assignees/operators for a record from an external server worker.
+   - **REST Status History Contract**: REST endpoint `/k/v1/record/status.json` supports **only `PUT`**. There is **no `GET` method** for `/k/v1/record/status.json` or `/k/v1/records/status.json` (`RECORD_STATUS_REST_HISTORY_READ = PROVEN_UNSUPPORTED`).
+   - **Status History Server Access Contract**: Status history is available solely in client-side JavaScript (`kintone.app.record.getStatusHistory()`), and cannot be accessed from server-side REST API (`STATUS_HISTORY_SERVER_ACCESS = PROVEN_UNSUPPORTED`, `STATUS_HISTORY_EXACT_ACTOR_FIELD = NONE`).
 
 ---
 
@@ -84,23 +103,23 @@
   Decouples untrusted browser execution from the archive write operation by redesigning the App794 Process Management workflow into a two-phase transition:
   1. **Phase 1 (User Action)**: The employee in App794 initiates a workflow action (e.g., "Submit Evaluation"). App794 transitions into an intermediate pending status: `Archive Pending`.
   2. **Phase 2 (Privileged Worker Execution)**: A server-side Privileged Archive Worker (with `USER hr` credentials) detects the transition (via Kintone Webhook or polling). The worker reads App794, attempts to verify the transition actor, writes the immutable archive record to App798, and advances App794 to the next business state.
-- **Detailed Evaluation of Server-Side Actor Identity Verification**:
-  - **The Invalid Assumption**: The previous proposal assumed that an external worker could query `GET /k/v1/record/status.json` to retrieve the Process Management audit log and identify the exact user who executed the status action.
-  - **Platform Reality (Cybozu REST API Specification)**:
-    - Official Cybozu documentation establishes that `/k/v1/record/status.json` only accepts `PUT` requests (to update a record's status).
-    - There is **no REST API endpoint** for retrieving record status history or process action logs. Status history (`kintone.app.record.getStatusHistory()`) is exclusively available in the client-side JavaScript environment.
-    - Standard `GET /k/v1/record.json` returns only the current status (`status.value`), current assignees (`assignee.value`), and the standard system field `Updated by` (`$modifier.value`).
-    - **Actor Identity Gap**: While `$modifier` reflects the user who performed the last modification (or status change), Cybozu documentation does NOT guarantee that `$modifier` uniquely and securely attributes the specific workflow action if concurrent or background field updates occur, nor does it provide cryptographic proof. If a Webhook payload is utilized (`type: "STATUS_CHANGE"`), it conveys the status transition and `modifier` object, but Webhook delivery in Kintone is asynchronous, non-blocking, and lacks HMAC signature verification (Kintone webhooks do not support request signing or shared secret verification without custom header matching).
-  - **Verdict on Actor Verification**: `SERVER_SIDE_EXACT_TRANSITION_ACTOR = UNPROVEN`. Without a certified, authoritative audit log REST API or signed webhook, an external backend worker cannot authoritatively and tamper-proof verify the exact human transition actor strictly from Kintone REST API.
+- **Server-Side Actor Identity Verification Analysis**:
+  - **REST Status History Gap**: Official Cybozu documentation establishes that `/k/v1/record/status.json` only accepts `PUT` requests (`RECORD_STATUS_REST_HISTORY_READ = PROVEN_UNSUPPORTED`). There is no server-side REST audit endpoint for status history (`STATUS_HISTORY_SERVER_ACCESS = PROVEN_UNSUPPORTED`, `STATUS_HISTORY_EXACT_ACTOR_FIELD = NONE`). Status history is only accessible in browser client JavaScript (`kintone.app.record.getStatusHistory()`).
+  - **Updated By ($modifier) Non-Equivalence**: Standard `GET /k/v1/record.json` returns `$modifier` (Updated by). The reviewed official contract does not establish that Updated By is a durable, event-scoped identity authority for the exact archived workflow transition under all concurrent or subsequent modification cases (`UPDATED_BY_AS_TRANSITION_ACTOR = NOT_PROVEN`).
+  - **Webhook Contract & Boundaries**:
+    - The reviewed official platform event type for status changes is `UPDATE_STATUS` (`WEBHOOK_EVENT_TYPE = UPDATE_STATUS`).
+    - Webhook delivery in Kintone is asynchronous and does not establish guaranteed exact human transition actor proof (`WEBHOOK_EXACT_HUMAN_ACTOR = NOT_PROVEN`).
+    - Based on reviewed official sources, there is no documented cryptographic webhook signing mechanism (e.g., HMAC-SHA256 headers) established (`WEBHOOK_SIGNING_MECHANISM = NO_DOCUMENTED_WEBHOOK_SIGNING_MECHANISM_ESTABLISHED_IN_REVIEWED_OFFICIAL_SOURCES`).
+  - **Archived_By Contract Failure**: Under the locked D3 archive contract, `Archived_By` must represent exact authoritative actor provenance and cannot be substituted with worker credentials, inferred record fields, assignee, or unverified Updated By (`ARCHIVED_BY_EXACT_ACTOR_PROOF = NOT_PROVEN`, `SERVER_SIDE_EXACT_TRANSITION_ACTOR = NOT_PROVEN`).
 - **Evaluation Criteria**:
-  - *Actual Actor Identity Assurance*: **UNPROVEN**. Exact human actor attribution on server cannot be verified via official Kintone REST API.
-  - *Caller Spoofing Resistance*: Medium to High (worker acts on Kintone state, but cannot conclusively prove *which* user triggered the state change versus an unrelated record update).
+  - *Actual Actor Identity Assurance*: **NOT_PROVEN**. Exact human actor attribution on server cannot be proven via documented Kintone REST APIs.
+  - *Caller Spoofing Resistance*: Medium to High (state-driven, but unverified actor).
   - *Privileged Browser Secret Requirement*: Zero (browser holds no secrets).
   - *App798 Privacy*: Preserved (`GROUP everyone Add = NO, View = NO`).
   - *Canonical Payload Integrity*: Enforced (worker reads App794 physical fields).
   - *Locked D3 Invariant Compatibility*: Requires modifying App794 process management status graph.
   - *Infrastructure Requirement*: External worker service required.
-- **Verdict**: **`REJECTED_ACTOR_IDENTITY_UNPROVEN_ON_SERVER`**. Because exact actor identity verification cannot be proven on the server using documented Cybozu REST APIs, Family B cannot be recommended for Owner ratification at this stage.
+- **Verdict**: **`REJECTED_ACTOR_IDENTITY_UNPROVEN_ON_SERVER`**. Because exact actor identity verification cannot be proven on the server using documented Cybozu REST APIs, Family B cannot satisfy the locked provenance contract.
 
 ---
 
@@ -123,7 +142,7 @@
 
 | Evaluation Dimension | Family A (External IdP OIDC) | Family B (Workflow Handshake Redesign) | Family C (Controlled Kintone ACL) |
 | :--- | :---: | :---: | :---: |
-| **Actor Identity Assurance** | High (OIDC JWT Claims) | **UNPROVEN (No REST Status History API)** | High (Kintone Session) |
+| **Actor Identity Assurance** | High (OIDC JWT Claims) | **NOT_PROVEN (No REST Status History API)** | High (Kintone Session) |
 | **Caller Spoofing Resistance** | High | Medium-High (State-driven, but unverified actor) | **Zero (DevTools Payload Manipulation)** |
 | **Browser Privileged Secrets** | None | None | None |
 | **App798 Privacy (`everyone` Add/View=NO)** | **Preserved (Add=NO, View=NO)** | **Preserved (Add=NO, View=NO)** | **Violated (`everyone` Add=YES needed)** |
@@ -166,30 +185,14 @@
    - Purpose: Updates status of a single record (`1件のレコードのステータスを更新する`).
    - Request Parameters: `app`, `id`, `action`, `assignee` (optional), `revision` (optional).
    - Response: `revision`.
-   - Documentation confirms there is **no `GET` method** or query interface on `/k/v1/record/status.json`.
+   - Documentation confirms there is **no `GET` method** or query interface on `/k/v1/record/status.json` (`RECORD_STATUS_REST_HISTORY_READ = PROVEN_UNSUPPORTED`).
 2. **Cybozu JavaScript API Reference (`getStatusHistory`)**:
    - URL: `https://cybozu.dev/ja/kintone/docs/js-api/record/get-status-history/`
    - Function: `kintone.app.record.getStatusHistory(offset, limit)`
    - Scope: Available exclusively inside browser client context (`レコード詳細画面`, `レコード編集画面`, `レコード印刷画面`).
-   - Unavailable in server-side REST API.
-3. **Cybozu Webhook Specification**:
+   - Unavailable in server-side REST API (`STATUS_HISTORY_SERVER_ACCESS = PROVEN_UNSUPPORTED`, `STATUS_HISTORY_EXACT_ACTOR_FIELD = NONE`).
+3. **Cybozu Webhook Specification (`UPDATE_STATUS`)**:
    - URL: `https://cybozu.dev/ja/kintone/docs/webhook/`
-   - Webhook events are asynchronous HTTP POST notifications.
-   - Kintone native webhooks do NOT support HMAC-SHA256 signature verification headers. Therefore, external endpoints cannot cryptographically verify that an incoming webhook was authentically generated by Kintone rather than an attacker.
-
----
-
-## 7. Final Governance State & Declarations
-
-- **ARCHITECTURE_DECISION_RESULT**: `ARCHITECTURE_DECISION_NOT_READY`
-- **RECOMMENDED_CANDIDATE_FOR_OWNER_RATIFICATION**: `NONE`
-- **SERVER_SIDE_EXACT_TRANSITION_ACTOR**: `UNPROVEN`
-- **OWNER_RATIFIED_ARCHITECTURE**: `NONE`
-- **IMPLEMENTATION_AUTHORIZED**: `NO`
-- **DEPLOYMENT_AUTHORIZED**: `NO`
-- **FULL_D3_BUSINESS_UAT**: `NOT_PROVEN`
-- **D3_CLOSURE**: `NOT_CLAIMED`
-- **PRODUCTION_READY**: `NO`
-- **NEXT_GATE_AUTHORIZED**: `NO`
-- **AUTO_START_NEXT_WORK_PACKAGE**: `NO`
-- **FINAL_STATE**: `STOP FOR INDEPENDENT CONTROL PLANE REVIEW`
+   - Official event type for record status updates: `UPDATE_STATUS` (`WEBHOOK_EVENT_TYPE = UPDATE_STATUS`).
+   - Webhook delivery is asynchronous and does not establish verified exact human actor provenance (`WEBHOOK_EXACT_HUMAN_ACTOR = NOT_PROVEN`).
+   - Reviewed official sources do not establish any supported cryptographic signing mechanism (such as HMAC headers) (`WEBHOOK_SIGNING_MECHANISM = NO_DOCUMENTED_WEBHOOK_SIGNING_MECHANISM_ESTABLISHED_IN_REVIEWED_OFFICIAL_SOURCES`).
