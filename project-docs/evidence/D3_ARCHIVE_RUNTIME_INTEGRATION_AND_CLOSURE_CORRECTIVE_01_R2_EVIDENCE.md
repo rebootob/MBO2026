@@ -16,7 +16,10 @@ This corrective package (`R2`) supersedes `R1` and completes the canonical bindi
 ### Key Remediation Highlights:
 1. **Physical Routing Extraction & Sequential Rule Enforcements:**
    - Eradicated synthetic references to `Workflow_Appraisers` and `Scorers` as authoritative sources.
-   - Physical route evaluation derives strictly from App 794 `USER_SELECT` fields (`Manager_Approver`, `GM_Approver`, `CEO_Approver`, etc.) keyed against `Effective_Scorer_Slots_Snapshot` ordinals.
+   - Physical route evaluation and active slot selection are driven strictly by canonical D3 route pattern / slot definitions and locked D3-008 V1 persisted App 794 fields:
+     - Canonical Physical Approver fields: `Manager_Level1_Approvers`, `Manager_Level2_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers` (alongside `Requester_User`).
+     - Corresponding Approval Rule fields: `Manager_Level1_Approval_Rule`, `Manager_Level2_Approval_Rule`, `GM_Level1_Approval_Rule`, `GM_Level2_Approval_Rule`.
+     - Keyed against `Effective_Scorer_Slots_Snapshot` ordinals and `K_expected_Snapshot`.
    - Every active sequential slot strictly requires exactly one user; active approval rule must be `ALL`.
 2. **DEC-036 Locked Scorer Weighting:**
    - Implemented strict DEC-036 locked weighting: K=1 -> 100%, K=2 -> 50% / 50%.
@@ -45,7 +48,7 @@ This corrective package (`R2`) supersedes `R1` and completes the canonical bindi
 ## 3. Source Correctives
 
 ### 3.1 `src/main-mbo-app.js`
-- Bound logical snapshot generation strictly to physical `USER_SELECT` fields based on `Effective_Scorer_Slots_Snapshot`.
+- Bound logical snapshot generation strictly to canonical persisted App 794 `USER_SELECT` approver fields (`Manager_Level1_Approvers`, `Manager_Level2_Approvers`, `GM_Level1_Approvers`, `GM_Level2_Approvers`) and approval rules based on `Effective_Scorer_Slots_Snapshot` ordinals and `K_expected_Snapshot`.
 - Enforced single-assignee constraint per active sequential slot and `ALL` rule.
 - Added strict DEC-036 weighting checks (K=1: [100], K=2: [50, 50]).
 - Replaced synthetic `Objective_Table` extraction with physical `Objective_Count` + `Objective_1..N` matrix iteration.
