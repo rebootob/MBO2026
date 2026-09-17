@@ -1,12 +1,13 @@
-# Evidence: D3 Archive Runtime Trusted Writer Client-to-Server Actor Attestation Feasibility 01 (R1)
+# Evidence: D3 Archive Runtime Trusted Writer Client-to-Server Actor Attestation Feasibility 01 (R2)
 
 ## Document Control
-- **Package**: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-CLIENT-TO-SERVER-ACTOR-ATTESTATION-FEASIBILITY-01-R1`
-- **Base Head**: `9edaece4e6ba9947922e58c2c1fb65f79c323ef8`
-- **Mode**: `ONE_FILE_EVIDENCE_ONLY_TECHNICAL_CORRECTIVE`
-- **Status**: `SUPERSEDES_FEASIBILITY_01_TECHNICAL_CLAIMS = YES`
+- **Package**: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-CLIENT-TO-SERVER-ACTOR-ATTESTATION-FEASIBILITY-01-R2`
+- **Authorization ID**: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-CLIENT-TO-SERVER-ACTOR-ATTESTATION-FEASIBILITY-01-R2-20260917-OWNER-01`
+- **Base Head**: `9bd8ed75780f992033a70b12cc4ad69d5b68d24b`
+- **Mode**: `ONE-FILE EVIDENCE-ONLY FINAL TECHNICAL CORRECTIVE / OFFICIAL-DOCUMENTATION VERIFICATION / NO IMPLEMENTATION / NO LIVE I/O`
+- **Status**: `SUPERSEDES_FEASIBILITY_01_R1_TECHNICAL_CLAIMS = YES`
 - **Author**: Antigravity / Hermes Orchestrator
-- **Scope**: Technical Feasibility Research & Official Documentation Evidence for Client-to-Server Actor Attestation
+- **Scope**: Final Technical Corrective for Client-to-Server Actor Attestation Evidence
 
 ---
 
@@ -14,202 +15,215 @@
 
 | Metric / Parameter | Value | Official Documentation Status |
 | :--- | :--- | :--- |
-| `ACTOR_ATTESTATION_FEASIBILITY` | **`NOT_PROVEN`** | No officially supported trust chain bridges browser actor to backend |
+| `ACTOR_ATTESTATION_FEASIBILITY` | **`NOT_PROVEN`** | No complete, unbroken trust chain exists from browser human actor to trusted backend |
 | `SUPPORTED_MECHANISM` | **`NONE_PROVEN`** | No official Cybozu mechanism establishes independent server-side actor proof |
 | `ARCHIVED_BY_EXACT_ACTOR_PROOF` | **`NOT_PROVEN`** | Exact human executor cannot be authoritatively proven by backend alone |
 | `CLIENT_TO_SERVER_TRUSTED_ACTOR_ATTESTATION` | **`NOT_PROVEN`** | Browser client cannot attest its identity without unshared privileged secrets |
-| `SERVER_SIDE_EXACT_TRANSITION_ACTOR` | **`NOT_PROVEN`** | Server REST API lacks transition actor history; Webhook lacks executor |
+| `SERVER_SIDE_EXACT_TRANSITION_ACTOR` | **`NOT_PROVEN`** | Server REST API lacks transition actor history; Webhook lacks dedicated executor field |
 | `ARCHITECTURE_DECISION_RESULT` | **`ARCHITECTURE_DECISION_NOT_READY`** | Trust chain incomplete; cannot ratify architecture |
 | `RECOMMENDED_CANDIDATE_FOR_OWNER_RATIFICATION` | **`NONE`** | Zero candidates qualify under strict provenance constraints |
 | `OWNER_RATIFIED_ARCHITECTURE` | **`NONE`** | Locked governance baseline preserved |
 
 ---
 
-## 2. Webhook Notification ID Semantics & Replay Analysis (Correctives 2 & 7)
+## 2. Webhook Notification Schema & Notification ID Semantics (Corrective 1)
 
-### 2.1 Webhook Notification ID Presence & Uniqueness
-- **Official Documentation**: Cybozu official Webhook documentation (`https://jp.kintone.help/k/ja/app/set_webhook/webhook_notification`) defines the top-level payload schema for all webhook events (`ADD_RECORD`, `EDIT_RECORD`, `DELETE_RECORD`, `UPDATE_STATUS`, etc.).
-- **Schema Field**: Top-level field `"id": "<string>"` is officially documented as the notification ID (`通知のID`).
-- **Contract Findings**:
+### 2.1 UPDATE_STATUS Webhook Notification Envelope
+- **Official Documentation**: Cybozu official Webhook notification documentation (`https://jp.kintone.help/k/ja/app/set_webhook/webhook_notification`).
+- **Envelope Contract**: The official top-level envelope schema for Webhook notifications is:
+  ```text
+  UPDATE_STATUS_WEBHOOK_SCHEMA = id + type + app + record + recordTitle + url
+  ```
+- **Documented Envelope Fields**:
+  - `id`: Notification ID (`通知のID`) string.
+  - `type`: Notification trigger type string (`UPDATE_STATUS`).
+  - `app`: App object containing `id` and `name`.
+  - `record`: The full record data object (`DOCUMENTED_RECORD_PAYLOAD`).
+  - `recordTitle`: Record title string.
+  - `url`: Record detail URL string.
+- **Critical Schema Corrections**:
   - `WEBHOOK_NOTIFICATION_ID_PRESENT = PROVEN`
-  - `WEBHOOK_NOTIFICATION_ID_UNIQUENESS = DOCUMENTED_AS_NOTIFICATION_IDENTIFIER` (Each emitted webhook notification event has an assigned notification `id`).
+  - `WEBHOOK_TYPE = UPDATE_STATUS`
+  - `WEBHOOK_RECORD_OBJECT = DOCUMENTED_RECORD_PAYLOAD`
+  - `WEBHOOK_DEDICATED_TRANSITION_ACTOR_FIELD = NONE_DOCUMENTED`
+  - Top-level `action`, `status`, and `assignee` do **not** exist in the webhook notification envelope.
+  - Any status, assignee, or modifier fields exist strictly as **RECORD DATA** inside the `record` object.
+  - Record data inside the payload reflects post-modification record state and must **not** be equated with the exact human actor who executed the process transition.
 
-### 2.2 Capabilities Established vs Not Established
-- **What the Notification ID Does Establish**:
-  - **Deduplication Identity**: Can be recorded by a receiver to detect and discard duplicate deliveries of the identical notification payload.
-  - **Event Correlation**: Enables tracking and correlation of retried HTTP deliveries for a specific notification event.
-  - **Replay Detection Potential**: Enables detection of identical webhook replay when the receiver maintains a persistent nonce/ID cache.
-  - `WEBHOOK_REPLAY_IDENTITY = PROVEN_SUPPORTED_VIA_NOTIFICATION_ID`
+### 2.2 Notification ID Semantics & Capabilities
+- `WEBHOOK_NOTIFICATION_ID_UNIQUENESS = DOCUMENTED_AS_NOTIFICATION_IDENTIFIER`
+- **Capabilities Established**:
+  - **Deduplication Identity**: Enables a receiving endpoint to detect and discard duplicate deliveries of the identical notification payload.
+  - **Event Correlation**: Enables correlation of retried HTTP deliveries for a specific notification event.
   - `WEBHOOK_REPLAY_DEDUPLICATION_POSSIBLE = YES`
-- **What the Notification ID Does NOT Establish**:
+- **Capabilities NOT Established**:
   - `WEBHOOK_NOTIFICATION_ID_PROVES_ORIGIN = NO`
   - `WEBHOOK_REPLAY_AUTHENTICITY_PROTECTION = NOT_PROVEN`
-  - **Cryptographic Origin Authentication**: The notification ID is an unencrypted, unsigned string inside a standard JSON HTTP POST body. It does not prove that the request was generated by Kintone rather than a malicious party forging an HTTP POST to the receiver.
-  - **Payload Integrity**: The notification ID does not guarantee that the payload fields (e.g. record ID, status, action) were not intercepted and altered in transit.
-  - **Human Actor Identity**: The notification ID is an opaque event identifier; it does not contain or encode the user ID or identity of the human actor who triggered the transition.
+  - The notification ID is an unauthenticated JSON string inside an unencrypted HTTP POST body. It does not prove that the request originated from Kintone, does not protect against payload modification/forgery in transit, and does not contain or prove the human actor's identity.
 
 ---
 
-## 3. Webhook Execution Log Actor Surface (Corrective 3)
+## 3. Webhook Execution Log UI & Server API Surface (Corrective 2)
 
-### 3.1 Webhook Execution Log UI Surface
+### 3.1 Webhook Execution Log Admin UI Surface
 - **Official Documentation**: `https://jp.kintone.help/k/ja/app/set_webhook/webhook_logs` (Webhookの実行ログを確認する).
-- **UI Surface Capabilities**:
-  - The Kintone App Settings UI displays up to the last 10 execution logs (`直近10件までの実行ログを確認する`).
-  - Displays success icon (green checkmark) or failure icon (red triangle).
-  - Documents failure causes (rate limits >60/min, timeout, payload >1MB, endpoint error).
+- **Official UI Capabilities**:
+  - The Kintone App Management Webhook Execution Log UI exposes execution history for the administrator.
+  - Documented UI fields and visual indicators include:
+    - Notification ID (`通知のID`)
+    - Action type (`操作の種類`)
+    - User who performed the action (`操作を行ったユーザー`)
+    - Execution date and time (`実行日時`)
+    - Delivery destination URL and status outcome
 - **Contract Findings**:
-  - `WEBHOOK_EXECUTION_LOG_ACTOR_UI = NOT_PROVEN` (Reviewed official documentation does not document the executing human user on the Webhook execution log UI).
-  - `WEBHOOK_EXECUTION_LOG_NOTIFICATION_ID = NOT_PROVEN` (Reviewed official documentation does not document that notification ID is exposed to administrators in the Webhook execution log UI).
+  - `WEBHOOK_EXECUTION_LOG_ACTOR_UI = PROVEN_AVAILABLE`
+  - `WEBHOOK_EXECUTION_LOG_NOTIFICATION_ID = PROVEN_AVAILABLE`
+  - `WEBHOOK_EXECUTION_LOG_ACTION_TYPE = PROVEN_AVAILABLE`
+  - `WEBHOOK_EXECUTION_LOG_EXECUTION_TIME = PROVEN_AVAILABLE`
 
-### 3.2 Programmatic Server API Availability
-- **Official Documentation**: Reviewed Cybozu Developer Network REST API specification (`/ja/kintone/docs/rest-api/`).
-- **Findings**:
-  - Kintone provides REST APIs for apps, records, spaces, and process management settings, but provides NO documented REST endpoint to query webhook execution logs programmatically or synchronously.
+### 3.2 Backend Programmatic Server API Availability
+- **Crucial Separation**: Administrative UI visibility does **not** establish a trusted backend mechanism.
+- **REST API Investigation**: Reviewed the official Cybozu Developer Network REST API specification (`/ja/kintone/docs/rest-api/`).
+- **Contract Finding**:
+  - There is no documented endpoint, authentication contract, request model, or response structure in Kintone REST APIs allowing a backend server to query webhook execution logs programmatically or synchronously.
   - `WEBHOOK_EXECUTION_LOG_SERVER_API = NOT_PROVEN` (No officially supported synchronous or programmatic backend API for webhook execution logs is established in reviewed official sources).
 
 ---
 
-## 4. Audit Log Evaluation (Corrective 4)
+## 4. Audit Log Exact-Event Semantics & API Surface (Corrective 3)
 
-### 4.1 Audit Log Transition Actor Semantics
-- **Official Documentation**: Cybozu.com System Administration Audit Log Help (`https://jp.kintone.help/general/ja/admin/list_systemadmin/list_audit/audit`, `download_audit`).
-- **Documented Semantics**:
-  - Cybozu.com system audit logs record access and operation events including Date/Time, User (`ユーザー`), Action (`操作`), Service, and Target Details.
-  - Status updates and record operations are captured in audit logs with the identity of the authenticated user who initiated the action.
-  - `AUDIT_LOG_TRANSITION_ACTOR_SEMANTICS = PROVEN` (Audit logs document the authenticated user and operation).
+### 4.1 Audit Log User & Operation Surface
+- **Official Documentation**: Cybozu.com System Administration Audit Log Help (`https://jp.kintone.help/general/ja/admin/list_systemadmin/list_audit/audit`).
+- **Contract Findings**:
+  - `AUDIT_LOG_USER_FIELD = PROVEN_AVAILABLE` (The audit log contains an explicit User / `ユーザー` field identifying the authenticated account associated with an event).
+  - `AUDIT_LOG_OPERATION_FIELD = PROVEN_AVAILABLE` (The audit log contains an Operation / `操作` field indicating the general operation category).
 
-### 4.2 Backend Synchronous Access Availability
+### 4.2 Exact Transition Actor Semantics & Process Event Binding
+- **Distinction**: The existence of a User field on general system operations does **not** prove that the entry can be unambiguously and authoritatively bound to the specific Process Management transition required by D3-008.
+- **Contract Findings**:
+  - `AUDIT_LOG_TRANSITION_ACTOR_SEMANTICS = NOT_PROVEN` (Official documentation does not provide granular semantics guaranteeing exact Process Management transition executor attribution separate from concurrent or background activities).
+  - `AUDIT_LOG_EXACT_PROCESS_EVENT_BINDING = NOT_PROVEN` (No mechanism is established to cryptographically or synchronously bind a specific webhook or record state to an exact audit log sequence event).
+
+### 4.3 Backend Synchronous API Availability
 - **Official Documentation**: `https://jp.kintone.help/general/ja/admin/list_systemadmin/list_audit/download_audit`
-- **Findings**:
-  - Audit logs are accessible exclusively via the cybozu.com System Administration web console for manual viewing and CSV file export/download, or scheduled email transmission (`send_audit`).
-  - There is no synchronous or real-time REST API endpoint available for a trusted backend to query audit log events during an active archive workflow.
-  - `AUDIT_LOG_SERVER_API = NOT_PROVEN` (No synchronous, programmatic server REST API is established in reviewed official sources).
+- **Contract Finding**:
+  - Cybozu.com audit logs are accessible only via the administrator web interface for manual download (CSV/ZIP) or periodic scheduled email notifications (`send_audit`).
+  - `AUDIT_LOG_SERVER_API = NOT_PROVEN` (No supported synchronous, programmatic REST API is established in reviewed official sources).
 
 ---
 
-## 5. Negative Claims Tone Formulation (Corrective 5)
+## 5. Webhook Origin & Cryptographic Authenticity
 
 In strict accordance with evidence-bounded evaluation standards:
 - `WEBHOOK_CRYPTOGRAPHIC_ORIGIN_ATTESTATION = NOT_PROVEN`
 - `WEBHOOK_ORIGIN_MECHANISM_EVIDENCE = NO_DOCUMENTED_CRYPTOGRAPHIC_ORIGIN_MECHANISM_ESTABLISHED_IN_REVIEWED_OFFICIAL_SOURCES`
-- `AUDIT_LOG_SERVER_API = NOT_PROVEN`
-- `WEBHOOK_EXECUTION_LOG_SERVER_API = NOT_PROVEN`
+- `WEBHOOK_REPLAY_AUTHENTICITY_PROTECTION = NOT_PROVEN`
 
-*Note: Rather than asserting that cryptographic mechanisms or APIs universally do not exist across the entire Cybozu platform, the finding is strictly bounded: no officially supported mechanism or API is documented or established in reviewed official Cybozu documentation.*
+*Note: Rather than asserting that cryptographic mechanisms universally do not exist across Cybozu platforms, the finding is strictly bounded: no documented cryptographic origin mechanism (HMAC, digital signature, mTLS, or shared secret) is established in reviewed official Cybozu documentation for Kintone Webhooks.*
 
 ---
 
-## 6. Updated By / $modifier Semantics (Corrective 6)
+## 6. Updated By / $modifier Semantics
 
-### 6.1 Evaluation of $modifier / Updated By
-- **Schema Field**: `$modifier` / `Updated by` (`更新者`).
-- **Official Semantics**: Reflects the user account associated with the most recent record modification.
-- **Race Condition & Concurrency Analysis**:
-  - If concurrent edits occur on the record, `$modifier` reflects the latest commit, not necessarily the process transition actor.
-  - Subsequent background scripts, workflow worker actions, automated integrations, or retry loops mutate `$modifier`.
-  - In delayed archive processing, intervening edits completely overwrite `$modifier`.
+- **Field Semantics**: `$modifier` / `Updated by` (`更新者`) reflects the user account associated with the latest record commit.
+- **Concurrency & Failure Scenarios**:
+  - Concurrent user edits overwrite `$modifier`.
+  - Workflow worker/service actions, plugins, or automated scripts updating the record alter `$modifier`.
+  - In delayed archive processing or retry workflows, intervening commits overwrite the original transition actor.
 - **Contract Finding**:
-  - `UPDATED_BY_AS_EXACT_TRANSITION_ACTOR = NOT_PROVEN`
-  - Current official documentation does NOT guarantee that for a status transition, `$modifier` is exactly the human who executed that specific process action under concurrent edits, subsequent edits, workflow worker/service actions, retries, or delayed archive processing.
+  - `UPDATED_BY_AS_EXACT_TRANSITION_ACTOR = NOT_PROVEN` (Current official documentation does not guarantee that `$modifier` is exactly the human who executed that specific process transition).
 
 ---
 
-## 7. UPDATE_STATUS Webhook Schema & Status History Breakdown
+## 7. Status History Disambiguation (Client vs Server)
 
-### 7.1 UPDATE_STATUS Webhook Payload Schema
-According to Cybozu official documentation (`/k/ja/app/set_webhook/webhook_notification`):
-```json
-{
-  "id": "1516244109737-1834241578",
-  "type": "UPDATE_STATUS",
-  "app": {
-    "id": "1",
-    "name": "App Name"
-  },
-  "record": {
-    "$id": { "type": "__ID__", "value": "1" },
-    "$revision": { "type": "__REVISION__", "value": "2" },
-    "field": { "type": "SINGLE_LINE_TEXT", "value": "Sample" }
-  },
-  "action": {
-    "name": "Approve"
-  },
-  "status": {
-    "name": "Approved"
-  },
-  "assignee": {
-    "code": "user1",
-    "name": "User 1"
-  }
-}
-```
-*Crucial Gap*: The payload contains `assignee` (the new assignee after transition), `action` (the name of the action taken), and `status` (the new status), but contains **NO actor, user, executor, or modifier field** indicating who pressed the action button.
-
-### 7.2 Status History Disambiguation (Client vs Server)
 - **Client-Side JS API**: `kintone.app.record.getStatusHistory()`
   - `STATUS_HISTORY_CLIENT_ACCESS = PROVEN_SUPPORTED`
-  - Available in browser context on record detail/edit screens.
-  - Returns historical transitions including `assignees[].code` and `name`.
+  - `STATUS_HISTORY_CLIENT_CONTEXT = KINTONE_RECORD_SCREEN_JAVASCRIPT_API`
+  - `STATUS_HISTORY_CLIENT_WORKER_DATA = PROVEN_AVAILABLE`
+  - `STATUS_HISTORY_CLIENT_WORKER_FIELDS = assignees[].code + assignees[].name`
+  - `STATUS_HISTORY_CLIENT_EVENT_CONTEXT_FIELDS = changedAt + status`
+  - Supported strictly inside the user's browser environment on record detail screens.
 - **Server-Side REST API**: `/k/v1/record/status.json`
   - `STATUS_HISTORY_SERVER_REST_ACCESS = PROVEN_UNSUPPORTED`
-  - Supports only `PUT` (updating status).
-  - No `GET` endpoint or history array is provided on the REST interface.
+  - `RECORD_STATUS_REST_HISTORY_READ = PROVEN_UNSUPPORTED`
+  - Supports only `PUT` (mutating status). There is no `GET` endpoint or history array provided on the REST interface.
 
 ---
 
-## 8. Trust Chain Analysis & Failure Proof
+## 8. Cryptographic Trust Chain Verification
 
-For `ACTOR_ATTESTATION_FEASIBILITY` to be `PROVEN_SUPPORTED`, every link in the following cryptographic trust chain must be proven:
+`ACTOR_ATTESTATION_FEASIBILITY` requires all links in the chain to be proven:
 ```text
 1. EXACT HUMAN PROCESS ACTOR
    ↓
 2. PLATFORM-GENERATED EVENT EVIDENCE
-   ↓ (BROKEN: UPDATE_STATUS webhook payload omits actor)
-3. EVENT EVIDENCE CONTAINS/RESOLVES EXACT ACTOR
-   ↓ (BROKEN: Webhook execution logs lack actor UI and API; Audit logs lack server API)
+   ↓ (BROKEN: UPDATE_STATUS webhook envelope lacks dedicated transition actor field)
+3. EXACT ACTOR BOUND TO THAT EVENT
+   ↓ (BROKEN: UI log has actor, but no server API; Audit log lacks real-time binding & API)
 4. NORMAL BROWSER USER CANNOT FORGE IT
-   ↓ (BROKEN: Browser JS can fabricate headers/bodies; no origin signature from Kintone)
+   ↓ (BROKEN: Browser JS can fabricate arbitrary payloads; no platform origin signature)
 5. TRUSTED BACKEND CAN INDEPENDENTLY RETRIEVE/VERIFY IT
-   ↓ (BROKEN: Server REST API lacks getStatusHistory endpoint)
-6. EXACT PROCESS EVENT BINDING
-   ↓ (BROKEN: $modifier is mutable and subject to concurrency/race conditions)
-7. REPLAY/CROSS-RECORD SUBSTITUTION CONTROL
-   ↓ (PARTIAL: Notification ID supports deduplication, but NOT cryptographic authenticity)
+   ↓ (BROKEN: Server REST API has no getStatusHistory; logs have no programmatic API)
+6. EXACT RECORD + PROCESS EVENT BINDING
+   ↓ (BROKEN: $modifier is mutable and unreliably bound under concurrency/retries)
+7. REPLAY / CROSS-RECORD SUBSTITUTION CONTROL
+   ↓ (PARTIAL: Notification ID allows deduplication, but NOT cryptographic authenticity)
 8. Archived_By DERIVED EXACTLY
 ```
 
-Because links 2, 3, 4, 5, 6, and 7 fail or remain unproven, the trust chain cannot be closed.
+Because critical links remain broken or unproven:
+- `CLIENT_TO_SERVER_TRUSTED_ACTOR_ATTESTATION = NOT_PROVEN`
+- `SERVER_SIDE_EXACT_TRANSITION_ACTOR = NOT_PROVEN`
+- `ARCHIVED_BY_EXACT_ACTOR_PROOF = NOT_PROVEN`
+- `ACTOR_ATTESTATION_FEASIBILITY = NOT_PROVEN`
+- `SUPPORTED_MECHANISM = NONE_PROVEN`
 
 ---
 
 ## 9. Required Terminal Contract Values
 
 ```text
-PACKAGE = D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-CLIENT-TO-SERVER-ACTOR-ATTESTATION-FEASIBILITY-01-R1
-BASE_HEAD = 9edaece4e6ba9947922e58c2c1fb65f79c323ef8
-MODE = ONE_FILE_EVIDENCE_ONLY_TECHNICAL_CORRECTIVE
-SUPERSEDES_FEASIBILITY_01_TECHNICAL_CLAIMS = YES
+PACKAGE = D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-CLIENT-TO-SERVER-ACTOR-ATTESTATION-FEASIBILITY-01-R2
+AUTHORIZATION_ID = MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-CLIENT-TO-SERVER-ACTOR-ATTESTATION-FEASIBILITY-01-R2-20260917-OWNER-01
+BASE_HEAD = 9bd8ed75780f992033a70b12cc4ad69d5b68d24b
+MODE = ONE_FILE_EVIDENCE_ONLY_FINAL_TECHNICAL_CORRECTIVE
+SUPERSEDES_FEASIBILITY_01_R1_TECHNICAL_CLAIMS = YES
 
-UPDATE_STATUS_WEBHOOK_SCHEMA = type, app{id, name}, record{...}, action{name}, status{name}, assignee{code, name}
+UPDATE_STATUS_WEBHOOK_SCHEMA = id + type + app + record + recordTitle + url
 WEBHOOK_NOTIFICATION_ID_PRESENT = PROVEN
-WEBHOOK_NOTIFICATION_ID_UNIQUENESS = DOCUMENTED_AS_NOTIFICATION_IDENTIFIER
-WEBHOOK_EXECUTION_LOG_ACTOR_UI = NOT_PROVEN
-WEBHOOK_EXECUTION_LOG_NOTIFICATION_ID = NOT_PROVEN
+WEBHOOK_DEDICATED_TRANSITION_ACTOR_FIELD = NONE_DOCUMENTED
+
+WEBHOOK_EXECUTION_LOG_ACTOR_UI = PROVEN_AVAILABLE
+WEBHOOK_EXECUTION_LOG_NOTIFICATION_ID = PROVEN_AVAILABLE
+WEBHOOK_EXECUTION_LOG_ACTION_TYPE = PROVEN_AVAILABLE
+WEBHOOK_EXECUTION_LOG_EXECUTION_TIME = PROVEN_AVAILABLE
 WEBHOOK_EXECUTION_LOG_SERVER_API = NOT_PROVEN
-AUDIT_LOG_TRANSITION_ACTOR_SEMANTICS = PROVEN
+
+AUDIT_LOG_USER_FIELD = PROVEN_AVAILABLE
+AUDIT_LOG_OPERATION_FIELD = PROVEN_AVAILABLE
+AUDIT_LOG_TRANSITION_ACTOR_SEMANTICS = NOT_PROVEN
+AUDIT_LOG_EXACT_PROCESS_EVENT_BINDING = NOT_PROVEN
 AUDIT_LOG_SERVER_API = NOT_PROVEN
+
 WEBHOOK_CRYPTOGRAPHIC_ORIGIN_ATTESTATION = NOT_PROVEN
 WEBHOOK_ORIGIN_MECHANISM_EVIDENCE = NO_DOCUMENTED_CRYPTOGRAPHIC_ORIGIN_MECHANISM_ESTABLISHED_IN_REVIEWED_OFFICIAL_SOURCES
 UPDATED_BY_AS_EXACT_TRANSITION_ACTOR = NOT_PROVEN
 WEBHOOK_REPLAY_AUTHENTICITY_PROTECTION = NOT_PROVEN
 
 STATUS_HISTORY_CLIENT_ACCESS = PROVEN_SUPPORTED
+STATUS_HISTORY_CLIENT_CONTEXT = KINTONE_RECORD_SCREEN_JAVASCRIPT_API
+STATUS_HISTORY_CLIENT_WORKER_DATA = PROVEN_AVAILABLE
+STATUS_HISTORY_CLIENT_WORKER_FIELDS = assignees[].code + assignees[].name
+STATUS_HISTORY_CLIENT_EVENT_CONTEXT_FIELDS = changedAt + status
 STATUS_HISTORY_SERVER_REST_ACCESS = PROVEN_UNSUPPORTED
+RECORD_STATUS_REST_HISTORY_READ = PROVEN_UNSUPPORTED
+
 CLIENT_TO_SERVER_TRUSTED_ACTOR_ATTESTATION = NOT_PROVEN
 SERVER_SIDE_EXACT_TRANSITION_ACTOR = NOT_PROVEN
 ARCHIVED_BY_EXACT_ACTOR_PROOF = NOT_PROVEN
 ACTOR_ATTESTATION_FEASIBILITY = NOT_PROVEN
+SUPPORTED_MECHANISM = NONE_PROVEN
 
 ARCHITECTURE_DECISION_RESULT = ARCHITECTURE_DECISION_NOT_READY
 RECOMMENDED_CANDIDATE_FOR_OWNER_RATIFICATION = NONE
