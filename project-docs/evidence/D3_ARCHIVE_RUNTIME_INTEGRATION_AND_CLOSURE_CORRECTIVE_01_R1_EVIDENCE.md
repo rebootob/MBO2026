@@ -1,4 +1,20 @@
-# Evidence: D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R1
+# [SUPERSEDED] Evidence: D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R1
+
+> **R1 SUPERSESSION NOTICE (2026-09-17)**
+> This R1 evidence document has been formally superseded by `D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R2` under authorization `MBO2026-D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R2-20260917-OWNER-01`.
+>
+> **Material R1 Findings & R2 Dispositions:**
+> 1. *Dynamic 100 / parsedSlots.length weighting* -> **SUPERSEDED** by explicit locked DEC-036 K=1 (100%) and K=2 (50%/50%) validation; unsupported counts fail closed.
+> 2. *Synthetic/non-schema production fields (`Workflow_Appraisers`, `Scorers`, `Objective_Table`)* -> **SUPERSEDED** by direct extraction from physical App 794 fields (`USER_SELECT` route fields, `Objective_Count`, and `Objective_1..N`).
+> 3. *Missing Objective -> `[]` and missing PartA score -> `0`* -> **SUPERSEDED** by strict fail-closed validation rejecting empty/missing objective matrix and missing raw scores.
+> 4. *Archive service lacked strict DEC-036 weight validation* -> **SUPERSEDED** by independent service-level DEC-036 weight invariant validation in `RevisionArchiveService`.
+> 5. *Tests 19–21 did not test claimed real behavior* -> **SUPERSEDED** by real production service API tests (`archiveStageCompletion`) and canonical route topology (`M1_ONLY`).
+> 6. *Evidence claim that event.error was set* -> **CORRECTED**: Runtime returns `false` / logs error to abort transition, rather than setting synthetic `event.error` object property in non-UI mock context.
+> 7. *Stale authoritative metadata* -> **SUPERSEDED** by synchronization of all six canonical control surfaces.
+>
+> The historical R1 record below is preserved intact for audit trail purposes.
+
+---
 
 - **Package ID:** `D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R1`
 - **Branch:** `ai/antigravity-wp002c`

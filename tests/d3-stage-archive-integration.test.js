@@ -1,6 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 
 import {
   buildStageLogicalSnapshot,
@@ -8,7 +7,8 @@ import {
 } from '../src/main-mbo-app.js';
 import {
   RevisionArchiveService,
-  ARCHIVE_EVENT_TYPES
+  ARCHIVE_EVENT_TYPES,
+  RevisionArchiveError
 } from '../src/services/revision-archive-service.js';
 import { RevisionArchiveKintoneRepository } from '../src/services/revision-archive-kintone-repository.js';
 import { hashD3Snapshot } from '../src/services/d3-snapshot-serializer.js';
@@ -67,22 +67,24 @@ function makeMockApp794Record(overrides = {}) {
     Effective_Route_Version_Key: { value: 'TME1#v1' },
     Route_Pattern: { value: 'PATTERN_2_M1_G1' },
     Routing_Topology: { value: 'M1_G1' },
-    Workflow_Appraisers: [
-      { code: 'mgr_somchai' },
-      { code: 'gm_somrudee' }
-    ],
+    // Canonical physical USER_SELECT and approval rule fields (App 794)
+    Manager_Level1_Approvers: { value: [{ code: 'mgr_somchai', name: 'Somchai Mgr' }] },
+    Manager_Level1_Approval_Rule: { value: 'ALL' },
+    GM_Level1_Approvers: { value: [{ code: 'gm_somrudee', name: 'Somrudee GM' }] },
+    GM_Level1_Approval_Rule: { value: 'ALL' },
     Effective_Scorer_Slots_Snapshot: { value: '[1, 2]' },
-    Scorers: [
-      { code: 'mgr_somchai', weight: 50 },
-      { code: 'gm_somrudee', weight: 50 }
-    ],
     Department_Hoshin_Key: { value: 'DHK_2026_01' },
     Configuration_Hash: { value: 'cfg_hash_verified_99' },
-    Objective_Table: {
-      value: [
-        { title: 'Deliver Stage Archives', weight: 100 }
-      ]
-    },
+    // Canonical physical objective matrix fields (App 794)
+    Objective_Count: { value: '2' },
+    Objective_1: { value: 'Deliver Stage Archives' },
+    Action_Plan_1: { value: 'Implement deterministic archive creation' },
+    Weight_1: { value: '50' },
+    Difficulty_1: { value: '2' },
+    Objective_2: { value: 'Ensure Zero-IO Compliance' },
+    Action_Plan_2: { value: 'Verify mock and test isolation' },
+    Weight_2: { value: '50' },
+    Difficulty_2: { value: '3' },
     PartA_Raw_Score: { value: '88.5' },
     ...overrides
   };
@@ -265,7 +267,9 @@ test('8. missing mandatory provenance fields fail-closed and block transition', 
     'Effective_Routing_Key',
     'Effective_Route_Version_Key',
     'Department_Hoshin_Key',
-    'Configuration_Hash'
+    'Configuration_Hash',
+    'Objective_Count',
+    'PartA_Raw_Score'
   ];
 
   for (const field of mandatoryFields) {
@@ -300,8 +304,7 @@ test('8. missing mandatory provenance fields fail-closed and block transition', 
 test('9. malformed scorer snapshot fails closed and blocks transition', async () => {
   const adapter = createMockKintoneAdapter();
   const badRecord = makeMockApp794Record({
-    Effective_Scorer_Slots_Snapshot: { value: 'MALFORMED_JSON_STRING{{{' },
-    Scorers: undefined
+    Effective_Scorer_Slots_Snapshot: { value: 'MALFORMED_JSON_STRING{{{' }
   });
 
   const event = {
@@ -320,13 +323,12 @@ test('9. malformed scorer snapshot fails closed and blocks transition', async ()
   assert.equal(adapter.addRecordCallCount, 0);
 });
 
-// 10. scorer/K_expected mismatch ต้อง block
+// 10. scorer and K_expected mismatch ต้อง block
 test('10. scorer and K_expected mismatch fails closed and blocks transition', async () => {
   const adapter = createMockKintoneAdapter();
   const badRecord = makeMockApp794Record({
     K_expected_Snapshot: { value: '2' },
-    Effective_Scorer_Slots_Snapshot: { value: '[1]' }, // Only 1 scorer while K=2
-    Scorers: undefined
+    Effective_Scorer_Slots_Snapshot: { value: '[1]' } // Only 1 scorer while K=2
   });
 
   const event = {
@@ -347,13 +349,11 @@ test('10. scorer and K_expected mismatch fails closed and blocks transition', as
 
 // 11. duplicate scorer/appraiser ต้อง block
 test('11. duplicate scorer/appraiser fails closed and blocks transition', async () => {
-  // Case A: Duplicate appraiser in workflow
+  // Case A: Duplicate appraiser in workflow (M1 and G1 have same user)
   const adapter1 = createMockKintoneAdapter();
   const badRecord1 = makeMockApp794Record({
-    Workflow_Appraisers: [
-      { code: 'mgr_somchai' },
-      { code: 'mgr_somchai' }
-    ]
+    Manager_Level1_Approvers: { value: [{ code: 'mgr_somchai' }] },
+    GM_Level1_Approvers: { value: [{ code: 'mgr_somchai' }] }
   });
 
   const event = {
@@ -370,15 +370,10 @@ test('11. duplicate scorer/appraiser fails closed and blocks transition', async 
   assert.ok(outcome1.error.includes('PROVENANCE_DUPLICATE'));
   assert.equal(adapter1.addRecordCallCount, 0);
 
-  // Case B: Duplicate scorer identity
+  // Case B: Duplicate scorer ordinal
   const adapter2 = createMockKintoneAdapter();
   const badRecord2 = makeMockApp794Record({
-    Workflow_Appraisers: [
-      { code: 'mgr_somchai' },
-      { code: 'gm_somrudee' }
-    ],
-    Effective_Scorer_Slots_Snapshot: { value: '[1, 1]' }, // Duplicate slot 1
-    Scorers: undefined
+    Effective_Scorer_Slots_Snapshot: { value: '[1, 1]' }
   });
 
   const outcome2 = await executeProcessTransitionArchive(badRecord2, event, {
@@ -540,19 +535,184 @@ test('18. multi-role collision remains RESTRICTED', () => {
   assert.equal(role, 'RESTRICTED');
 });
 
-// 19. existing archive domain tests remain PASS
-test('19. existing archive domain tests remain PASS', () => {
+// 19. revision archive service rejects invalid scorer weights according to DEC-036 (fail closed)
+test('19. revision archive service rejects invalid scorer weights according to DEC-036', async () => {
   const mockAdapter = createMockKintoneAdapter();
   const repo = new RevisionArchiveKintoneRepository(mockAdapter);
-  const service = new RevisionArchiveService(repo);
-  assert.ok(repo);
-  assert.ok(service);
+  const service = new RevisionArchiveService(repo, { clock: () => '2026-03-31T00:00:00.000Z' });
+
+  // Test Case A: K=2 but weights are non-DEC-036 (e.g. [60, 40] instead of [50, 50])
+  const baseRecord = makeMockApp794Record();
+  const badSnapshot6040 = buildStageLogicalSnapshot(baseRecord, 'OBJECTIVE', '05 Objective Approved');
+  badSnapshot6040.scoring.Scorers = [
+    { code: 'mgr_somchai', weight: 60 },
+    { code: 'gm_somrudee', weight: 40 }
+  ];
+
+  await assert.rejects(
+    async () => {
+      await service.archiveStageCompletion({
+        sourceRecordKey: 'FY2026-TEST-EMP001',
+        sourceRecordId: 18,
+        employeeCode: 'EMP001',
+        fiscalYear: 'FY2026',
+        revisionNumber: 1,
+        evaluationStage: 'OBJECTIVE',
+        sourceStatus: '05 Objective Approved',
+        logicalSnapshot: badSnapshot6040,
+        actor: { userCode: 'hr_operator' }
+      });
+    },
+    (err) => {
+      assert.ok(err instanceof RevisionArchiveError);
+      assert.ok(err.message.includes('DEC-036 violation: K=2 requires scorer weight to be exactly 50'));
+      return true;
+    }
+  );
+
+  // Test Case B: Scorer with negative weight
+  const badSnapshotNegative = buildStageLogicalSnapshot(baseRecord, 'OBJECTIVE', '05 Objective Approved');
+  badSnapshotNegative.scoring.Scorers = [
+    { code: 'mgr_somchai', weight: -50 },
+    { code: 'gm_somrudee', weight: 150 }
+  ];
+
+  await assert.rejects(
+    async () => {
+      await service.archiveStageCompletion({
+        sourceRecordKey: 'FY2026-TEST-EMP001',
+        sourceRecordId: 18,
+        employeeCode: 'EMP001',
+        fiscalYear: 'FY2026',
+        revisionNumber: 1,
+        evaluationStage: 'OBJECTIVE',
+        sourceStatus: '05 Objective Approved',
+        logicalSnapshot: badSnapshotNegative,
+        actor: { userCode: 'hr_operator' }
+      });
+    },
+    (err) => {
+      assert.ok(err instanceof RevisionArchiveError);
+      assert.ok(err.message.includes('must have an exact finite positive number weight'));
+      return true;
+    }
+  );
 });
 
-// 20. objective-save-validation regression remains PASS
-test('20. objective-save-validation regression remains PASS', () => {
-  const record = makeMockApp794Record();
-  assert.equal(record.Record_Key.value, 'FY2026-TEST-EMP001');
-  assert.equal(record.Workflow_Appraisers.length, 2);
-  assert.equal(record.K_expected_Snapshot.value, '2');
+// 20. physical objective matrix validation enforces required fields and rejects missing/invalid values
+test('20. physical objective matrix validation enforces required fields and rejects missing/invalid values', async () => {
+  const adapter = createMockKintoneAdapter();
+
+  // Test Case A: Missing Objective_1 text
+  const missingObjTextRecord = makeMockApp794Record({
+    Objective_1: { value: '' }
+  });
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  const outcomeA = await executeProcessTransitionArchive(missingObjTextRecord, event, {
+    apiAdapter: adapter,
+    actor: 'hr_operator'
+  });
+  assert.equal(outcomeA.success, false);
+  assert.ok(outcomeA.error.includes('Objective_1 is required'));
+  assert.equal(adapter.addRecordCallCount, 0);
+
+  // Test Case B: Missing PartA_Raw_Score
+  const missingScoreRecord = makeMockApp794Record({
+    PartA_Raw_Score: { value: '' }
+  });
+  const outcomeB = await executeProcessTransitionArchive(missingScoreRecord, event, {
+    apiAdapter: adapter,
+    actor: 'hr_operator'
+  });
+  assert.equal(outcomeB.success, false);
+  assert.ok(outcomeB.error.includes('PartA_Raw_Score is required'));
+  assert.equal(adapter.addRecordCallCount, 0);
+
+  // Test Case C: Invalid Objective_Count (out of range [2..10])
+  const badCountRecord = makeMockApp794Record({
+    Objective_Count: { value: '1' }
+  });
+  const outcomeC = await executeProcessTransitionArchive(badCountRecord, event, {
+    apiAdapter: adapter,
+    actor: 'hr_operator'
+  });
+  assert.equal(outcomeC.success, false);
+  assert.ok(outcomeC.error.includes('Objective_Count must be an integer between 2 and 10'));
+  assert.equal(adapter.addRecordCallCount, 0);
+});
+
+// 21. K1 route pattern produces exact 100% scorer weight
+test('21. K1 route pattern produces exact 100% scorer weight', async () => {
+  const adapter = createMockKintoneAdapter();
+  const k1Record = makeMockApp794Record({
+    K_expected_Snapshot: { value: '1' },
+    Route_Pattern: { value: 'PATTERN_1_M1' },
+    Routing_Topology: { value: 'M1_ONLY' },
+    Effective_Scorer_Slots_Snapshot: { value: '[1]' },
+    GM_Level1_Approvers: { value: [] },
+    GM_Level1_Approval_Rule: { value: '' }
+  });
+
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  const outcome = await executeProcessTransitionArchive(k1Record, event, {
+    apiAdapter: adapter,
+    actor: 'hr_operator'
+  });
+
+  assert.equal(outcome.success, true);
+  const created = Array.from(adapter.store.values())[0];
+  const snapshot = JSON.parse(created.Snapshot_JSON.value);
+  assert.equal(snapshot.profile.K_expected_Snapshot, 1);
+  assert.equal(snapshot.scoring.Scorers.length, 1);
+  assert.equal(snapshot.scoring.Scorers[0].code, 'mgr_somchai');
+  assert.equal(snapshot.scoring.Scorers[0].weight, 100);
+});
+
+// 22. active slot with multiple users or non-ALL rule fails closed
+test('22. active slot with multiple users or non-ALL rule fails closed', async () => {
+  const adapter = createMockKintoneAdapter();
+
+  // Case A: Multiple users in active slot
+  const multiUserRecord = makeMockApp794Record({
+    Manager_Level1_Approvers: {
+      value: [
+        { code: 'mgr_somchai' },
+        { code: 'mgr_anand' }
+      ]
+    }
+  });
+
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  const outcomeA = await executeProcessTransitionArchive(multiUserRecord, event, {
+    apiAdapter: adapter,
+    actor: 'hr_operator'
+  });
+  assert.equal(outcomeA.success, false);
+  assert.ok(outcomeA.error.includes('must have exactly one user, found 2'));
+
+  // Case B: Approval rule is not ALL
+  const badRuleRecord = makeMockApp794Record({
+    Manager_Level1_Approval_Rule: { value: 'ANY' }
+  });
+  const outcomeB = await executeProcessTransitionArchive(badRuleRecord, event, {
+    apiAdapter: adapter,
+    actor: 'hr_operator'
+  });
+  assert.equal(outcomeB.success, false);
+  assert.ok(outcomeB.error.includes('must be "ALL", received: "ANY"'));
 });

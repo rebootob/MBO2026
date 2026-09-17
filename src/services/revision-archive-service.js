@@ -487,6 +487,44 @@ function validateSnapshotCoherence(logicalSnapshot, request) {
       );
     }
   }
+
+  // Scorer weights hardening (DEC-036):
+  // Exact finite positive weight required for every scorer.
+  // Must match DEC-036 locked rules:
+  // K1 = [100]
+  // K2 = [50, 50]
+  // Sum must strictly equal 100.
+  // Reject missing, NaN, Infinity, zero, negative, or redistributed weights.
+  let totalScorerWeight = 0;
+  for (const scorer of scoring.Scorers) {
+    const weight = scorer.weight;
+    if (typeof weight !== 'number' || !Number.isFinite(weight) || weight <= 0) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+        `Scorer "${scorer.code}" must have an exact finite positive number weight, received: ${weight}.`
+      );
+    }
+    if (kExpected === 1 && weight !== 100) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+        `DEC-036 violation: K=1 requires scorer weight to be exactly 100, received: ${weight}.`
+      );
+    }
+    if (kExpected === 2 && weight !== 50) {
+      throw new RevisionArchiveError(
+        'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+        `DEC-036 violation: K=2 requires scorer weight to be exactly 50, received: ${weight}.`
+      );
+    }
+    totalScorerWeight += weight;
+  }
+
+  if (totalScorerWeight !== 100) {
+    throw new RevisionArchiveError(
+      'ARCHIVE_SNAPSHOT_IDENTITY_MISMATCH',
+      `DEC-036 violation: Scorer weights sum to ${totalScorerWeight}, expected strictly 100.`
+    );
+  }
 }
 
 function compareArchiveRecordToExpected(persisted, expected, mode) {
