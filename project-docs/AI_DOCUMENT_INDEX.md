@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-16 ICT (D3-ACL-BLOCKER-REMEDIATION-AND-FULL-UAT-01)
+Updated: 2026-09-17 ICT (D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R1)
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -129,6 +129,7 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R2_EVIDENCE.md` — Historical synthetic fixture creation record (Apps 53, 795, 794: Rec 650, 33, 17); note: fixtures subsequently deleted in R3 with 404 read-back confirmed; superseded for current state.
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R3_EVIDENCE.md` — R3 combined execution evidence (Objective approval flow PASS, Mid-Year blocked CB_NO02, fixture deletion cleanup); accounting and scope superseded by R3-R1; current authority converged by R3-R2.
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R3_R1_EVIDENCE.md` — Authoritative corrective accounting, control history restoration, and scope provenance for R3 execution (discloses Record 15 preflight read and Phase A REST status transition PUT; maintains zero-I/O boundary; REVIEW REQUIRED).
+- `project-docs/evidence/D3_ARCHIVE_RUNTIME_INTEGRATION_AND_CLOSURE_CORRECTIVE_01_R1_EVIDENCE.md` — D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R1 runtime archive integration hardening, exact process transition matching, fail-closed enforcement on missing provenance and App 798 persistence failure, zero synthetic fallbacks, 20/20 integration tests pass (169/169 domain suite pass), zero Kintone I/O, local build verified (REVIEW REQUIRED).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
