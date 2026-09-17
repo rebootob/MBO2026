@@ -1,6 +1,6 @@
 # MBO2026 Master Delivery Control V3 — D1-D7 Stage Scoreboard
 
-Updated: 2026-09-17 ICT (D3-ARCHIVE-RUNTIME-DEPLOY-01-R1)
+Updated: 2026-09-17 ICT (D3-ARCHIVE-RUNTIME-ACL-REMEDIATION-AND-DEPLOY-01)
 
 > **Role:** authoritative D1-D7 stage-level scoreboard only. For current gate/authorization read `AI_CONTROL_CENTER.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
 
@@ -16,7 +16,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | PASS / CLOSED / DURABLE | Accepted live App794 baseline remains revision 70. |
 | D2 | ENGINEERING PASS / CLOSED / DURABLE | Owner runtime UAT remains paused. |
-| D3 | R1 DOCS-ONLY CORRECTIVE DELIVERED / REVIEW REQUIRED | Synthetic authority removed. Canonical physical App 794 route fields bound. DEC-036 locked weight validation enforced. 15 suites / 377 unique tests pass. Build-only validated. Zero Kintone I/O in R1. D3-ARCHIVE-RUNTIME-DEPLOY-01 safely held deployment due to APP798_LIVE_ACL_NOT_PROVEN. D3 closure not claimed. PRODUCTION_READY = NO. |
+| D3 | RUNTIME ARCHIVE INTEGRATION DEPLOYED / REVIEW REQUIRED | App 798 ACL remediated (Rev 6, USER hr least-privilege Add/View granted). App 794 archive-runtime customization deployed (Rev 76) and read-back verified against pinned artifact hashes. Fail-closed invariant enforced. D3 closure not claimed. PRODUCTION_READY = NO. |
 | D4 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D5 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D6 | UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED | No current D6 authorization. |
