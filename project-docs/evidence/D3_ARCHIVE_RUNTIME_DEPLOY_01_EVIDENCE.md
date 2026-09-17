@@ -1,11 +1,23 @@
 # D3-ARCHIVE-RUNTIME-DEPLOY-01 Evidence Artifact
 
+> **SUPERSEDED / CORRECTIVE NOTICE (2026-09-17 ICT — D3-ARCHIVE-RUNTIME-DEPLOY-01-R1):**
+> This historical evidence artifact for `D3-ARCHIVE-RUNTIME-DEPLOY-01` is formally superseded in authority by `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_R1_EVIDENCE.md`.
+> **Operational Verdict:** `PASS AS SAFETY STOP / DEPLOYMENT NOT ATTEMPTED` (Zero Kintone writes; App 794 remains Rev 75; App 798 remains Rev 5; blocked safely by `APP798_LIVE_ACL_NOT_PROVEN`).
+> **Authorization Provenance:**
+> - `ORIGINAL_OWNER_AUTHORIZATION = APPROVED`
+> - `ORIGINAL_AUTHORIZATION_ID = NOT_RECORDED_IN_GIT / NOT_INVENTED`
+> - `R1_AUTHORIZATION_ID = MBO2026-D3-ARCHIVE-RUNTIME-DEPLOY-01-R1-20260917-OWNER-01`
+> **Artifact Hash Authority Correction:** The SHA-256 values originally transcribed in the preflight prompt (`a93c780...` / `9bc0be2...`) are superseded by the canonical recalculated SHA-256 values directly from the committed Git blobs (`3d75ca1e...` -> `c2049fba...`, `0532c1c3...` -> `c0257969...`). The Git blobs themselves were completely unchanged.
+> Historical content below is preserved unmodified for audit provenance.
+
 ## 1. Executive Summary & Authorization Ledger
 
 ```text
 WORK_PACKAGE                  = D3-ARCHIVE-RUNTIME-DEPLOY-01
 MODE                          = BOUNDED LIVE DEPLOYMENT + READ-BACK VERIFICATION
-OWNER_AUTHORIZATION           = APPROVED
+ORIGINAL_OWNER_AUTHORIZATION  = APPROVED
+ORIGINAL_AUTHORIZATION_ID     = NOT_RECORDED_IN_GIT / NOT_INVENTED
+R1_AUTHORIZATION_ID           = MBO2026-D3-ARCHIVE-RUNTIME-DEPLOY-01-R1-20260917-OWNER-01
 AUTHORIZED_BASE_HEAD          = 5c16f6692073fa42d5fcfc2fc2daf4f7a116c2c9
 CANONICAL_BRANCH              = ai/antigravity-wp002c
 LOCAL_REPOSITORY_ROOT         = C:/Users/allda/Desktop/Dev/git/MBO2026

@@ -99,16 +99,18 @@ Inspection of local release artifacts confirmed exact match with repository Git 
 
 ```text
 PRIMARY_JS_ARTIFACT         = dist/mbo-employee-app.js
-JS_BYTE_SIZE                = 713112
+JS_BYTE_SIZE                = 713130
 JS_GIT_BLOB_SHA             = 3d75ca1e62e7d5475c061ba914a4f87956e9a829
-JS_SHA256                   = a93c780aefcf63cb055e2d14cb8fc19fa2e3c049d562bca53086ebc60c88340d
+JS_SHA256                   = c2049fba52d4fb6e82faf767ff359f37dbafab57aea1e9dada74c022b884989f
+JS_SHA256_SUPERSEDED_NOTE   = a93c780aefcf63cb055e2d14cb8fc19fa2e3c049d562bca53086ebc60c88340d (SUPERSEDED by R1: prompt-transcribed error; Git blob unchanged)
 JS_SYNTAX_PARSING           = PASS (Classic IIFE valid, hasImport=false, hasExport=false)
 JS_SOURCE_COMMIT            = 0e91203291ff708f6c5ec378f22328aea1e120d8 (R2 accepted bundle)
 
 SECONDARY_CSS_ARTIFACT      = dist/mbo-employee.css
 CSS_BYTE_SIZE               = 43728
 CSS_GIT_BLOB_SHA            = 0532c1c3ba3d72f9157c4ab0b1e6033ffae1eb61
-CSS_SHA256                  = 9bc0be2ae0cf34c32e92c2aa2d547fecab129f122fcab2d909bb0bc48348ee5f
+CSS_SHA256                  = c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd
+CSS_SHA256_SUPERSEDED_NOTE  = 9bc0be2ae0cf34c32e92c2aa2d547fecab129f122fcab2d909bb0bc48348ee5f (SUPERSEDED by R1: prompt-transcribed error; Git blob unchanged)
 CSS_SOURCE_COMMIT           = 9816cef195b6d3ffe039e5fb92c8dc8406c8967a
 
 STALE_MISMATCH              = NO (Zero diff between on-disk files and committed HEAD tree)
@@ -257,9 +259,9 @@ ROLLBACK_READINESS          = PASS
 When a future live deployment is authorized, verification must execute:
 1. **Customization Read-Back**: Query `GET /k/v1/app/customize.json?app=794` to verify:
    - `desktop.js[0].name` == `mbo-employee-app.js`
-   - Downloaded JS SHA-256 == `a93c780aefcf63cb055e2d14cb8fc19fa2e3c049d562bca53086ebc60c88340d`
+   - Downloaded JS SHA-256 == `c2049fba52d4fb6e82faf767ff359f37dbafab57aea1e9dada74c022b884989f` (superseding transcribed `a93c780...`)
    - `desktop.css[0].name` == `mbo-employee.css`
-   - Downloaded CSS SHA-256 == `9bc0be2ae0cf34c32e92c2aa2d547fecab129f122fcab2d909bb0bc48348ee5f`
+   - Downloaded CSS SHA-256 == `c0257969a6a040ae33e08ad001b8aa0944e844fb3fd2578ca041ecf9d19f58fd` (superseding transcribed `9bc0be2...`)
 2. **App 794 Revision Advance**: Verify live revision increments by exactly 1 (e.g. Rev 75 -> Rev 76).
 3. **Smoke Check**: Inspect console log on App 794 show view to confirm bundle initialization without runtime errors.
 4. **App 798 Isolation Verification**: Confirm App 798 customization remains untouched (0 JS, 0 CSS).

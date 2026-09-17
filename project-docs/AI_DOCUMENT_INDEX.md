@@ -1,6 +1,6 @@
 # MBO2026 — AI DOCUMENT INDEX
 
-Updated: 2026-09-17 ICT (D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R2)
+Updated: 2026-09-17 ICT (D3-ARCHIVE-RUNTIME-DEPLOY-01-R1)
 
 > **Role:** document router/index only. This file is NOT current project-status authority and intentionally does not mirror active work-package state, app revision, current next gate or mutable D1-D7 status.
 
@@ -131,6 +131,8 @@ D3 sandbox-migration planning/evidence/implementation/decision:
 - `project-docs/evidence/D3_FINAL_BUSINESS_UAT_AND_CLOSURE_01_R3_R1_EVIDENCE.md` — Authoritative corrective accounting, control history restoration, and scope provenance for R3 execution (discloses Record 15 preflight read and Phase A REST status transition PUT; maintains zero-I/O boundary; REVIEW REQUIRED).
 - `project-docs/evidence/D3_ARCHIVE_RUNTIME_INTEGRATION_AND_CLOSURE_CORRECTIVE_01_R1_EVIDENCE.md` — [SUPERSEDED by R2] D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R1 runtime archive integration hardening.
 - `project-docs/evidence/D3_ARCHIVE_RUNTIME_INTEGRATION_AND_CLOSURE_CORRECTIVE_01_R2_EVIDENCE.md` — D3-ARCHIVE-RUNTIME-INTEGRATION-AND-CLOSURE-CORRECTIVE-01-R2 runtime archive integration hardening, canonical physical App 794 field binding, DEC-036 locked weight validation, 22/22 targeted tests pass, 15 authorized suites pass (377/377 unique tests), build-only validated, zero Kintone I/O (REVIEW REQUIRED).
+- `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_EVIDENCE.md` — [SUPERSEDED by R1] D3-ARCHIVE-RUNTIME-DEPLOY-01 deployment execution record and fail-closed stop on live ACL prerequisite (APP798_LIVE_ACL_NOT_PROVEN).
+- `project-docs/evidence/D3_ARCHIVE_RUNTIME_DEPLOY_01_R1_EVIDENCE.md` — D3-ARCHIVE-RUNTIME-DEPLOY-01-R1 docs-only corrective, recalculated committed artifact identity, Git blob hash authority, zero-I/O ledger, and authoritative control synchronization (REVIEW REQUIRED).
 
 For current acceptance/closure state, use `AI_CONTROL_CENTER.md`; do not infer current status from old headers embedded in historical work-package documents.
 
