@@ -170,6 +170,11 @@ export class RevisionArchiveKintoneRepository {
       snapshotHash: raw.Snapshot_Hash?.value ?? '',
       archivedBy: Array.isArray(raw.Archived_By?.value) ? raw.Archived_By.value : [],
       archivedAt: raw.Archived_At?.value ?? '',
+      identityMode: raw.Identity_Mode?.value ?? null,
+      actualOperatorEmployeeCode: raw.Actual_Operator_Employee_Code?.value ?? null,
+      kintoneLoginUserCode: raw.Kintone_Login_User_Code?.value ?? null,
+      actionName: raw.Action_Name?.value ?? null,
+      toStatus: raw.To_Status?.value ?? null,
       rawRecord: raw
     };
   }

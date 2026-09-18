@@ -614,6 +614,34 @@ function compareArchiveRecordToExpected(persisted, expected, mode) {
     }
   }
 
+  // Five Mixed Identity fields: when expected specifies them, verify exact match;
+  // in IDEMPOTENT_REPLAY mode, historical rows may have null/blank in persisted.
+  if (expected.identityMode !== undefined && expected.identityMode !== null) {
+    if (persisted.identityMode !== expected.identityMode) {
+      fail('Identity_Mode', persisted.identityMode, expected.identityMode);
+    }
+  }
+  if (expected.actualOperatorEmployeeCode !== undefined && expected.actualOperatorEmployeeCode !== null) {
+    if (persisted.actualOperatorEmployeeCode !== expected.actualOperatorEmployeeCode) {
+      fail('Actual_Operator_Employee_Code', persisted.actualOperatorEmployeeCode, expected.actualOperatorEmployeeCode);
+    }
+  }
+  if (expected.kintoneLoginUserCode !== undefined && expected.kintoneLoginUserCode !== null) {
+    if (persisted.kintoneLoginUserCode !== expected.kintoneLoginUserCode) {
+      fail('Kintone_Login_User_Code', persisted.kintoneLoginUserCode, expected.kintoneLoginUserCode);
+    }
+  }
+  if (expected.actionName !== undefined && expected.actionName !== null) {
+    if (persisted.actionName !== expected.actionName) {
+      fail('Action_Name', persisted.actionName, expected.actionName);
+    }
+  }
+  if (expected.toStatus !== undefined && expected.toStatus !== null) {
+    if (persisted.toStatus !== expected.toStatus) {
+      fail('To_Status', persisted.toStatus, expected.toStatus);
+    }
+  }
+
   return true;
 }
 
@@ -736,6 +764,87 @@ export class RevisionArchiveService {
           ? Number(logicalSnapshot.source.Record_ID)
           : null);
 
+    // 5. Mixed Identity Validation for D3 Events
+    const {
+      identityMode,
+      actualOperatorEmployeeCode,
+      kintoneLoginUserCode,
+      actionName,
+      toStatus
+    } = params;
+
+    const hasAnyMixedIdentityField = (
+      identityMode !== undefined ||
+      actualOperatorEmployeeCode !== undefined ||
+      kintoneLoginUserCode !== undefined ||
+      actionName !== undefined ||
+      toStatus !== undefined
+    );
+
+    let resolvedIdentityMode = null;
+    let resolvedActualOperatorEmployeeCode = null;
+    let resolvedKintoneLoginUserCode = null;
+    let resolvedActionName = null;
+    let resolvedToStatus = null;
+
+    if (hasAnyMixedIdentityField) {
+      if (!identityMode || typeof identityMode !== 'string') {
+        throw new RevisionArchiveError(
+          'MISSING_IDENTITY_CONTEXT',
+          'Mixed Identity archive requires a non-empty string identityMode.'
+        );
+      }
+
+      if (identityMode !== 'SHARED' && identityMode !== 'DEDICATED') {
+        throw new RevisionArchiveError(
+          'UNSUPPORTED_IDENTITY_MODE',
+          `Identity mode must be strictly "SHARED" or "DEDICATED", received: "${identityMode}".`
+        );
+      }
+
+      if (!actualOperatorEmployeeCode || typeof actualOperatorEmployeeCode !== 'string' || !actualOperatorEmployeeCode.trim()) {
+        throw new RevisionArchiveError(
+          'ACTUAL_OPERATOR_UNRESOLVED',
+          'Actual_Operator_Employee_Code is required and must be a non-empty string.'
+        );
+      }
+
+      if (!kintoneLoginUserCode || typeof kintoneLoginUserCode !== 'string' || !kintoneLoginUserCode.trim()) {
+        throw new RevisionArchiveError(
+          'KINTONE_LOGIN_USER_UNRESOLVED',
+          'Kintone_Login_User_Code is required and must be a non-empty string.'
+        );
+      }
+
+      // Exact case equality between Kintone_Login_User_Code and actorUserCode
+      if (kintoneLoginUserCode !== actorUserCode) {
+        throw new RevisionArchiveError(
+          'IDENTITY_CONTEXT_MISMATCH',
+          `Kintone_Login_User_Code ("${kintoneLoginUserCode}") must match exact-case actorUserCode ("${actorUserCode}").`
+        );
+      }
+
+      if (!actionName || typeof actionName !== 'string' || !actionName.trim()) {
+        throw new RevisionArchiveError(
+          'MISSING_IDENTITY_CONTEXT',
+          'Action_Name is required and must be a non-empty string.'
+        );
+      }
+
+      if (!toStatus || typeof toStatus !== 'string' || !toStatus.trim()) {
+        throw new RevisionArchiveError(
+          'MISSING_IDENTITY_CONTEXT',
+          'To_Status is required and must be a non-empty string.'
+        );
+      }
+
+      resolvedIdentityMode = identityMode;
+      resolvedActualOperatorEmployeeCode = actualOperatorEmployeeCode.trim();
+      resolvedKintoneLoginUserCode = kintoneLoginUserCode;
+      resolvedActionName = actionName.trim();
+      resolvedToStatus = toStatus.trim();
+    }
+
     const expectedFacts = {
       archiveKey,
       sourceRecordKey,
@@ -751,7 +860,12 @@ export class RevisionArchiveService {
       actorUserCode,
       previousStatus: resolvedPreviousStatus,
       sourceRecordId: resolvedSourceRecordId,
-      archivedAt
+      archivedAt,
+      identityMode: resolvedIdentityMode,
+      actualOperatorEmployeeCode: resolvedActualOperatorEmployeeCode,
+      kintoneLoginUserCode: resolvedKintoneLoginUserCode,
+      actionName: resolvedActionName,
+      toStatus: resolvedToStatus
     };
 
     // 3. Check for existing record (Idempotency Contract)
@@ -782,7 +896,12 @@ export class RevisionArchiveService {
         supersededByRevision: expectedFacts.supersededByRevision,
         sourceRecordId: resolvedSourceRecordId,
         archivedBy: actorUserCode,
-        archivedAt: existing.archivedAt
+        archivedAt: existing.archivedAt,
+        identityMode: existing.identityMode ?? resolvedIdentityMode,
+        actualOperatorEmployeeCode: existing.actualOperatorEmployeeCode ?? resolvedActualOperatorEmployeeCode,
+        kintoneLoginUserCode: existing.kintoneLoginUserCode ?? resolvedKintoneLoginUserCode,
+        actionName: existing.actionName ?? resolvedActionName,
+        toStatus: existing.toStatus ?? resolvedToStatus
       });
     }
 
@@ -801,6 +920,22 @@ export class RevisionArchiveService {
       Archived_By: { value: [{ code: actorUserCode }] },
       Archived_At: { value: archivedAt }
     };
+
+    if (resolvedIdentityMode !== null) {
+      recordPayload.Identity_Mode = { value: resolvedIdentityMode };
+    }
+    if (resolvedActualOperatorEmployeeCode !== null) {
+      recordPayload.Actual_Operator_Employee_Code = { value: resolvedActualOperatorEmployeeCode };
+    }
+    if (resolvedKintoneLoginUserCode !== null) {
+      recordPayload.Kintone_Login_User_Code = { value: resolvedKintoneLoginUserCode };
+    }
+    if (resolvedActionName !== null) {
+      recordPayload.Action_Name = { value: resolvedActionName };
+    }
+    if (resolvedToStatus !== null) {
+      recordPayload.To_Status = { value: resolvedToStatus };
+    }
 
     if (resolvedSourceRecordId !== null) {
       recordPayload.Source_Record_ID = { value: String(resolvedSourceRecordId) };
@@ -840,7 +975,12 @@ export class RevisionArchiveService {
           supersededByRevision: expectedFacts.supersededByRevision,
           sourceRecordId: resolvedSourceRecordId,
           archivedBy: actorUserCode,
-          archivedAt: rec.archivedAt
+          archivedAt: rec.archivedAt,
+          identityMode: rec.identityMode ?? resolvedIdentityMode,
+          actualOperatorEmployeeCode: rec.actualOperatorEmployeeCode ?? resolvedActualOperatorEmployeeCode,
+          kintoneLoginUserCode: rec.kintoneLoginUserCode ?? resolvedKintoneLoginUserCode,
+          actionName: rec.actionName ?? resolvedActionName,
+          toStatus: rec.toStatus ?? resolvedToStatus
         });
       }
       if (recoveryRecords.length > 1) {
@@ -875,7 +1015,12 @@ export class RevisionArchiveService {
       supersededByRevision: expectedFacts.supersededByRevision,
       sourceRecordId: resolvedSourceRecordId,
       archivedBy: actorUserCode,
-      archivedAt
+      archivedAt: readBack.archivedAt,
+      identityMode: readBack.identityMode ?? resolvedIdentityMode,
+      actualOperatorEmployeeCode: readBack.actualOperatorEmployeeCode ?? resolvedActualOperatorEmployeeCode,
+      kintoneLoginUserCode: readBack.kintoneLoginUserCode ?? resolvedKintoneLoginUserCode,
+      actionName: readBack.actionName ?? resolvedActionName,
+      toStatus: readBack.toStatus ?? resolvedToStatus
     });
   }
 

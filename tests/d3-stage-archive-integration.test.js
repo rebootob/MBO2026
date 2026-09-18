@@ -716,3 +716,221 @@ test('22. active slot with multiple users or non-ALL rule fails closed', async (
   assert.equal(outcomeB.success, false);
   assert.ok(outcomeB.error.includes('must be "ALL", received: "ANY"'));
 });
+
+test('23. SHARED identity mode successfully creates archive record with 5 mixed-identity fields', async () => {
+  const adapter = createMockKintoneAdapter();
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  const outcome = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'shared_pc_01',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP0099',
+    kintoneLoginUserCode: 'shared_pc_01'
+  });
+
+  assert.equal(outcome.success, true);
+  assert.equal(adapter.addRecordCallCount, 1);
+  const archived = Array.from(adapter.store.values())[0];
+
+  assert.equal(archived.Identity_Mode.value, 'SHARED');
+  assert.equal(archived.Actual_Operator_Employee_Code.value, 'EMP0099');
+  assert.equal(archived.Kintone_Login_User_Code.value, 'shared_pc_01');
+  assert.equal(archived.Action_Name.value, 'Start Mid-Year');
+  assert.equal(archived.To_Status.value, '06 Employee Mid-Year');
+  // Confirm distinct identities are preserved
+  assert.notEqual(archived.Actual_Operator_Employee_Code.value, archived.Kintone_Login_User_Code.value);
+  assert.notEqual(archived.Employee_Code.value, archived.Actual_Operator_Employee_Code.value);
+});
+
+test('24. DEDICATED identity mode successfully creates archive record with 5 mixed-identity fields', async () => {
+  const adapter = createMockKintoneAdapter();
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '10 Mid-Year Completed' },
+    action: { value: 'Start Self Evaluation' },
+    nextStatus: { value: '11 Employee Self Evaluation' }
+  };
+
+  const outcome = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'somchai_mgr',
+    identityMode: 'DEDICATED',
+    actualOperatorEmployeeCode: 'EMP0012',
+    kintoneLoginUserCode: 'somchai_mgr'
+  });
+
+  assert.equal(outcome.success, true);
+  assert.equal(adapter.addRecordCallCount, 1);
+  const archived = Array.from(adapter.store.values())[0];
+
+  assert.equal(archived.Identity_Mode.value, 'DEDICATED');
+  assert.equal(archived.Actual_Operator_Employee_Code.value, 'EMP0012');
+  assert.equal(archived.Kintone_Login_User_Code.value, 'somchai_mgr');
+  assert.equal(archived.Action_Name.value, 'Start Self Evaluation');
+  assert.equal(archived.To_Status.value, '11 Employee Self Evaluation');
+});
+
+test('25. Fail-closed: invalid or missing identityMode fails closed', async () => {
+  const adapter = {
+    getRecords: async () => ({ records: [] }),
+    addRecord: async () => ({ id: '1' })
+  };
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  // Case A: unsupported identity mode
+  const outcomeA = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'user_01',
+    identityMode: 'INVALID_MODE',
+    actualOperatorEmployeeCode: 'EMP001',
+    kintoneLoginUserCode: 'user_01'
+  });
+  assert.equal(outcomeA.success, false);
+  assert.equal(outcomeA.error, 'UNSUPPORTED_IDENTITY_MODE');
+
+  // Case B: empty identityMode string
+  const outcomeB = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'user_01',
+    identityMode: '',
+    actualOperatorEmployeeCode: 'EMP001',
+    kintoneLoginUserCode: 'user_01'
+  });
+  assert.equal(outcomeB.success, false);
+  assert.equal(outcomeB.error, 'UNSUPPORTED_IDENTITY_MODE');
+});
+
+test('26. Fail-closed: missing actual operator or login user fails closed', async () => {
+  const adapter = {
+    getRecords: async () => ({ records: [] }),
+    addRecord: async () => ({ id: '1' })
+  };
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  // Missing actualOperatorEmployeeCode
+  const outcomeA = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'user_01',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: '',
+    kintoneLoginUserCode: 'user_01'
+  });
+  assert.equal(outcomeA.success, false);
+  assert.equal(outcomeA.error, 'ACTUAL_OPERATOR_UNRESOLVED');
+
+  // Missing kintoneLoginUserCode
+  const outcomeB = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'user_01',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP001',
+    kintoneLoginUserCode: ''
+  });
+  assert.equal(outcomeB.success, false);
+  assert.equal(outcomeB.error, 'KINTONE_LOGIN_USER_UNRESOLVED');
+});
+
+test('27. Fail-closed: case-sensitive mismatch between kintoneLoginUserCode and actorCode fails closed', async () => {
+  const adapter = {
+    getRecords: async () => ({ records: [] }),
+    addRecord: async () => ({ id: '1' })
+  };
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  // Case mismatch: 'User_01' !== 'user_01'
+  const outcome = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'user_01',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP001',
+    kintoneLoginUserCode: 'User_01' // uppercase U
+  });
+  assert.equal(outcome.success, false);
+  assert.equal(outcome.error, 'IDENTITY_CONTEXT_MISMATCH');
+});
+
+test('28. Historical row policy: null 5 fields on historical records do not cause failure on readBack', async () => {
+  const adapter = createMockKintoneAdapter();
+  const origAdd = adapter.addRecord;
+  adapter.addRecord = async (appId, recordPayload) => {
+    const rec = recordPayload || (typeof appId === 'object' ? appId.record : undefined);
+    const cloned = JSON.parse(JSON.stringify(rec));
+    delete cloned.Identity_Mode;
+    delete cloned.Actual_Operator_Employee_Code;
+    delete cloned.Kintone_Login_User_Code;
+    delete cloned.Action_Name;
+    delete cloned.To_Status;
+    return origAdd(appId, cloned);
+  };
+
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '15 HR Final Check' },
+    action: { value: 'Complete' },
+    nextStatus: { value: '16 Completed' }
+  };
+
+  // When identityMode is not provided (legacy/historical test invocation)
+  const outcome = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'hr_admin'
+  });
+
+  assert.equal(outcome.success, true);
+  assert.equal(outcome.targetStage, 'FINAL');
+  assert.equal(adapter.addRecordCallCount, 1);
+  const archived = Array.from(adapter.store.values())[0];
+  assert.equal(archived.Identity_Mode, undefined);
+});
+
+test('29. Idempotent replay preserves identical Archive_Key and verifies exact 5 fields', async () => {
+  const adapter = createMockKintoneAdapter();
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  const opts = {
+    apiAdapter: adapter,
+    actor: 'operator_kintone',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP5555',
+    kintoneLoginUserCode: 'operator_kintone'
+  };
+
+  // First call -> creates row
+  const outcome1 = await executeProcessTransitionArchive(record, event, opts);
+  assert.equal(outcome1.success, true);
+  assert.equal(adapter.addRecordCallCount, 1);
+  assert.equal(outcome1.archiveResult.idempotentReplay, false);
+
+  // Second call (replay) -> finds existing row, validates exact fields, does not add new record
+  const outcome2 = await executeProcessTransitionArchive(record, event, opts);
+  assert.equal(outcome2.success, true);
+  assert.equal(adapter.addRecordCallCount, 1); // no extra addRecord
+  assert.equal(outcome2.archiveResult.idempotentReplay, true);
+});
+

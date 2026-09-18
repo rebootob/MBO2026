@@ -1323,15 +1323,30 @@ if (typeof kintone !== 'undefined') {
     );
 
     if (isD3TargetTransition) {
-      // D3 Trusted Writer Platform-Stamped Architecture:
-      // Delegate to handleD3BrowserTrustedTransition helper (fail-closed, always returns false)
-      const recordId = Number(event.recordId || record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
-      await handleD3BrowserTrustedTransition({
-        recordId,
-        actionName,
-        fetchFn: typeof fetch === 'function' ? fetch : null
+      // D3 Architecture (Decision 010 - Kintone Only):
+      // Archive stage completion directly in Kintone before or during process transition.
+      // If external prepare endpoint is explicitly configured for backward compatibility/testing, handle via handleD3BrowserTrustedTransition;
+      // otherwise execute direct Kintone Process Transition Archive.
+      if (typeof window !== 'undefined' && window.__MBO_D3_PREPARE_ENDPOINT__) {
+        const recordId = Number(event.recordId || record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
+        await handleD3BrowserTrustedTransition({
+          recordId,
+          actionName,
+          fetchFn: typeof fetch === 'function' ? fetch : null
+        });
+        return false; // Cancel native transition unconditionally when delegated to external prepare endpoint
+      }
+
+      const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+        employeeSelfContext: currentEmployeeSelfContext
       });
-      return false; // Cancel native transition unconditionally
+
+      if (!archiveOutcome.success) {
+        // Fail-closed: block process transition
+        alert(`[D3 Audit Archive Error] Process transition blocked: ${archiveOutcome.error}`);
+        return false;
+      }
+      return event;
     }
 
     return event;
@@ -1392,6 +1407,44 @@ export async function executeProcessTransitionArchive(record, event, options = {
     return { success: false, error: 'ACTOR_IDENTITY_UNRESOLVED' };
   }
 
+  // Mixed Identity Context Resolution (Fail-Closed)
+  // Input priority: options.employeeSelfContext -> currentEmployeeSelfContext
+  const selfContext = options.employeeSelfContext || currentEmployeeSelfContext;
+  let identityMode = options.identityMode;
+  let actualOperatorEmployeeCode = options.actualOperatorEmployeeCode;
+  let kintoneLoginUserCode = options.kintoneLoginUserCode;
+
+  if (selfContext) {
+    if (!identityMode) identityMode = selfContext.mode;
+    if (!actualOperatorEmployeeCode) actualOperatorEmployeeCode = selfContext.employeeCode;
+    if (!kintoneLoginUserCode) kintoneLoginUserCode = selfContext.kintoneUserCode;
+  }
+
+  // Validate identity mode if provided or required
+  if (identityMode !== undefined || actualOperatorEmployeeCode !== undefined || kintoneLoginUserCode !== undefined) {
+    if (!identityMode || (identityMode !== 'SHARED' && identityMode !== 'DEDICATED')) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Invalid or missing identityMode: "${identityMode}". Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: 'UNSUPPORTED_IDENTITY_MODE' };
+    }
+    if (!actualOperatorEmployeeCode || !String(actualOperatorEmployeeCode).trim()) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actual operator employee code. Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: 'ACTUAL_OPERATOR_UNRESOLVED' };
+    }
+    if (!kintoneLoginUserCode || !String(kintoneLoginUserCode).trim()) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve Kintone login user code. Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: 'KINTONE_LOGIN_USER_UNRESOLVED' };
+    }
+    // Exact case equality between Kintone login user code and actorCode / loginUser.code
+    if (kintoneLoginUserCode !== actorCode) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Identity mismatch: kintoneLoginUserCode ("${kintoneLoginUserCode}") !== actorCode ("${actorCode}"). Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: 'IDENTITY_CONTEXT_MISMATCH' };
+    }
+  }
+
   try {
     const archiveAppId = options.archiveAppId || 798;
     const clock = options.clock || (() => new Date().toISOString());
@@ -1400,7 +1453,7 @@ export async function executeProcessTransitionArchive(record, event, options = {
 
     const rawRecordId = Number(record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
 
-    const archiveResult = await archiveService.archiveStageCompletion({
+    const archiveParams = {
       sourceRecordKey: String(record?.Record_Key?.value || record?.Record_Key || '').trim(),
       employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || '').trim(),
       fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || '').trim(),
@@ -1411,7 +1464,17 @@ export async function executeProcessTransitionArchive(record, event, options = {
       actor: { userCode: actorCode },
       archivedAt: options.archivedAt || (typeof clock === 'function' ? clock() : new Date().toISOString()),
       logicalSnapshot
-    });
+    };
+
+    if (identityMode) {
+      archiveParams.identityMode = identityMode;
+      archiveParams.actualOperatorEmployeeCode = String(actualOperatorEmployeeCode).trim();
+      archiveParams.kintoneLoginUserCode = kintoneLoginUserCode;
+      archiveParams.actionName = actionName;
+      archiveParams.toStatus = nextStatus;
+    }
+
+    const archiveResult = await archiveService.archiveStageCompletion(archiveParams);
 
     return { success: true, targetStage, archiveResult };
   } catch (err) {
