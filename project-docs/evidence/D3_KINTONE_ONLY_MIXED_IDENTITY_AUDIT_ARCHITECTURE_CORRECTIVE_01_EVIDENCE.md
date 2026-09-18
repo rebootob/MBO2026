@@ -1,43 +1,45 @@
-# Evidence Dossier: D3 Kintone-Only Mixed-Identity Audit Architecture (R2)
+# Evidence Dossier: D3 Live Kintone Artifact Read-Only Verification (R3)
 
 ## Execution & Evidence Metadata
 
 ```text
-EVIDENCE_DOSSIER_ID          = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R2-EVIDENCE
-AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R2-20260918-OWNER-01
+EVIDENCE_DOSSIER_ID          = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01-EVIDENCE
+PACKAGE_ID                   = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01
+AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01-20260918-OWNER-01
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-AUTHORIZED_BASE_HEAD         = 22b1823f48e3961f132646073d06acab3c58447f
-REVISION                     = R2 (OPTIONS.ACTOR CALL-SITE INVENTORY & REACHABILITY AUDIT)
-EXECUTION_MODE               = DOCS_AND_EVIDENCE_CORRECTIVE_ONLY
-ZERO_IO_VERIFIED             = YES
+AUTHORIZED_BASE_HEAD         = e496c230f687e7129eb3b2cc821624ba36dbc251
+REVISION                     = R3 (LIVE KINTONE APP 794 ARTIFACT VERIFICATION & DIVERGENCE AUDIT)
+EXECUTION_MODE               = LIVE_KINTONE_READ_ONLY_ARTIFACT_VERIFICATION
+ZERO_WRITE_VERIFIED          = YES
 STATUS                       = SUBMITTED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
 ```
 
 ---
 
-## 1. Scope & Objective of R2 Corrective
+## 1. Scope & Objective of R3 Live Verification
 
-This dossier provides exhaustive, verbatim source code evidence from `rebootob/MBO2026` at commit `22b1823f48e3961f132646073d06acab3c58447f` to close the final Independent Control Plane finding:
-1. **Actor Derivation Precedence:** Formally documents that inside `executeProcessTransitionArchive(...)`, `actorCode` is derived via `String(options.actor || loginUser?.code || '').trim()`, establishing a two-tier derivation order: (1) `options.actor`, (2) fallback `kintone.getLoginUser().code`.
-2. **Exhaustive Call-Site Audit:** Inspects and classifies every repository invocation of `executeProcessTransitionArchive(...)`.
-3. **Production Hook Truth:** Verifies that the active D3 production workflow invokes `handleD3BrowserTrustedTransition` and does not call `executeProcessTransitionArchive(...)`.
-4. **Authority Conclusion:** Explicitly concludes `PRODUCTION_ACTOR_OVERRIDE_PATH = NOT_ACTIVE` and `OPTIONS_ACTOR_CLASSIFICATION = TEST_OR_LEGACY_ONLY`.
-5. **Preservation of Owner Locks:** Preserves the dual-identity requirement (Actual Operator vs. Kintone Principal), Subject Employee separation, `KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN`, and Decision 009 status.
+This dossier documents the live, read-only verification of Kintone App 794 to definitively resolve the architectural divergence between:
+1. **Current Source Truth (`src/main-mbo-app.js`):** Contains `handleD3BrowserTrustedTransition` sending `POST /api/mbo/d3/transaction/prepare-transition` and returning `false`.
+2. **Current Repository Dist File (`dist/mbo-employee-app.js`):** The build artifact (`REPOSITORY_DIST_ARTIFACT`) produced by `scripts/kintone/build-mbo-ui.js` used by `scripts/kintone/deploy-custom-ui.js`.
+3. **Current Live Deployed Customization in Kintone App 794:** Downloaded directly from the live Kintone tenant via `GET /k/v1/app/customize.json?app=794` and `GET /k/v1/file.json?fileKey=...`.
 
 ---
 
-## 2. Zero-I/O & Governance Accounting
+## 2. Zero-Write & Kintone Read Accounting
 
-All actions conducted within this package are strictly bounded to local documentation and evidence correction. Zero external resources, databases, servers, or live Kintone environments were accessed or altered.
+Under explicit Owner authorization, exactly two read-only operations were executed against Kintone API. Zero write, upload, deploy, or mutation operations occurred.
 
 ```text
 ================================================================================
-GOVERNANCE & I/O VERIFICATION METRICS
+KINTONE READ & ZERO-WRITE ACCOUNTING
 ================================================================================
-SOURCE_CHANGES                     = 0
-TEST_CHANGES                       = 0
-KINTONE_API_READS                  = 0
+KINTONE_API_READS                  = 2
+  - READ 1: GET /k/v1/app/customize.json?app=794
+  - READ 2: GET /k/v1/file.json?fileKey=202609170459422F30CF7537A04677A30692B4A83EC2E8054
 KINTONE_API_WRITES                 = 0
+CUSTOMIZATION_WRITES (PUT)         = 0
+DEPLOY_POSTS                       = 0
+FILE_UPLOADS (POST)                = 0
 APP_SCHEMA_CHANGES                 = 0
 APP_ACL_CHANGES                    = 0
 PROCESS_MANAGEMENT_CHANGES         = 0
@@ -49,6 +51,8 @@ REDIS_INSTANCES_PROVISIONED        = 0
 SQL_DATABASES_PROVISIONED          = 0
 SECRET_VAULTS_PROVISIONED          = 0
 CLOUD_RUNTIMES_PROVISIONED         = 0
+SOURCE_CHANGES                     = 0
+TEST_CHANGES                       = 0
 DEPLOYMENT_ACTIONS                 = 0
 UAT_EXECUTED                       = 0
 ================================================================================
@@ -56,434 +60,216 @@ UAT_EXECUTED                       = 0
 
 ---
 
-## 3. Verbatim Source Inspection & Seam Verification
+## 3. Live Kintone App 794 Customization Metadata Capture
 
-All snippets below are exact, verbatim source code extracted from the repository at the authorized base commit.
-
-### 3.1 Verification of `resolveRuntimeEmployeeSelfContext()`
-File: `src/main-mbo-app.js` (lines 168–230)
-
-```javascript
-// --- LITERAL SOURCE EXCERPT START ---
-function resolveRuntimeEmployeeSelfContext(uiHost, options = {}) {
-  const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
-  const kintoneUserCode = loginUser?.code || null;
-
-  if (!kintoneUserCode) {
-    return { status: 'NO_KINTONE_USER', mode: null };
-  }
-
-  let principalMode;
-  try {
-    principalMode = MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode });
-  } catch (err) {
-    return { status: 'MODE_RESOLUTION_ERROR', reason: err.message };
-  }
-
-  if (principalMode === 'TECHNICAL_ADMIN') {
-    return { status: 'TECHNICAL_ADMIN', mode: 'TECHNICAL_ADMIN' };
-  }
-
-  if (principalMode === 'SHARED') {
-    if (!mboLoginGate) {
-      return { status: 'GATE_NULL', mode: 'SHARED' };
-    }
-    const authResult = mboLoginGate.requireLogin(uiHost);
-    if (typeof authResult === 'string') {
-      return {
-        status: 'SUCCESS',
-        context: { mode: 'SHARED', employeeCode: authResult, kintoneUserCode }
-      };
-    } else if (authResult && typeof authResult.then === 'function') {
-      return authResult.then(empCode => {
-        if (!empCode) {
-          return { status: 'SHARED_AUTH_REQUIRED', mode: 'SHARED' };
+```json
+{
+  "scope": "ALL",
+  "revision": "76",
+  "desktop": {
+    "js": [
+      {
+        "type": "FILE",
+        "file": {
+          "fileKey": "202609170459422F30CF7537A04677A30692B4A83EC2E8054",
+          "name": "mbo-employee-app.js",
+          "contentType": "text/javascript",
+          "size": "713130"
         }
-        return {
-          status: 'SUCCESS',
-          context: { mode: 'SHARED', employeeCode: empCode, kintoneUserCode }
-        };
-      });
-    }
-    return { status: 'SHARED_AUTH_REQUIRED', mode: 'SHARED' };
-  }
-
-  if (principalMode === 'DEDICATED') {
-    return (async () => {
-      let candidateRecords = [];
-      try {
-        candidateRecords = await EmployeeService.lookupDedicatedIdentityMappingCandidates(kintoneUserCode, kintoneApiWrapper);
-      } catch (lookupErr) {
-        candidateRecords = [];
       }
-
-      const mappingRes = MboIdentityService.resolveDedicatedKintoneUserMapping({
-        kintoneUserCode,
-        userMappings: candidateRecords
-      });
-
-      if (mappingRes.status === 'IDENTITY_BOUND' && mappingRes.employeeCode) {
-        return {
-          status: 'SUCCESS',
-          context: { mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode }
-        };
-      }
-// --- LITERAL SOURCE EXCERPT END ---
-```
-
-**Verified Facts:**
-- In SHARED mode, identity resolution delegates to `mboLoginGate.requireLogin(uiHost)` and yields `{ mode: 'SHARED', employeeCode: empCode, kintoneUserCode }`.
-- In DEDICATED mode, lookup candidates from App 53 are verified via `MboIdentityService.resolveDedicatedKintoneUserMapping(...)`. Upon `IDENTITY_BOUND`, it yields `{ mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode }`.
-
----
-
-### 3.2 Verification of `MboKintoneLoginGate`
-File: `src/ui/mbo-kintone-login-gate.js` (lines 53–61, 90–123)
-
-```javascript
-// --- LITERAL SOURCE EXCERPT START ---
-  /**
-   * Returns the authenticated Employee_Code only when fully authorized
-   * (authenticated AND no pending force password change).
-   * Returns null otherwise — caller must fail closed.
-   */
-  getEmployeeCode() {
-    if (!this._principal || this._pendingForceChange) return null;
-    return this._principal.employeeCode;
-  }
-...
-  async requireLogin(host) {
-    const code = this.getEmployeeCode();
-    if (code) return code;
-
-    if (this.sessionManager) {
-      try {
-        const restored = await this.sessionManager.restoreSession();
-        if (restored?.employeeCode) {
-...
-          this._principal = { employeeCode: restored.employeeCode };
-          this._pendingForceChange = false;
-          return restored.employeeCode;
+    ],
+    "css": [
+      {
+        "type": "FILE",
+        "file": {
+          "fileKey": "20260917045943AC6B131AFBDE4DA4A6B8EB6D779184B4049",
+          "name": "mbo-employee.css",
+          "contentType": "text/css",
+          "size": "44301"
         }
-      } catch {
-        // fail closed to overlay on restore failure
       }
-    }
-
-    return new Promise((resolve) => {
-      this._renderLoginOverlay(host, resolve);
-    });
+    ]
+  },
+  "mobile": {
+    "js": [],
+    "css": []
   }
-// --- LITERAL SOURCE EXCERPT END ---
+}
 ```
-
-**Verified Facts:**
-- `getEmployeeCode()` returns `this._principal.employeeCode` only when authenticated and password change is not pending; otherwise returns `null` (fail-closed).
-- `requireLogin` checks existing principal, falls back to `sessionManager.restoreSession()`, and if unauthenticated renders a blocking UI overlay.
 
 ---
 
-### 3.3 Verification of `MboSessionManager`
-File: `src/ui/mbo-session-manager.js` (lines 127–199)
+## 4. Cryptographic Hash & Byte Comparison
 
-```javascript
-// --- LITERAL SOURCE EXCERPT START ---
-  async issueSession(employeeCode) {
-    const kintoneUser = this.getKintoneUser();
-    const kintoneUserCode = kintoneUser?.code;
+The raw bytes of the currently attached live JavaScript file were downloaded via `GET /k/v1/file.json?fileKey=202609170459422F30CF7537A04677A30692B4A83EC2E8054` and compared against the repository dist file:
 
-    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
-      throw new Error('MISSING_KINTONE_PRINCIPAL');
-    }
-
-    const token = this.generateToken();
-    const tokenHash = await this.hashToken(token);
-
-    const currentTime = this.now();
-    const issuedAt = currentTime.toISOString();
-    const expiresAt = new Date(currentTime.getTime() + ABSOLUTE_TTL_MS).toISOString();
-
-    await this.adapter.storeSession({
-      employeeCode,
-      tokenHash,
-      issuedAt,
-      expiresAt,
-      kintoneUserCode
-    });
-
-    this.setLocalToken(token);
-
-    return { status: 'SESSION_ISSUED', expiresAt };
-  }
-
-  async restoreSession() {
-    const token = this.getLocalToken();
-    if (!token) return null;
-
-    let tokenHash;
-    try {
-      tokenHash = await this.hashToken(token);
-    } catch {
-      this.clearLocalToken();
-      return null;
-    }
-
-    const kintoneUser = this.getKintoneUser();
-    const currentKintoneUserCode = kintoneUser?.code;
-
-    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
-      this.clearLocalToken();
-      return null;
-    }
-
-    let res;
-    try {
-      res = await this.adapter.validateSession({
-        tokenHash,
-        currentKintoneUserCode
-      });
-    } catch {
-      this.clearLocalToken();
-      return null;
-    }
-
-    if (res?.status === 'VALID_SESSION' && res.employeeCode) {
-      return {
-        employeeCode: res.employeeCode
-      };
-    }
-
-    this.clearLocalToken();
-    return null;
-  }
-// --- LITERAL SOURCE EXCERPT END ---
+```text
+================================================================================
+HASH & BYTE COMPARISON
+================================================================================
+Metric                      Live Downloaded Artifact         Repository Dist File (dist/mbo-employee-app.js)
+--------------------------------------------------------------------------------
+File Name                   mbo-employee-app.js              mbo-employee-app.js
+Byte Length                 713,130 bytes                    713,130 bytes
+SHA-256 Hash                c2049fba52d4fb6e82faf767ff359... c2049fba52d4fb6e82faf767ff359...
+                            (Full: c2049fba52d4fb6e82faf767ff359f37dbafab57aea1e9dada74c022b884989f)
+--------------------------------------------------------------------------------
+BYTE EQUALITY RESULT:       LIVE_EQUALS_REPOSITORY_DIST = YES (100% Identical)
+================================================================================
 ```
-
-**Verified Facts:**
-- `issueSession` stores the cryptographic hash of the session token bound to BOTH `employeeCode` and `kintoneUserCode` in App 801.
-- `restoreSession` verifies the session hash and confirms that `currentKintoneUserCode` matches the principal recorded in App 801. Mismatch triggers local session purge and returns `null`.
 
 ---
 
-### 3.4 Verification of `executeProcessTransitionArchive` Actor Derivation
-File: `src/main-mbo-app.js` (lines 1385–1414)
+## 5. Live Artifact Static Analysis & Marker Inspection
 
+Direct inspection of the downloaded live JavaScript bytes (`c2049fba52d4fb6e82faf767ff359f37dbafab57aea1e9dada74c022b884989f`):
+
+```text
+================================================================================
+MARKER INSPECTION RESULTS (LIVE DOWNLOADED JS)
+================================================================================
+handleD3BrowserTrustedTransition                  : FALSE (Not present)
+/api/mbo/d3/transaction/prepare-transition         : FALSE (Not present)
+executeProcessTransitionArchive                   : TRUE  (Present at Line 13063)
+options.actor                                     : TRUE  (Present at Line 13077)
+actorCode                                         : TRUE  (Present at Line 13077)
+app.record.detail.process.proceed                 : TRUE  (Present at Line 12732)
+================================================================================
+```
+
+### Verbatim Wiring in Live Artifact:
+Lines 12732–12773 of the live deployed bundle:
 ```javascript
-// --- LITERAL SOURCE EXCERPT START ---
+kintone.events.on("app.record.detail.process.proceed", async function(event) {
+  const record = event.record;
+  const actionName = event.action?.value || "";
+  const stage = resolveBusinessStage(event);
+  const context = currentEmployeeSelfContext;
+  const recordEmpCode = record?.Employee_Code?.value;
+  ...
+  const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: kintoneApiWrapper
+  });
+  if (archiveOutcome && archiveOutcome.success === false) {
+    const errDetail = archiveOutcome.error || "Archive verification failed";
+    ...
+    return false;
+  }
+});
+```
+
+### Verbatim Helper in Live Artifact:
+Lines 13063–13083 of the live deployed bundle:
+```javascript
+async function executeProcessTransitionArchive(record, event, options = {}) {
+  const currentStatus = String(event?.status?.value || event?.currentStatus || record?.Status?.value || record?.Status || "").trim();
+  const nextStatus = String(event?.nextStatus?.value || event?.nextStatus || "").trim();
+  const actionName = String(event?.action?.value || event?.action || "").trim();
+  let targetStage = null;
+  if (currentStatus === "05 Objective Approved" && actionName === "Start Mid-Year" && nextStatus === "06 Employee Mid-Year") {
+    targetStage = "OBJECTIVE";
+  } else if (currentStatus === "10 Mid-Year Completed" && actionName === "Start Self Evaluation" && nextStatus === "11 Employee Self Evaluation") {
+    targetStage = "MIDYEAR";
+  } else if (currentStatus === "15 HR Final Check" && actionName === "Complete" && nextStatus === "16 Completed") {
+    targetStage = "FINAL";
+  }
+  if (!targetStage) {
+    return { success: true, skipped: true, reason: "NOT_A_TARGET_TRANSITION" };
+  }
   const apiAdapter = options.apiAdapter || kintoneApiWrapper;
-  const loginUser = options.loginUser || ((typeof kintone !== 'undefined' && typeof kintone.getLoginUser === 'function') ? kintone.getLoginUser() : null);
-  const actorCode = String(options.actor || loginUser?.code || '').trim();
-
+  const loginUser = options.loginUser || (typeof kintone !== "undefined" && typeof kintone.getLoginUser === "function" ? kintone.getLoginUser() : null);
+  const actorCode = String(options.actor || loginUser?.code || "").trim();
   if (!actorCode) {
     const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actor login identity for transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
     console.error(errorMsg);
-    return { success: false, error: 'ACTOR_IDENTITY_UNRESOLVED' };
+    return { success: false, error: "ACTOR_IDENTITY_UNRESOLVED" };
   }
-...
-    const archiveResult = await archiveService.archiveStageCompletion({
-      sourceRecordKey: String(record?.Record_Key?.value || record?.Record_Key || '').trim(),
-      employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || '').trim(),
-      fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || '').trim(),
-      evaluationStage: targetStage,
-      revisionNumber: Number(record?.Revision_Number?.value || record?.Current_Revision_Number?.value || record?.Revision_Number || record?.Current_Revision_Number),
-      sourceRecordId: rawRecordId > 0 ? rawRecordId : undefined,
-      previousStatus: currentStatus,
-      actor: { userCode: actorCode },
-      archivedAt: options.archivedAt || (typeof clock === 'function' ? clock() : new Date().toISOString()),
-      logicalSnapshot
-    });
-// --- LITERAL SOURCE EXCERPT END ---
-```
-
-**Literal Actor Derivation Order:**
-1. `options.actor` (if truthy string provided by caller)
-2. Fallback: `loginUser?.code` (where `loginUser` is `options.loginUser` or `kintone.getLoginUser()`)
-3. Empty fallback (`''`), which triggers `!actorCode` fail-closed error.
-
----
-
-### 3.5 Exhaustive Call-Site Inventory for `executeProcessTransitionArchive`
-
-A complete codebase search for `executeProcessTransitionArchive` was executed across the entire repository. Below is the full inventory of all call sites:
-
-```text
-========================================================================================================================
-CALL SITE INVENTORY: executeProcessTransitionArchive(...)
-========================================================================================================================
-1. DECLARATION / EXPORT
-   File:                     src/main-mbo-app.js (line 1355)
-   Function:                 export async function executeProcessTransitionArchive(record, event, options = {})
-   Runtime Classification:   EXPORT_ONLY_HELPER
-   Options Object Source:    N/A (Function declaration)
-   Actor Argument Present:   N/A
-   Actor Value Source:       N/A
-   User Controlled:          N/A
-   Notes:                    No internal call site exists anywhere in src/.
-
-2. LEGACY DISTRIBUTION BUNDLE
-   File:                     dist/mbo-employee-app.js (lines 12771–12773)
-   Function:                 Anonymous handler in kintone.events.on('app.record.detail.process.proceed', ...)
-   Runtime Classification:   LEGACY_BUNDLE (stale build artifact)
-   Options Object Source:    Inline literal: { apiAdapter: kintoneApiWrapper }
-   Actor Argument Present:   NO (options.actor is undefined)
-   Actor Value Source:       N/A (falls back internally to kintone.getLoginUser().code)
-   User Controlled:          NO
-
-3. TEST SUITE
-   File:                     tests/d3-stage-archive-integration.test.js
-   Function:                 Integration test cases (24 distinct call invocations)
-                             Lines: 103, 125, 147, 169, 188, 207, 226, 237, 248, 293, 316,
-                             340, 365, 379, 401, 420, 447, 466, 474, 616, 628, 640, 667, 701, 712.
-   Runtime Classification:   TEST
-   Options Object Source:    Test fixture objects
-   Actor Argument Present:   YES (in select test cases, e.g. { actor: 'custom.actor' })
-   Actor Value Source:       Hardcoded test mock string
-   User Controlled:          NO (automated Node test runner only)
-========================================================================================================================
+  ...
 ```
 
 ---
 
-### 3.6 Production Hook Truth: Active D3 Workflow Path
-File: `src/main-mbo-app.js` (lines 1319–1335)
-
-```javascript
-// --- LITERAL SOURCE EXCERPT START ---
-    const isD3TargetTransition = (
-      (currentStatus === '05 Objective Approved' && actionName === 'Start Mid-Year' && nextStatus === '06 Employee Mid-Year') ||
-      (currentStatus === '10 Mid-Year Completed' && actionName === 'Start Self Evaluation' && nextStatus === '11 Employee Self Evaluation') ||
-      (currentStatus === '15 HR Final Check' && actionName === 'Complete' && nextStatus === '16 Completed')
-    );
-
-    if (isD3TargetTransition) {
-      // D3 Trusted Writer Platform-Stamped Architecture:
-      // Delegate to handleD3BrowserTrustedTransition helper (fail-closed, always returns false)
-      const recordId = Number(event.recordId || record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
-      await handleD3BrowserTrustedTransition({
-        recordId,
-        actionName,
-        fetchFn: typeof fetch === 'function' ? fetch : null
-      });
-      return false; // Cancel native transition unconditionally
-    }
-
-    return event;
-// --- LITERAL SOURCE EXCERPT END ---
-```
-
-And lines 1432–1483:
-```javascript
-// --- LITERAL SOURCE EXCERPT START ---
-export async function handleD3BrowserTrustedTransition({
-  recordId,
-  actionName,
-  endpoint,
-  fetchFn
-} = {}) {
-  const targetEndpoint = endpoint || ((typeof window !== 'undefined' && window.__MBO_D3_PREPARE_ENDPOINT__)
-    ? window.__MBO_D3_PREPARE_ENDPOINT__
-    : '/api/mbo/d3/transaction/prepare-transition');
-
-  const effectiveFetch = fetchFn || ((typeof fetch === 'function') ? fetch : null);
-
-  if (!effectiveFetch) {
-    return { cancelled: true, error: 'FETCH_UNAVAILABLE' };
-  }
-
-  try {
-    const res = await effectiveFetch(targetEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        recordId: Number(recordId),
-        intendedAction: String(actionName || '').trim()
-      })
-    });
-...
-// --- LITERAL SOURCE EXCERPT END ---
-```
-
-**Verified Facts:**
-- The active D3 production browser hook unconditionally delegates target transitions to `handleD3BrowserTrustedTransition` and returns `false`.
-- `handleD3BrowserTrustedTransition` makes a `POST /api/mbo/d3/transaction/prepare-transition` HTTP request.
-- `executeProcessTransitionArchive` is **NEVER called** by the active production D3 workflow in `src/main-mbo-app.js`.
-
----
-
-### 3.7 Explicit Reachability Determination
+## 6. Authoritative Runtime Determinations
 
 ```text
 ================================================================================
-FINAL REACHABILITY DETERMINATION:
+AUTHORITATIVE RUNTIME CONCLUSIONS
 ================================================================================
-PRODUCTION_ACTOR_OVERRIDE_PATH = NOT_ACTIVE
-OPTIONS_ACTOR_CLASSIFICATION   = TEST_OR_LEGACY_ONLY
+LIVE_DEPLOYED_D3_PATH             = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
+LIVE_DEPLOYED_ACTOR_OVERRIDE_PATH = ACTIVE_OR_REACHABLE
 ================================================================================
 ```
 
-**Security Analysis:**
-- The helper `executeProcessTransitionArchive(...)` itself provides an `options.actor` override mechanism, which could be vulnerable to spoofing if exposed to untrusted user input.
-- However, because the active production D3 workflow does not call this helper, the override path is `NOT_ACTIVE` in production.
-- The helper is NOT claimed to be intrinsically trustworthy.
+### Security Implications Preserved for Control Plane Review:
+1. **Live Environment Execution:** The live deployed Kintone application currently runs the client-side `executeProcessTransitionArchive` logic, directly performing REST writes to App 798.
+2. **Actor Override Reachability:** Because `executeProcessTransitionArchive` is actively executed within the browser process transition pipeline, the helper's internal evaluation of `options.actor` is reachable in the client runtime.
+3. **Identity Vulnerability in SHARED Mode:** Under the live bundle, when operating under a shared Kintone account (e.g., `f2`), `actorCode` falls back to `f2`, losing the actual human employee ID (`EMP00125`) authenticated via MBO Login Lock.
 
 ---
 
-## 4. App 798 Anti-Forgery Trust Boundary Analysis
+## 7. Call-Site Inventory & Test Call-Site Count Correction
 
-### 4.1 Rejection of `GROUP everyone Add = YES`
-- Setting App 798 permissions to `GROUP everyone: Add = YES, View = NO` is rejected as insecure against direct REST API tampering.
-- Users with `Add = YES` permission can issue arbitrary `POST /k/v1/record.json` calls via DevTools, fabricating audit records without client-side JS validation.
+### 7.1 Automated Integration Test Call-Sites
+Verification of `tests/d3-stage-archive-integration.test.js` confirms exactly **25** invocations of `executeProcessTransitionArchive(...)`:
 
-### 4.2 Critical Security Question & Determination
+```text
+Invocation 1  : Line 103  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 2  : Line 125  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 3  : Line 147  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 4  : Line 169  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 5  : Line 188  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 6  : Line 207  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 7  : Line 226  - const outcome05 = await executeProcessTransitionArchive(record, event05, { ... })
+Invocation 8  : Line 237  - const outcome10 = await executeProcessTransitionArchive(record, event10, { ... })
+Invocation 9  : Line 248  - const outcome15 = await executeProcessTransitionArchive(record, event15, { ... })
+Invocation 10 : Line 293  - const outcome = await executeProcessTransitionArchive(badRecord, event, { ... })
+Invocation 11 : Line 316  - const outcome = await executeProcessTransitionArchive(badRecord, event, { ... })
+Invocation 12 : Line 340  - const outcome = await executeProcessTransitionArchive(badRecord, event, { ... })
+Invocation 13 : Line 365  - const outcome1 = await executeProcessTransitionArchive(badRecord1, event, { ... })
+Invocation 14 : Line 379  - const outcome2 = await executeProcessTransitionArchive(badRecord2, event, { ... })
+Invocation 15 : Line 401  - const outcome = await executeProcessTransitionArchive(invalidRecord, event, { ... })
+Invocation 16 : Line 420  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 17 : Line 447  - const outcome = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 18 : Line 466  - const outcome1 = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 19 : Line 474  - const outcome2 = await executeProcessTransitionArchive(record, event, { ... })
+Invocation 20 : Line 616  - const outcomeA = await executeProcessTransitionArchive(missingObjTextRecord, event, { ... })
+Invocation 21 : Line 628  - const outcomeB = await executeProcessTransitionArchive(missingScoreRecord, event, { ... })
+Invocation 22 : Line 640  - const outcomeC = await executeProcessTransitionArchive(badCountRecord, event, { ... })
+Invocation 23 : Line 667  - const outcome = await executeProcessTransitionArchive(k1Record, event, { ... })
+Invocation 24 : Line 701  - const outcomeA = await executeProcessTransitionArchive(multiUserRecord, event, { ... })
+Invocation 25 : Line 712  - const outcomeB = await executeProcessTransitionArchive(badRuleRecord, event, { ... })
+TOTAL COUNT   : 25 distinct invocations
+```
+
+### 7.2 Repository Inventory Summary
+
+| # | File | Scope | Classification | Options Source | `options.actor` | Actor Source | Active in Live? |
+| :- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `src/main-mbo-app.js:1355` | Declaration / Export | `EXPORT_ONLY_HELPER` | N/A | N/A | N/A | NO (Uncalled in src/) |
+| 2 | `dist/mbo-employee-app.js:12771` | Event Listener | `REPOSITORY_DIST_ARTIFACT` | `{ apiAdapter: kintoneApiWrapper }` | NO | Fallback `loginUser.code` | **YES** (Wired to Live App 794) |
+| 3 | `tests/d3-stage-archive-integration.test.js` | Integration Tests | `TEST` (25 call sites) | Test mock objects | YES (Select cases) | Hardcoded test fixtures | NO (Automated harness) |
+
+---
+
+## 8. Preserved Owner Governance Locks
 
 ```text
 ================================================================================
-CRITICAL SECURITY QUESTION:
-Can a KINTONE-ONLY architecture simultaneously guarantee:
-1. Shared account user can perform the authorized MBO workflow action.
-2. Actual human Employee_Code from Login Lock is preserved.
-3. Shared Kintone account code is preserved.
-4. App798 records cannot be forged directly by normal users.
-5. Existing App798 records cannot be edited/deleted.
-6. Archive evidence is created before the protected workflow transition.
-7. Failure to establish authoritative identity/audit context FAILS CLOSED.
+OWNER GOVERNANCE LOCKS: STATUS VERIFICATION
 ================================================================================
-
-EXPLICIT DETERMINATION:
-KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN
-
-ARCHITECTURAL LIMITATION:
-In a 100% Kintone-only environment (with zero external backend, zero server-side
-functions, and zero external secret custody):
-- Application-level / JavaScript enforcement is achievable for normal browser
-  navigation.
-- Platform-level provenance is limited to Kintone system fields (Creator = Kintone
-  principal, Created_Time = server timestamp).
-- PLATFORM-LEVEL ANTI-FORGERY of application fields (Actual_Operator_Employee_Code,
-  Previous_Status, To_Status, Snapshot_Hash) CANNOT be guaranteed against direct
-  REST API / DevTools submission if business users possess App 798 Add permissions.
-- Conversely, if business users are DENIED App 798 Add permissions (to prevent
-  forgery), client-side JavaScript executing in their session CANNOT create audit
-  records, causing the mandatory pre-transition audit gate to FAIL CLOSED.
+1. SHARED Mode Dual Identity Capture            : PRESERVED (Requires Actual Operator + Kintone Login)
+2. Subject Employee Separation                  : PRESERVED (App794.Employee_Code = Subject Employee != Operator)
+3. Anti-Forgery Determination                   : PRESERVED (KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN)
+4. Insecure ACL Workaround Rejection            : PRESERVED (GROUP everyone Add = YES is NOT ACCEPTED)
+5. Decision 009 Status                          : PRESERVED (Decision 009 = NOT_SUPERSEDED_AT_THIS_STAGE)
 ================================================================================
 ```
 
 ---
 
-## 5. Treatment of Decision 009 & Provenance
-
-1. **Decision 009 (`OWNER_DEC_D3_009`) Provenance:**
-   - Established a trusted external writer architecture specifically to overcome Kintone's lack of server-side REST API pre-commit validation.
-   - Preserved verbatim in repository control history.
-2. **Authority Treatment:**
-   - Because `KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN`, Decision 009 **CANNOT be declared superseded on technical security equivalence**.
-   - It remains `NOT_SUPERSEDED_AT_THIS_STAGE`, representing the formal trade-off between infrastructure simplicity (Kintone-only) and platform-level anti-forgery (External Trusted Writer).
-
----
-
-## 6. Stop Condition & Review Sign-Off
+## 9. Conclusion & Safe Stop
 
 ```text
 STOP_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW = YES
-CURRENT_STATUS                           = SAFE_STOP
+STATUS = SAFE_STOP
 ```
