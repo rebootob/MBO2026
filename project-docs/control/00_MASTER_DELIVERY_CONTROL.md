@@ -1,6 +1,6 @@
 # MBO2026 Master Delivery Control V3 — D1-D7 Stage Scoreboard
 
-Updated: 2026-09-17 ICT (D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-ARCHITECTURE-RATIFICATION-01)
+Updated: 2026-09-18 ICT (D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-LIVE-PROVISIONING-READINESS-AUTHORITY-RECONCILIATION-01)
 
 > **Role:** authoritative D1-D7 stage-level scoreboard only. For current gate/authorization read `AI_CONTROL_CENTER.md` and `control/02_ACTIVE_WORK_PACKAGE.md`.
 
@@ -16,7 +16,7 @@ PRODUCTION_READY = NO
 |---|---|---|
 | D1 | PASS / CLOSED / DURABLE | Accepted live App794 baseline remains revision 70. |
 | D2 | ENGINEERING PASS / CLOSED / DURABLE | Owner runtime UAT remains paused. |
-| D3 | RUNTIME ARCHIVE INTEGRATION DEPLOYED / TRUSTED ACTOR ARCHITECTURE OWNER RATIFIED / IMPLEMENTATION PENDING / FULL BUSINESS UAT NOT PROVEN | App 798 ACL remediated (Rev 6, USER hr least-privilege Add/View granted). App 794 archive-runtime customization deployed (Rev 76) and read-back verified against pinned artifact hashes. Trusted actor architecture OWNER RATIFIED (NATIVE_KINTONE_PLATFORM_STAMPED_OAUTH_ATTESTATION); implementation pending. Full D3 business UAT NOT PROVEN. D3 closure not claimed. PRODUCTION_READY = NO. |
+| D3 | RUNTIME ARCHIVE INTEGRATION DEPLOYED / TRUSTED ACTOR ARCHITECTURE OWNER RATIFIED / TRUSTED WRITER LOCAL IMPLEMENTATION PASS (ACCEPTED) / LIVE PROVISIONING NOT AUTHORIZED (NOT COMPLETED) / FULL BUSINESS UAT NOT PROVEN | App 798 ACL remediated (Rev 6, USER hr least-privilege Add/View granted). App 794 archive-runtime customization deployed (Rev 76) and read-back verified against pinned artifact hashes. Trusted actor architecture OWNER RATIFIED (NATIVE_KINTONE_PLATFORM_STAMPED_OAUTH_ATTESTATION). TRUSTED WRITER LOCAL IMPLEMENTATION = PASS / ACCEPTED. LIVE PROVISIONING = NOT AUTHORIZED / NOT COMPLETED. FULL BUSINESS UAT = NOT PROVEN. D3 CLOSURE = NOT CLAIMED. PRODUCTION_READY = NO. |
 | D4 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D5 | IN PROGRESS / NOT ACTIVE | No active authorization. |
 | D6 | UAT ACTIVITY STARTED / FULL BUSINESS UAT NOT CLOSED | No current D6 authorization. |

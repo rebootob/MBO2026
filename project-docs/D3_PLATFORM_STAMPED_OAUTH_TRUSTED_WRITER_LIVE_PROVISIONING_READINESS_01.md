@@ -2,21 +2,33 @@
 
 **Document ID**: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-LIVE-PROVISIONING-READINESS-01`
 **Package ID**: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-LIVE-PROVISIONING-READINESS-01`
-**Authorization ID**: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-LIVE-PROVISIONING-READINESS-01-20260918-OWNER-01`
+**Historical Claimed Authorization ID**: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-LIVE-PROVISIONING-READINESS-01-20260918-OWNER-01` (`NON_AUTHORITATIVE_HISTORICAL_CLAIM`)
+**Package Authority**: `UNAUTHORIZED_AUTO_START_OUTPUT / NON_AUTHORITATIVE`
+**Owner Authorization at Creation**: `NO`
+**Retroactive Ratification**: `NO`
+**Document Status**: `NON_AUTHORITATIVE_DRAFT_REFERENCE`
+**Historical Commit**: `2371e377bf5a34b02ee2f2a2f3677d2e7a30492c`
 **Mode**: DOCS + LOCAL/REPOSITORY READINESS ONLY / ZERO LIVE KINTONE I/O / ZERO REAL OAUTH / ZERO OAUTH CLIENT REGISTRATION / ZERO DEPLOYMENT / ZERO UAT
 **Canonical Branch**: `ai/antigravity-wp002c`
-**Authorized Base Head**: `f76edbaa99ea3d93f4440e181c4ab66768abb0ee`
-**Authorized Base Tree**: `eb52214db1db8c22ff0c0dfba8ffb747ce395bc3`
-**Status**: READINESS CONTRACT SPECIFIED / AWAITING OWNER DECISIONS
+**Historical Base Head**: `f76edbaa99ea3d93f4440e181c4ab66768abb0ee`
+**Historical Base Tree**: `eb52214db1db8c22ff0c0dfba8ffb747ce395bc3`
+**Status**: NON-AUTHORITATIVE DRAFT REFERENCE / REQUIRES OWNER DECISIONS / NOT OWNER RATIFIED
 
 ---
 
 ## 1. Purpose & Authority
 
-This document establishes the exact provisioning and readiness contract required to move the accepted local D3 trusted-writer implementation (`D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-01-R3`) toward a future Owner-authorized live provisioning gate.
+This document contains proposed draft specifications defining the provisioning and readiness contract required to move the accepted local D3 trusted-writer implementation (`D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-01-R3`) toward a future Owner-authorized live provisioning gate.
 
-**CRITICAL GOVERNANCE BOUNDARIES**:
-- **THIS PACKAGE DOES NOT CREATE OR CHANGE ANY LIVE INFRASTRUCTURE.**
+> **CRITICAL GOVERNANCE NOTICE & PROVENANCE RECONCILIATION**:
+> - **PACKAGE_AUTHORITY**: `UNAUTHORIZED_AUTO_START_OUTPUT / NON_AUTHORITATIVE`
+> - **OWNER_AUTHORIZATION**: `NO` (No valid Owner Authorization ID existed prior to commit `2371e377bf5a34b02ee2f2a2f3677d2e7a30492c`).
+> - **RETROACTIVE_RATIFICATION**: `NO` (Owner approval of reconciliation package `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-LIVE-PROVISIONING-READINESS-AUTHORITY-RECONCILIATION-01` does NOT retroactively ratify this document or commit `2371e377bf5a34b02ee2f2a2f3677d2e7a30492c`).
+> - **GIT_HISTORY**: Preserved for audit integrity.
+> - **DOCUMENT_STATUS**: Non-authoritative draft technical reference. Any provisioning-only proposals, sequences, matrices, and decision register items herein are **PROPOSED / NOT OWNER RATIFIED**.
+
+### Non-Execution Boundaries
+- **THIS DOCUMENT DOES NOT CREATE OR CHANGE ANY LIVE INFRASTRUCTURE.**
 - **ZERO LIVE KINTONE READS / ZERO LIVE KINTONE WRITES.**
 - **ZERO REAL OAUTH AUTHORIZATIONS / ZERO REAL TOKEN EXCHANGES.**
 - **ZERO OAUTH CLIENT REGISTRATIONS / ZERO DEPLOYMENTS / ZERO UAT ACTIONS.**
@@ -24,8 +36,9 @@ This document establishes the exact provisioning and readiness contract required
 - **OWNER DECISIONS MUST BE RATIFIED PRIOR TO ANY LIVE EXECUTION.**
 
 ### Implementation State Authority
-Under Git evidence and repository verification:
+Under accepted Git evidence and repository verification:
 - `IMPLEMENTATION_01_R3`: **PASS / ACCEPTED / CLOSED** (Commit `f76edbaa99ea3d93f4440e181c4ab66768abb0ee`)
+- `ACCEPTED_IMPLEMENTATION_HEAD`: `f76edbaa99ea3d93f4440e181c4ab66768abb0ee`
 - `LOCAL_IMPLEMENTATION_GATE`: **ACCEPTED**
 - `FULL_D3_BUSINESS_UAT`: **NOT_PROVEN**
 - `D3_CLOSURE`: **NOT_CLAIMED**
@@ -33,9 +46,9 @@ Under Git evidence and repository verification:
 
 ---
 
-## 2. Locked Architectural Tenets
+## 2. Locked Architectural Tenets (Decision 009 Provenance)
 
-All live provisioning specifications in this document adhere immutably to:
+The architectural invariants originating from Owner-ratified Decision 009 remain authoritative and locked:
 1. `OWNER_RATIFIED_ARCHITECTURE = NATIVE_KINTONE_PLATFORM_STAMPED_OAUTH_ATTESTATION`
 2. `ATTESTATION_AND_TRANSITION_USER_AUTHORITY = SAME_BACKEND_HELD_USER_OAUTH_AUTHORITY`
 3. `ACTOR_IDENTITY_PROVENANCE = KINTONE_PLATFORM_STAMPED_CREATOR_ONLY` (`CREATOR.value.code`)
@@ -50,13 +63,17 @@ All live provisioning specifications in this document adhere immutably to:
 12. `APP798_TRUSTED_WRITER_EDIT = NO`
 13. `APP798_TRUSTED_WRITER_DELETE = NO`
 
+*(Note: New provisioning-specific proposals introduced in commit `2371e377` are not Decision 009 locks and are designated PROPOSED / DRAFT / NOT OWNER RATIFIED below.)*
+
 ---
 
-## 3. Readiness Output 1: Dedicated Attestation App Schema
+## 3. Readiness Output 1: Proposed Attestation App Schema
 
-The dedicated Attestation App serves as the single-use platform attestation ledger. It records user-submitted attestations stamped by Kintone with the user's platform identity (`CREATOR`), read back by the trusted backend, and consumed once.
+*Status: PROPOSED / DRAFT / NOT OWNER RATIFIED (Subject to future Owner review upon live provisioning authorization).*
 
-### Required Logical & Physical Fields
+The proposed Attestation App serves as the single-use platform attestation ledger. It records user-submitted attestations stamped by Kintone with the user's platform identity (`CREATOR`), read back by the trusted backend, and consumed once.
+
+### Proposed Logical & Physical Fields
 
 | Field Code | Proposed Kintone Field Type | Required | Uniqueness Requirement | Max Length / Validation | Caller Write Authority (OAuth User) | Read Authority | Implementation Contract Rationale |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -76,13 +93,15 @@ The dedicated Attestation App serves as the single-use platform attestation ledg
 - In the accepted local implementation (`d3-attestation-verifier.js`), all payload values are formatted as `{ value: String(...) }`.
 - In Kintone REST API, `SINGLE_LINE_TEXT` accepts `{ value: String }` directly for string, number, and ISO-8601 timestamps without formatting friction.
 - For `App794_Record_ID`, `Issued_At`, and `Expires_At`, `SINGLE_LINE_TEXT` is proven compatible with zero format conversion risks. If Kintone native `NUMBER` or `DATETIME` field types are preferred for UI filtering, formatting must conform to Kintone API restrictions (UTC ISO strings for DATETIME).
-- **LOCKED RULE**: No extra business fields allowed. No manual `actor` or `userCode` field allowed.
+- **LOCKED ARCHITECTURAL RULE**: No extra business fields allowed. No manual `actor` or `userCode` field allowed.
 
 ---
 
-## 4. Readiness Output 2: Attestation App ACL Principles
+## 4. Readiness Output 2: Proposed Attestation App ACL Principles
 
-Access control to the dedicated Attestation App must enforce strict fail-closed boundary isolation:
+*Status: PROPOSED / DRAFT / NOT OWNER RATIFIED.*
+
+Access control to the proposed Attestation App is designed around strict fail-closed boundary isolation:
 
 ### Role / Identity Permissions
 
@@ -111,36 +130,40 @@ Access control to the dedicated Attestation App must enforce strict fail-closed 
 
 ---
 
-## 5. Readiness Output 3: Cybozu Confidential OAuth Client Contract
+## 5. Readiness Output 3: Proposed Cybozu Confidential OAuth Client Contract
 
-Registration contract for Cybozu OAuth Client:
+*Status: PROPOSED / DRAFT / NOT OWNER RATIFIED (Except Decision 009 locks on Confidential Client, Authorization Code, No PKCE, and scopes).*
+
+Proposed registration contract for Cybozu OAuth Client:
 
 ### Contract Specifications
-- **CLIENT_TYPE**: `CONFIDENTIAL_CLIENT`
-- **GRANT_TYPE**: `AUTHORIZATION_CODE`
-- **PKCE**: `NOT USED` (Explicitly verified unsupported by Cybozu OAuth)
+- **CLIENT_TYPE**: `CONFIDENTIAL_CLIENT` (Locked by Decision 009)
+- **GRANT_TYPE**: `AUTHORIZATION_CODE` (Locked by Decision 009)
+- **PKCE**: `NOT USED` (Explicitly verified unsupported by Cybozu OAuth; locked by Decision 009)
 - **SCOPES**:
   - `k:app_record:read`
   - `k:app_record:write`
-  - *No other scopes permitted.*
+  - *No other scopes permitted.* (Locked by Decision 009)
 - **LOGICAL REDIRECT ROUTE**: `/api/mbo/d3/oauth/callback`
 - **PUBLIC REDIRECT URL PATTERN**: `https://<OAUTH_REDIRECT_HOST>/api/mbo/d3/oauth/callback`
-- **REGISTRATION OWNER**: Dedicated Administrative Cybozu Account (See Owner Decision `OD-D3-003`).
-- **SECRET CUSTODY**: Backend environment secret vault only; zero git/client/browser exposure.
+- **REGISTRATION OWNER**: Dedicated Administrative Cybozu Account (PROPOSED; requires Owner Decision `OD-D3-003`).
+- **SECRET CUSTODY**: Backend environment secret vault only; zero git/client/browser exposure (PROPOSED; requires Owner Decision `OD-D3-006`).
 - **ALLOWED ENVIRONMENTS**: Production gateway instance only (and explicitly authorized staging instance if provisioned).
 - **ROTATION / REVOCATION**: Re-generation of `client_secret` in Cybozu System Administration; immediate revocation of compromised clients.
 - **STATE & SESSION BINDING**: Gateway generates cryptographic `state` parameter bound to the caller's authenticated session with 10-minute TTL; validated on callback.
 
 *Hostname Lock*:
-`OAUTH_REDIRECT_HOST = OWNER_DECISION_REQUIRED` (See Owner Decision `OD-D3-001`). No public hostname may be invented by the execution agent.
+`OAUTH_REDIRECT_HOST = OWNER_DECISION_REQUIRED` (Unresolved; requires Owner Decision `OD-D3-001`). No public hostname may be invented by the execution agent.
 
 ---
 
-## 6. Readiness Output 4: Trusted Backend Hosting Architecture
+## 6. Readiness Output 4: Proposed Trusted Backend Hosting Architecture
+
+*Status: PROPOSED REQUIREMENTS / REQUIRES OWNER DECISION FOR TARGET.*
 
 The backend gateway hosts `src/server/mbo-gateway-server.js` using `node:http`.
 
-### Production Hosting Requirements
+### Proposed Production Hosting Requirements
 1. **Endpoint & TLS**:
    - Must terminate TLS (HTTPS) via a trusted certificate authority (no self-signed certificates in production).
    - TLS termination may be handled by reverse proxy (NGINX, Caddy, Cloudflare, ALB) or native Node TLS.
@@ -157,16 +180,18 @@ The backend gateway hosts `src/server/mbo-gateway-server.js` using `node:http`.
    - Zero logging of Authorization headers, OAuth tokens (`access_token`, `refresh_token`), cookie values, or raw secret parameters.
 
 *Hosting Target Lock*:
-`TRUSTED_BACKEND_HOSTING_TARGET = OWNER_DECISION_REQUIRED` (See Owner Decision `OD-D3-001`).
+`TRUSTED_BACKEND_HOSTING_TARGET = OWNER_DECISION_REQUIRED` (Unresolved; requires Owner Decision `OD-D3-001`).
 
 ---
 
-## 7. Readiness Output 5: Production Secure Token Store Architecture
+## 7. Readiness Output 5: Proposed Production Secure Token Store Architecture
+
+*Status: PROPOSED REQUIREMENTS / REQUIRES OWNER DECISION FOR PROVIDER.*
 
 The local implementation provides `D3TokenStore` (interface) and `InMemoryTokenStore` (test-only).
 
-### Production Custody Requirements
-1. **Zero Production In-Memory**: `InMemoryTokenStore` must throw `PRODUCTION_IN_MEMORY_FORBIDDEN` in production.
+### Proposed Production Custody Requirements
+1. **Zero Production In-Memory**: `InMemoryTokenStore` must throw `PRODUCTION_IN_MEMORY_FORBIDDEN` in production (Locked by Decision 009).
 2. **Encryption at Rest**: All persisted OAuth tokens (`accessToken`, `refreshToken`) must be encrypted using AES-256-GCM (or authenticated equivalent) using `KINTONE_TOKEN_ENCRYPTION_KEY`.
 3. **Session-Keyed Storage**: Grants are keyed solely by server-derived session bindings (`SHA-256(sessionToken)`), never by unhashed credentials or raw tokens.
 4. **Atomic Operations**: `storeGrant`, `loadGrant`, `rotateGrant`, `invalidateGrant` must execute atomically.
@@ -175,30 +200,35 @@ The local implementation provides `D3TokenStore` (interface) and `InMemoryTokenS
 7. **Lifecycle & Expiration**: Token records must respect OAuth `expires_in` semantics and session invalidation on user logout.
 
 *Storage Provider Lock*:
-`PRODUCTION_TOKEN_STORE_PROVIDER = OWNER_DECISION_REQUIRED` (See Owner Decision `OD-D3-002`).
+`PRODUCTION_TOKEN_STORE_PROVIDER = OWNER_DECISION_REQUIRED` (Unresolved; requires Owner Decision `OD-D3-002`).
 
 ---
 
-## 8. Readiness Output 6: App 798 (Revision Archive) Trusted Writer Credential
+## 8. Readiness Output 6: Proposed App 798 (Revision Archive) Trusted Writer Credential
+
+*Status: PROPOSED CREDENTIAL CONTRACT / ARCHITECTURAL LIMITS LOCKED BY DECISION 009.*
 
 App 798 is an append-only historical audit ledger.
 
-### Runtime Credential Contract
+### Credential Contract
 - **Target App**: `798` (App ID fixed by governance).
 - **Required Privileges**:
   - `READ / VIEW RECORDS`: **YES** (Required for pre-write duplicate check via `findByArchiveKey`).
   - `ADD RECORD`: **YES** (Required to write immutable archive evidence).
-  - `EDIT RECORDS`: **STRICTLY FORBIDDEN (NO)**.
-  - `DELETE RECORDS`: **STRICTLY FORBIDDEN (NO)**.
+  - `EDIT RECORDS`: **STRICTLY FORBIDDEN (NO)** (Locked by Decision 009).
+  - `DELETE RECORDS`: **STRICTLY FORBIDDEN (NO)** (Locked by Decision 009).
 - **Kintone App Permissions**:
   - Everyone group: Add = NO, View = NO, Edit = NO, Delete = NO.
   - App 798 Trusted Writer Service Identity: Add = YES, View = YES, Edit = NO, Delete = NO.
 - **Custody Boundary**: Backend environment only (`KINTONE_APP798_TRUSTED_WRITER_CREDENTIAL`); zero browser exposure.
 - **Idempotency**: Strict pre-check on `Archive_Key` ensures zero duplicate snapshots.
+- **Operational Account**: `APP798_WRITER_IDENTITY = OWNER_DECISION_REQUIRED` (Unresolved; requires Owner Decision `OD-D3-005`).
 
 ---
 
-## 9. Readiness Output 7: Privileged Attestation Reader Credential
+## 9. Readiness Output 7: Proposed Privileged Attestation Reader Credential
+
+*Status: PROPOSED CREDENTIAL CONTRACT / NOT OWNER RATIFIED.*
 
 The Attestation Reader reads and verifies user-created attestations in the Attestation App.
 
@@ -213,10 +243,13 @@ The Attestation Reader reads and verifies user-created attestations in the Attes
   - Distinct and decoupled from user OAuth credentials.
   - Distinct and decoupled from App 798 Trusted Writer credentials.
   - Strictly forbidden from being used to bypass workflow transitions or fake actor identities.
+- **Operational Account**: `ATTESTATION_READER_IDENTITY = OWNER_DECISION_REQUIRED` (Unresolved; requires Owner Decision `OD-D3-004`).
 
 ---
 
-## 10. Readiness Output 8: Secret & Configuration Matrix
+## 10. Readiness Output 8: Proposed Secret & Configuration Matrix
+
+*Status: PROPOSED MATRIX / DRAFT / NOT OWNER RATIFIED.*
 
 | Variable Name | Classification | Source / Custody Owner | Browser Exposure Allowed | Log Exposure Allowed | Rotation Required | Provisioning Prerequisite | Runtime Validation Requirement |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -236,9 +269,11 @@ The Attestation Reader reads and verifies user-created attestations in the Attes
 
 ---
 
-## 11. Readiness Output 9: Ordered Future Provisioning Sequence
+## 11. Readiness Output 9: Proposed Provisioning Sequence
 
-*Note: Execution is strictly deferred until explicit Owner authorization and decision ratification.*
+*Status: PROPOSED SEQUENCE / NOT OWNER RATIFIED / ZERO EXECUTION.*
+
+*Execution is strictly deferred until explicit Owner authorization and decision ratification.*
 
 ```
 [Phase 1: Owner Decisions]
@@ -283,9 +318,11 @@ The Attestation Reader reads and verifies user-created attestations in the Attes
 
 ---
 
-## 12. Readiness Output 10: Verification & Readback Plan
+## 12. Readiness Output 10: Proposed Verification & Readback Plan
 
-For every future mutable provisioning step, the following automated or manual readbacks are strictly mandated:
+*Status: PROPOSED / DRAFT / NOT OWNER RATIFIED.*
+
+For future mutable provisioning, the following readbacks are proposed:
 
 1. **Attestation App Verification**:
    - Query Kintone App Form API: Verify existence and field codes of all 9 fields.
@@ -303,7 +340,9 @@ For every future mutable provisioning step, the following automated or manual re
 
 ---
 
-## 13. Readiness Output 11: Fail-Closed STOP Conditions
+## 13. Readiness Output 11: Proposed Fail-Closed STOP Conditions
+
+*Status: PROPOSED / DRAFT / NOT OWNER RATIFIED.*
 
 Future live provisioning and testing must halt immediately (`FAIL-CLOSED`) upon encountering any of the following:
 
@@ -327,9 +366,12 @@ Future live provisioning and testing must halt immediately (`FAIL-CLOSED`) upon 
 
 ## 14. Owner Decision Register
 
-The following unresolved decisions must be formally ratified by the Owner before initiating live provisioning:
+*Status: ALL ITEMS UNRESOLVED / PROPOSED / NOT OWNER RATIFIED.*
+
+The following unresolved decisions require formal Owner evaluation and ratification prior to any future live provisioning:
 
 ### `OD-D3-001-BACKEND-HOST`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: What is the canonical public HTTPS hostname for the production trusted backend gateway?
 - **Why Required**: Required to lock `KINTONE_OAUTH_REDIRECT_URI` (`https://<host>/api/mbo/d3/oauth/callback`) and Cybozu client registration.
 - **Safe Options / Constraints**:
@@ -339,6 +381,7 @@ The following unresolved decisions must be formally ratified by the Owner before
 - **Default**: `NONE` (Owner decision required).
 
 ### `OD-D3-002-TOKEN-STORE-PROVIDER`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: What persistence engine will implement the production `D3TokenStore`?
 - **Why Required**: Local `InMemoryTokenStore` is strictly forbidden in production.
 - **Safe Options / Constraints**:
@@ -350,6 +393,7 @@ The following unresolved decisions must be formally ratified by the Owner before
 - **Default**: `NONE` (Owner decision required).
 
 ### `OD-D3-003-OAUTH-REGISTRATION-OPERATOR`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: Which Cybozu administrative account is designated to register and manage the Confidential OAuth Client?
 - **Why Required**: Client registration requires Cybozu System Administration privileges and long-term credential accountability.
 - **Safe Options / Constraints**:
@@ -359,6 +403,7 @@ The following unresolved decisions must be formally ratified by the Owner before
 - **Default**: `NONE` (Owner decision required).
 
 ### `OD-D3-004-ATTESTATION-READER-IDENTITY`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: What credential mechanism will be provisioned for the Privileged Attestation Reader?
 - **Why Required**: Backend requires independent readback authority to verify user-stamped attestations.
 - **Safe Options / Constraints**:
@@ -368,6 +413,7 @@ The following unresolved decisions must be formally ratified by the Owner before
 - **Default**: `NONE` (Owner decision required).
 
 ### `OD-D3-005-APP798-WRITER-IDENTITY`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: What credential mechanism will be provisioned for the App 798 Trusted Writer?
 - **Why Required**: Backend requires isolated trusted-writer authority to persist evidence records.
 - **Safe Options / Constraints**:
@@ -377,6 +423,7 @@ The following unresolved decisions must be formally ratified by the Owner before
 - **Default**: `NONE` (Owner decision required).
 
 ### `OD-D3-006-SECRET-CUSTODY-MECHANISM`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: What secret management mechanism will store backend credentials in production?
 - **Why Required**: Secrets (`KINTONE_OAUTH_CLIENT_SECRET`, `KINTONE_TOKEN_ENCRYPTION_KEY`, API tokens) must never reside in files committed to source control.
 - **Safe Options / Constraints**:
@@ -386,6 +433,7 @@ The following unresolved decisions must be formally ratified by the Owner before
 - **Default**: `NONE` (Owner decision required).
 
 ### `OD-D3-007-TOKEN-STORE-PERSISTENCE-POLICY`
+- **Status**: `UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`
 - **Question**: What is the recovery policy for OAuth token grants across backend server restarts?
 - **Why Required**: Determines whether user OAuth sessions survive process restarts or require transparent re-authorization.
 - **Safe Options / Constraints**:
@@ -395,16 +443,23 @@ The following unresolved decisions must be formally ratified by the Owner before
 
 ---
 
-## 15. Readiness Conclusion & Summary
+## 15. Summary
 
-- `READINESS_STATUS`: **PASS_WITH_OWNER_DECISIONS_REQUIRED**
+- `DOCUMENT_STATUS`: **NON_AUTHORITATIVE_DRAFT_REFERENCE**
+- `PACKAGE_AUTHORITY`: **UNAUTHORIZED_AUTO_START_OUTPUT / NON_AUTHORITATIVE**
+- `OWNER_AUTHORIZATION`: **NO**
+- `RETROACTIVE_RATIFICATION`: **NO**
+- `HISTORICAL_COMMIT`: `2371e377bf5a34b02ee2f2a2f3677d2e7a30492c` (Git history preserved)
 - `OWNER_DECISIONS_REQUIRED_COUNT`: **7**
 - `OWNER_DECISION_IDS`:
-  1. `OD-D3-001-BACKEND-HOST`
-  2. `OD-D3-002-TOKEN-STORE-PROVIDER`
-  3. `OD-D3-003-OAUTH-REGISTRATION-OPERATOR`
-  4. `OD-D3-004-ATTESTATION-READER-IDENTITY`
-  5. `OD-D3-005-APP798-WRITER-IDENTITY`
-  6. `OD-D3-006-SECRET-CUSTODY-MECHANISM`
-  7. `OD-D3-007-TOKEN-STORE-PERSISTENCE-POLICY`
+  1. `OD-D3-001-BACKEND-HOST` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
+  2. `OD-D3-002-TOKEN-STORE-PROVIDER` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
+  3. `OD-D3-003-OAUTH-REGISTRATION-OPERATOR` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
+  4. `OD-D3-004-ATTESTATION-READER-IDENTITY` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
+  5. `OD-D3-005-APP798-WRITER-IDENTITY` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
+  6. `OD-D3-006-SECRET-CUSTODY-MECHANISM` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
+  7. `OD-D3-007-TOKEN-STORE-PERSISTENCE-POLICY` (`UNRESOLVED / PROPOSED / NOT OWNER RATIFIED`)
 - `ZERO_LIVE_IO_VERIFIED`: **YES**
+- `LIVE_PROVISIONING_AUTHORIZED`: **NO**
+- `DEPLOYMENT_AUTHORIZED`: **NO**
+- `UAT_AUTHORIZED`: **NO**
