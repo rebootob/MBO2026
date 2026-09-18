@@ -53,6 +53,7 @@ Primary durable decision/evidence documents:
 - `project-docs/D3_DECISION_008_ROUTE_SNAPSHOT_PERSISTENCE_SYNC.md`
 - `project-docs/D3_DECISION_009_PLATFORM_STAMPED_OAUTH_ATTESTATION_ARCHITECTURE_RATIFICATION.md` — historical architecture decision (superseded as current implementation target by Decision 010).
 - `project-docs/D3_DECISION_010_KINTONE_ONLY_SCOPE_RECONCILIATION.md` — authoritative current Owner decision establishing Kintone-only system boundary and mixed-identity business auditability.
+- `project-docs/D3_KINTONE_ONLY_MIXED_IDENTITY_AUDIT_INTEGRATION_DESIGN.md` — authoritative integration design and contract for closing the shared actual operator gap.
 - `project-docs/D3_KINTONE_ONLY_MIXED_IDENTITY_AUDIT_ARCHITECTURE_CORRECTIVE_01.md` — corrected D3 architecture position.
 - `project-docs/evidence/D3_KINTONE_ONLY_MIXED_IDENTITY_AUDIT_ARCHITECTURE_CORRECTIVE_01_EVIDENCE.md` — live bundle inspection evidence (Rev 76, test call count 25, zero-I/O accounting).
 - `project-docs/D3_IMPLEMENTATION_READINESS_PLAN.md` — evidence-grounded implementation sequence, exact planned boundaries and live-preflight/deployment gates; does not itself authorize implementation.
