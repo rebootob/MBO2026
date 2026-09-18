@@ -10746,6 +10746,11 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         snapshotHash: raw.Snapshot_Hash?.value ?? "",
         archivedBy: Array.isArray(raw.Archived_By?.value) ? raw.Archived_By.value : [],
         archivedAt: raw.Archived_At?.value ?? "",
+        identityMode: raw.Identity_Mode?.value ?? null,
+        actualOperatorEmployeeCode: raw.Actual_Operator_Employee_Code?.value ?? null,
+        kintoneLoginUserCode: raw.Kintone_Login_User_Code?.value ?? null,
+        actionName: raw.Action_Name?.value ?? null,
+        toStatus: raw.To_Status?.value ?? null,
         rawRecord: raw
       };
     }
@@ -11249,6 +11254,31 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         fail("Archived_At", persisted.archivedAt, expected.archivedAt);
       }
     }
+    if (expected.identityMode !== void 0 && expected.identityMode !== null) {
+      if (persisted.identityMode !== expected.identityMode) {
+        fail("Identity_Mode", persisted.identityMode, expected.identityMode);
+      }
+    }
+    if (expected.actualOperatorEmployeeCode !== void 0 && expected.actualOperatorEmployeeCode !== null) {
+      if (persisted.actualOperatorEmployeeCode !== expected.actualOperatorEmployeeCode) {
+        fail("Actual_Operator_Employee_Code", persisted.actualOperatorEmployeeCode, expected.actualOperatorEmployeeCode);
+      }
+    }
+    if (expected.kintoneLoginUserCode !== void 0 && expected.kintoneLoginUserCode !== null) {
+      if (persisted.kintoneLoginUserCode !== expected.kintoneLoginUserCode) {
+        fail("Kintone_Login_User_Code", persisted.kintoneLoginUserCode, expected.kintoneLoginUserCode);
+      }
+    }
+    if (expected.actionName !== void 0 && expected.actionName !== null) {
+      if (persisted.actionName !== expected.actionName) {
+        fail("Action_Name", persisted.actionName, expected.actionName);
+      }
+    }
+    if (expected.toStatus !== void 0 && expected.toStatus !== null) {
+      if (persisted.toStatus !== expected.toStatus) {
+        fail("To_Status", persisted.toStatus, expected.toStatus);
+      }
+    }
     return true;
   }
   var RevisionArchiveService = class _RevisionArchiveService {
@@ -11348,6 +11378,96 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       const { canonicalJson, sha256 } = hashD3Snapshot(logicalSnapshot);
       const resolvedPreviousStatus = logicalSnapshot.stage?.Previous_Status !== void 0 && logicalSnapshot.stage?.Previous_Status !== null ? String(logicalSnapshot.stage.Previous_Status) : previousStatus ? String(previousStatus) : "";
       const resolvedSourceRecordId = sourceRecordId !== void 0 && sourceRecordId !== null ? Number(sourceRecordId) : logicalSnapshot.source?.Record_ID !== void 0 && logicalSnapshot.source?.Record_ID !== null ? Number(logicalSnapshot.source.Record_ID) : null;
+      const {
+        identityMode,
+        actualOperatorEmployeeCode,
+        kintoneLoginUserCode,
+        actionName,
+        toStatus
+      } = params;
+      const hasAnyMixedIdentityField = identityMode !== void 0 || actualOperatorEmployeeCode !== void 0 || kintoneLoginUserCode !== void 0 || actionName !== void 0 || toStatus !== void 0;
+      let resolvedIdentityMode = null;
+      let resolvedActualOperatorEmployeeCode = null;
+      let resolvedKintoneLoginUserCode = null;
+      let resolvedActionName = null;
+      let resolvedToStatus = null;
+      if (hasAnyMixedIdentityField) {
+        if (!identityMode || typeof identityMode !== "string") {
+          throw new RevisionArchiveError(
+            "MISSING_IDENTITY_CONTEXT",
+            "Mixed Identity archive requires a non-empty string identityMode."
+          );
+        }
+        if (identityMode !== "SHARED" && identityMode !== "DEDICATED") {
+          throw new RevisionArchiveError(
+            "UNSUPPORTED_IDENTITY_MODE",
+            `Identity mode must be strictly "SHARED" or "DEDICATED", received: "${identityMode}".`
+          );
+        }
+        if (!actualOperatorEmployeeCode || typeof actualOperatorEmployeeCode !== "string" || !actualOperatorEmployeeCode.trim()) {
+          throw new RevisionArchiveError(
+            "ACTUAL_OPERATOR_UNRESOLVED",
+            "Actual_Operator_Employee_Code is required and must be a non-empty string."
+          );
+        }
+        const trimmedActualOperatorEmployeeCode = actualOperatorEmployeeCode.trim();
+        if (trimmedActualOperatorEmployeeCode.length > 64) {
+          throw new RevisionArchiveError(
+            "ACTUAL_OPERATOR_EMPLOYEE_CODE_EXCEEDS_MAX_LENGTH",
+            `Actual_Operator_Employee_Code length (${trimmedActualOperatorEmployeeCode.length}) exceeds maximum allowed length of 64 characters.`
+          );
+        }
+        if (!kintoneLoginUserCode || typeof kintoneLoginUserCode !== "string" || !kintoneLoginUserCode.trim()) {
+          throw new RevisionArchiveError(
+            "KINTONE_LOGIN_USER_UNRESOLVED",
+            "Kintone_Login_User_Code is required and must be a non-empty string."
+          );
+        }
+        const trimmedKintoneLoginUserCode = kintoneLoginUserCode.trim();
+        if (trimmedKintoneLoginUserCode.length > 64) {
+          throw new RevisionArchiveError(
+            "KINTONE_LOGIN_USER_CODE_EXCEEDS_MAX_LENGTH",
+            `Kintone_Login_User_Code length (${trimmedKintoneLoginUserCode.length}) exceeds maximum allowed length of 64 characters.`
+          );
+        }
+        if (kintoneLoginUserCode !== actorUserCode) {
+          throw new RevisionArchiveError(
+            "IDENTITY_CONTEXT_MISMATCH",
+            `Kintone_Login_User_Code ("${kintoneLoginUserCode}") must match exact-case actorUserCode ("${actorUserCode}").`
+          );
+        }
+        if (!actionName || typeof actionName !== "string" || !actionName.trim()) {
+          throw new RevisionArchiveError(
+            "MISSING_IDENTITY_CONTEXT",
+            "Action_Name is required and must be a non-empty string."
+          );
+        }
+        const trimmedActionName = actionName.trim();
+        if (trimmedActionName.length > 128) {
+          throw new RevisionArchiveError(
+            "ACTION_NAME_EXCEEDS_MAX_LENGTH",
+            `Action_Name length (${trimmedActionName.length}) exceeds maximum allowed length of 128 characters.`
+          );
+        }
+        if (!toStatus || typeof toStatus !== "string" || !toStatus.trim()) {
+          throw new RevisionArchiveError(
+            "MISSING_IDENTITY_CONTEXT",
+            "To_Status is required and must be a non-empty string."
+          );
+        }
+        const trimmedToStatus = toStatus.trim();
+        if (trimmedToStatus.length > 128) {
+          throw new RevisionArchiveError(
+            "TO_STATUS_EXCEEDS_MAX_LENGTH",
+            `To_Status length (${trimmedToStatus.length}) exceeds maximum allowed length of 128 characters.`
+          );
+        }
+        resolvedIdentityMode = identityMode;
+        resolvedActualOperatorEmployeeCode = trimmedActualOperatorEmployeeCode;
+        resolvedKintoneLoginUserCode = kintoneLoginUserCode;
+        resolvedActionName = trimmedActionName;
+        resolvedToStatus = trimmedToStatus;
+      }
       const expectedFacts = {
         archiveKey,
         sourceRecordKey,
@@ -11363,7 +11483,12 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         actorUserCode,
         previousStatus: resolvedPreviousStatus,
         sourceRecordId: resolvedSourceRecordId,
-        archivedAt
+        archivedAt,
+        identityMode: resolvedIdentityMode,
+        actualOperatorEmployeeCode: resolvedActualOperatorEmployeeCode,
+        kintoneLoginUserCode: resolvedKintoneLoginUserCode,
+        actionName: resolvedActionName,
+        toStatus: resolvedToStatus
       };
       const existingRecords = await this.repository.findByArchiveKey(archiveKey);
       if (existingRecords.length > 1) {
@@ -11389,7 +11514,12 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
           supersededByRevision: expectedFacts.supersededByRevision,
           sourceRecordId: resolvedSourceRecordId,
           archivedBy: actorUserCode,
-          archivedAt: existing.archivedAt
+          archivedAt: existing.archivedAt,
+          identityMode: existing.identityMode ?? resolvedIdentityMode,
+          actualOperatorEmployeeCode: existing.actualOperatorEmployeeCode ?? resolvedActualOperatorEmployeeCode,
+          kintoneLoginUserCode: existing.kintoneLoginUserCode ?? resolvedKintoneLoginUserCode,
+          actionName: existing.actionName ?? resolvedActionName,
+          toStatus: existing.toStatus ?? resolvedToStatus
         });
       }
       const recordPayload = {
@@ -11406,6 +11536,21 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         Archived_By: { value: [{ code: actorUserCode }] },
         Archived_At: { value: archivedAt }
       };
+      if (resolvedIdentityMode !== null) {
+        recordPayload.Identity_Mode = { value: resolvedIdentityMode };
+      }
+      if (resolvedActualOperatorEmployeeCode !== null) {
+        recordPayload.Actual_Operator_Employee_Code = { value: resolvedActualOperatorEmployeeCode };
+      }
+      if (resolvedKintoneLoginUserCode !== null) {
+        recordPayload.Kintone_Login_User_Code = { value: resolvedKintoneLoginUserCode };
+      }
+      if (resolvedActionName !== null) {
+        recordPayload.Action_Name = { value: resolvedActionName };
+      }
+      if (resolvedToStatus !== null) {
+        recordPayload.To_Status = { value: resolvedToStatus };
+      }
       if (resolvedSourceRecordId !== null) {
         recordPayload.Source_Record_ID = { value: String(resolvedSourceRecordId) };
       }
@@ -11440,7 +11585,12 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
             supersededByRevision: expectedFacts.supersededByRevision,
             sourceRecordId: resolvedSourceRecordId,
             archivedBy: actorUserCode,
-            archivedAt: rec.archivedAt
+            archivedAt: rec.archivedAt,
+            identityMode: rec.identityMode ?? resolvedIdentityMode,
+            actualOperatorEmployeeCode: rec.actualOperatorEmployeeCode ?? resolvedActualOperatorEmployeeCode,
+            kintoneLoginUserCode: rec.kintoneLoginUserCode ?? resolvedKintoneLoginUserCode,
+            actionName: rec.actionName ?? resolvedActionName,
+            toStatus: rec.toStatus ?? resolvedToStatus
           });
         }
         if (recoveryRecords.length > 1) {
@@ -11471,7 +11621,12 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         supersededByRevision: expectedFacts.supersededByRevision,
         sourceRecordId: resolvedSourceRecordId,
         archivedBy: actorUserCode,
-        archivedAt
+        archivedAt: readBack.archivedAt,
+        identityMode: readBack.identityMode ?? resolvedIdentityMode,
+        actualOperatorEmployeeCode: readBack.actualOperatorEmployeeCode ?? resolvedActualOperatorEmployeeCode,
+        kintoneLoginUserCode: readBack.kintoneLoginUserCode ?? resolvedKintoneLoginUserCode,
+        actionName: readBack.actionName ?? resolvedActionName,
+        toStatus: readBack.toStatus ?? resolvedToStatus
       });
     }
     _buildVerifiedEvidence(data) {
@@ -11699,6 +11854,275 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       return true;
     }
   };
+
+  // src/services/d3-stage-logical-snapshot.js
+  function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
+    const getVal = (f) => record && record[f] && typeof record[f] === "object" && "value" in record[f] ? record[f].value : record?.[f];
+    const sourceRecordKey = String(getVal("Record_Key") || "").trim();
+    if (!sourceRecordKey) {
+      throw new Error("PROVENANCE_MISSING: Record_Key is required");
+    }
+    const employeeCode = String(getVal("Employee_Code") || "").trim();
+    if (!employeeCode) {
+      throw new Error("PROVENANCE_MISSING: Employee_Code is required");
+    }
+    const fiscalYear = String(getVal("Fiscal_Year") || "").trim();
+    if (!fiscalYear) {
+      throw new Error("PROVENANCE_MISSING: Fiscal_Year is required");
+    }
+    const rawRecordId = Number(getVal("$id") || getVal("Record_ID") || 0);
+    const rawRev = getVal("Revision_Number") ?? getVal("Current_Revision_Number");
+    const revisionNumber = Number(rawRev);
+    if (!Number.isInteger(revisionNumber) || revisionNumber < 1) {
+      throw new Error(`PROVENANCE_INVALID: Revision_Number must be a positive integer, got "${rawRev}"`);
+    }
+    const frozenProfileCode = String(getVal("Frozen_Profile_Code") || getVal("Profile_Code") || "").trim();
+    if (!frozenProfileCode) {
+      throw new Error("PROVENANCE_MISSING: Frozen_Profile_Code is required");
+    }
+    const rawK = getVal("K_expected_Snapshot");
+    const kExpected = Number(rawK);
+    if (kExpected !== 1 && kExpected !== 2) {
+      throw new Error(`PROVENANCE_INVALID: K_expected_Snapshot must be 1 or 2, got "${rawK}"`);
+    }
+    const routePattern = String(getVal("Route_Pattern") || "").trim();
+    if (!routePattern || !D3_ROUTE_PATTERNS[routePattern]) {
+      throw new Error(`PROVENANCE_INVALID: Route_Pattern "${routePattern}" is invalid or unmapped`);
+    }
+    const patternDef = D3_ROUTE_PATTERNS[routePattern];
+    const routingTopology = String(getVal("Routing_Topology") || "").trim();
+    if (!routingTopology) {
+      throw new Error("PROVENANCE_MISSING: Routing_Topology is required");
+    }
+    if (routingTopology !== patternDef.topology) {
+      throw new Error(`PROVENANCE_MISMATCH: Routing_Topology "${routingTopology}" does not match pattern topology "${patternDef.topology}"`);
+    }
+    const effectiveRoutingKey = String(getVal("Effective_Routing_Key") || "").trim();
+    if (!effectiveRoutingKey) {
+      throw new Error("PROVENANCE_MISSING: Effective_Routing_Key is required");
+    }
+    const effectiveRouteVersionKey = String(getVal("Effective_Route_Version_Key") || "").trim();
+    if (!effectiveRouteVersionKey) {
+      throw new Error("PROVENANCE_MISSING: Effective_Route_Version_Key is required");
+    }
+    const workflowAppraisers = [];
+    for (const slotId of patternDef.sourceSlots) {
+      const slotDef = D3_SLOT_DEFINITIONS[slotId];
+      if (!slotDef) {
+        throw new Error(`PROVENANCE_INVALID: Unknown slot definition "${slotId}"`);
+      }
+      const ruleVal = String(getVal(slotDef.approvalRuleField) || "").trim();
+      if (ruleVal !== "ALL") {
+        throw new Error(
+          `PROVENANCE_INVALID: Approval rule for slot ${slotId} (${slotDef.approvalRuleField}) must be "ALL", received: "${ruleVal}"`
+        );
+      }
+      let rawApprover = getVal(slotDef.approverField);
+      if ((rawApprover === void 0 || rawApprover === null || Array.isArray(rawApprover) && rawApprover.length === 0) && slotDef.legacyApproverField) {
+        rawApprover = getVal(slotDef.legacyApproverField);
+      }
+      let userList = [];
+      if (Array.isArray(rawApprover)) {
+        userList = rawApprover;
+      } else if (rawApprover && typeof rawApprover === "object") {
+        userList = [rawApprover];
+      } else if (typeof rawApprover === "string" && rawApprover.trim()) {
+        userList = [{ code: rawApprover.trim() }];
+      }
+      if (userList.length === 0) {
+        throw new Error(
+          `PROVENANCE_MISSING: Missing approver for active slot ${slotId} (${slotDef.approverField})`
+        );
+      }
+      if (userList.length > 1) {
+        throw new Error(
+          `PROVENANCE_INVALID: Active slot ${slotId} (${slotDef.approverField}) must have exactly one user, found ${userList.length}`
+        );
+      }
+      const appraiserCode = String(userList[0]?.code || userList[0]?.value || "").trim();
+      if (!appraiserCode) {
+        throw new Error(
+          `PROVENANCE_INVALID: Active slot ${slotId} (${slotDef.approverField}) user has blank code`
+        );
+      }
+      workflowAppraisers.push({ code: appraiserCode });
+    }
+    const seenAppraisers = /* @__PURE__ */ new Set();
+    for (const a of workflowAppraisers) {
+      if (seenAppraisers.has(a.code)) {
+        throw new Error(`PROVENANCE_DUPLICATE: Duplicate appraiser code in workflow: "${a.code}"`);
+      }
+      seenAppraisers.add(a.code);
+    }
+    if (workflowAppraisers.length !== patternDef.sourceSlots.length) {
+      throw new Error(`PROVENANCE_MISMATCH: Workflow_Appraisers count (${workflowAppraisers.length}) does not match route pattern slot count (${patternDef.sourceSlots.length})`);
+    }
+    const rawScorerSnapshot = getVal("Effective_Scorer_Slots_Snapshot");
+    if (rawScorerSnapshot === void 0 || rawScorerSnapshot === null || String(rawScorerSnapshot).trim() === "") {
+      throw new Error("PROVENANCE_MISSING: Effective_Scorer_Slots_Snapshot is required");
+    }
+    let parsedSlots;
+    try {
+      parsedSlots = typeof rawScorerSnapshot === "string" ? JSON.parse(rawScorerSnapshot) : rawScorerSnapshot;
+    } catch (err) {
+      throw new Error("PROVENANCE_MALFORMED: Effective_Scorer_Slots_Snapshot contains malformed JSON");
+    }
+    if (!Array.isArray(parsedSlots) || parsedSlots.length === 0) {
+      throw new Error("PROVENANCE_INVALID: Effective_Scorer_Slots_Snapshot must be a non-empty array");
+    }
+    if (parsedSlots.length !== kExpected) {
+      throw new Error(
+        `PROVENANCE_MISMATCH: Scorer slot count (${parsedSlots.length}) does not match K_expected_Snapshot (${kExpected})`
+      );
+    }
+    const seenOrdinals = /* @__PURE__ */ new Set();
+    for (const ordinal of parsedSlots) {
+      if (!Number.isInteger(ordinal)) {
+        throw new Error(`PROVENANCE_MALFORMED: Effective_Scorer_Slots_Snapshot ordinals must be integers, got: ${ordinal}`);
+      }
+      if (ordinal < 1 || ordinal > workflowAppraisers.length) {
+        throw new Error(
+          `PROVENANCE_MISMATCH: Scorer slot ordinal ${ordinal} out of range (1..${workflowAppraisers.length})`
+        );
+      }
+      if (seenOrdinals.has(ordinal)) {
+        throw new Error(`PROVENANCE_DUPLICATE: Duplicate scorer slot ordinal: ${ordinal}`);
+      }
+      seenOrdinals.add(ordinal);
+    }
+    const dec036Weights = kExpected === 1 ? [100] : [50, 50];
+    const scorers = [];
+    const seenScorers = /* @__PURE__ */ new Set();
+    for (let idx = 0; idx < parsedSlots.length; idx++) {
+      const ord = parsedSlots[idx];
+      const scorerCode = workflowAppraisers[ord - 1].code;
+      if (seenScorers.has(scorerCode)) {
+        throw new Error(`PROVENANCE_DUPLICATE: Duplicate scorer identity: "${scorerCode}"`);
+      }
+      seenScorers.add(scorerCode);
+      scorers.push({
+        code: scorerCode,
+        weight: dec036Weights[idx]
+      });
+    }
+    const departmentHoshinKey = String(getVal("Department_Hoshin_Key") || "").trim();
+    if (!departmentHoshinKey) {
+      throw new Error("PROVENANCE_MISSING: Department_Hoshin_Key is required");
+    }
+    const configurationHash = String(getVal("Configuration_Hash") || "").trim();
+    if (!configurationHash) {
+      throw new Error("PROVENANCE_MISSING: Configuration_Hash is required");
+    }
+    const rawObjectiveCount = getVal("Objective_Count");
+    if (rawObjectiveCount === void 0 || rawObjectiveCount === null || String(rawObjectiveCount).trim() === "") {
+      throw new Error("PROVENANCE_MISSING: Objective_Count is required");
+    }
+    const objectiveCount = Number(rawObjectiveCount);
+    if (!Number.isInteger(objectiveCount) || objectiveCount < 2 || objectiveCount > 10) {
+      throw new Error(`PROVENANCE_INVALID: Objective_Count must be an integer between 2 and 10, got "${rawObjectiveCount}"`);
+    }
+    const rawPartARawScore = getVal("PartA_Raw_Score");
+    if (rawPartARawScore === void 0 || rawPartARawScore === null || String(rawPartARawScore).trim() === "") {
+      throw new Error("PROVENANCE_MISSING: PartA_Raw_Score is required");
+    }
+    const partARawScore = Number(rawPartARawScore);
+    if (!Number.isFinite(partARawScore)) {
+      throw new Error(`PROVENANCE_INVALID: PartA_Raw_Score must be a finite number, got "${rawPartARawScore}"`);
+    }
+    const objectives = [];
+    for (let i = 1; i <= objectiveCount; i++) {
+      const rawObjective = getVal(`Objective_${i}`);
+      if (rawObjective === void 0 || rawObjective === null || String(rawObjective).trim() === "") {
+        throw new Error(`PROVENANCE_MISSING: Objective_${i} is required for objective ${i}`);
+      }
+      const rawActionPlan = getVal(`Action_Plan_${i}`);
+      if (rawActionPlan === void 0 || rawActionPlan === null || String(rawActionPlan).trim() === "") {
+        throw new Error(`PROVENANCE_MISSING: Action_Plan_${i} is required for objective ${i}`);
+      }
+      const rawWeight = getVal(`Weight_${i}`);
+      if (rawWeight === void 0 || rawWeight === null || String(rawWeight).trim() === "") {
+        throw new Error(`PROVENANCE_MISSING: Weight_${i} is required for objective ${i}`);
+      }
+      const weightNum = Number(rawWeight);
+      if (!Number.isFinite(weightNum) || weightNum < 0 || weightNum > 100) {
+        throw new Error(`PROVENANCE_INVALID: Weight_${i} must be a number between 0 and 100, got "${rawWeight}"`);
+      }
+      const rawDifficulty = getVal(`Difficulty_${i}`);
+      if (rawDifficulty === void 0 || rawDifficulty === null || String(rawDifficulty).trim() === "") {
+        throw new Error(`PROVENANCE_MISSING: Difficulty_${i} is required for objective ${i}`);
+      }
+      const difficultyNum = Number(rawDifficulty);
+      if (!Number.isFinite(difficultyNum) || difficultyNum < 1 || difficultyNum > 4) {
+        throw new Error(`PROVENANCE_INVALID: Difficulty_${i} must be an integer between 1 and 4, got "${rawDifficulty}"`);
+      }
+      const item = {
+        index: i,
+        Objective: String(rawObjective).trim(),
+        Action_Plan: String(rawActionPlan).trim(),
+        Weight: weightNum,
+        Difficulty: difficultyNum,
+        Additional_Agreement: getVal(`Additional_Agreement_${i}`) ?? "",
+        Objective_Attachment: getVal(`Objective_Attachment_${i}`) ?? [],
+        Progress_Percent: getVal(`Progress_Percent_${i}`) !== void 0 && getVal(`Progress_Percent_${i}`) !== null && getVal(`Progress_Percent_${i}`) !== "" ? Number(getVal(`Progress_Percent_${i}`)) : "",
+        Periodical_Review: getVal(`Periodical_Review_${i}`) ?? "",
+        MidYear_Result: getVal(`MidYear_Result_${i}`) ?? "",
+        MidYear_Issue_Risk: getVal(`MidYear_Issue_Risk_${i}`) ?? "",
+        MidYear_Next_Action: getVal(`MidYear_Next_Action_${i}`) ?? "",
+        MidYear_Attachment: getVal(`MidYear_Attachment_${i}`) ?? [],
+        Actual_Result: getVal(`Actual_Result_${i}`) ?? "",
+        Self_Achievement: getVal(`Self_Achievement_${i}`) !== void 0 && getVal(`Self_Achievement_${i}`) !== null && getVal(`Self_Achievement_${i}`) !== "" ? Number(getVal(`Self_Achievement_${i}`)) : "",
+        Self_Comment: getVal(`Self_Comment_${i}`) ?? "",
+        Final_Attachment: getVal(`Final_Attachment_${i}`) ?? [],
+        Manager_Achievement: getVal(`Manager_Achievement_${i}`) !== void 0 && getVal(`Manager_Achievement_${i}`) !== null && getVal(`Manager_Achievement_${i}`) !== "" ? Number(getVal(`Manager_Achievement_${i}`)) : "",
+        Manager_Objective_Score: getVal(`Manager_Objective_Score_${i}`) !== void 0 && getVal(`Manager_Objective_Score_${i}`) !== null && getVal(`Manager_Objective_Score_${i}`) !== "" ? Number(getVal(`Manager_Objective_Score_${i}`)) : "",
+        Manager_Comment: getVal(`Manager_Comment_${i}`) ?? "",
+        GM_Achievement: getVal(`GM_Achievement_${i}`) !== void 0 && getVal(`GM_Achievement_${i}`) !== null && getVal(`GM_Achievement_${i}`) !== "" ? Number(getVal(`GM_Achievement_${i}`)) : "",
+        GM_Objective_Score: getVal(`GM_Objective_Score_${i}`) !== void 0 && getVal(`GM_Objective_Score_${i}`) !== null && getVal(`GM_Objective_Score_${i}`) !== "" ? Number(getVal(`GM_Objective_Score_${i}`)) : "",
+        GM_Comment: getVal(`GM_Comment_${i}`) ?? ""
+      };
+      objectives.push(item);
+    }
+    return {
+      source: {
+        Record_Key: sourceRecordKey,
+        Employee_Code: employeeCode,
+        Fiscal_Year: fiscalYear,
+        ...rawRecordId > 0 ? { Record_ID: rawRecordId } : {}
+      },
+      stage: {
+        Evaluation_Stage: targetStage,
+        Revision_Number: revisionNumber,
+        Previous_Status: String(currentStatus || "").trim()
+      },
+      profile: {
+        Frozen_Profile_Code: frozenProfileCode,
+        K_expected_Snapshot: kExpected
+      },
+      route: {
+        Effective_Routing_Key: effectiveRoutingKey,
+        Effective_Route_Version_Key: effectiveRouteVersionKey,
+        Route_Pattern: routePattern,
+        Routing_Topology: routingTopology,
+        Workflow_Appraisers: workflowAppraisers
+      },
+      scoring: {
+        Scorers: scorers
+      },
+      hoshin: {
+        Department_Hoshin_Key: departmentHoshinKey
+      },
+      config: {
+        Configuration_Hash: configurationHash
+      },
+      business: {
+        Objective_Count: objectives.length,
+        Objectives: objectives
+      },
+      computed: {
+        PartA_Raw_Score: partARawScore
+      }
+    };
+  }
 
   // src/main-mbo-app.js
   var activeUiInstance = null;
@@ -12768,20 +13192,18 @@ ${errorMsgEN}`);
         }
         return false;
       }
-      const archiveOutcome = await executeProcessTransitionArchive(record, event, {
-        apiAdapter: kintoneApiWrapper
-      });
-      if (archiveOutcome && archiveOutcome.success === false) {
-        const errDetail = archiveOutcome.error || "Archive verification failed";
-        if (activeUiInstance && typeof activeUiInstance.showValidationErrors === "function") {
-          activeUiInstance.showValidationErrors([{
-            field: "Record_Key",
-            message: `Stage Archive Failed: ${errDetail}`,
-            messageTH: `\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1B\u0E23\u0E30\u0E27\u0E31\u0E15\u0E34\u0E2A\u0E16\u0E32\u0E19\u0E30 (Stage Archive) \u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08: ${errDetail}`,
-            messageEN: `Stage Archive Failed: ${errDetail}`
-          }]);
+      const currentStatus = String(event?.status?.value || event?.currentStatus || record?.Status?.value || record?.Status || "").trim();
+      const nextStatus = String(event?.nextStatus?.value || event?.nextStatus || "").trim();
+      const isD3TargetTransition = currentStatus === "05 Objective Approved" && actionName === "Start Mid-Year" && nextStatus === "06 Employee Mid-Year" || currentStatus === "10 Mid-Year Completed" && actionName === "Start Self Evaluation" && nextStatus === "11 Employee Self Evaluation" || currentStatus === "15 HR Final Check" && actionName === "Complete" && nextStatus === "16 Completed";
+      if (isD3TargetTransition) {
+        const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+          employeeSelfContext: currentEmployeeSelfContext
+        });
+        if (!archiveOutcome.success) {
+          alert(`[D3 Audit Archive Error] Process transition blocked: ${archiveOutcome.error}`);
+          return false;
         }
-        return false;
+        return event;
       }
       return event;
     });
@@ -12792,273 +13214,6 @@ ${errorMsgEN}`);
       });
       return policy.evaluateDeleteSubmit(event);
     });
-  }
-  function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
-    const getVal = (f) => record && record[f] && typeof record[f] === "object" && "value" in record[f] ? record[f].value : record?.[f];
-    const sourceRecordKey = String(getVal("Record_Key") || "").trim();
-    if (!sourceRecordKey) {
-      throw new Error("PROVENANCE_MISSING: Record_Key is required");
-    }
-    const employeeCode = String(getVal("Employee_Code") || "").trim();
-    if (!employeeCode) {
-      throw new Error("PROVENANCE_MISSING: Employee_Code is required");
-    }
-    const fiscalYear = String(getVal("Fiscal_Year") || "").trim();
-    if (!fiscalYear) {
-      throw new Error("PROVENANCE_MISSING: Fiscal_Year is required");
-    }
-    const rawRecordId = Number(getVal("$id") || getVal("Record_ID") || 0);
-    const rawRev = getVal("Revision_Number") ?? getVal("Current_Revision_Number");
-    const revisionNumber = Number(rawRev);
-    if (!Number.isInteger(revisionNumber) || revisionNumber < 1) {
-      throw new Error(`PROVENANCE_INVALID: Revision_Number must be a positive integer, got "${rawRev}"`);
-    }
-    const frozenProfileCode = String(getVal("Frozen_Profile_Code") || getVal("Profile_Code") || "").trim();
-    if (!frozenProfileCode) {
-      throw new Error("PROVENANCE_MISSING: Frozen_Profile_Code is required");
-    }
-    const rawK = getVal("K_expected_Snapshot");
-    const kExpected = Number(rawK);
-    if (kExpected !== 1 && kExpected !== 2) {
-      throw new Error(`PROVENANCE_INVALID: K_expected_Snapshot must be 1 or 2, got "${rawK}"`);
-    }
-    const routePattern = String(getVal("Route_Pattern") || "").trim();
-    if (!routePattern || !D3_ROUTE_PATTERNS[routePattern]) {
-      throw new Error(`PROVENANCE_INVALID: Route_Pattern "${routePattern}" is invalid or unmapped`);
-    }
-    const patternDef = D3_ROUTE_PATTERNS[routePattern];
-    const routingTopology = String(getVal("Routing_Topology") || "").trim();
-    if (!routingTopology) {
-      throw new Error("PROVENANCE_MISSING: Routing_Topology is required");
-    }
-    if (routingTopology !== patternDef.topology) {
-      throw new Error(`PROVENANCE_MISMATCH: Routing_Topology "${routingTopology}" does not match pattern topology "${patternDef.topology}"`);
-    }
-    const effectiveRoutingKey = String(getVal("Effective_Routing_Key") || "").trim();
-    if (!effectiveRoutingKey) {
-      throw new Error("PROVENANCE_MISSING: Effective_Routing_Key is required");
-    }
-    const effectiveRouteVersionKey = String(getVal("Effective_Route_Version_Key") || "").trim();
-    if (!effectiveRouteVersionKey) {
-      throw new Error("PROVENANCE_MISSING: Effective_Route_Version_Key is required");
-    }
-    const workflowAppraisers = [];
-    for (const slotId of patternDef.sourceSlots) {
-      const slotDef = D3_SLOT_DEFINITIONS[slotId];
-      if (!slotDef) {
-        throw new Error(`PROVENANCE_INVALID: Unknown slot definition "${slotId}"`);
-      }
-      const ruleVal = String(getVal(slotDef.approvalRuleField) || "").trim();
-      if (ruleVal !== "ALL") {
-        throw new Error(
-          `PROVENANCE_INVALID: Approval rule for slot ${slotId} (${slotDef.approvalRuleField}) must be "ALL", received: "${ruleVal}"`
-        );
-      }
-      let rawApprover = getVal(slotDef.approverField);
-      if ((rawApprover === void 0 || rawApprover === null || Array.isArray(rawApprover) && rawApprover.length === 0) && slotDef.legacyApproverField) {
-        rawApprover = getVal(slotDef.legacyApproverField);
-      }
-      let userList = [];
-      if (Array.isArray(rawApprover)) {
-        userList = rawApprover;
-      } else if (rawApprover && typeof rawApprover === "object") {
-        userList = [rawApprover];
-      } else if (typeof rawApprover === "string" && rawApprover.trim()) {
-        userList = [{ code: rawApprover.trim() }];
-      }
-      if (userList.length === 0) {
-        throw new Error(
-          `PROVENANCE_MISSING: Missing approver for active slot ${slotId} (${slotDef.approverField})`
-        );
-      }
-      if (userList.length > 1) {
-        throw new Error(
-          `PROVENANCE_INVALID: Active slot ${slotId} (${slotDef.approverField}) must have exactly one user, found ${userList.length}`
-        );
-      }
-      const appraiserCode = String(userList[0]?.code || userList[0]?.value || "").trim();
-      if (!appraiserCode) {
-        throw new Error(
-          `PROVENANCE_INVALID: Active slot ${slotId} (${slotDef.approverField}) user has blank code`
-        );
-      }
-      workflowAppraisers.push({ code: appraiserCode });
-    }
-    const seenAppraisers = /* @__PURE__ */ new Set();
-    for (const a of workflowAppraisers) {
-      if (seenAppraisers.has(a.code)) {
-        throw new Error(`PROVENANCE_DUPLICATE: Duplicate appraiser code in workflow: "${a.code}"`);
-      }
-      seenAppraisers.add(a.code);
-    }
-    if (workflowAppraisers.length !== patternDef.sourceSlots.length) {
-      throw new Error(`PROVENANCE_MISMATCH: Workflow_Appraisers count (${workflowAppraisers.length}) does not match route pattern slot count (${patternDef.sourceSlots.length})`);
-    }
-    const rawScorerSnapshot = getVal("Effective_Scorer_Slots_Snapshot");
-    if (rawScorerSnapshot === void 0 || rawScorerSnapshot === null || String(rawScorerSnapshot).trim() === "") {
-      throw new Error("PROVENANCE_MISSING: Effective_Scorer_Slots_Snapshot is required");
-    }
-    let parsedSlots;
-    try {
-      parsedSlots = typeof rawScorerSnapshot === "string" ? JSON.parse(rawScorerSnapshot) : rawScorerSnapshot;
-    } catch (err) {
-      throw new Error("PROVENANCE_MALFORMED: Effective_Scorer_Slots_Snapshot contains malformed JSON");
-    }
-    if (!Array.isArray(parsedSlots) || parsedSlots.length === 0) {
-      throw new Error("PROVENANCE_INVALID: Effective_Scorer_Slots_Snapshot must be a non-empty array");
-    }
-    if (parsedSlots.length !== kExpected) {
-      throw new Error(
-        `PROVENANCE_MISMATCH: Scorer slot count (${parsedSlots.length}) does not match K_expected_Snapshot (${kExpected})`
-      );
-    }
-    const seenOrdinals = /* @__PURE__ */ new Set();
-    for (const ordinal of parsedSlots) {
-      if (!Number.isInteger(ordinal)) {
-        throw new Error(`PROVENANCE_MALFORMED: Effective_Scorer_Slots_Snapshot ordinals must be integers, got: ${ordinal}`);
-      }
-      if (ordinal < 1 || ordinal > workflowAppraisers.length) {
-        throw new Error(
-          `PROVENANCE_MISMATCH: Scorer slot ordinal ${ordinal} out of range (1..${workflowAppraisers.length})`
-        );
-      }
-      if (seenOrdinals.has(ordinal)) {
-        throw new Error(`PROVENANCE_DUPLICATE: Duplicate scorer slot ordinal: ${ordinal}`);
-      }
-      seenOrdinals.add(ordinal);
-    }
-    const dec036Weights = kExpected === 1 ? [100] : [50, 50];
-    const scorers = [];
-    const seenScorers = /* @__PURE__ */ new Set();
-    for (let idx = 0; idx < parsedSlots.length; idx++) {
-      const ord = parsedSlots[idx];
-      const scorerCode = workflowAppraisers[ord - 1].code;
-      if (seenScorers.has(scorerCode)) {
-        throw new Error(`PROVENANCE_DUPLICATE: Duplicate scorer identity: "${scorerCode}"`);
-      }
-      seenScorers.add(scorerCode);
-      scorers.push({
-        code: scorerCode,
-        weight: dec036Weights[idx]
-      });
-    }
-    const departmentHoshinKey = String(getVal("Department_Hoshin_Key") || "").trim();
-    if (!departmentHoshinKey) {
-      throw new Error("PROVENANCE_MISSING: Department_Hoshin_Key is required");
-    }
-    const configurationHash = String(getVal("Configuration_Hash") || "").trim();
-    if (!configurationHash) {
-      throw new Error("PROVENANCE_MISSING: Configuration_Hash is required");
-    }
-    const rawObjectiveCount = getVal("Objective_Count");
-    if (rawObjectiveCount === void 0 || rawObjectiveCount === null || String(rawObjectiveCount).trim() === "") {
-      throw new Error("PROVENANCE_MISSING: Objective_Count is required");
-    }
-    const objectiveCount = Number(rawObjectiveCount);
-    if (!Number.isInteger(objectiveCount) || objectiveCount < 2 || objectiveCount > 10) {
-      throw new Error(`PROVENANCE_INVALID: Objective_Count must be an integer between 2 and 10, got "${rawObjectiveCount}"`);
-    }
-    const rawPartARawScore = getVal("PartA_Raw_Score");
-    if (rawPartARawScore === void 0 || rawPartARawScore === null || String(rawPartARawScore).trim() === "") {
-      throw new Error("PROVENANCE_MISSING: PartA_Raw_Score is required");
-    }
-    const partARawScore = Number(rawPartARawScore);
-    if (!Number.isFinite(partARawScore)) {
-      throw new Error(`PROVENANCE_INVALID: PartA_Raw_Score must be a finite number, got "${rawPartARawScore}"`);
-    }
-    const objectives = [];
-    for (let i = 1; i <= objectiveCount; i++) {
-      const rawObjective = getVal(`Objective_${i}`);
-      if (rawObjective === void 0 || rawObjective === null || String(rawObjective).trim() === "") {
-        throw new Error(`PROVENANCE_MISSING: Objective_${i} is required for objective ${i}`);
-      }
-      const rawActionPlan = getVal(`Action_Plan_${i}`);
-      if (rawActionPlan === void 0 || rawActionPlan === null || String(rawActionPlan).trim() === "") {
-        throw new Error(`PROVENANCE_MISSING: Action_Plan_${i} is required for objective ${i}`);
-      }
-      const rawWeight = getVal(`Weight_${i}`);
-      if (rawWeight === void 0 || rawWeight === null || String(rawWeight).trim() === "") {
-        throw new Error(`PROVENANCE_MISSING: Weight_${i} is required for objective ${i}`);
-      }
-      const weightNum = Number(rawWeight);
-      if (!Number.isFinite(weightNum) || weightNum < 0 || weightNum > 100) {
-        throw new Error(`PROVENANCE_INVALID: Weight_${i} must be a number between 0 and 100, got "${rawWeight}"`);
-      }
-      const rawDifficulty = getVal(`Difficulty_${i}`);
-      if (rawDifficulty === void 0 || rawDifficulty === null || String(rawDifficulty).trim() === "") {
-        throw new Error(`PROVENANCE_MISSING: Difficulty_${i} is required for objective ${i}`);
-      }
-      const difficultyNum = Number(rawDifficulty);
-      if (!Number.isFinite(difficultyNum) || difficultyNum < 1 || difficultyNum > 4) {
-        throw new Error(`PROVENANCE_INVALID: Difficulty_${i} must be an integer between 1 and 4, got "${rawDifficulty}"`);
-      }
-      const item = {
-        index: i,
-        Objective: String(rawObjective).trim(),
-        Action_Plan: String(rawActionPlan).trim(),
-        Weight: weightNum,
-        Difficulty: difficultyNum,
-        Additional_Agreement: getVal(`Additional_Agreement_${i}`) ?? "",
-        Objective_Attachment: getVal(`Objective_Attachment_${i}`) ?? [],
-        Progress_Percent: getVal(`Progress_Percent_${i}`) !== void 0 && getVal(`Progress_Percent_${i}`) !== null && getVal(`Progress_Percent_${i}`) !== "" ? Number(getVal(`Progress_Percent_${i}`)) : "",
-        Periodical_Review: getVal(`Periodical_Review_${i}`) ?? "",
-        MidYear_Result: getVal(`MidYear_Result_${i}`) ?? "",
-        MidYear_Issue_Risk: getVal(`MidYear_Issue_Risk_${i}`) ?? "",
-        MidYear_Next_Action: getVal(`MidYear_Next_Action_${i}`) ?? "",
-        MidYear_Attachment: getVal(`MidYear_Attachment_${i}`) ?? [],
-        Actual_Result: getVal(`Actual_Result_${i}`) ?? "",
-        Self_Achievement: getVal(`Self_Achievement_${i}`) !== void 0 && getVal(`Self_Achievement_${i}`) !== null && getVal(`Self_Achievement_${i}`) !== "" ? Number(getVal(`Self_Achievement_${i}`)) : "",
-        Self_Comment: getVal(`Self_Comment_${i}`) ?? "",
-        Final_Attachment: getVal(`Final_Attachment_${i}`) ?? [],
-        Manager_Achievement: getVal(`Manager_Achievement_${i}`) !== void 0 && getVal(`Manager_Achievement_${i}`) !== null && getVal(`Manager_Achievement_${i}`) !== "" ? Number(getVal(`Manager_Achievement_${i}`)) : "",
-        Manager_Objective_Score: getVal(`Manager_Objective_Score_${i}`) !== void 0 && getVal(`Manager_Objective_Score_${i}`) !== null && getVal(`Manager_Objective_Score_${i}`) !== "" ? Number(getVal(`Manager_Objective_Score_${i}`)) : "",
-        Manager_Comment: getVal(`Manager_Comment_${i}`) ?? "",
-        GM_Achievement: getVal(`GM_Achievement_${i}`) !== void 0 && getVal(`GM_Achievement_${i}`) !== null && getVal(`GM_Achievement_${i}`) !== "" ? Number(getVal(`GM_Achievement_${i}`)) : "",
-        GM_Objective_Score: getVal(`GM_Objective_Score_${i}`) !== void 0 && getVal(`GM_Objective_Score_${i}`) !== null && getVal(`GM_Objective_Score_${i}`) !== "" ? Number(getVal(`GM_Objective_Score_${i}`)) : "",
-        GM_Comment: getVal(`GM_Comment_${i}`) ?? ""
-      };
-      objectives.push(item);
-    }
-    return {
-      source: {
-        Record_Key: sourceRecordKey,
-        Employee_Code: employeeCode,
-        Fiscal_Year: fiscalYear,
-        ...rawRecordId > 0 ? { Record_ID: rawRecordId } : {}
-      },
-      stage: {
-        Evaluation_Stage: targetStage,
-        Revision_Number: revisionNumber,
-        Previous_Status: String(currentStatus || "").trim()
-      },
-      profile: {
-        Frozen_Profile_Code: frozenProfileCode,
-        K_expected_Snapshot: kExpected
-      },
-      route: {
-        Effective_Routing_Key: effectiveRoutingKey,
-        Effective_Route_Version_Key: effectiveRouteVersionKey,
-        Route_Pattern: routePattern,
-        Routing_Topology: routingTopology,
-        Workflow_Appraisers: workflowAppraisers
-      },
-      scoring: {
-        Scorers: scorers
-      },
-      hoshin: {
-        Department_Hoshin_Key: departmentHoshinKey
-      },
-      config: {
-        Configuration_Hash: configurationHash
-      },
-      business: {
-        Objective_Count: objectives.length,
-        Objectives: objectives
-      },
-      computed: {
-        PartA_Raw_Score: partARawScore
-      }
-    };
   }
   async function executeProcessTransitionArchive(record, event, options = {}) {
     const currentStatus = String(event?.status?.value || event?.currentStatus || record?.Status?.value || record?.Status || "").trim();
@@ -13083,13 +13238,47 @@ ${errorMsgEN}`);
       console.error(errorMsg);
       return { success: false, error: "ACTOR_IDENTITY_UNRESOLVED" };
     }
+    const selfContext = options.employeeSelfContext || currentEmployeeSelfContext;
+    let identityMode = options.identityMode;
+    let actualOperatorEmployeeCode = options.actualOperatorEmployeeCode;
+    let kintoneLoginUserCode = options.kintoneLoginUserCode;
+    if (selfContext) {
+      if (!identityMode) identityMode = selfContext.mode;
+      if (!actualOperatorEmployeeCode) actualOperatorEmployeeCode = selfContext.employeeCode;
+      if (!kintoneLoginUserCode) kintoneLoginUserCode = selfContext.kintoneUserCode;
+    }
+    if (!identityMode && !actualOperatorEmployeeCode && !kintoneLoginUserCode) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Missing mixed identity context for D3 target transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: "MISSING_IDENTITY_CONTEXT" };
+    }
+    if (!identityMode || identityMode !== "SHARED" && identityMode !== "DEDICATED") {
+      const errorMsg = `[D3 ARCHIVE ERROR] Invalid or missing identityMode: "${identityMode}". Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: "UNSUPPORTED_IDENTITY_MODE" };
+    }
+    if (!actualOperatorEmployeeCode || !String(actualOperatorEmployeeCode).trim()) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actual operator employee code. Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: "ACTUAL_OPERATOR_UNRESOLVED" };
+    }
+    if (!kintoneLoginUserCode || !String(kintoneLoginUserCode).trim()) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve Kintone login user code. Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: "KINTONE_LOGIN_USER_UNRESOLVED" };
+    }
+    if (kintoneLoginUserCode !== actorCode) {
+      const errorMsg = `[D3 ARCHIVE ERROR] Identity mismatch: kintoneLoginUserCode ("${kintoneLoginUserCode}") !== actorCode ("${actorCode}"). Transition blocked.`;
+      console.error(errorMsg);
+      return { success: false, error: "IDENTITY_CONTEXT_MISMATCH" };
+    }
     try {
       const archiveAppId = options.archiveAppId || 798;
       const clock = options.clock || (() => (/* @__PURE__ */ new Date()).toISOString());
       const archiveService = options.archiveService || new RevisionArchiveService(apiAdapter, { archiveAppId, clock });
       const logicalSnapshot = options.logicalSnapshot || buildStageLogicalSnapshot(record, targetStage, currentStatus);
       const rawRecordId = Number(record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
-      const archiveResult = await archiveService.archiveStageCompletion({
+      const archiveParams = {
         sourceRecordKey: String(record?.Record_Key?.value || record?.Record_Key || "").trim(),
         employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || "").trim(),
         fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || "").trim(),
@@ -13100,11 +13289,62 @@ ${errorMsgEN}`);
         actor: { userCode: actorCode },
         archivedAt: options.archivedAt || (typeof clock === "function" ? clock() : (/* @__PURE__ */ new Date()).toISOString()),
         logicalSnapshot
-      });
+      };
+      if (identityMode) {
+        archiveParams.identityMode = identityMode;
+        archiveParams.actualOperatorEmployeeCode = String(actualOperatorEmployeeCode).trim();
+        archiveParams.kintoneLoginUserCode = kintoneLoginUserCode;
+        archiveParams.actionName = actionName;
+        archiveParams.toStatus = nextStatus;
+      }
+      const archiveResult = await archiveService.archiveStageCompletion(archiveParams);
       return { success: true, targetStage, archiveResult };
     } catch (err) {
       console.error(`[D3 ARCHIVE ERROR] Failed to create ${targetStage} stage completion archive:`, err);
       return { success: false, error: err.message || String(err), details: err };
+    }
+  }
+  async function handleD3BrowserTrustedTransition({
+    recordId,
+    actionName,
+    endpoint,
+    fetchFn
+  } = {}) {
+    const targetEndpoint = endpoint || (typeof window !== "undefined" && window.__MBO_D3_PREPARE_ENDPOINT__ ? window.__MBO_D3_PREPARE_ENDPOINT__ : "/api/mbo/d3/transaction/prepare-transition");
+    const effectiveFetch = fetchFn || (typeof fetch === "function" ? fetch : null);
+    if (!effectiveFetch) {
+      return { cancelled: true, error: "FETCH_UNAVAILABLE" };
+    }
+    try {
+      const res = await effectiveFetch(targetEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: Number(recordId),
+          intendedAction: String(actionName || "").trim()
+        })
+      });
+      let json = null;
+      try {
+        json = await res.json();
+      } catch {
+      }
+      if (!res.ok) {
+        return {
+          cancelled: true,
+          error: json?.status || "BACKEND_FAILED",
+          statusCode: res.status
+        };
+      }
+      return {
+        cancelled: true,
+        result: json
+      };
+    } catch (err) {
+      return {
+        cancelled: true,
+        error: "NETWORK_OR_TRANSPORT_ERROR"
+      };
     }
   }
 })();
