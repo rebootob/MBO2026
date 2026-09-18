@@ -1,13 +1,13 @@
-# D3 Architecture & Control Corrective — Kintone-Only Mixed-Identity Audit Architecture (R1)
+# D3 Architecture & Control Corrective — Kintone-Only Mixed-Identity Audit Architecture (R2)
 
 ## Document Control Header
 
 ```text
-DOCUMENT_ID                  = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R1
-AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R1-20260918-OWNER-01
+DOCUMENT_ID                  = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R2
+AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R2-20260918-OWNER-01
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-AUTHORIZED_BASE_HEAD         = f3b8ef620fd61dc47744c73cde1b7ea750f1d3bf
-REVISION                     = R1 (CONTROL PLANE FINDINGS CORRECTIVE)
+AUTHORIZED_BASE_HEAD         = 22b1823f48e3961f132646073d06acab3c58447f
+REVISION                     = R2 (OPTIONS.ACTOR REACHABILITY & CALL-SITE FIDELITY CORRECTIVE)
 MODE                         = DOCS_ARCHITECTURE_AND_EVIDENCE_CORRECTIVE_ONLY
 STATUS                       = SUBMITTED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
 ```
@@ -16,7 +16,9 @@ STATUS                       = SUBMITTED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
 
 ## 1. Executive Summary & Owner Intent
 
-This R1 document provides the authoritative architectural specification for the MBO2026 D3 Stage Completion and Audit Archive subsystem under the Owner-locked mandate:
+This R2 corrective document addresses the remaining finding from Independent Control Plane review of R1, specifically establishing the exact repository authority, call-site inventory, and runtime reachability of `options.actor` inside `executeProcessTransitionArchive(...)`.
+
+### Core Architectural Invariants Preserved
 1. **Strict Kintone-Only Scope:** MBO2026 is strictly a Kintone-native solution. The production architecture MUST NOT require an external backend, Redis, PostgreSQL/MySQL, cloud runtime, external secret vault, or separate external OAuth infrastructure.
 2. **Reuse of Existing MBO Identity Architecture:** The existing hybrid identity model (Dedicated Kintone Accounts mapped via App 53; Shared Kintone Accounts authenticated via `MboKintoneLoginGate` and `MboSessionManager` / App 801) MUST be reused directly. No secondary PIN or login mechanism may be created.
 3. **Owner Lock on Shared Account Audit Identity:** Audit evidence recorded for actions taken under `Identity_Mode = SHARED` MUST capture and preserve BOTH:
@@ -27,15 +29,20 @@ This R1 document provides the authoritative architectural specification for the 
    - **Subject Employee:** The employee whose evaluation record is being processed (`App794.Employee_Code`).
    - **Actual Operator:** The authenticated human performing the action (`Actual_Operator_Employee_Code`).
    - **Kintone Login Principal:** The active Kintone user session account (`Kintone_Login_User_Code`).
-5. **R1 Corrective Focus:**
-   - **Finding 1 (Source Fidelity):** Corrected all source documentation to reflect literal repository truth at `f3b8ef620fd61dc47744c73cde1b7ea750f1d3bf`. Explanatory models are strictly separated and labeled.
-   - **Finding 2 (Anti-Forgery Trust Boundary):** Rigorous analysis of the Kintone-only security boundary. Explicitly rejects `GROUP everyone Add = YES` as a secure audit mechanism and formalizes the exact platform-level limitation (`KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN`).
+5. **Anti-Forgery & Decision 009 Status:**
+   - Rejection of `GROUP everyone Add = YES` as a trusted anti-forgery design is preserved.
+   - `KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN` is preserved.
+   - `OWNER_DEC_D3_009` provenance is preserved and remains `NOT_SUPERSEDED_AT_THIS_STAGE`.
+6. **R2 Specific Correction:**
+   - Accurately details the two-tier actor derivation order: (1) `options.actor`, (2) fallback `kintone.getLoginUser().code`.
+   - Formally audits all repository call sites of `executeProcessTransitionArchive(...)`.
+   - Concludes: `PRODUCTION_ACTOR_OVERRIDE_PATH = NOT_ACTIVE` and `OPTIONS_ACTOR_CLASSIFICATION = TEST_OR_LEGACY_ONLY`.
 
 ---
 
 ## 2. Authoritative Source Inspection & Identity Verification
 
-Literal repository inspection of `rebootob/MBO2026` at commit `f3b8ef620fd61dc47744c73cde1b7ea750f1d3bf` confirms the existing identity resolution mechanisms:
+Literal repository inspection of `rebootob/MBO2026` at base commit `22b1823f48e3961f132646073d06acab3c58447f` confirms the existing identity resolution mechanisms:
 
 ### 2.1 Identity Resolution: `resolveRuntimeEmployeeSelfContext()`
 Location: `src/main-mbo-app.js` (lines 168–230)
@@ -240,8 +247,8 @@ Location: `src/ui/mbo-session-manager.js` (lines 127–199)
 
 ---
 
-### 2.4 Current D3 Archive Seam Defect
-Location: `src/main-mbo-app.js` (lines 1386–1414)
+### 2.4 Archive Helper Actor Derivation: `executeProcessTransitionArchive`
+Location: `src/main-mbo-app.js` (lines 1385–1414)
 
 *Literal Source excerpt:*
 ```javascript
@@ -269,14 +276,89 @@ Location: `src/main-mbo-app.js` (lines 1386–1414)
     });
 ```
 
-**Verified Defect Analysis:**
-1. **Missing Actual Operator in SHARED Mode:** `actorCode` is derived exclusively from `kintone.getLoginUser().code` (e.g. `f2`). The actual human employee authenticated in `mboLoginGate` is never passed to `archiveService.archiveStageCompletion`.
+**Literal Actor Derivation Order:**
+1. **Tier 1 (Explicit Option):** `options.actor` (caller-supplied override).
+2. **Tier 2 (Fallback):** `loginUser?.code` (where `loginUser = options.loginUser || kintone.getLoginUser()`).
+3. **Fail-Closed Guard:** If both are empty or whitespace, `actorCode` evaluates to `''`, triggering `ACTOR_IDENTITY_UNRESOLVED` and returning `{ success: false }`.
+
+**Identified Seam Defect:**
+1. **Missing Actual Operator in SHARED Mode:** Whether `actorCode` is provided via `options.actor` or falls back to `loginUser.code`, it only populates `actor.userCode` (mapping to `Archived_By` in App 798). In SHARED mode, this captures only the shared Kintone account (e.g., `f2`) and completely drops the authenticated human operator identity (`EMP00125`).
 2. **Subject vs. Operator Separation:** `record.Employee_Code` represents the **Subject Employee** (the owner of the appraisal), NOT the operator performing the workflow transition.
-3. **No Dual Identity Capture:** The current seam cannot distinguish between a dedicated user performing an action versus an operator acting through a shared Kintone user account.
+3. **No Dual Identity Capture:** The helper cannot distinguish between a dedicated user performing an action versus an operator acting through a shared Kintone user account.
 
 ---
 
-## 3. Explanatory Integration Model (Non-Literal Architecture Target)
+## 3. Mandatory Call-Site & Reachability Analysis
+
+### 3.1 Call-Site Inventory for `executeProcessTransitionArchive(...)`
+
+Every occurrence in the repository was inspected and categorized:
+
+| # | Call-Site File | Call-Site Function / Context | Runtime Classification | Options Object Source | `options.actor` Present? | Actor Value Source | User Controlled? |
+| :- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `src/main-mbo-app.js` (line 1355) | Declaration / Export (`export async function executeProcessTransitionArchive`) | `EXPORT_ONLY_HELPER` | N/A (Declaration) | N/A | N/A | N/A |
+| 2 | `dist/mbo-employee-app.js` (lines 12771–12773) | Anonymous handler in `kintone.events.on('app.record.detail.process.proceed')` | `LEGACY_BUNDLE` (Stale build artifact) | Inline literal `{ apiAdapter: kintoneApiWrapper }` | **NO** | Falls back to `kintone.getLoginUser().code` | **NO** |
+| 3 | `tests/d3-stage-archive-integration.test.js` (24 call sites) | Integration test assertions (lines 103, 125, 147, 169, 188, 207, etc.) | `TEST` | Test mock fixtures | **YES** (in specific test cases) | Fixed test string fixtures (e.g. `'test.user'`) | **NO** (Automated test harness) |
+
+*Finding:* Within `src/` (the canonical source codebase), there is **zero internal invocation** of `executeProcessTransitionArchive(...)`.
+
+---
+
+### 3.2 Production Hook Truth: Active D3 Workflow Path
+Location: `src/main-mbo-app.js` (lines 1319–1335)
+
+*Literal Source excerpt:*
+```javascript
+    const isD3TargetTransition = (
+      (currentStatus === '05 Objective Approved' && actionName === 'Start Mid-Year' && nextStatus === '06 Employee Mid-Year') ||
+      (currentStatus === '10 Mid-Year Completed' && actionName === 'Start Self Evaluation' && nextStatus === '11 Employee Self Evaluation') ||
+      (currentStatus === '15 HR Final Check' && actionName === 'Complete' && nextStatus === '16 Completed')
+    );
+
+    if (isD3TargetTransition) {
+      // D3 Trusted Writer Platform-Stamped Architecture:
+      // Delegate to handleD3BrowserTrustedTransition helper (fail-closed, always returns false)
+      const recordId = Number(event.recordId || record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
+      await handleD3BrowserTrustedTransition({
+        recordId,
+        actionName,
+        fetchFn: typeof fetch === 'function' ? fetch : null
+      });
+      return false; // Cancel native transition unconditionally
+    }
+
+    return event;
+```
+
+And in `handleD3BrowserTrustedTransition` (lines 1432–1483):
+- Constructs a payload `{ recordId, intendedAction: actionName }`.
+- Sends `POST /api/mbo/d3/transaction/prepare-transition` to the backend.
+- Unconditionally returns `{ cancelled: true }`.
+- The event handler returns `false` to cancel native Kintone process progression.
+
+**Conclusion:** The active D3 production browser workflow delegates to `handleD3BrowserTrustedTransition` and **never invokes** `executeProcessTransitionArchive(...)`.
+
+---
+
+### 3.3 Required Authority Determination
+
+```text
+================================================================================
+DETERMINATION OF RUNTIME REACHABILITY:
+================================================================================
+PRODUCTION_ACTOR_OVERRIDE_PATH = NOT_ACTIVE
+OPTIONS_ACTOR_CLASSIFICATION   = TEST_OR_LEGACY_ONLY
+================================================================================
+```
+
+**Security Interpretation:**
+- The source helper `executeProcessTransitionArchive(...)` itself supports actor override injection via `options.actor` for testing and dependency injection.
+- However, the current active production D3 workflow in `src/main-mbo-app.js` does NOT invoke or rely on this helper path.
+- The helper is NOT claimed to be intrinsically trustworthy; if a future production caller were ever wired directly to this helper without sanitizing `options.actor`, a spoof risk would exist. In the current repository state, this path is completely unreached in production.
+
+---
+
+## 4. Explanatory Integration Model (Non-Literal Architecture Target)
 
 ```text
 [EXPLANATORY_PSEUDOCODE / NOT_LITERAL_SOURCE]
@@ -320,16 +402,16 @@ Function executeAuditedWorkflowAction(record, targetStage, currentStatus, nextSt
 
 ---
 
-## 4. App 798 Anti-Forgery & Kintone-Only Trust Boundary Analysis
+## 5. App 798 Anti-Forgery & Kintone-Only Trust Boundary Analysis
 
-### 4.1 Evaluation of Direct Kintone Permissions & Rejection of `GROUP everyone Add = YES`
-In R0, a potential ACL configuration of `GROUP everyone: Add = YES, View = NO` was discussed. **R1 explicitly rejects this proposal as an acceptable secure architecture.**
+### 5.1 Evaluation of Direct Kintone Permissions & Rejection of `GROUP everyone Add = YES`
+In R0, a potential ACL configuration of `GROUP everyone: Add = YES, View = NO` was discussed. **R2 explicitly maintains the rejection of this proposal as an acceptable secure architecture.**
 
 **Technical Reason:**
 - Kintone client-side customizations (JavaScript running via desktop/mobile customization) execute entirely in the end-user's browser context.
 - If `GROUP everyone` (or any shared business role) is granted `Add = YES` permission on App 798, that permission applies directly to the Kintone REST API endpoint (`/k/v1/record.json`).
 - Any user logged into Kintone possesses a valid session cookie and CSRF token (`kintone.getRequestToken()`).
-- A user can open browser DevTools or execute a headless script to directly `POST` an arbitrary JSON body to App 798:
+- A user can open browser DevTools or execute a script to directly `POST` an arbitrary JSON body to App 798:
   ```json
   POST /k/v1/record.json
   {
@@ -350,7 +432,7 @@ In R0, a potential ACL configuration of `GROUP everyone: Add = YES, View = NO` w
      - `Created_Time` (Server UTC timestamp)
   4. The platform **cannot** verify whether `Actual_Operator_Employee_Code` matches an active session in App 801, nor whether the snapshot hash corresponds to an actual state in App 794.
 
-### 4.2 Detailed Evaluation of Kintone-Native Mechanisms
+### 5.2 Detailed Evaluation of Kintone-Native Mechanisms
 
 | Kintone Mechanism | Capability | Can Prevent DevTools REST Forgery of Audit Payload? | Status |
 | :--- | :--- | :--- | :--- |
@@ -361,7 +443,7 @@ In R0, a potential ACL configuration of `GROUP everyone: Add = YES, View = NO` w
 | **Platform System Fields** | Platform-stamped `Created_By`, `Created_Time` | **Partial.** Proves *which Kintone account* created the record and *when*, but cannot prove *actual human employee* or *workflow state validity*. | Evaluated |
 | **App 801 Session Cross-Ref** | Stores active session token and mapping | **No.** Kintone platform cannot perform server-side cross-app joins or referential integrity checks during record creation. | Evaluated |
 
-### 4.3 Explicit Answer to Critical Security Question
+### 5.3 Explicit Answer to Critical Security Question
 
 ```text
 ================================================================================
@@ -397,7 +479,7 @@ functions, and zero external secret custody):
 
 ---
 
-## 5. App 798 Schema Gap Analysis & Specification
+## 6. App 798 Schema Gap Analysis & Specification
 
 Current repository inspection indicates that App 798 does not possess dedicated fields for dual-identity audit tracking.
 
@@ -425,7 +507,7 @@ ACL_CHANGE_REQUIRED       = YES
 
 ---
 
-## 6. Treatment of Historical Architecture & Decision 009
+## 7. Treatment of Historical Architecture & Decision 009
 
 1. **Historical Provenance Preserved:**
    - Decision 009 (`D3_DECISION_009_PLATFORM_STAMPED_OAUTH_ATTESTATION_ARCHITECTURE_RATIFICATION.md`) established a trusted external backend writer precisely because Kintone cannot natively prevent REST API forgery when users have Add permissions.
@@ -439,7 +521,7 @@ ACL_CHANGE_REQUIRED       = YES
 
 ---
 
-## 7. Governance, Verification & Execution Summary
+## 8. Governance, Verification & Execution Summary
 
 - **Execution Limits Observed:**
   - `SOURCE_CHANGES = 0`
