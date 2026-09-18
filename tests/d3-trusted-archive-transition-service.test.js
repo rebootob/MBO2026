@@ -245,6 +245,11 @@ test('D3TrustedArchiveTransitionService: handles transition ambiguity without bl
   assert.equal(resCommitted.status, 'TRANSITION_COMMITTED_STATE_OBSERVED');
   assert.equal(transitionAttempts, 1, 'Never blinds retry transition');
 
+  // Verify that nonce stored ownerSessionBinding matching sess_123
+  const keys = Array.from(verifier.nonceStore.keys());
+  const entry = verifier.nonceStore.get(keys[keys.length - 1]);
+  assert.equal(entry.ownerSessionBinding, 'sess_123');
+
   // Case B: Readback shows pre-state + same revision -> TRANSITION_NOT_COMMITTED_RETRYABLE
   transitionAttempts = 0;
   const mockClientNotCommitted = createMockKintoneClient();

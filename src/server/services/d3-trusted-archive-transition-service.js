@@ -157,6 +157,8 @@ export class D3TrustedArchiveTransitionService {
       intendedAction,
       expectedTargetStatus: transitionSpec.expectedTargetStatus,
       snapshotHash
+    }, {
+      ownerSessionBinding: sessionBinding
     });
 
     const attestationPayload = this.attestationVerifier.buildAttestationPayload({

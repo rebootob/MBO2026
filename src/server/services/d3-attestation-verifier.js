@@ -33,12 +33,20 @@ export class D3AttestationVerifier {
   /**
    * Generates a high-entropy server-side cryptographic nonce.
    */
-  generateNonce(eventBinding = {}) {
+  generateNonce(eventBinding = {}, options = {}) {
     const nonce = crypto.randomBytes(32).toString('hex');
     const now = this.clock();
     const expiresAt = now + (this.maxTtlSeconds * 1000);
     const issuedAtIso = new Date(now).toISOString();
     const expiresAtIso = new Date(expiresAt).toISOString();
+
+    const ownerSessionBinding = typeof options === 'string'
+      ? options
+      : (options?.ownerSessionBinding || eventBinding?.ownerSessionBinding || null);
+
+    // Filter ownerSessionBinding from 9-field event binding facts
+    const sanitizedBinding = { ...eventBinding };
+    delete sanitizedBinding.ownerSessionBinding;
 
     this.nonceStore.set(nonce, {
       status: 'UNCONSUMED',
@@ -46,7 +54,8 @@ export class D3AttestationVerifier {
       expiresAt,
       issuedAtIso,
       expiresAtIso,
-      binding: { ...eventBinding }
+      binding: sanitizedBinding,
+      ownerSessionBinding
     });
 
     return {

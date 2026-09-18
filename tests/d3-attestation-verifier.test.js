@@ -188,3 +188,26 @@ test('D3AttestationVerifier: strict CREATOR validation and rejects fallbacks or 
     }, expected);
   }, /ATTESTATION_ACTOR_NOT_RESOLVED/);
 });
+
+test('D3AttestationVerifier: stores ownerSessionBinding outside 9-field binding', () => {
+  const verifier = new D3AttestationVerifier();
+  const binding = {
+    recordId: '101',
+    archiveKey: 'KEY_01',
+    expectedFromStatus: '05 Objective Approved',
+    intendedAction: 'Start Mid-Year',
+    expectedTargetStatus: '06 Employee Mid-Year',
+    snapshotHash: 'HASH_01'
+  };
+
+  const { nonce } = verifier.generateNonce(binding, {
+    ownerSessionBinding: 'SESSION_HASH_123'
+  });
+
+  const entry = verifier.nonceStore.get(nonce);
+  assert.ok(entry);
+  assert.equal(entry.ownerSessionBinding, 'SESSION_HASH_123');
+  // Confirm ownerSessionBinding is not mixed into binding
+  assert.equal(entry.binding.ownerSessionBinding, undefined);
+  assert.equal(Object.keys(entry.binding).length, 6);
+});

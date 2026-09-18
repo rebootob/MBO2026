@@ -82,14 +82,14 @@ export function createD3OAuthAttestationHandler({
   }
 
   async function resolveAuthenticatedBinding(req, context) {
-    const rawToken = context?.token || (req.headers.authorization ? req.headers.authorization.replace(/^Bearer\s+/i, '') : null);
-    if (!rawToken || !authService) {
+    const rawToken = context?.token;
+    if (!rawToken || typeof rawToken !== 'string' || !authService) {
       return { ok: false, status: 'UNAUTHORIZED', code: 401 };
     }
 
     try {
       const principal = await authService.getAuthenticatedPrincipal(rawToken);
-      if (!principal || principal.status !== 'ACTIVE' || !principal.employeeCode) {
+      if (!principal || typeof principal !== 'object' || typeof principal.employeeCode !== 'string' || principal.employeeCode.trim() === '') {
         return { ok: false, status: 'UNAUTHORIZED', code: 401 };
       }
       const sessionBinding = deriveSessionBinding(rawToken);
@@ -210,7 +210,11 @@ export function createD3OAuthAttestationHandler({
       try {
         body = await readJsonBody(req);
       } catch (err) {
-        return sendJson(res, 400, { status: err.message || 'INVALID_BODY' });
+        let errStatus = 'INVALID_BODY';
+        if (err.message === 'UNSUPPORTED_CONTENT_TYPE' || err.message === 'BODY_TOO_LARGE' || err.message === 'INVALID_JSON_BODY') {
+          errStatus = err.message;
+        }
+        return sendJson(res, 400, { status: errStatus });
       }
 
       // Browser request body must allow EXACTLY: recordId, intendedAction
@@ -256,9 +260,18 @@ export function createD3OAuthAttestationHandler({
         return sendJson(res, 500, { status: 'DEPENDENCY_MISSING' });
       }
 
+      const authSession = await resolveAuthenticatedBinding(req, context);
+      if (!authSession.ok) {
+        return sendJson(res, authSession.code, { status: authSession.status });
+      }
+
       const entry = attestationVerifier.nonceStore?.get(nonce);
       if (!entry) {
         return sendJson(res, 404, { status: 'NONCE_NOT_FOUND' });
+      }
+
+      if (entry.ownerSessionBinding && entry.ownerSessionBinding !== authSession.sessionBinding) {
+        return sendJson(res, 403, { status: 'STATUS_NONCE_SESSION_MISMATCH' });
       }
 
       return sendJson(res, 200, {

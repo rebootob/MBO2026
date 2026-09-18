@@ -40,14 +40,15 @@ function createMockRes() {
 const mockAuthService = {
   getAuthenticatedPrincipal: async (token) => {
     if (token === 'VALID_SESSION_A') {
-      return { status: 'ACTIVE', employeeCode: 'EMP_A', role: 'EMPLOYEE' };
+      return { employeeCode: 'EMP001', kintoneUserCode: 'user01', isTechnicalAdmin: false };
     }
     if (token === 'VALID_SESSION_B') {
-      return { status: 'ACTIVE', employeeCode: 'EMP_B', role: 'EMPLOYEE' };
+      return { employeeCode: 'EMP002', kintoneUserCode: 'user02', isTechnicalAdmin: false };
     }
-    if (token === 'EXPIRED_SESSION') {
-      return { status: 'EXPIRED', employeeCode: 'EMP_EXPIRED' };
+    if (token === 'INVALID_PRINCIPAL_NO_CODE') {
+      return { kintoneUserCode: 'user03', isTechnicalAdmin: false };
     }
+    // Expired, invalid or password-change-only returns null in real production MboAuthSessionService
     return null;
   }
 };
@@ -65,14 +66,25 @@ test('D3OAuthAttestationHandler: rejects unauthenticated requests on authorize a
   assert.equal(res.getStatusCode(), 401);
   assert.equal(res.getBody().status, 'UNAUTHORIZED');
 
-  // Expired session
+  // Expired session / invalid returns null
   const reqExp = createMockReq({ method: 'GET', url: '/api/mbo/d3/oauth/authorize' });
   const resExp = createMockRes();
   await handler(reqExp, resExp, {
     url: new URL('http://localhost/api/mbo/d3/oauth/authorize'),
-    token: 'EXPIRED_SESSION'
+    token: 'NON_EXISTENT_OR_EXPIRED_SESSION'
   });
   assert.equal(resExp.getStatusCode(), 401);
+  assert.equal(resExp.getBody().status, 'UNAUTHORIZED');
+
+  // Principal without employeeCode returns null/unauthorized
+  const reqNoEmp = createMockReq({ method: 'GET', url: '/api/mbo/d3/oauth/authorize' });
+  const resNoEmp = createMockRes();
+  await handler(reqNoEmp, resNoEmp, {
+    url: new URL('http://localhost/api/mbo/d3/oauth/authorize'),
+    token: 'INVALID_PRINCIPAL_NO_CODE'
+  });
+  assert.equal(resNoEmp.getStatusCode(), 401);
+  assert.equal(resNoEmp.getBody().status, 'UNAUTHORIZED');
 });
 
 test('D3OAuthAttestationHandler: authorizes with exact scopes, NO PKCE, and session-bound state', async () => {
@@ -184,7 +196,8 @@ test('D3OAuthAttestationHandler: callback requires same sessionBinding and fails
   // Check grant stored under sessionBinding (hash of token), NOT userCode
   const expectedBindingA = crypto.createHash('sha256').update('VALID_SESSION_A').digest('hex');
   assert.ok(storedGrants.has(expectedBindingA));
-  assert.ok(!storedGrants.has('EMP_A'));
+  assert.ok(!storedGrants.has('EMP001'));
+  assert.ok(!storedGrants.has('user01'));
 });
 
 test('D3OAuthAttestationHandler: prepare-transition enforces strict body allowlist (rejects userCode, tokens, etc.)', async () => {
@@ -268,4 +281,188 @@ test('D3OAuthAttestationHandler: prepare-transition enforces strict body allowli
   const expectedBindingA = crypto.createHash('sha256').update('VALID_SESSION_A').digest('hex');
   assert.equal(executedTransition.sessionBinding, expectedBindingA);
   assert.equal(executedTransition.userCode, undefined);
+});
+
+test('D3OAuthAttestationHandler: Corrective 2 - strictly requires gateway context.token and forbids Authorization header fallback', async () => {
+  let authServiceCalled = false;
+  const spyAuthService = {
+    getAuthenticatedPrincipal: async (token) => {
+      authServiceCalled = true;
+      return { employeeCode: 'EMP001', kintoneUserCode: 'user01' };
+    }
+  };
+
+  const handler = createD3OAuthAttestationHandler({
+    authService: spyAuthService,
+    oauthClient: { getAuthorizationUrl: () => 'https://kintone/oauth' }
+  });
+
+  // Request has Authorization header but NO context.token
+  const req = createMockReq({
+    method: 'GET',
+    url: '/api/mbo/d3/oauth/authorize',
+    headers: {
+      authorization: 'Bearer VALID_SESSION_A'
+    }
+  });
+  const res = createMockRes();
+
+  await handler(req, res, {
+    url: new URL('http://localhost/api/mbo/d3/oauth/authorize')
+    // notice: NO token in context!
+  });
+
+  assert.equal(res.getStatusCode(), 401);
+  assert.equal(res.getBody().status, 'UNAUTHORIZED');
+  assert.equal(authServiceCalled, false, 'Auth service must not be invoked using Authorization header fallback');
+});
+
+test('D3OAuthAttestationHandler: Corrective 3 - transaction status endpoint requires gateway session and enforces ownerSessionBinding', async () => {
+  const bindingA = crypto.createHash('sha256').update('VALID_SESSION_A').digest('hex');
+  const bindingB = crypto.createHash('sha256').update('VALID_SESSION_B').digest('hex');
+
+  const mockNonceStore = new Map();
+  const mockAttestationVerifier = {
+    nonceStore: mockNonceStore
+  };
+
+  mockNonceStore.set('NONCE_OWNED_BY_A', {
+    status: 'UNCONSUMED',
+    issuedAt: Date.now(),
+    expiresAt: Date.now() + 300000,
+    ownerSessionBinding: bindingA,
+    binding: {
+      recordId: 100,
+      intendedAction: 'Start Mid-Year'
+    }
+  });
+
+  const handler = createD3OAuthAttestationHandler({
+    authService: mockAuthService,
+    attestationVerifier: mockAttestationVerifier
+  });
+
+  // 1. Unauthenticated request -> 401 UNAUTHORIZED
+  const reqUnauth = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A' });
+  const resUnauth = createMockRes();
+  await handler(reqUnauth, resUnauth, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A')
+  });
+  assert.equal(resUnauth.getStatusCode(), 401);
+  assert.equal(resUnauth.getBody().status, 'UNAUTHORIZED');
+
+  // 2. Unknown nonce under valid session -> 404 NONCE_NOT_FOUND
+  const reqNotFound = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_DOES_NOT_EXIST' });
+  const resNotFound = createMockRes();
+  await handler(reqNotFound, resNotFound, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_DOES_NOT_EXIST'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resNotFound.getStatusCode(), 404);
+  assert.equal(resNotFound.getBody().status, 'NONCE_NOT_FOUND');
+
+  // 3. Cross-session lookup: Session B looks up nonce owned by Session A -> 403 STATUS_NONCE_SESSION_MISMATCH
+  const reqCross = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A' });
+  const resCross = createMockRes();
+  await handler(reqCross, resCross, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A'),
+    token: 'VALID_SESSION_B'
+  });
+  assert.equal(resCross.getStatusCode(), 403);
+  assert.equal(resCross.getBody().status, 'STATUS_NONCE_SESSION_MISMATCH');
+
+  // 4. Same session lookup: Session A looks up its own nonce -> 200 OK
+  const reqOwner = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A' });
+  const resOwner = createMockRes();
+  await handler(reqOwner, resOwner, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resOwner.getStatusCode(), 200);
+  assert.equal(resOwner.getBody().status, 'OK');
+  assert.equal(resOwner.getBody().nonceStatus, 'UNCONSUMED');
+  assert.ok(resOwner.getBody().issuedAt);
+  assert.ok(resOwner.getBody().expiresAt);
+
+  // Sanitization check: response must never contain sensitive fields
+  const rawBody = resOwner.getRawBody();
+  assert.ok(!rawBody.includes(bindingA));
+  assert.ok(!rawBody.includes('EMP001'));
+  assert.ok(!rawBody.includes('user01'));
+  assert.ok(!rawBody.includes('accessToken'));
+  assert.ok(!rawBody.includes('refreshToken'));
+});
+
+test('D3OAuthAttestationHandler: Corrective 4 - sanitizes body errors and never exposes raw error messages', async () => {
+  const handler = createD3OAuthAttestationHandler({
+    authService: mockAuthService,
+    transitionService: { executeTrustedTransition: async () => {} }
+  });
+
+  // 1. Unsupported content type
+  const reqWrongType = createMockReq({
+    method: 'POST',
+    url: '/api/mbo/d3/transaction/prepare-transition',
+    headers: { 'content-type': 'text/plain' },
+    body: { recordId: 100 }
+  });
+  const resWrongType = createMockRes();
+  await handler(reqWrongType, resWrongType, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/prepare-transition'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resWrongType.getStatusCode(), 400);
+  assert.equal(resWrongType.getBody().status, 'UNSUPPORTED_CONTENT_TYPE');
+
+  // 2. Malformed JSON body
+  const reqMalformed = {
+    method: 'POST',
+    url: '/api/mbo/d3/transaction/prepare-transition',
+    headers: { 'content-type': 'application/json' },
+    async *[Symbol.asyncIterator]() {
+      yield Buffer.from('{"invalid json: true');
+    }
+  };
+  const resMalformed = createMockRes();
+  await handler(reqMalformed, resMalformed, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/prepare-transition'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resMalformed.getStatusCode(), 400);
+  assert.equal(resMalformed.getBody().status, 'INVALID_JSON_BODY');
+
+  // 3. Body too large (> 64KB)
+  const reqLarge = {
+    method: 'POST',
+    url: '/api/mbo/d3/transaction/prepare-transition',
+    headers: { 'content-type': 'application/json' },
+    async *[Symbol.asyncIterator]() {
+      yield Buffer.alloc(70000, 97);
+    }
+  };
+  const resLarge = createMockRes();
+  await handler(reqLarge, resLarge, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/prepare-transition'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resLarge.getStatusCode(), 400);
+  assert.equal(resLarge.getBody().status, 'BODY_TOO_LARGE');
+
+  // 4. Unexpected stream/parser error
+  const reqStreamErr = {
+    method: 'POST',
+    url: '/api/mbo/d3/transaction/prepare-transition',
+    headers: { 'content-type': 'application/json' },
+    async *[Symbol.asyncIterator]() {
+      throw new Error('CATASTROPHIC_DISK_OR_NETWORK_FAILURE_SECRET_PATH_C:/private');
+    }
+  };
+  const resStreamErr = createMockRes();
+  await handler(reqStreamErr, resStreamErr, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/prepare-transition'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resStreamErr.getStatusCode(), 400);
+  assert.equal(resStreamErr.getBody().status, 'INVALID_BODY');
+  assert.ok(!resStreamErr.getRawBody().includes('CATASTROPHIC_DISK_OR_NETWORK_FAILURE_SECRET_PATH_C:/private'));
 });
