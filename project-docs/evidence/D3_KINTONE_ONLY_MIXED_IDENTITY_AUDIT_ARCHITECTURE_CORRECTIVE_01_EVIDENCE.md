@@ -1,66 +1,74 @@
-# Evidence Dossier: D3 Live Kintone Artifact Read-Only Verification (R3)
+# Evidence Dossier: D3 Live Kintone Artifact Evidence Corrective (R4)
 
 ## Execution & Evidence Metadata
 
 ```text
-EVIDENCE_DOSSIER_ID          = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01-EVIDENCE
-PACKAGE_ID                   = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01
-AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01-20260918-OWNER-01
+EVIDENCE_DOSSIER_ID          = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-EVIDENCE-CORRECTIVE-01-EVIDENCE
+PACKAGE_ID                   = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-EVIDENCE-CORRECTIVE-01
+AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-EVIDENCE-CORRECTIVE-01-20260918-OWNER-01
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-AUTHORIZED_BASE_HEAD         = e496c230f687e7129eb3b2cc821624ba36dbc251
-REVISION                     = R3 (LIVE KINTONE APP 794 ARTIFACT VERIFICATION & DIVERGENCE AUDIT)
-EXECUTION_MODE               = LIVE_KINTONE_READ_ONLY_ARTIFACT_VERIFICATION
-ZERO_WRITE_VERIFIED          = YES
+AUTHORIZED_BASE_HEAD         = 411d0bca631f826e4cb9d2bd3faa96bffacbfd23
+REVISION                     = R4 (LIVE ARTIFACT EVIDENCE CORRECTIVE: OPTIONS.ACTOR REACHABILITY & SHARED IDENTITY GAP)
+EXECUTION_MODE               = DOCS_AND_EVIDENCE_CORRECTIVE_ONLY
+ZERO_IO_WRITE_VERIFIED       = YES
 STATUS                       = SUBMITTED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
 ```
 
 ---
 
-## 1. Scope & Objective of R3 Live Verification
+## 1. Scope & Objective of R4 Evidence Corrective
 
-This dossier documents the live, read-only verification of Kintone App 794 to definitively resolve the architectural divergence between:
-1. **Current Source Truth (`src/main-mbo-app.js`):** Contains `handleD3BrowserTrustedTransition` sending `POST /api/mbo/d3/transaction/prepare-transition` and returning `false`.
-2. **Current Repository Dist File (`dist/mbo-employee-app.js`):** The build artifact (`REPOSITORY_DIST_ARTIFACT`) produced by `scripts/kintone/build-mbo-ui.js` used by `scripts/kintone/deploy-custom-ui.js`.
-3. **Current Live Deployed Customization in Kintone App 794:** Downloaded directly from the live Kintone tenant via `GET /k/v1/app/customize.json?app=794` and `GET /k/v1/file.json?fileKey=...`.
+This dossier refines and corrects the evidence record from the previous live verification package (`D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01`):
+1. **Preserve Accepted Live Artifact Truth:** Maintain the proven cryptographic identity, customization metadata, and active D3 path of the live Kintone App 794 customization.
+2. **Correct Over-Claim on Actor Injection:** Remove unsupported statements claiming that `options.actor` is user-controlled in the standard caller or that `executeProcessTransitionArchive` is externally callable via DevTools.
+3. **Formalize Exact Live State:**
+   - `LIVE_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH = ACTIVE`
+   - `LIVE_STANDARD_CALLER_OPTIONS_ACTOR = NOT_SUPPLIED`
+   - `LIVE_OPTIONS_ACTOR_EXTERNAL_INJECTION = NOT_PROVEN`
+4. **Preserve Real Shared-Identity Defect:**
+   - `LIVE_SHARED_ACTUAL_OPERATOR_GAP = PRESENT`
+   (Standard live caller omits `options.actor`, falling back to `loginUser.code`, which captures only the shared account in SHARED mode and fails to preserve the Login Lock employee identity).
+5. **Enforce Zero Kintone I/O:** No re-reading or writing of Kintone in this package.
 
 ---
 
-## 2. Zero-Write & Kintone Read Accounting
-
-Under explicit Owner authorization, exactly two read-only operations were executed against Kintone API. Zero write, upload, deploy, or mutation operations occurred.
+## 2. Zero-I/O & Historical Read Accounting
 
 ```text
 ================================================================================
-KINTONE READ & ZERO-WRITE ACCOUNTING
+KINTONE I/O & ZERO-WRITE ACCOUNTING
 ================================================================================
-KINTONE_API_READS                  = 2
+KINTONE_API_READS (THIS PACKAGE)           = 0
+KINTONE_API_WRITES (THIS PACKAGE)          = 0
+KINTONE_READS_FROM_PRIOR_VERIFICATION      = 2
   - READ 1: GET /k/v1/app/customize.json?app=794
   - READ 2: GET /k/v1/file.json?fileKey=202609170459422F30CF7537A04677A30692B4A83EC2E8054
-KINTONE_API_WRITES                 = 0
-CUSTOMIZATION_WRITES (PUT)         = 0
-DEPLOY_POSTS                       = 0
-FILE_UPLOADS (POST)                = 0
-APP_SCHEMA_CHANGES                 = 0
-APP_ACL_CHANGES                    = 0
-PROCESS_MANAGEMENT_CHANGES         = 0
-RECORD_WRITES                      = 0
-OAUTH_CLIENT_REGISTRATIONS         = 0
-REAL_OAUTH_FLOWS_EXECUTED          = 0
-EXTERNAL_BACKEND_PROVISIONED       = 0
-REDIS_INSTANCES_PROVISIONED        = 0
-SQL_DATABASES_PROVISIONED          = 0
-SECRET_VAULTS_PROVISIONED          = 0
-CLOUD_RUNTIMES_PROVISIONED         = 0
-SOURCE_CHANGES                     = 0
-TEST_CHANGES                       = 0
-DEPLOYMENT_ACTIONS                 = 0
-UAT_EXECUTED                       = 0
+KINTONE_WRITES_FROM_PRIOR_VERIFICATION     = 0
+FILE_DOWNLOADS (THIS PACKAGE)              = 0
+FILE_UPLOADS                               = 0
+CUSTOMIZATION_WRITES (PUT)                 = 0
+DEPLOY_POSTS                               = 0
+APP_SCHEMA_CHANGES                         = 0
+APP_ACL_CHANGES                            = 0
+PROCESS_MANAGEMENT_CHANGES                 = 0
+RECORD_WRITES                              = 0
+OAUTH_CLIENT_REGISTRATIONS                 = 0
+REAL_OAUTH_FLOWS_EXECUTED                  = 0
+EXTERNAL_BACKEND_PROVISIONED               = 0
+REDIS_INSTANCES_PROVISIONED                = 0
+SQL_DATABASES_PROVISIONED                  = 0
+SECRET_VAULTS_PROVISIONED                  = 0
+CLOUD_RUNTIMES_PROVISIONED                 = 0
+SOURCE_CHANGES                             = 0
+TEST_CHANGES                               = 0
+DEPLOYMENT_ACTIONS                         = 0
+UAT_EXECUTED                               = 0
 ================================================================================
 ```
 
 ---
 
-## 3. Live Kintone App 794 Customization Metadata Capture
+## 3. Preserved Live Kintone App 794 Customization Metadata
 
 ```json
 {
@@ -99,13 +107,11 @@ UAT_EXECUTED                       = 0
 
 ---
 
-## 4. Cryptographic Hash & Byte Comparison
-
-The raw bytes of the currently attached live JavaScript file were downloaded via `GET /k/v1/file.json?fileKey=202609170459422F30CF7537A04677A30692B4A83EC2E8054` and compared against the repository dist file:
+## 4. Preserved Cryptographic Hash & Byte Comparison
 
 ```text
 ================================================================================
-HASH & BYTE COMPARISON
+HASH & BYTE COMPARISON (PROVEN BY PRIOR VERIFICATION PACKAGE)
 ================================================================================
 Metric                      Live Downloaded Artifact         Repository Dist File (dist/mbo-employee-app.js)
 --------------------------------------------------------------------------------
@@ -120,96 +126,70 @@ BYTE EQUALITY RESULT:       LIVE_EQUALS_REPOSITORY_DIST = YES (100% Identical)
 
 ---
 
-## 5. Live Artifact Static Analysis & Marker Inspection
-
-Direct inspection of the downloaded live JavaScript bytes (`c2049fba52d4fb6e82faf767ff359f37dbafab57aea1e9dada74c022b884989f`):
+## 5. Live Artifact Marker & Static Analysis Truth
 
 ```text
 ================================================================================
-MARKER INSPECTION RESULTS (LIVE DOWNLOADED JS)
+STATIC MARKER AUDIT (dist/mbo-employee-app.js / LIVE ARTIFACT)
 ================================================================================
-handleD3BrowserTrustedTransition                  : FALSE (Not present)
-/api/mbo/d3/transaction/prepare-transition         : FALSE (Not present)
+handleD3BrowserTrustedTransition                  : FALSE (Not present in bundle)
+/api/mbo/d3/transaction/prepare-transition         : FALSE (Not present in bundle)
 executeProcessTransitionArchive                   : TRUE  (Present at Line 13063)
-options.actor                                     : TRUE  (Present at Line 13077)
-actorCode                                         : TRUE  (Present at Line 13077)
+options.actor                                     : TRUE  (Evaluated at Line 13077)
+actorCode                                         : TRUE  (Defined at Line 13077)
 app.record.detail.process.proceed                 : TRUE  (Present at Line 12732)
 ================================================================================
 ```
 
-### Verbatim Wiring in Live Artifact:
-Lines 12732–12773 of the live deployed bundle:
+### Verbatim Standard Caller in Live Bundle (lines 12771–12773):
 ```javascript
-kintone.events.on("app.record.detail.process.proceed", async function(event) {
-  const record = event.record;
-  const actionName = event.action?.value || "";
-  const stage = resolveBusinessStage(event);
-  const context = currentEmployeeSelfContext;
-  const recordEmpCode = record?.Employee_Code?.value;
-  ...
-  const archiveOutcome = await executeProcessTransitionArchive(record, event, {
-    apiAdapter: kintoneApiWrapper
-  });
-  if (archiveOutcome && archiveOutcome.success === false) {
-    const errDetail = archiveOutcome.error || "Archive verification failed";
-    ...
-    return false;
-  }
+const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+  apiAdapter: kintoneApiWrapper
 });
 ```
+Notice: `options.actor` is **not supplied** in this invocation.
 
-### Verbatim Helper in Live Artifact:
-Lines 13063–13083 of the live deployed bundle:
+### Verbatim Helper Header in Live Bundle (lines 13063–13078):
 ```javascript
 async function executeProcessTransitionArchive(record, event, options = {}) {
-  const currentStatus = String(event?.status?.value || event?.currentStatus || record?.Status?.value || record?.Status || "").trim();
-  const nextStatus = String(event?.nextStatus?.value || event?.nextStatus || "").trim();
-  const actionName = String(event?.action?.value || event?.action || "").trim();
-  let targetStage = null;
-  if (currentStatus === "05 Objective Approved" && actionName === "Start Mid-Year" && nextStatus === "06 Employee Mid-Year") {
-    targetStage = "OBJECTIVE";
-  } else if (currentStatus === "10 Mid-Year Completed" && actionName === "Start Self Evaluation" && nextStatus === "11 Employee Self Evaluation") {
-    targetStage = "MIDYEAR";
-  } else if (currentStatus === "15 HR Final Check" && actionName === "Complete" && nextStatus === "16 Completed") {
-    targetStage = "FINAL";
-  }
-  if (!targetStage) {
-    return { success: true, skipped: true, reason: "NOT_A_TARGET_TRANSITION" };
-  }
+  ...
   const apiAdapter = options.apiAdapter || kintoneApiWrapper;
   const loginUser = options.loginUser || (typeof kintone !== "undefined" && typeof kintone.getLoginUser === "function" ? kintone.getLoginUser() : null);
   const actorCode = String(options.actor || loginUser?.code || "").trim();
-  if (!actorCode) {
-    const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actor login identity for transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
-    console.error(errorMsg);
-    return { success: false, error: "ACTOR_IDENTITY_UNRESOLVED" };
-  }
   ...
 ```
 
 ---
 
-## 6. Authoritative Runtime Determinations
+## 6. Authoritative Runtime Determinations & Corrected Reachability
 
 ```text
 ================================================================================
 AUTHORITATIVE RUNTIME CONCLUSIONS
 ================================================================================
-LIVE_DEPLOYED_D3_PATH             = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
-LIVE_DEPLOYED_ACTOR_OVERRIDE_PATH = ACTIVE_OR_REACHABLE
+LIVE_DEPLOYED_D3_PATH                        = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
+LIVE_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH = ACTIVE
+LIVE_STANDARD_CALLER_OPTIONS_ACTOR           = NOT_SUPPLIED
+LIVE_OPTIONS_ACTOR_EXTERNAL_INJECTION        = NOT_PROVEN
+LIVE_SHARED_ACTUAL_OPERATOR_GAP              = PRESENT
 ================================================================================
 ```
 
-### Security Implications Preserved for Control Plane Review:
-1. **Live Environment Execution:** The live deployed Kintone application currently runs the client-side `executeProcessTransitionArchive` logic, directly performing REST writes to App 798.
-2. **Actor Override Reachability:** Because `executeProcessTransitionArchive` is actively executed within the browser process transition pipeline, the helper's internal evaluation of `options.actor` is reachable in the client runtime.
-3. **Identity Vulnerability in SHARED Mode:** Under the live bundle, when operating under a shared Kintone account (e.g., `f2`), `actorCode` falls back to `f2`, losing the actual human employee ID (`EMP00125`) authenticated via MBO Login Lock.
+### Clarification of Evidence Findings:
+1. **Active Live Path:** The live environment actively executes `executeProcessTransitionArchive` upon user action during target process transitions (`05 Objective Approved -> 06 Employee Mid-Year`, `10 Mid-Year Completed -> 11 Employee Self Evaluation`, `15 HR Final Check -> 16 Completed`).
+2. **Standard Caller Parameterization:** The live event handler passes `{ apiAdapter: kintoneApiWrapper }`. It does **not** supply `options.actor`.
+3. **External Injection Status (`NOT_PROVEN`):** The live bundle encapsulates its functions within a private IIFE scope. `executeProcessTransitionArchive` is not attached to `window`, `globalThis`, or exported through any public API. Therefore, arbitrary caller injection via browser DevTools is not proven to be reachable in production.
+4. **The Real Defect — Shared Actual Operator Gap (`PRESENT`):**
+   - Because `options.actor` is omitted, the helper falls back to `loginUser.code = kintone.getLoginUser().code`.
+   - In `SHARED` mode, multiple employees share a single Kintone account (e.g., `f2`).
+   - The archive record created in App 798 records `Archived_By = "f2"`, and **fails to record the actual authenticated employee code** (`Actual_Operator_Employee_Code`) from MBO Login Lock / App 801.
+   - This identity gap represents the actual business defect to be resolved in future implementation.
 
 ---
 
-## 7. Call-Site Inventory & Test Call-Site Count Correction
+## 7. Call-Site Inventory & Test Call-Site Count Confirmation
 
-### 7.1 Automated Integration Test Call-Sites
+### 7.1 Automated Integration Test Suite Call-Sites
 Verification of `tests/d3-stage-archive-integration.test.js` confirms exactly **25** invocations of `executeProcessTransitionArchive(...)`:
 
 ```text
@@ -246,7 +226,7 @@ TOTAL COUNT   : 25 distinct invocations
 | # | File | Scope | Classification | Options Source | `options.actor` | Actor Source | Active in Live? |
 | :- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | `src/main-mbo-app.js:1355` | Declaration / Export | `EXPORT_ONLY_HELPER` | N/A | N/A | N/A | NO (Uncalled in src/) |
-| 2 | `dist/mbo-employee-app.js:12771` | Event Listener | `REPOSITORY_DIST_ARTIFACT` | `{ apiAdapter: kintoneApiWrapper }` | NO | Fallback `loginUser.code` | **YES** (Wired to Live App 794) |
+| 2 | `dist/mbo-employee-app.js:12771` | Event Listener | `REPOSITORY_DIST_ARTIFACT` | `{ apiAdapter: kintoneApiWrapper }` | **NOT_SUPPLIED** | Fallback `loginUser.code` | **YES** (Wired to Live App 794) |
 | 3 | `tests/d3-stage-archive-integration.test.js` | Integration Tests | `TEST` (25 call sites) | Test mock objects | YES (Select cases) | Hardcoded test fixtures | NO (Automated harness) |
 
 ---
@@ -259,9 +239,11 @@ OWNER GOVERNANCE LOCKS: STATUS VERIFICATION
 ================================================================================
 1. SHARED Mode Dual Identity Capture            : PRESERVED (Requires Actual Operator + Kintone Login)
 2. Subject Employee Separation                  : PRESERVED (App794.Employee_Code = Subject Employee != Operator)
-3. Anti-Forgery Determination                   : PRESERVED (KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN)
-4. Insecure ACL Workaround Rejection            : PRESERVED (GROUP everyone Add = YES is NOT ACCEPTED)
-5. Decision 009 Status                          : PRESERVED (Decision 009 = NOT_SUPERSEDED_AT_THIS_STAGE)
+3. Dedicated Mode Operator                      : PRESERVED (Authoritative App 53 mapping)
+4. Shared Mode Operator                         : PRESERVED (Existing Login Lock / App 801; NO second login/PIN)
+5. Anti-Forgery Determination                   : PRESERVED (KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN)
+6. Insecure ACL Workaround Rejection            : PRESERVED (GROUP everyone Add = YES is NOT ACCEPTED)
+7. Decision 009 Status                          : PRESERVED (Decision 009 = NOT_SUPERSEDED_AT_THIS_STAGE)
 ================================================================================
 ```
 

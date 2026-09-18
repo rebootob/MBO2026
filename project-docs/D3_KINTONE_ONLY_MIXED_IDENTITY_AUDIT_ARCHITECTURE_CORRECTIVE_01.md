@@ -4,13 +4,13 @@
 
 ```text
 DOCUMENT_ID                  = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01
-PACKAGE_ID                   = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01
-AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-READONLY-VERIFICATION-01-20260918-OWNER-01
-REVISION                     = R3 (LIVE KINTONE APP 794 ARTIFACT VERIFICATION & DIVERGENCE AUDIT)
+PACKAGE_ID                   = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-EVIDENCE-CORRECTIVE-01
+AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-LIVE-ARTIFACT-EVIDENCE-CORRECTIVE-01-20260918-OWNER-01
+REVISION                     = R4 (LIVE ARTIFACT EVIDENCE CORRECTIVE: OPTIONS.ACTOR REACHABILITY & SHARED IDENTITY GAP)
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-BASE_GIT_HEAD                = e496c230f687e7129eb3b2cc821624ba36dbc251
+BASE_GIT_HEAD                = 411d0bca631f826e4cb9d2bd3faa96bffacbfd23
 GOVERNANCE_STATUS            = SUBMITTED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
-EXECUTION_MODE               = LIVE_KINTONE_READ_ONLY_ARTIFACT_VERIFICATION
+EXECUTION_MODE               = DOCS_AND_EVIDENCE_CORRECTIVE_ONLY
 ZERO_IO_WRITE_VERIFIED       = YES
 STOP_FOR_REVIEW              = YES
 ```
@@ -29,10 +29,20 @@ This corrective establishes authoritative repository and live runtime truth reso
 - **Live Runtime Wiring:** In the live deployed artifact, `kintone.events.on('app.record.detail.process.proceed')` (line 12732) is actively wired to `executeProcessTransitionArchive(record, event, { apiAdapter: kintoneApiWrapper })`. It **does not contain** `handleD3BrowserTrustedTransition` or `/api/mbo/d3/transaction/prepare-transition`.
 - **Runtime Path Determination:**
   ```text
-  LIVE_DEPLOYED_D3_PATH             = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
-  LIVE_DEPLOYED_ACTOR_OVERRIDE_PATH = ACTIVE_OR_REACHABLE
+  LIVE_DEPLOYED_D3_PATH                        = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
+  LIVE_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH = ACTIVE
+  LIVE_STANDARD_CALLER_OPTIONS_ACTOR           = NOT_SUPPLIED
+  LIVE_OPTIONS_ACTOR_EXTERNAL_INJECTION        = NOT_PROVEN
+  LIVE_SHARED_ACTUAL_OPERATOR_GAP              = PRESENT
   ```
-- **Actor Spoof-Risk Assessment:** Because the live deployed Kintone environment actively executes `executeProcessTransitionArchive(...)`, the helper's internal precedence (`options.actor || loginUser?.code`) is reachable in the live execution graph. Caller-supplied actor spoof risk is formally documented for Control Plane follow-up.
+- **Correction of Evidence Over-Claim:**
+  - The standard live event caller passes `{ apiAdapter: kintoneApiWrapper }` and **does not supply** `options.actor`.
+  - The live bundle encapsulates its logic in a scoped IIFE and **does not expose** `executeProcessTransitionArchive` on `window`, `globalThis`, or any public runtime API.
+  - Therefore, claims of arbitrary external actor override injection via DevTools are **NOT_PROVEN**.
+- **The Actual Shared-Identity Gap:**
+  - Because `options.actor` is not supplied by the standard live caller, actor derivation falls back to `kintone.getLoginUser().code`.
+  - Under `SHARED` mode (e.g. factory kiosk using shared account `f2`), the archive record in App 798 records only `Kintone_Login_User_Code = f2`, losing the `Actual_Operator_Employee_Code` from the existing MBO Login Lock / App 801 identity context.
+  - This is the real, verified business defect requiring future implementation.
 - **Strict Owner Governance Preserved:** Dual-identity audit in SHARED mode must preserve both `Actual_Operator_Employee_Code` and `Kintone_Login_User_Code`; `App794.Employee_Code` remains Subject Employee; `KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN`; `GROUP everyone Add = YES` is rejected; Decision 009 remains `NOT_SUPERSEDED_AT_THIS_STAGE`.
 
 ---
@@ -57,6 +67,9 @@ Equality to Live Artifact      NO (Architectural divergence) YES (Identical)    
 Active D3 Process Proceed Path handleD3BrowserTrusted...     executeProcessTransition...   executeProcessTransition...
 Target API Endpoint            /api/mbo/d3/transaction/...   Direct Kintone REST (App 798) Direct Kintone REST (App 798)
 executeProcessTransition...    EXPORT_ONLY_HELPER (Uncalled) ACTIVE_WIRED_CALLER           ACTIVE_WIRED_CALLER
+Standard Caller options.actor  N/A                           NOT_SUPPLIED                  NOT_SUPPLIED
+External Injection Reachable   N/A                           NOT_PROVEN                    NOT_PROVEN
+Shared Actual Operator Gap     RESOLVED_IN_DRAFT_SOURCE      PRESENT                       PRESENT
 ========================================================================================================================
 ```
 
@@ -87,7 +100,7 @@ CALL SITE INVENTORY: executeProcessTransitionArchive(...)
    Function:                 kintone.events.on('app.record.detail.process.proceed', async function(event) { ... })
    Runtime Classification:   REPOSITORY_DIST_ARTIFACT / LIVE_ACTIVE_RUNTIME
    Options Object Source:    Inline literal: { apiAdapter: kintoneApiWrapper }
-   Actor Argument Present:   NO (options.actor is undefined at this specific call site)
+   Actor Argument Present:   NO (options.actor is NOT_SUPPLIED)
    Actor Value Source:       Falls back internally to kintone.getLoginUser().code
    User Controlled:          NO
    Active In Live Path:      YES (Actively executed upon user process action in live App 794)
@@ -107,46 +120,63 @@ CALL SITE INVENTORY: executeProcessTransitionArchive(...)
 
 ---
 
-## 4. Live Runtime Reachability & Actor Spoof-Risk Assessment
+## 4. Live Runtime Evidence & Shared Identity Defect Analysis
 
-### 4.1 Live Runtime Conclusion
+### 4.1 Live Runtime Status
 Based on byte-identical download and static inspection of the live Kintone App 794 desktop customization:
 ```text
 ================================================================================
 LIVE RUNTIME DETERMINATION:
 ================================================================================
-LIVE_DEPLOYED_D3_PATH             = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
-LIVE_DEPLOYED_ACTOR_OVERRIDE_PATH = ACTIVE_OR_REACHABLE
+LIVE_DEPLOYED_D3_PATH                        = LEGACY_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH
+LIVE_EXECUTE_PROCESS_TRANSITION_ARCHIVE_PATH = ACTIVE
+LIVE_STANDARD_CALLER_OPTIONS_ACTOR           = NOT_SUPPLIED
+LIVE_OPTIONS_ACTOR_EXTERNAL_INJECTION        = NOT_PROVEN
+LIVE_SHARED_ACTUAL_OPERATOR_GAP              = PRESENT
 ================================================================================
 ```
 
-### 4.2 Actor Derivation Order & Spoof Vulnerability
+### 4.2 Detailed Assessment of Actor Override & Shared Identity Gap
 Inside `executeProcessTransitionArchive`:
 ```javascript
 const apiAdapter = options.apiAdapter || kintoneApiWrapper;
 const loginUser = options.loginUser || ((typeof kintone !== 'undefined' && typeof kintone.getLoginUser === 'function') ? kintone.getLoginUser() : null);
 const actorCode = String(options.actor || loginUser?.code || '').trim();
 ```
-1. **Derivation Order:**
-   - Tier 1: `options.actor`
-   - Tier 2: `loginUser?.code`
-   - Tier 3: Fail-closed empty check (`ACTOR_IDENTITY_UNRESOLVED`).
-2. **Vulnerability Analysis:**
-   - While the standard event listener at line 12771 passes `{ apiAdapter: kintoneApiWrapper }` without `options.actor`, the function itself resides in active execution memory on the client browser.
-   - Because execution occurs entirely client-side without backend cryptographic sealing, an operator manipulating client-side state or invoking the helper directly via browser console/scripts can supply an arbitrary `options.actor`, which will be recorded as `Archived_By` in App 798.
-   - Furthermore, in `SHARED` mode, the fallback `loginUser.code` captures only the shared Kintone account (e.g., `f2`), dropping the human operator (`EMP00125`).
-   - Consequently, the live deployed artifact exhibits both **operator identity loss in SHARED mode** and **reachability of the actor override parameter**.
+
+1. **Standard Live Invocation:**
+   The exact live event handler wiring in `dist/mbo-employee-app.js` (lines 12771–12773) is:
+   ```javascript
+   const archiveOutcome = await executeProcessTransitionArchive(record, event, {
+     apiAdapter: kintoneApiWrapper
+   });
+   ```
+   At this call site, `options.actor` is **not supplied**.
+
+2. **External Injection Reachability (`NOT_PROVEN`):**
+   - The live bundle is built as an immediately invoked functional bundle without exposing `executeProcessTransitionArchive` onto `window` or `globalThis`.
+   - Claims that an end-user or operator can execute arbitrary actor override injection from DevTools are unsupported by current artifact evidence and classified as **NOT_PROVEN**.
+
+3. **The Real Defect — Shared Actual Operator Gap (`PRESENT`):**
+   - Because `options.actor` is absent in the standard live caller, actor derivation falls back to:
+     `kintone.getLoginUser().code`
+   - In `DEDICATED` mode, `loginUser.code` represents the personal Kintone user.
+   - In `SHARED` mode (shared factory kiosk account such as `f2`), `loginUser.code` records only `f2`.
+   - The current live archive helper does **not** capture or record `Actual_Operator_Employee_Code` from the existing MBO Login Lock / App 801 identity context.
+   - Therefore, the audit record in App 798 fails to preserve the identity of the physical person performing the transition. This is the real business defect (`LIVE_SHARED_ACTUAL_OPERATOR_GAP = PRESENT`).
 
 ---
 
 ## 5. App 798 Trust Boundary & Platform-Level Anti-Forgery
 
 ### 5.1 Rejection of Insecure ACL Workarounds
-- Granting `GROUP everyone: Add = YES` to App 798 allows any authenticated domain user to forge audit records directly via `POST /k/v1/record.json` using browser DevTools. This is **rejected** as an untrusted design.
+- Granting `GROUP everyone: Add = YES` to App 798 allows any authenticated domain user to create audit records directly via `POST /k/v1/record.json`. This is **rejected** as an untrusted design.
 
 ### 5.2 Preservation of Owner Locks
-- **Dual Identity Mandate:** In `SHARED` mode, audit records must capture BOTH `Actual_Operator_Employee_Code` (from Login Lock) AND `Kintone_Login_User_Code` (from Kintone session). They must never be collapsed.
+- **Dual Identity Mandate:** In `SHARED` mode, audit records must capture BOTH `Actual_Operator_Employee_Code` (from Login Lock) AND `Kintone_Login_User_Code` (from Kintone session). They must never be collapsed into one identity.
 - **Subject Separation:** `record.Employee_Code` is strictly the Subject Employee (the employee being evaluated), never the operator.
+- **Dedicated Mode Operator:** Must resolve through authoritative App 53 mapping.
+- **Shared Mode Operator:** Must resolve through existing MboKintoneLoginGate / MboSessionManager / App 801. No second login, no second PIN system.
 - **Anti-Forgery Determination:**
   ```text
   KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN
@@ -156,28 +186,34 @@ const actorCode = String(options.actor || loginUser?.code || '').trim();
   ```text
   Decision 009 = NOT_SUPERSEDED_AT_THIS_STAGE
   ```
+  (Preserved as historical provenance pending subsequent scope reconciliation).
 
 ---
 
-## 6. Zero-Write & Governance Accounting
+## 6. Zero-I/O & Governance Accounting
 
 ```text
 ================================================================================
-VERIFICATION ACCOUNTING & METRICS
+VERIFICATION ACCOUNTING & METRICS (PACKAGE: EVIDENCE-CORRECTIVE-01)
 ================================================================================
-KINTONE_READS                      = 2 (App 794 Customize Metadata + File Download)
-KINTONE_WRITES                     = 0
-FILE_UPLOADS                       = 0
-CUSTOMIZATION_WRITES               = 0
-DEPLOY_POSTS                       = 0
-SCHEMA_WRITES                      = 0
-ACL_WRITES                         = 0
-PROCESS_WRITES                     = 0
-RECORD_WRITES                      = 0
-SOURCE_CHANGES                     = 0
-TEST_CHANGES                       = 0
-DEPLOYMENT                         = 0
-UAT                                = 0
+KINTONE_API_READS (THIS PACKAGE)           = 0
+KINTONE_API_WRITES (THIS PACKAGE)          = 0
+KINTONE_READS_FROM_PRIOR_VERIFICATION      = 2
+KINTONE_WRITES_FROM_PRIOR_VERIFICATION     = 0
+FILE_DOWNLOADS                             = 0
+FILE_UPLOADS                               = 0
+CUSTOMIZATION_WRITES                       = 0
+DEPLOY_POSTS                               = 0
+SCHEMA_WRITES                              = 0
+ACL_WRITES                                 = 0
+PROCESS_WRITES                             = 0
+RECORD_WRITES                              = 0
+SOURCE_CHANGES                             = 0
+TEST_CHANGES                               = 0
+DEPLOYMENT                                 = 0
+UAT                                        = 0
+REAL_OAUTH                                 = 0
+EXTERNAL_BACKEND_PROVISIONING              = 0
 ================================================================================
 ```
 
