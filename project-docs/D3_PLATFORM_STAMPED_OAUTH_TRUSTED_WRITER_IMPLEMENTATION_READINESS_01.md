@@ -1,381 +1,467 @@
 # D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01
 
-- PACKAGE: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01`
-- AUTHORIZATION_ID: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-20260918-OWNER-01`
+- PACKAGE: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-R1`
+- AUTHORIZATION_ID: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-R1-20260918-OWNER-01`
 - REPOSITORY: `rebootob/MBO2026`
 - CANONICAL_BRANCH: `ai/antigravity-wp002c`
-- AUTHORIZED_BASE_HEAD: `5d60f4e5f0d0b498cae39e43f967f797ac572027`
-- AUTHORIZED_BASE_PARENT: `08e56ff2d7e79ba494da05cf3a19fd12eadbcf8f`
-- AUTHORIZED_BASE_TREE: `a28b3da12fe063ca1cf276dd3b253c0920b660f5`
-- BASE_MESSAGE: `docs(d3): reconcile ratified actor architecture control state`
-- MODE: `DOCS/DESIGN-ONLY IMPLEMENTATION READINESS / TARGETED SOURCE INSPECTION / ZERO LIVE I/O / NO SOURCE OR TEST MODIFICATION`
+- AUTHORIZED_BASE_HEAD: `5907a6b059a59cf1e0de7c43a865454da48c6f12`
+- AUTHORIZED_BASE_PARENT: `5d60f4e5f0d0b498cae39e43f967f797ac572027`
+- AUTHORIZED_BASE_TREE: `2b8053aab6df91338bd3b1bef7b343190680da11`
+- BASE_MESSAGE: `docs(d3): define ratified oauth trusted writer implementation boundary`
+- MODE: `ONE-FILE TECHNICAL READINESS CORRECTIVE / DOCS-DESIGN ONLY / ZERO LIVE I/O / NO SOURCE CHANGE / NO TEST CHANGE`
 
 ---
 
-## 1. Executive Summary & Locked Decisions
+## 1. Executive Summary & Locked Architecture Baseline
 
-This document establishes the bounded engineering specification and implementation contract for the Owner-ratified D3 trusted-actor architecture:
+This document establishes the bounded, implementation-ready engineering contract for the Owner-ratified D3 trusted-actor architecture:
 
 - `OWNER_DEC_D3_009` = `LOCKED / OWNER APPROVED`
 - `OWNER_RATIFIED_ARCHITECTURE` = `NATIVE_KINTONE_PLATFORM_STAMPED_OAUTH_ATTESTATION`
 - `NO_MORE_NATIVE_ACTOR_RESEARCH` = `YES`
 - `TRUSTED_WRITER_ACTOR_ARCHITECTURE_SELECTION_BLOCKER` = `RESOLVED`
+- `APP798_GROUP_EVERYONE_ADD` = `NO`
+- `APP798_GROUP_EVERYONE_VIEW` = `NO`
+- `BROWSER_PRIVILEGED_SECRET` = `FORBIDDEN`
+- `ARCHIVED_BY_SOURCE` = `KINTONE_PLATFORM_STAMPED_CREATED_BY`
+- `ARCHIVE_ACTOR_NOT_RESOLVED` = `FAIL_CLOSED`
+- `APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS` = `FORBIDDEN`
+- `ARCHIVE_HASH_CONFLICT` = `FAIL_CLOSED`
+- `SAME_LOGICAL_EVENT_DUPLICATE_ROW` = `FORBIDDEN`
+- `PKCE_SUPPORT` = `PROVEN_UNSUPPORTED`
+- `OAUTH_CLIENT_TYPE` = `CONFIDENTIAL_CLIENT`
+- `GATEWAY_RUNTIME_MODEL` = `NODE_HTTP`
+- `ACCESS_TOKEN_BROWSER_EXPOSURE` = `FORBIDDEN`
+- `ATTESTATION_RECORD_CREATOR_CALLER` = `TRUSTED_BACKEND_USING_BACKEND_HELD_USER_OAUTH_AUTHORITY`
+- `ACTOR_IDENTITY_PROVENANCE` = `KINTONE_PLATFORM_STAMPED_CREATOR_ONLY`
+- `ATTESTATION_ACTOR_PROOF_FIELD_TYPE` = `CREATOR`
+- `BLIND_TRANSITION_RETRY_AFTER_TIMEOUT` = `FORBIDDEN`
 
-This document defines all architectural seams, token lifecycles, schemas, security invariants, sequencing rules, and test requirements in advance so that subsequent implementation work packages do not design architecture while coding.
-
-**This package does NOT implement code, modify tests, perform Kintone I/O, register OAuth clients, or create Kintone apps.**
+**Zero Implementation / Zero Live I/O Contract**:
+- `IMPLEMENTATION_AUTHORIZED` = `NO`
+- `DEPLOYMENT_AUTHORIZED` = `NO`
+- `KINTONE_READ_AUTHORIZED` = `NO`
+- `KINTONE_WRITE_AUTHORIZED` = `NO`
+- `PROCESS_WRITE_AUTHORIZED` = `NO`
+- `UAT_AUTHORIZED` = `NO`
+- `FULL_D3_BUSINESS_UAT` = `NOT_PROVEN`
+- `D3_CLOSURE` = `NOT_CLAIMED`
+- `PRODUCTION_READY` = `NO`
+- `NEXT_GATE_AUTHORIZED` = `NO`
+- `AUTO_START_NEXT_WORK_PACKAGE` = `NO`
 
 ---
 
-## 2. Targeted Source Inspection Findings
+## 2. Targeted Source Inspection & Canonical Facts
 
-Inspection of canonical repository truth confirms the following structural facts:
+Repository inspection of canonical source and test files confirms:
 
 1. **Existing MBO Gateway (`src/server/mbo-gateway-server.js`)**:
-   - Currently provides Express-based secondary authentication (`/api/mbo/auth/initiate`, `/api/mbo/auth/verify`, `/api/mbo/auth/session`) and employee-self records retrieval (`/api/mbo/employee-self/record`, `/api/mbo/employee-self/evaluation-history`).
-   - Does **not** yet provide D3 OAuth authorization endpoints, attestation verification, or trusted archive execution.
-   - Already houses session token management, CORS, rate limiting, and structured logging, making it the appropriate host for D3 trusted services.
+   - Runtime model is native `node:http` (`createServer`), **NOT Express**.
+   - No Express router, middleware, or external framework is present; framework migration is unauthorized (`FRAMEWORK_MIGRATION_AUTHORIZED = NO`).
+   - Routes currently implemented:
+     - `POST /api/mbo/login`
+     - `POST /api/mbo/change-password`
+     - `POST /api/mbo/logout`
+     - `GET  /api/mbo/bootstrap`
+     - `GET  /api/mbo/history`
+     - `GET  /api/mbo/records/:id`
+     - `GET  /health`
+   - Features built-in cookie parsing, JSON body parsing, CORS headers, and runtime dependency injection.
+   - Does not yet expose D3 OAuth authorization or attestation transition transaction routes.
+   - Seam contract: D3 trusted endpoints must be integrated as a dedicated handler/dispatcher module compatible with `node:http` (`IncomingMessage` / `ServerResponse`), reusing the existing gateway composition.
 
-2. **Existing Archive Core (`src/services/revision-archive-service.js`)**:
-   - Houses exhaustive archive domain logic: deterministic `Archive_Key` derivation, canonical snapshot serialization & hashing (`hashD3Snapshot`), snapshot identity verification, idempotency checking, uncertain-write recovery, and post-create readback verification.
-   - Operates strictly with an injected repository and clock.
-   - **Must be reused as-is** on the backend runtime; duplicate archive logic is forbidden.
+2. **Existing Archive Domain Service (`src/services/revision-archive-service.js`)**:
+   - Contains complete, verified archive business logic: deterministic `Archive_Key` generation, canonical D3 snapshot hashing (`hashD3Snapshot`), snapshot validation, duplicate detection, uncertain-write recovery, and post-create readback verification.
+   - Completely decoupled from transport; operates solely via an injected repository abstraction.
+   - **Must be reused as-is** without code modification.
 
 3. **Existing Repository Abstraction (`src/services/revision-archive-kintone-repository.js`)**:
-   - Strictly locked to `REVISION_ARCHIVE_APP_ID = 798` with caller-selectable app IDs explicitly forbidden.
-   - Operates strictly via an injected Kintone API adapter (`getRecords`, `addRecord`).
-   - Read-only queries and append-only creation supported; row mutation/deletion forbidden.
-   - **Must be reused as-is** by injecting a privileged backend Kintone adapter.
+   - Strictly locked to `REVISION_ARCHIVE_APP_ID = 798` (caller cannot override app ID).
+   - Operates via an injected Kintone API adapter (`getRecords`, `addRecord`).
+   - Supports read-only querying and append-only row creation; row mutation or deletion is strictly impossible.
+   - **Must be reused as-is** without code modification, powered by backend privileged credentials.
 
-4. **Existing Browser Hook (`src/main-mbo-app.js`)**:
-   - Lines 1680–1728 attempt to instantiate `RevisionArchiveService` and perform direct browser writes to App 798 using the logged-in user's session credentials.
-   - Because App 798 permissions are locked (`APP798 GROUP everyone Add = NO`, `APP798 GROUP everyone View = NO`), browser execution fails closed.
-   - The browser runtime must be refactored to delegate the attested transaction to the trusted backend seam without receiving privileged App 798 credentials.
-
----
-
-## 3. Readiness Question 1 — Trusted Backend Seam
-
-- **Decision**: `ADD_DEDICATED_D3_TRUSTED_RUNTIME_MODULE_UNDER_EXISTING_GATEWAY`
-- **Reasoning**:
-  - The existing MBO Gateway (`src/server/mbo-gateway-server.js`) already provides authenticated HTTP transport, session cookies, rate-limiting, and error middleware.
-  - Creating a separate second backend server would introduce redundant port management, certificate duplication, and unnecessary deployment complexity.
-  - Adding a modular router and service layer (e.g. `src/server/routes/d3-oauth-attestation-routes.js` and `src/server/services/`) cleanly encapsulates D3 trusted-writer logic without bloating core server initialization.
-- **Contract Values**:
-  - `TRUSTED_BACKEND_IMPLEMENTATION_SEAM` = `ADD_DEDICATED_D3_TRUSTED_RUNTIME_MODULE_UNDER_EXISTING_GATEWAY`
-  - `EXISTING_GATEWAY_REUSE` = `YES`
-  - `NEW_STANDALONE_INFRA_REQUIRED` = `NO`
+4. **Existing Browser Application (`src/main-mbo-app.js`)**:
+   - Lines 1680–1728 attempt to construct `RevisionArchiveService` in the browser and write directly to App 798.
+   - Because `APP798 GROUP everyone Add = NO`, browser direct write fails closed.
+   - Future implementation will modify this browser transition hook to request trusted transaction execution from the gateway without ever touching App 798 credentials or OAuth access tokens.
 
 ---
 
-## 4. Readiness Question 2 — OAuth Authorization Lifecycle
+## 3. Trusted Backend Runtime Seam
 
-### 4.1 Server-Side OAuth Lifecycle Flow
+- `TRUSTED_BACKEND_IMPLEMENTATION_SEAM` = `ADD_DEDICATED_D3_TRUSTED_RUNTIME_MODULE_UNDER_EXISTING_NODE_HTTP_GATEWAY`
+- `EXISTING_GATEWAY_REUSE` = `YES`
+- `NEW_STANDALONE_BACKEND` = `NO`
+- `FRAMEWORK_MIGRATION_AUTHORIZED` = `NO`
+
+### Architectural Boundary:
+- The existing `createMboGatewayServer()` in `src/server/mbo-gateway-server.js` remains the primary HTTP entry point.
+- D3 trusted operations are handled by a dedicated, modular request dispatcher (e.g. `src/server/routes/d3-oauth-attestation-handler.js`).
+- The dispatcher adheres strictly to native `node:http` contracts (`(req, res)` handlers, standard Stream body buffering, and JSON serialization) to ensure complete compatibility without introducing third-party framework dependencies.
+
+---
+
+## 4. OAuth Authorization & Token Lifecycle Seam
+
+### 4.1 Cybozu OAuth Parameters & Ground Truth
+- `OAUTH_CLIENT_TYPE` = `CONFIDENTIAL_CLIENT`
+- `OAUTH_GRANT_TYPE` = `AUTHORIZATION_CODE`
+- `PKCE_SUPPORT` = `PROVEN_UNSUPPORTED` (RFC 7636 is not supported by Cybozu; PKCE must not be used or emitted).
+- `PUBLIC_CLIENT_SUPPORT` = `PROVEN_UNSUPPORTED` (Cybozu strictly mandates client authentication via HTTP Basic Auth `client_id:client_secret`).
+- `STATE_PARAMETER_REQUIRED` = `YES` (High-entropy, cryptographically random, single-use, time-bounded state).
+- `CALLBACK_STATE_VALIDATION` = `REQUIRED` (Must match state stored in backend session/cookie; fails closed on mismatch).
+- `TOKEN_EXCHANGE_SERVER_SIDE_ONLY` = `YES` (POST `/oauth2/token` is called strictly by trusted backend using Basic authentication).
+- `OAUTH_CLIENT_SECRET_BROWSER_EXPOSURE` = `FORBIDDEN`.
+
+### 4.2 End-to-End OAuth Sequence
 
 ```text
-[Browser User]                      [MBO Gateway Server]                      [Kintone Platform]
-      |                                      |                                         |
-      |--- 1. GET /api/mbo/oauth/authorize ->|                                         |
-      |                                      |-- 2. Generate secure state & PKCE ---->|
-      |<- 3. 302 Redirect to Kintone Auth ---|                                         |
-      |                                                                                |
-      |--- 4. User Authenticates & Approves Scopes ---------------------------------->|
-      |                                                                                |
-      |<- 5. 302 Redirect to /api/mbo/oauth/callback?code=...&state=... --------------|
-      |                                      |                                         |
-      |--- 6. GET /callback?code=... ------->|                                         |
-      |                                      |-- 7. Validate state & match redirect ->|
-      |                                      |-- 8. Server POST /oauth/token -------->|
-      |                                      |<- 9. Return Access/Refresh Tokens -----|
-      |                                      |-- 10. Store Grant in Secure Store ---->|
-      |<- 11. Return Attestation Session ----|                                         |
+Browser User                    Trusted Gateway (node:http)              Cybozu OAuth Platform
+     │                                      │                                      │
+     │── 1. GET /api/mbo/oauth/authorize ──>│                                      │
+     │                                      │── 2. Generate random state           │
+     │                                      │      & save in session/cookie        │
+     │<─ 3. 302 Redirect to Cybozu Auth ────│                                      │
+     │                                                                             │
+     │── 4. User Authenticates & Approves Scopes (k:app_record:read,write) ───────>│
+     │                                                                             │
+     │<─ 5. 302 Redirect to Gateway Callback (?code=...&state=...) ────────────────│
+     │                                      │                                      │
+     │── 6. GET /api/mbo/oauth/callback ───>│                                      │
+     │                                      │── 7. Validate state parameter        │
+     │                                      │── 8. Back-channel POST /oauth2/token │
+     │                                      │      (Authorization: Basic id:secret)│
+     │                                      │<─ 9. Return { access_token,          │
+     │                                      │               refresh_token, ... } ──│
+     │                                      │── 10. Store grant securely in backend│
+     │                                      │       bound to server session        │
+     │<─ 11. 302 Return to App794 (NO TOKEN)│                                      │
 ```
 
-### 4.2 Security Constraints
-- `OAUTH_CLIENT_SECRET_BROWSER_EXPOSURE` = `FORBIDDEN` (Client secret stored solely in server environment).
-- `ACCESS_TOKEN_BROWSER_STORAGE` = `FORBIDDEN` (Tokens never sent to browser localStorage, sessionStorage, or DOM).
-- `REFRESH_TOKEN_BROWSER_STORAGE` = `FORBIDDEN` (Tokens never accessible to client-side scripts).
-- `BROWSER_SELECTS_SERVER_TOKEN` = `FORBIDDEN` (Browser cannot choose or submit token IDs; bound strictly to authenticated server session).
-- `STATE_PARAMETER_REQUIRED` = `YES` (Cryptographically random, single-use, time-bounded state parameter).
-- `CALLBACK_STATE_VALIDATION` = `REQUIRED` (Callback fails closed if state parameter does not match active pending session).
-- `REDIRECT_URI_EXACT_MATCH` = `REQUIRED` (Strict match against configured server callback URI).
-- `TOKEN_EXCHANGE_SERVER_SIDE_ONLY` = `YES` (Code-for-token exchange executed solely over backend HTTPS).
-
-### 4.3 Endpoint Specifications
-- `/api/mbo/oauth/authorize`: Initiates OAuth authorization flow, emits signed state cookie/session, redirects user to Kintone OAuth endpoint.
-- `/api/mbo/oauth/callback`: Validates state, performs back-channel code exchange with Kintone, persists grant to secure token store, establishes authenticated transaction context.
+### 4.3 Browser Token Custody Contract
+- `ACCESS_TOKEN_BROWSER_STORAGE` = `FORBIDDEN`
+- `REFRESH_TOKEN_BROWSER_STORAGE` = `FORBIDDEN`
+- `ACCESS_TOKEN_BROWSER_EXPOSURE` = `FORBIDDEN`
+- `BROWSER_SELECTS_SERVER_TOKEN` = `FORBIDDEN`
+- `BROWSER_SUPPLIES_OAUTH_ACCESS_TOKEN` = `FORBIDDEN`
+- The browser never receives, stores, forwards, or proxies OAuth access or refresh tokens.
 
 ---
 
-## 5. Readiness Question 3 — Secure Token Store Contract
+## 5. Secure Token Storage Contract
 
-### 5.1 Interface Definition (`D3TokenStore`)
+### 5.1 Storage Interface (`D3TokenStore`)
 
 ```javascript
 /**
- * Interface for D3 Secure Token Storage
+ * Interface for D3 Secure Token Storage (Server-Side Only)
  */
 export class D3TokenStore {
   /**
-   * Stores an OAuth grant bound to a server session and user identity.
-   * @param {string} sessionId - Server-managed authenticated session ID
-   * @param {object} grantData - { accessToken, refreshToken, expiresAt, scope, userCode }
+   * Persists an OAuth grant bound to a server session.
+   * NOTE: Authoritative userCode is NOT stored here because OAuth token endpoints
+   * do not provide authoritative user identity prior to Attestation readback.
+   *
+   * @param {string} sessionId - Backend-managed session identifier
+   * @param {object} grantData - Grant metadata:
+   *   { accessToken, refreshToken, expiresAt, scope, oauthGrantId, serverSessionBinding, authorizationMetadata }
    * @returns {Promise<void>}
    */
   async storeGrant(sessionId, grantData) { throw new Error('NOT_IMPLEMENTED'); }
 
   /**
-   * Retrieves an active grant for a server session.
-   * @param {string} sessionId - Server-managed authenticated session ID
-   * @returns {Promise<object|null>} Grant data or null if not found/expired
+   * Loads the backend-held user OAuth grant for a session.
+   * @param {string} sessionId
+   * @returns {Promise<object|null>}
    */
   async loadGrant(sessionId) { throw new Error('NOT_IMPLEMENTED'); }
 
   /**
-   * Rotates an expired or refreshed grant atomically.
-   * @param {string} sessionId - Server-managed authenticated session ID
-   * @param {object} newGrantData - Updated grant data
+   * Rotates an expired or refreshed grant.
+   * @param {string} sessionId
+   * @param {object} newGrantData
    * @returns {Promise<void>}
    */
   async rotateGrant(sessionId, newGrantData) { throw new Error('NOT_IMPLEMENTED'); }
 
   /**
-   * Invalidates and deletes a grant immediately.
-   * @param {string} sessionId - Server-managed authenticated session ID
+   * Invalidates and deletes a grant.
+   * @param {string} sessionId
    * @returns {Promise<void>}
    */
   async invalidateGrant(sessionId) { throw new Error('NOT_IMPLEMENTED'); }
 }
 ```
 
-### 5.2 Storage Invariants
-- Stored grants bind strictly to:
-  1. Kintone OAuth authorization metadata.
-  2. Server-side session/transaction identity.
-  3. Expiration timestamps and refresh metadata.
-- `TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY` = `FORBIDDEN` (Production requires durable/encrypted storage; in-memory permitted solely in unit/mock test fixtures).
+### 5.2 Actor Identity Provenance Invariants
+- `OAUTH_GRANT_AUTHORITATIVE_ACTOR_USERCODE` = `NONE_BEFORE_ATTESTATION_READBACK`
+- `AUTHORITATIVE_ACTOR_SOURCE` = `KINTONE_PLATFORM_STAMPED_CREATED_BY_READBACK`
+- `BROWSER_USERCODE_AS_ACTOR` = `FORBIDDEN`
+- `REQUEST_USERCODE_AS_ACTOR` = `FORBIDDEN`
+- `OAUTH_GRANT_USERCODE_INFERENCE_AS_ACTOR` = `FORBIDDEN`
+- `ARCHIVED_BY_FROM_PLATFORM_CREATED_BY_ONLY` = `YES`
+
+Neither the browser, the gateway session, nor the OAuth grant metadata can declare authoritative actor identity. The user's identity is established solely when Kintone stamps `Created by` (`CREATOR`) on the Attestation record, which is subsequently read back and verified by the backend.
+
+### 5.3 Storage Security Rules
+- `TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY` = `FORBIDDEN` (Production requires encrypted persistent store; memory mock permitted only in unit test suites).
 - `TOKEN_STORE_FAILS_CLOSED_IF_UNAVAILABLE` = `YES`.
-- `TOKEN_LOGGING` = `FORBIDDEN` (Tokens, secrets, and auth headers must be scrubbed from all server logs).
-- `TOKEN_IN_ERROR_PAYLOAD` = `FORBIDDEN` (Errors returned to clients must never contain token or credential text).
-- `TOKEN_IN_GIT` = `FORBIDDEN`.
+- `TOKEN_LOGGING` = `FORBIDDEN` (Tokens and secrets must never be written to logs or error strings).
 
 ---
 
-## 6. Readiness Question 4 — Attestation App Contract
+## 6. Attestation App Schema & ACL Contract
 
-### 6.1 Logical Schema & Field Mappings
+### 6.1 Logical Schema & System Field Contract
 
-The dedicated Kintone Attestation App provides platform-stamped actor identity proof.
+The dedicated Attestation App acts as the hardware/platform security boundary stamping the actor's identity.
 
-| Logical Field | Kintone Field Code | Kintone Field Type | Description / Constraints |
+| Logical Field | Suggested Field Code | Field Type | Semantic Contract & Constraints |
 |---|---|---|---|
-| Attestation Nonce | `Attestation_Nonce` | `SINGLE_LINE_TEXT` | High-entropy single-use nonce generated by backend (unique constraint) |
-| App794 Record ID | `App794_Record_ID` | `NUMBER` | Target record ID in App 794 |
-| Archive Key | `Archive_Key` | `SINGLE_LINE_TEXT` | Exact deterministic archive key to be written to App 798 |
-| Expected From Status | `Expected_From_Status` | `SINGLE_LINE_TEXT` | Current status before transition (e.g. `15 HR Final Check`) |
+| Attestation Nonce | `Attestation_Nonce` | `SINGLE_LINE_TEXT` | Server-generated high-entropy cryptographic nonce (Unique constraint) |
+| Target Record ID | `App794_Record_ID` | `NUMBER` | App 794 Target Record ID |
+| Target Archive Key | `Archive_Key` | `SINGLE_LINE_TEXT` | Deterministic SHA-256 archive key for App 798 |
+| Expected From Status | `Expected_From_Status` | `SINGLE_LINE_TEXT` | Pre-transition status (e.g. `15 HR Final Check`) |
 | Intended Action | `Intended_Action` | `SINGLE_LINE_TEXT` | Action to be executed (e.g. `Complete`) |
-| Expected Target Status | `Expected_Target_Status`| `SINGLE_LINE_TEXT` | Target status after transition (e.g. `16 Completed`) |
-| Snapshot Hash | `Snapshot_Hash` | `SINGLE_LINE_TEXT` | SHA-256 canonical hash of the evaluated snapshot |
-| Issued At | `Issued_At` | `DATETIME` | Server timestamp when nonce/intent was registered |
-| Expires At | `Expires_At` | `DATETIME` | Timestamp after which attestation is invalid (strict short TTL) |
-| Platform Actor (System) | `Created_by` / `Creator` | `USER_SELECT` | **Kintone platform-stamped user** (immutable platform truth) |
-| Platform Time (System) | `Created_datetime` | `DATETIME` | **Kintone platform-stamped timestamp** |
+| Expected Target Status | `Expected_Target_Status`| `SINGLE_LINE_TEXT` | Target status (e.g. `16 Completed`) |
+| Snapshot Hash | `Snapshot_Hash` | `SINGLE_LINE_TEXT` | Canonical SHA-256 hash of D3 route snapshot |
+| Issued At | `Issued_At` | `DATETIME` | Server creation timestamp |
+| Expires At | `Expires_At` | `DATETIME` | Short-lived expiration timestamp (TTL <= 60s) |
+| Platform Actor | `作成者` / System Field | **`CREATOR`** | **Kintone platform system field stamped by Kintone server**. Type is strictly `CREATOR`, NOT `USER_SELECT`. Value is `{ code, name }`. |
+| Platform Time | `作成日時` / System Field | **`CREATED_TIME`** | **Kintone platform system timestamp**. Type is strictly `CREATED_TIME`, NOT `DATETIME`. |
+
+### Field Type Specifications:
+- `ATTESTATION_ACTOR_PROOF_FIELD_TYPE` = `CREATOR`
+- `ATTESTATION_PLATFORM_TIME_FIELD_TYPE` = `CREATED_TIME`
+- `CREATOR_VALUE_REQUIRED` = `exact platform-returned user object containing code/name`
+- `AUTHORITATIVE_ACTOR_VALUE` = `CREATOR.value.code`
+- `CREATOR_OVERRIDE_BY_NORMAL_WORKFLOW_USER` = `FORBIDDEN BY NO APP-MANAGE PERMISSION`
+- `ATTESTATION_CREATOR_PHYSICAL_FIELD_CODE` = `PROVISIONING_LOCK_REQUIRED` (The exact physical field code is pinned at provisioning time prior to live execution; modeling as custom USER_SELECT is strictly forbidden).
 
 ### 6.2 App Access Control List (ACL) Contract
-
-- **Ordinary Workflow Users (`GROUP: everyone`)**:
-  - `ADD` = `YES` (Permitted to submit attestation record via OAuth token)
-  - `VIEW` = `NO` (Forbidden to read any attestation records)
-  - `EDIT` = `NO` (Forbidden to modify any attestation records)
-  - `DELETE` = `NO` (Forbidden to delete records)
-  - `MANAGE_APP` = `NO`
+- **Normal Workflow Users (`GROUP: everyone`)**:
+  - `ADD` = `YES` (Required to post attestation record using backend-held OAuth authority).
+  - `VIEW` = `NO` (Forbidden to read any records in the Attestation App).
+  - `EDIT` = `NO` (Immutable; cannot edit).
+  - `DELETE` = `NO` (Cannot delete).
+  - `APP_MANAGEMENT` = `NO` (Strictly guarantees user cannot forge `CREATOR` or `CREATED_TIME`).
 - **Privileged Backend Reader (`USER: mbo_attestation_reader`)**:
-  - `VIEW / READ` = `YES` (Permitted to query and verify records by `Attestation_Nonce`)
-  - `ADD` = `NO`
-  - `EDIT` = `NO`
-  - `DELETE` = `NO`
+  - `VIEW` = `YES` (Permitted to query record by `Attestation_Nonce` to read `CREATOR`).
+  - `ADD` = `NO`.
+  - `EDIT` = `NO`.
+  - `DELETE` = `NO`.
 
 ---
 
-## 7. Readiness Question 5 — Attestation Verification Flow
+## 7. Platform-Stamped Created By Verification Flow
 
-### 7.1 Execution Sequence
-
-1. **Nonce & Expectation Registration**:
-   - Client requests transaction intent from backend `/api/mbo/d3/attestation/prepare`.
-   - Backend generates cryptographically secure 256-bit nonce (`Attestation_Nonce`).
-   - Backend retains expected transaction envelope `{ nonce, recordId, archiveKey, fromStatus, action, targetStatus, snapshotHash, expiresAt }` in server transaction cache with 60-second TTL.
-2. **Attestation Record Creation**:
-   - Client invokes Kintone API to create record in Attestation App using user's retained OAuth access token.
-   - User does **not** provide `Created_by`.
-   - Kintone platform automatically stamps `Created_by` with the exact authenticated user identity.
-3. **Privileged Attestation Readback**:
-   - Client sends nonce to backend `/api/mbo/d3/transaction/commit`.
-   - Privileged backend reader queries Attestation App by exact `Attestation_Nonce`.
-4. **Multi-Point Verification**:
-   - **Nonce Match**: Readback record contains matching `Attestation_Nonce`.
-   - **Expiry Check**: Current server time <= `Expires_At`.
-   - **Target Record Match**: Record `App794_Record_ID` matches expected `recordId`.
-   - **Archive Key Match**: Record `Archive_Key` matches expected `archiveKey`.
-   - **State Transition Match**: Record `Expected_From_Status`, `Intended_Action`, and `Expected_Target_Status` match expectation.
-   - **Payload Hash Match**: Record `Snapshot_Hash` matches expected `snapshotHash`.
-   - **Actor Resolution**: Single user code extracted from platform-stamped `Created_by`.
-5. **Nonce Consumption**:
-   - Backend marks nonce consumed; any subsequent attempt fails closed as replay.
-
-### 7.2 Standard Verification Errors
-- `ATTESTATION_NOT_FOUND`: Attestation record with given nonce does not exist.
-- `ATTESTATION_EXPIRED`: Current time exceeds `Expires_At`.
-- `ATTESTATION_NONCE_MISMATCH`: Queried record does not match active session nonce.
-- `ATTESTATION_EVENT_MISMATCH`: Snapshot hash, record ID, or transition statuses do not match registered expectation.
-- `ATTESTATION_ACTOR_NOT_RESOLVED`: Platform `Created_by` is missing, blank, multiple, or non-user.
-- `ATTESTATION_REPLAY_DETECTED`: Nonce has already been consumed by a prior execution.
-
----
-
-## 8. Readiness Question 6 — App 798 Trusted Writer Integration
-
-- **Target App ID**: `798` (strictly immutable; governed by `REVISION_ARCHIVE_APP_ID`).
-- **ACL Enforcement**: `APP798 GROUP everyone Add = NO`, `APP798 GROUP everyone View = NO`.
-- **Actor Identity Binding**:
-  - `Archived_By` = Platform-stamped `Created_by` user code verified in Step 5.
-  - **Forbidden**: Browser-supplied actor, requester fallback, `SYSTEM`, blank user, or display-name string.
-- **Service Integration**:
-  - Backend instantiates `RevisionArchiveService` with an adapter powered by privileged `KINTONE_APP798_TRUSTED_WRITER_CREDENTIAL`.
-  - Invokes `archiveService.archiveStageCompletion(...)` passing verified `actor: { userCode: verifiedUserCode }`.
-  - Reuses all existing domain assertions: snapshot coherence, total scorer weight = 100, duplicate archive key detection, and post-create readback verification.
-
----
-
-## 9. Readiness Question 7 — App 794 Process Transition Seam
-
-- **Authority Continuity**:
-  - `ATTESTATION_AND_TRANSITION_AUTHORITY_CONTINUITY` = `MANDATORY`.
-  - The exact retained OAuth access token that created the attestation record must be used to execute the App 794 Process Management status transition (`/k/v1/record/status.json`).
-  - Guarantees Kintone's internal Process Management audit trail stamps the identical human actor who authorized the archive.
-- **Fail-Closed on Authority Loss**:
-  - If the OAuth token has expired or is rejected by Kintone, the transaction **fails closed**.
-  - Silent token fallback, service-account transition fallback, or synthetic identity substitution is **strictly forbidden**.
-  - Client must perform re-authorization / re-attestation under architecture rules.
-
----
-
-## 10. Readiness Question 8 — Exact Transaction Ordering & Failure Model
-
-### 10.1 Strict Execution Order
+### 7.1 Complete Transaction Trust Flow
 
 ```text
-STEP 1: Register Attestation Expectation (Server)
-STEP 2: Create Attestation Record (OAuth User -> Attestation App)
-STEP 3: Read & Verify Platform-Stamped Actor (Privileged Backend Reader -> Attestation App)
-STEP 4: Create & Verify App 798 Archive (Privileged Trusted Writer -> App 798 via RevisionArchiveService)
-STEP 5: Verify App 798 Archive Success (Post-Create Readback)
-STEP 6: Execute App 794 Process Transition (OAuth User -> App 794 Process Management)
+[ Browser ]                  [ Trusted Backend (Gateway) ]              [ Kintone Platform ]
+     │                                      │                                      │
+     │── 1. POST /transaction/execute ─────>│                                      │
+     │      { recordId, action, ... }       │── 2. Load backend-held OAuth grant   │
+     │                                      │── 3. Generate server-side Nonce      │
+     │                                      │── 4. POST /k/v1/record.json          │
+     │                                      │      (Attestation App)               │
+     │                                      │      USING USER OAUTH BEARER TOKEN   │
+     │                                      │                                      │
+     │                                      │<─ 5. Kintone stamps CREATOR & returns│
+     │                                      │      { id: attestationId } ──────────│
+     │                                      │                                      │
+     │                                      │── 6. GET /k/v1/record.json           │
+     │                                      │      (Attestation App by ID/Nonce)   │
+     │                                      │      USING PRIVILEGED READER TOKEN   │
+     │                                      │<─ 7. Returns record + CREATOR stamp ─│
+     │                                      │                                      │
+     │                                      │── 8. Verify Nonce, Hash, Context,    │
+     │                                      │      Extract actor = CREATOR.code    │
+     │                                      │                                      │
+     │                                      │── 9. Execute App 798 Archive         │
+     │                                      │      USING PRIVILEGED WRITER TOKEN   │
+     │                                      │      Archived_By = actor             │
+     │                                      │<─ 10. App 798 write verified ────────│
+     │                                      │                                      │
+     │                                      │── 11. PUT /k/v1/record/status.json   │
+     │                                      │       (App 794 Process Management)   │
+     │                                      │       USING SAME USER OAUTH TOKEN    │
+     │                                      │<─ 12. App 794 transition succeeds ───│
+     │<─ 13. Transaction Complete ──────────│                                      │
 ```
 
-**Never**: Transition App 794 before App 798 archive success.
-
-### 10.2 Invariants Preserved
-- `APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS` = `FORBIDDEN`
-- `ARCHIVE_ACTOR_NOT_RESOLVED` = `FAIL_CLOSED`
-- `ARCHIVE_HASH_CONFLICT` = `FAIL_CLOSED`
-- `SAME_LOGICAL_EVENT_DUPLICATE_ROW` = `FORBIDDEN`
-
-### 10.3 Failure & Disruption Handling Matrix
-
-| Disruption Scenario | Point of Failure | System Reaction | Final State & Recovery Behavior |
-|---|---|---|---|
-| Attestation creation timeout | Step 2 | Client/Server aborts | Fail closed. No archive written. No transition. |
-| Attestation readback timeout | Step 3 | Server read times out | Fail closed. Abort before App 798 write. |
-| Attestation verification failure | Step 3 | Nonce/hash/actor mismatch | Fail closed with specific error code. Abort transaction. |
-| App 798 write timeout | Step 4 | Transport uncertain | `RevisionArchiveService` performs uncertain-write recovery (`findByArchiveKey`). If found & verified -> proceed to Step 6. If not found or duplicate -> throw `ARCHIVE_TRANSPORT_UNCERTAIN` / fail closed. |
-| Ambiguous App 798 result | Step 4 | Corrupted readback | Fail closed. Do **not** execute App 794 transition. |
-| Transition timeout after archive success | Step 6 | HTTP timeout on status update | Fail closed with `TRANSITION_EXECUTION_TIMED_OUT`. **Do NOT roll back App 798** (immutable append-only ledger). Client retries transaction; Step 4 recognizes verified archive as idempotent replay and re-attempts Step 6 safely. |
-| Retry after archive success | Step 4 | Idempotent duplicate call | `RevisionArchiveService` verifies persisted row matches expected facts (`IDEMPOTENT_REPLAY`) and returns verified evidence, allowing safe completion of Step 6. |
-| Duplicate nonce submitted | Step 1/3 | Nonce already consumed | Fail closed immediately (`ATTESTATION_REPLAY_DETECTED`). |
-| Stale expected status / race | Step 6 | Record moved by another user | Kintone Process API rejects transition (`GAIA_RE01` / revision conflict). Archive remains valid record of attempt; transaction returns status conflict error. |
-| OAuth token expired before Step 6 | Step 6 | Kintone 401/403 | Fail closed. System halts with `OAUTH_AUTHORITY_EXPIRED`. User must re-authenticate. |
-
-*Note*: Distributed two-phase commit is not provided by Kintone REST APIs; correctness is maintained by append-only ledger idempotency followed by forward retry.
+### 7.2 Strict Validation Invariants
+- `ATTESTATION_RECORD_CREATOR_CALLER` = `TRUSTED_BACKEND_USING_BACKEND_HELD_USER_OAUTH_AUTHORITY`.
+- The browser **never** interacts directly with the Attestation App.
+- Multi-point verification before writing to App 798:
+  1. Record retrieved by `Attestation_Nonce` must exist.
+  2. Server clock must satisfy `now <= Expires_At`.
+  3. `Snapshot_Hash` in record must match expected payload hash.
+  4. `Archive_Key` in record must match computed deterministic archive key.
+  5. `App794_Record_ID`, `Expected_From_Status`, and `Intended_Action` must match.
+  6. `CREATOR` must be present, valid object, with non-empty `code`.
+  7. If any check fails: **FAIL CLOSED**, abort transaction, do not touch App 798.
 
 ---
 
-## 11. Readiness Question 9 — Exact Source File Plan
+## 8. App 798 Trusted Writer Integration
 
-The following candidate file set is authorized for subsequent implementation (`IMPLEMENTATION-01`):
+- **App ID**: `798` (strictly immutable via `REVISION_ARCHIVE_APP_ID`).
+- **ACL Enforcement**: `APP798 GROUP everyone Add = NO`, `APP798 GROUP everyone View = NO`.
+- **Actor Identity Binding**:
+  - `Archived_By` = Authoritative user code extracted from platform-stamped `CREATOR`.
+  - **Strictly Forbidden**: Browser-supplied userCode, session userCode, synthetic `SYSTEM`, requester fallback, or guessed user.
+- **Service Integration**:
+  - Backend executes `RevisionArchiveService.archiveStageCompletion(...)` via `RevisionArchiveKintoneRepository` instantiated with `KINTONE_APP798_TRUSTED_WRITER_CREDENTIAL`.
+  - Full domain validation preserved: snapshot structure, scorer weights totaling 100, duplicate archive key prevention, and post-write verification.
 
-| File Path | Action | Description / Responsibility |
+---
+
+## 9. App 794 Process Transition Seam & Authority Continuity
+
+### 9.1 Authority Continuity Rule
+- `ATTESTATION_AND_TRANSITION_USER_AUTHORITY` = `SAME_BACKEND_HELD_USER_OAUTH_AUTHORITY`.
+- The exact same retained OAuth access token that created the Attestation record must be used to execute the App 794 Process Management transition (`PUT /k/v1/record/status.json`).
+- Guarantees Kintone native Process Management status history stamps the identical human actor who authorized the archive.
+
+### 9.2 Token Degradation & Fail-Closed Behavior
+- If the OAuth token expires, is revoked, or fails before App 794 transition:
+  - `NO SILENT TOKEN SUBSTITUTION`
+  - `NO DIFFERENT USER TOKEN`
+  - `NO SERVICE-ACCOUNT TRANSITION FALLBACK`
+  - `FAIL_CLOSED` = Mandatory.
+  - Transaction halts; client must re-authorize under standard protocol.
+
+---
+
+## 10. Ordering, Failure Model & Ambiguous Transition Recovery
+
+### 10.1 Strict Execution Order
+1. **Prepare Expectation**: Server computes nonce and transaction envelope.
+2. **Attestation Record Creation**: Server creates Attestation record using backend-held user OAuth authority.
+3. **Privileged Verification**: Server reads record with privileged reader, validates all fields, extracts `CREATOR.value.code`.
+4. **App 798 Archive Creation**: Server invokes `RevisionArchiveService` with privileged writer credential (`Archived_By = CREATOR.value.code`).
+5. **App 798 Archive Verification**: Verified via immediate readback and idempotency confirmation.
+6. **App 794 Process Transition**: Server executes process status update using same user OAuth authority.
+
+**Universal Invariant**: `APP794_ROUTE_SNAPSHOT_REUSE_BEFORE_ARCHIVE_SUCCESS` = `FORBIDDEN`.
+
+### 10.2 Transition Timeout & Ambiguous Result Recovery Contract
+`BLIND_TRANSITION_RETRY_AFTER_TIMEOUT` = `FORBIDDEN`.
+
+Because Kintone REST API does not provide distributed transactions or two-phase commit, transport timeout on Step 6 creates an ambiguous state. Blindly retrying the transition is forbidden.
+
+#### Required Recovery Sequence:
+```text
+App 798 Archive Verified
+          │
+          ▼
+App 794 Status Transition Request Dispatched
+          │
+          ▼
+Response Timeout / Network Ambiguity
+          │
+          ▼
+Authoritative App 794 State Readback
+          │
+          ├──> Case A: Status is still Expected_From_Status & Revision matches pre-transition
+          │    └── Classification: TRANSITION_NOT_COMMITTED_RETRYABLE
+          │    └── Safe retry permitted by implementation contract using same user authority.
+          │
+          ├──> Case B: Status has reached Expected_Target_Status
+          │    └── Classification: TRANSITION_COMMITTED_STATE_OBSERVED
+          │    └── Record state as observed target; DO NOT send transition request again.
+          │    └── Do NOT overclaim exact execution attribution solely from target status.
+          │
+          ├──> Case C: Status has moved to unexpected state or revision conflict
+          │    └── Classification: TRANSITION_CONFLICT
+          │    └── FAIL CLOSED; do not retry; surface conflict error.
+          │
+          └──> Case D: App 794 cannot be read or state remains ambiguous
+               └── Classification: TRANSITION_RESULT_AMBIGUOUS
+               └── FAIL CLOSED; NO AUTOMATIC RETRY. Operator investigation required.
+```
+
+Under no circumstances is the App 798 archive row deleted or altered.
+
+---
+
+## 11. Exact Implementation Source File Plan
+
+For the subsequent `IMPLEMENTATION-01` package, the candidate source file plan is:
+
+| File Path | Action | Description & Runtime Architecture |
 |---|---|---|
-| `src/server/mbo-gateway-server.js` | `MODIFY_EXISTING` | Mount D3 OAuth & trusted transaction routes under existing server instance. |
-| `src/server/routes/d3-oauth-attestation-routes.js` | `CREATE_NEW` | Express route controllers for `/api/mbo/oauth/*` and `/api/mbo/d3/transaction/*`. |
-| `src/server/services/d3-token-store-interface.js` | `CREATE_NEW` | Abstract base class and token storage contracts for grant lifecycle. |
-| `src/server/services/d3-attestation-verifier.js` | `CREATE_NEW` | Nonce management, attestation schema validation, and readback verification. |
-| `src/server/services/d3-trusted-archive-transition-service.js` | `CREATE_NEW` | High-level orchestrator: verifies attestation, coordinates `RevisionArchiveService`, and calls App 794 transition. |
+| `src/server/mbo-gateway-server.js` | `MODIFY_EXISTING` | Mount D3 OAuth & trusted transaction dispatcher into existing `node:http` server composition. |
+| `src/server/routes/d3-oauth-attestation-handler.js` | `CREATE_NEW` | `node:http`-compatible request dispatcher for `/api/mbo/oauth/*` and `/api/mbo/d3/transaction/*`. |
+| `src/server/services/d3-token-store-interface.js` | `CREATE_NEW` | Abstract interface and contracts for server-side OAuth grant lifecycle. |
+| `src/server/services/d3-attestation-verifier.js` | `CREATE_NEW` | Nonce management, attestation schema validation, and privileged readback verifier. |
+| `src/server/services/d3-trusted-archive-transition-service.js` | `CREATE_NEW` | High-level orchestrator: coordinates Attestation, `RevisionArchiveService`, and App 794 transition. |
 | `src/services/revision-archive-service.js` | `NO_CHANGE` | Reused directly as canonical archive domain engine. |
-| `src/services/revision-archive-kintone-repository.js` | `NO_CHANGE` | Reused directly for App 798 repository access. |
-| `src/main-mbo-app.js` | `MODIFY_EXISTING` | Adapt client-side transition handler to trigger gateway trusted transaction rather than direct browser App 798 write. |
+| `src/services/revision-archive-kintone-repository.js` | `NO_CHANGE` | Reused directly for App 798 repository operations. |
+| `src/main-mbo-app.js` | `MODIFY_EXISTING` | Adapt client-side transition handler to request trusted transaction execution from gateway. |
 
 ---
 
-## 12. Readiness Question 10 — Exact Test Plan
+## 12. Exact Implementation Test Plan
 
-The following candidate test file set is authorized for subsequent implementation:
+For the subsequent `IMPLEMENTATION-01` package, the candidate test suite plan is:
 
-| Test File Path | Action | Scope / Test Responsibilities |
+| Test File Path | Action | Scope / Test Requirements |
 |---|---|---|
-| `tests/d3-oauth-attestation-routes.test.js` | `CREATE_NEW` | Unit & integration tests for route handlers, state parameter validation, and error serialization. |
-| `tests/d3-attestation-verifier.test.js` | `CREATE_NEW` | Unit tests for nonce generation, expiration checks, hash matching, and error branches. |
-| `tests/d3-trusted-archive-transition-service.test.js` | `CREATE_NEW` | Complete transaction workflow tests with mocked Kintone adapters covering success, timeout, and fail-closed paths. |
-| `tests/d3-token-store.test.js` | `CREATE_NEW` | Interface and memory mock test harness ensuring grant isolation and secret scrubbing. |
-| `tests/revision-archive-service.test.js` | `NO_CHANGE` | Existing 2,221-line test suite remains canonical baseline. |
-| `tests/revision-archive-kintone-repository.test.js` | `NO_CHANGE` | Existing 245-line test suite remains canonical baseline. |
+| `tests/d3-oauth-attestation-handler.test.js` | `CREATE_NEW` | Unit & integration tests for `node:http` request handling, state validation, and error serialization. |
+| `tests/d3-attestation-verifier.test.js` | `CREATE_NEW` | Unit tests for nonce lifecycle, TTL verification, snapshot hash matching, and `CREATOR` extraction. |
+| `tests/d3-trusted-archive-transition-service.test.js` | `CREATE_NEW` | Workflow orchestration tests with mocked Kintone adapters covering success, timeout, and fail-closed paths. |
+| `tests/d3-token-store.test.js` | `CREATE_NEW` | Memory mock test harness ensuring grant isolation, TTL rotation, and scrubbing. |
+| `tests/revision-archive-service.test.js` | `NO_CHANGE` | Canonical baseline test suite (reused as-is). |
+| `tests/revision-archive-kintone-repository.test.js` | `NO_CHANGE` | Canonical baseline test suite (reused as-is). |
 
-### Adversarial Test Scenarios Required in Implementation:
-1. Caller attempts to inject synthetic `actorUserCode` or `Archived_By` in request payload.
-2. Caller passes arbitrary server token selector in headers or body.
-3. Attestation record readback has mismatched `Created_by` (e.g. user A creates attestation for user B's workflow).
-4. Attestation record queried with expired nonce (`now > Expires_At`).
-5. Replayed nonce submitted in a second transaction attempt.
-6. Nonce associated with Record 101 submitted for Record 102.
-7. Mismatched `Archive_Key` between registered expectation and attestation row.
-8. Mismatched `Snapshot_Hash` between registered expectation and attestation row.
-9. Mismatched `Expected_From_Status` or `Intended_Action`.
-10. Token expires before App 794 process transition call.
-11. App 798 write returns 500 / network failure.
-12. App 798 write times out; uncertain recovery finds matching row -> succeeds.
-13. App 798 write times out; uncertain recovery finds no row -> fails closed.
-14. App 798 write succeeds but App 794 status transition fails -> leaves archive intact, returns retryable failure.
-15. Verify response payload to browser contains zero tokens, secrets, or privileged API keys.
-16. Verify server error logs scrub sensitive authorization headers.
+### Mandatory Test Assertions in Future Implementation:
+1. `PKCE` parameters are never generated, emitted, or expected in OAuth requests.
+2. OAuth `client_secret` never appears in browser responses or client-accessible paths.
+3. OAuth `access_token` and `refresh_token` are never returned to the browser.
+4. Browser cannot submit arbitrary access tokens to the transaction endpoint.
+5. Browser cannot select or override backend token grants.
+6. Browser-supplied `userCode` or request payload `actor` cannot become the archive actor.
+7. OAuth grant metadata prior to Attestation readback has no authoritative user code.
+8. Platform-stamped `CREATOR` readback is the sole actor authority for `Archived_By`.
+9. Missing, malformed, or unauthorized `CREATOR` fails closed before touching App 798.
+10. Gateway tests exercise native `node:http` request/response behavior, not Express mocks.
+11. App 794 transition timeout never triggers blind retry.
+12. App 794 transition timeout triggers authoritative state readback.
+13. Unexpected App 794 state after timeout classifies as `TRANSITION_RESULT_AMBIGUOUS` and fails closed.
+14. Target state observation alone does not overclaim execution attribution.
 
 ---
 
-## 13. Readiness Question 11 — Runtime Configuration & Secrets Contract
+## 13. Runtime Configuration & Secrets Contract
 
-The following environment configuration parameters are required by the runtime. **No real credentials, tokens, or values are committed to git.**
+The following environment variables are required by the trusted runtime. **No credentials, secrets, or keys are committed to git.**
 
 - `KINTONE_BASE_URL`: Base URL of the Kintone domain (e.g. `https://example.kintone.com`).
-- `KINTONE_OAUTH_CLIENT_ID`: OAuth Client ID registered in Kintone Administration.
-- `KINTONE_OAUTH_CLIENT_SECRET`: OAuth Client Secret for server-side token exchange.
-- `KINTONE_OAUTH_REDIRECT_URI`: Exact redirect URI configured in Kintone OAuth client.
+- `KINTONE_OAUTH_CLIENT_ID`: Confidential OAuth Client ID registered in Kintone Administration.
+- `KINTONE_OAUTH_CLIENT_SECRET`: Confidential OAuth Client Secret for server-side token exchange.
+- `KINTONE_OAUTH_REDIRECT_URI`: Server callback URI matching Kintone client registration.
 - `KINTONE_ATTESTATION_APP_ID`: App ID of the dedicated Attestation App.
 - `KINTONE_APP798_TRUSTED_WRITER_CREDENTIAL`: Privileged API token or service credential with `ADD` permission on App 798.
 - `KINTONE_ATTESTATION_READER_CREDENTIAL`: Privileged API token or service credential with `VIEW` permission on Attestation App.
-- `TOKEN_STORE_CONFIGURATION`: Backend connection string or key material for secure grant storage.
+- `TOKEN_STORE_CONFIGURATION`: Connection string or encryption key for server-side grant storage.
 
 ---
 
-## 14. Readiness Question 12 — Deployment & Scope Boundary
+## 14. Deployment & Scope Boundary
 
 - **IMPLEMENTATION-01 Scope**:
   - `LOCAL SOURCE + TEST ONLY`.
   - Zero live Kintone calls.
   - Zero external network requests.
-  - Mocked and adapter-injected tests only.
+  - Injected mock adapters for unit and integration testing.
 - **Separate Future Gates Required Before Live Execution**:
-  1. Kintone Attestation App provisioning (App ID, schema fields, and ACL setup).
-  2. Kintone OAuth client registration in Kintone Users & System Administration.
-  3. Secure environment secrets deployment on hosting infrastructure.
+  1. Kintone Attestation App provisioning (Pinning physical field codes, schema fields, and ACLs).
+  2. Kintone OAuth client registration in Cybozu Users & System Administration.
+  3. Secure environment secrets deployment on hosting server.
   4. Live integration verification and business UAT.
 
 ---
@@ -390,16 +476,40 @@ IMPLEMENTATION_BOUNDARY =
 LOCKED
 
 OAUTH_BACKEND_CONTRACT =
+CORRECTED / DEFINED
+
+PKCE_SUPPORT =
+PROVEN_UNSUPPORTED
+
+OAUTH_CLIENT_TYPE =
+CONFIDENTIAL_CLIENT
+
+TOKEN_CUSTODY_CONTRACT =
 DEFINED
 
-TOKEN_STORAGE_CONTRACT =
+ACCESS_TOKEN_BROWSER_EXPOSURE =
+FORBIDDEN
+
+ACTOR_IDENTITY_PROVENANCE =
+KINTONE_PLATFORM_STAMPED_CREATOR_ONLY
+
+GATEWAY_RUNTIME_MODEL =
+NODE_HTTP
+
+FRAMEWORK_MIGRATION_AUTHORIZED =
+NO
+
+ATTESTATION_SYSTEM_FIELD_CONTRACT =
 DEFINED
 
-ATTESTATION_APP_CONTRACT =
+ATTESTATION_ACTOR_PROOF_FIELD_TYPE =
+CREATOR
+
+TRANSITION_AMBIGUOUS_RESULT_RECOVERY =
 DEFINED
 
-TRUSTED_WRITER_TRANSACTION_CONTRACT =
-DEFINED
+BLIND_TRANSITION_RETRY_AFTER_TIMEOUT =
+FORBIDDEN
 
 EXACT_IMPLEMENTATION_SOURCE_FILES =
 DEFINED
@@ -411,6 +521,21 @@ NEXT_RECOMMENDED_GATE =
 D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-01
 
 IMPLEMENTATION_AUTHORIZED =
+NO
+
+DEPLOYMENT_AUTHORIZED =
+NO
+
+KINTONE_READ_AUTHORIZED =
+NO
+
+KINTONE_WRITE_AUTHORIZED =
+NO
+
+PROCESS_WRITE_AUTHORIZED =
+NO
+
+UAT_AUTHORIZED =
 NO
 
 NEXT_GATE_AUTHORIZED =
