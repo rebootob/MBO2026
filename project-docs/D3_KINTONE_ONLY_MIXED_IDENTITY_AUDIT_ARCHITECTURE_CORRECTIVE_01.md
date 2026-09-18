@@ -1,357 +1,455 @@
-# D3 Architecture & Control Corrective — Kintone-Only Mixed-Identity Audit Architecture
+# D3 Architecture & Control Corrective — Kintone-Only Mixed-Identity Audit Architecture (R1)
 
 ## Document Control Header
 
 ```text
-DOCUMENT_ID                  = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01
-PACKAGE                      = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01
-AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-20260918-OWNER-01
+DOCUMENT_ID                  = D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R1
+AUTHORIZATION_ID             = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-R1-20260918-OWNER-01
 CANONICAL_BRANCH             = ai/antigravity-wp002c
-AUTHORIZED_BASE_HEAD         = 3e2e3c353ca27e2829e6d86b022c6fb89ca8bcda
-MODE                         = ARCHITECTURE_AND_CONTROL_CORRECTIVE / ZERO SOURCE MUTATION / ZERO LIVE EXECUTION
-STATUS                       = PROPOSED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
-OWNER_AUTHORIZATION          = EXPLICITLY APPROVED (2026-09-18)
-HISTORICAL_DECISION_009      = PRESERVED_AS_PROVENANCE / RECOMMENDED_FOR_SUPERSEDING
-TARGET_ARCHITECTURE          = KINTONE_ONLY_MIXED_IDENTITY_AUDIT_ARCHITECTURE
-SCHEMA_EXTENSION_STATUS      = SCHEMA_EXTENSION_REQUIRED (DOCUMENTED ONLY / ZERO LIVE CHANGES)
-LIVE_KINTONE_READS           = 0
-LIVE_KINTONE_WRITES          = 0
-REAL_OAUTH_ACTIONS           = 0
-EXTERNAL_INFRASTRUCTURE      = NONE (ZERO REDIS / ZERO SQL / ZERO CLOUD RUNTIME / ZERO EXTERNAL VAULT)
-SOURCE_CHANGES               = 0
-TEST_CHANGES                 = 0
+AUTHORIZED_BASE_HEAD         = f3b8ef620fd61dc47744c73cde1b7ea750f1d3bf
+REVISION                     = R1 (CONTROL PLANE FINDINGS CORRECTIVE)
+MODE                         = DOCS_ARCHITECTURE_AND_EVIDENCE_CORRECTIVE_ONLY
+STATUS                       = SUBMITTED_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW
 ```
 
 ---
 
 ## 1. Executive Summary & Owner Intent
 
-1. **Foundational Kintone-Only Principle:**
-   MBO2026 is authoritatively defined as a **Kintone-only** Management By Objectives solution (`PROJECT_CONTEXT.md`).
-   The production architecture **MUST NOT** require or depend upon:
-   - External backend services or APIs (e.g. Node.js daemon, express gateway server, external microservices).
-   - External state stores or databases (e.g. Redis, PostgreSQL, MySQL).
-   - External cloud runtimes (e.g. AWS Lambda, ECS, Cloud Run).
-   - External secret vaults (e.g. HashiCorp Vault, AWS Secrets Manager).
-   - Separate external OAuth infrastructure, redirect listeners, or token-brokering daemons.
-
-2. **Reuse of Existing Identity Architecture:**
-   The project has already established and accepted a comprehensive Kintone-only Hybrid Identity baseline (governed under `CONFIRMED_BASELINE/D1_HYBRID_IDENTITY_ACCESS_DESIGN.md`, `D1_AUTH_SECURITY.md`, `src/services/mbo-identity-service.js`, `src/ui/mbo-kintone-login-gate.js`, and `src/ui/mbo-session-manager.js`).
-   This existing identity model **MUST** be reused as the foundation for D3 audit attribution.
-   Creating a second, divergent login, PIN, or credential system is strictly prohibited.
-
-3. **Corrective Purpose:**
-   This corrective replaces the invalid architectural assumption that satisfying D3 immutable audit requirements requires an external trusted backend with OAuth client infrastructure. It establishes the authoritative Kintone-only mixed-identity audit contract, specifies the exact data flow through the App 794 action/archive seam into App 798, documents the required App 798 schema extensions, and provides the formal supersession rationale for Owner Decision 009.
+This R1 document provides the authoritative architectural specification for the MBO2026 D3 Stage Completion and Audit Archive subsystem under the Owner-locked mandate:
+1. **Strict Kintone-Only Scope:** MBO2026 is strictly a Kintone-native solution. The production architecture MUST NOT require an external backend, Redis, PostgreSQL/MySQL, cloud runtime, external secret vault, or separate external OAuth infrastructure.
+2. **Reuse of Existing MBO Identity Architecture:** The existing hybrid identity model (Dedicated Kintone Accounts mapped via App 53; Shared Kintone Accounts authenticated via `MboKintoneLoginGate` and `MboSessionManager` / App 801) MUST be reused directly. No secondary PIN or login mechanism may be created.
+3. **Owner Lock on Shared Account Audit Identity:** Audit evidence recorded for actions taken under `Identity_Mode = SHARED` MUST capture and preserve BOTH:
+   - `Actual_Operator_Employee_Code` (the human employee authenticated through the MBO Login Lock)
+   - `Kintone_Login_User_Code` (the shared Kintone account principal, e.g., `f2`)
+   The implementation and audit schema MUST NOT collapse these two distinct identities.
+4. **Three Distinct Identity Concepts:** The architecture strictly separates:
+   - **Subject Employee:** The employee whose evaluation record is being processed (`App794.Employee_Code`).
+   - **Actual Operator:** The authenticated human performing the action (`Actual_Operator_Employee_Code`).
+   - **Kintone Login Principal:** The active Kintone user session account (`Kintone_Login_User_Code`).
+5. **R1 Corrective Focus:**
+   - **Finding 1 (Source Fidelity):** Corrected all source documentation to reflect literal repository truth at `f3b8ef620fd61dc47744c73cde1b7ea750f1d3bf`. Explanatory models are strictly separated and labeled.
+   - **Finding 2 (Anti-Forgery Trust Boundary):** Rigorous analysis of the Kintone-only security boundary. Explicitly rejects `GROUP everyone Add = YES` as a secure audit mechanism and formalizes the exact platform-level limitation (`KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN`).
 
 ---
 
-## 2. Authoritative Existing Identity Model
+## 2. Authoritative Source Inspection & Identity Verification
 
-The repository already defines and exercises two distinct principal execution modes in production:
+Literal repository inspection of `rebootob/MBO2026` at commit `f3b8ef620fd61dc47744c73cde1b7ea750f1d3bf` confirms the existing identity resolution mechanisms:
 
-### 2.1 Mode 1: Dedicated / Personal Kintone User (`DEDICATED`)
-- **User Context:** An employee who possesses an individual, dedicated Kintone user account on the tenant.
-- **Authoritative Resolution Path:**
-  ```text
-  kintone.getLoginUser().code
-        │
-        ▼
-  App 53 (MBO_Kintone_User mapping: Number_0 = 1, emp_text)
-        │
-        ▼
-  Canonical Employee_Code (e.g., "EMP00042")
-  ```
-- **UX Invariant:** Dedicated users are already authenticated by Cybozu/Kintone. No secondary login prompt, PIN dialog, or credential entry is presented.
-- **Fail-Closed Rule:** If the App 53 mapping is missing, deactivated (`Number_0 != 1`), ambiguous (multiple active rows for same user code), or invalid, identity resolution **FAILS CLOSED** (`DEDICATED_MAPPING_NOT_FOUND` / `DEDICATED_MAPPING_AMBIGUOUS`). The system MUST NOT guess the employee code or fall back to ambient values.
+### 2.1 Identity Resolution: `resolveRuntimeEmployeeSelfContext()`
+Location: `src/main-mbo-app.js` (lines 168–230)
 
-### 2.2 Mode 2: Shared Kintone User (`SHARED`)
-- **User Context:** Multiple branch or department employees accessing Kintone through an approved shared departmental principal (`t1`, `t2`, `s1`, `f1`, `f2`, `f3`, `e1`, `tmh`, `g_request`).
-- **Authoritative Resolution Path:**
-  ```text
-  Shared Kintone Principal (e.g., "f2")
-        │
-        ▼
-  MboKintoneLoginGate (src/ui/mbo-kintone-login-gate.js)
-        │
-        ▼
-  MboSessionManager (src/ui/mbo-session-manager.js) / App 801 (Session Store)
-        │
-        ▼
-  Authenticated Employee_Code (e.g., "EMP00125")
-  ```
-- **Session & Identity Binding:**
-  - The shared login gate challenges the human operator for their employee credentials/PIN.
-  - Upon successful verification against App 801, `MboSessionManager` issues a session cryptographically bound to both `employeeCode` and `currentKintoneUserCode`.
-  - The in-memory principal holds the verified `employeeCode`.
-- **Prohibition:** Creating a duplicate or secondary PIN/login prompt for D3 workflow actions is forbidden. The active authenticated employee identity from the existing `MboKintoneLoginGate` MUST be directly queried and reused.
+*Literal Source excerpt:*
+```javascript
+function resolveRuntimeEmployeeSelfContext(uiHost, options = {}) {
+  const loginUser = (typeof kintone !== 'undefined' && kintone.getLoginUser) ? kintone.getLoginUser() : null;
+  const kintoneUserCode = loginUser?.code || null;
 
----
+  if (!kintoneUserCode) {
+    return { status: 'NO_KINTONE_USER', mode: null };
+  }
 
-## 3. Owner Lock — Shared Account Audit Identity Contract
+  let principalMode;
+  try {
+    principalMode = MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode });
+  } catch (err) {
+    return { status: 'MODE_RESOLUTION_ERROR', reason: err.message };
+  }
 
-### 3.1 Non-Collapsible Dual Identity Contract
-In a shared account environment, a single identifier is inherently incomplete:
-- Storing only `kintone.getLoginUser().code` (e.g. `f2`) hides *which* human employee performed the action, defeating non-repudiation.
-- Storing only `Employee_Code` (e.g. `EMP00125`) hides *which* Kintone principal was utilized, breaking Kintone platform tenant traceability and permission auditing.
+  if (principalMode === 'TECHNICAL_ADMIN') {
+    return { status: 'TECHNICAL_ADMIN', mode: 'TECHNICAL_ADMIN' };
+  }
 
-**Owner Lock Rule:**
-For `Identity_Mode = SHARED`, audit evidence MUST preserve BOTH:
-1. `Actual_Operator_Employee_Code`: The verified human employee identity authenticated through the MBO Login Lock / active App 801 session.
-2. `Kintone_Login_User_Code`: The underlying Kintone account principal (`kintone.getLoginUser().code`) through which the action traversed the SaaS platform.
+  if (principalMode === 'SHARED') {
+    if (!mboLoginGate) {
+      return { status: 'GATE_NULL', mode: 'SHARED' };
+    }
+    const authResult = mboLoginGate.requireLogin(uiHost);
+    if (typeof authResult === 'string') {
+      return {
+        status: 'SUCCESS',
+        context: { mode: 'SHARED', employeeCode: authResult, kintoneUserCode }
+      };
+    } else if (authResult && typeof authResult.then === 'function') {
+      return authResult.then(empCode => {
+        if (!empCode) {
+          return { status: 'SHARED_AUTH_REQUIRED', mode: 'SHARED' };
+        }
+        return {
+          status: 'SUCCESS',
+          context: { mode: 'SHARED', employeeCode: empCode, kintoneUserCode }
+        };
+      });
+    }
+    return { status: 'SHARED_AUTH_REQUIRED', mode: 'SHARED' };
+  }
 
-The implementation and schema MUST NOT collapse, concatenate into an ambiguous string, or discard either of these two identities.
+  if (principalMode === 'DEDICATED') {
+    return (async () => {
+      let candidateRecords = [];
+      try {
+        candidateRecords = await EmployeeService.lookupDedicatedIdentityMappingCandidates(kintoneUserCode, kintoneApiWrapper);
+      } catch (lookupErr) {
+        candidateRecords = [];
+      }
 
-### 3.2 Concrete Identity Tuples
+      const mappingRes = MboIdentityService.resolveDedicatedKintoneUserMapping({
+        kintoneUserCode,
+        userMappings: candidateRecords
+      });
 
-#### Example A: Shared Account Operation
-- `Identity_Mode`: `SHARED`
-- `Actual_Operator_Employee_Code`: `EMP00125`
-- `Kintone_Login_User_Code`: `f2`
-- **Audit Meaning:** Employee `EMP00125` was the authenticated human operator who performed the business workflow action, operating via approved shared Kintone account `f2`.
-
-#### Example B: Dedicated User Operation
-- `Identity_Mode`: `DEDICATED`
-- `Actual_Operator_Employee_Code`: `EMP00042`
-- `Kintone_Login_User_Code`: `somchai.p`
-- **Audit Meaning:** Employee `EMP00042` performed the action using their individual dedicated Kintone account `somchai.p` (verified via App 53 mapping).
-
----
-
-## 4. Universal Audit Requirements for App 794 Workflow Actions
-
-For every auditable App 794 workflow action (including `SUBMIT`, `APPROVE`, `REJECT`, `SEND_BACK`, `STAGE_COMPLETION`, `REASSIGN_EVALUATOR`, and `REVISION_CREATE`), the audit record MUST capture and permanently preserve the following 10-point audit tuple:
-
-```text
-========================================================================================
-FIELD / ATTRIBUTE       LOGICAL TYPE           AUDIT DESCRIPTION & GOVERNANCE SEMANTICS
-========================================================================================
-1. WHO                  Employee_Code          Actual authenticated operator (EMPxxxxx)
-2. LOGIN_ACCOUNT        Kintone_User_Code      Exact Kintone account (kintone.getLoginUser().code)
-3. IDENTITY_MODE        Enum ['SHARED','DEDICATED'] Architectural mode under which action ran
-4. WHAT                 Action_Name            Business action (SUBMIT, APPROVE, REJECT, etc.)
-5. RECORD               Record_ID / Key        App 794 Target record identity ($id / Record_Key)
-6. FROM_STATUS          Status_String          Authoritative workflow status immediately prior
-7. TO_STATUS            Status_String          Authoritative workflow status resulting from action
-8. WHEN                 ISO-8601 UTC Datetime  Timestamp of event with explicit timezone offset
-9. REASON               Text                   Business justification when required by policy
-10. SNAPSHOT            SHA-256 / Canonical    Deterministic snapshot and hash of record state
-========================================================================================
+      if (mappingRes.status === 'IDENTITY_BOUND' && mappingRes.employeeCode) {
+        return {
+          status: 'SUCCESS',
+          context: { mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode }
+        };
+      }
+...
 ```
 
----
-
-## 5. Fail-Closed Requirements
-
-Audit integrity is a hard prerequisite for state mutation. If identity or audit context cannot be definitively proven, the workflow action MUST fail closed.
-
-### 5.1 Shared Mode Fail-Closed Invariants
-If `Identity_Mode === 'SHARED'`:
-1. If the existing Login Lock / session manager cannot resolve an authenticated `Employee_Code`:
-   - **ABORT IMMEDIATELY** (`return false` / reject action).
-   - Do **NOT** execute the Kintone Process Management transition.
-   - Do **NOT** write an audit record with a missing or null operator employee code.
-   - Do **NOT** attribute the action to the generic shared Kintone account (e.g. attributing the action to "f2" as the employee).
-   - Do **NOT** guess employee identity from the record's target employee, assignees, or history.
-   - Do **NOT** fall back to `Requester_User` or any other field on the record.
-   - Do **NOT** write incomplete audit evidence.
-
-### 5.2 Dedicated Mode Fail-Closed Invariants
-If `Identity_Mode === 'DEDICATED'`:
-1. If App 53 identity lookup fails, returns no matching active record, returns multiple active records, or yields an empty `emp_text`:
-   - **ABORT IMMEDIATELY** (`DEDICATED_MAPPING_FAILED`).
-   - Do **NOT** execute the workflow transition.
-   - Do **NOT** guess the `Employee_Code` from Kintone username, email, or display name.
+**Key Source-Verified Invariants:**
+1. **SHARED Mode:** Resolves through `mboLoginGate.requireLogin(uiHost)`. Upon success, returns `{ status: 'SUCCESS', context: { mode: 'SHARED', employeeCode: empCode, kintoneUserCode } }`.
+2. **DEDICATED Mode:** Queries App 53 mapping candidates via `EmployeeService.lookupDedicatedIdentityMappingCandidates(...)` and resolves via `MboIdentityService.resolveDedicatedKintoneUserMapping(...)`. Success is indicated specifically by `mappingRes.status === 'IDENTITY_BOUND'`, yielding `{ status: 'SUCCESS', context: { mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode } }`.
 
 ---
 
-## 6. Independent Repository Truth Verification
+### 2.2 Login Lock: `MboKintoneLoginGate`
+Location: `src/ui/mbo-kintone-login-gate.js` (lines 53–61, 90–123)
 
-The repository was independently inspected on branch `ai/antigravity-wp002c` at HEAD `3e2e3c353ca27e2829e6d86b022c6fb89ca8bcda`.
+*Literal Source excerpt:*
+```javascript
+  /**
+   * Returns the authenticated Employee_Code only when fully authorized
+   * (authenticated AND no pending force password change).
+   * Returns null otherwise — caller must fail closed.
+   */
+  getEmployeeCode() {
+    if (!this._principal || this._pendingForceChange) return null;
+    return this._principal.employeeCode;
+  }
+...
+  async requireLogin(host) {
+    const code = this.getEmployeeCode();
+    if (code) return code;
 
-### 6.1 `resolveRuntimeEmployeeSelfContext()` Verification
-- **Location:** `src/main-mbo-app.js` (lines 168–245)
-- **Observed Repository Logic:**
-  - Checks `kintone.getLoginUser().code`.
-  - Determines principal mode via `MboIdentityService.resolveKintonePrincipalMode({ kintoneUserCode })`.
-  - For `SHARED`: calls `mboLoginGate.requireLogin(uiHost)`. On success, returns:
-    `{ status: 'SUCCESS', context: { mode: 'SHARED', employeeCode, kintoneUserCode } }`.
-  - For `DEDICATED`: calls `EmployeeService.lookupDedicatedIdentityMappingCandidates()` and `MboIdentityService.resolveDedicatedKintoneUserMapping()`. On success, returns:
-    `{ status: 'SUCCESS', context: { mode: 'DEDICATED', employeeCode: mappingRes.employeeCode, kintoneUserCode } }`.
-- **Conclusion:** The application runtime ALREADY resolves the exact `{ mode, employeeCode, kintoneUserCode }` tuple required by the Owner's audit contract.
+    if (this.sessionManager) {
+      try {
+        const restored = await this.sessionManager.restoreSession();
+        if (restored?.employeeCode) {
+...
+          this._principal = { employeeCode: restored.employeeCode };
+          this._pendingForceChange = false;
+          return restored.employeeCode;
+        }
+      } catch {
+        // fail closed to overlay on restore failure
+      }
+    }
 
-### 6.2 `MboKintoneLoginGate` & `MboSessionManager` Verification
-- **Location:** `src/ui/mbo-kintone-login-gate.js` & `src/ui/mbo-session-manager.js`
-- **Observed Repository Logic:**
-  - `MboKintoneLoginGate` gates UI interactions and stores authenticated state in `this._principal.employeeCode`.
-  - `MboSessionManager` generates session records in App 801 storing:
-    `{ employeeCode, tokenHash, issuedAt, expiresAt, kintoneUserCode }`.
-  - Sessions are strictly bound to both the employee code AND the Kintone principal code.
-- **Conclusion:** The shared identity infrastructure is mature, fully tested, and authoritatively provides the verified employee code.
+    return new Promise((resolve) => {
+      this._renderLoginOverlay(host, resolve);
+    });
+  }
+```
 
-### 6.3 Current D3 Archive Seam Defect Verification
-- **Location:** `src/main-mbo-app.js` (`executeStageCompletionArchive`, lines 1385–1421)
-- **Observed Repository Logic:**
-  ```javascript
+**Key Source-Verified Invariants:**
+- `getEmployeeCode()` returns `this._principal.employeeCode` only if `this._principal` is set and `!this._pendingForceChange`. Otherwise returns `null` (enforcing fail-closed).
+- `requireLogin(host)` checks `getEmployeeCode()`, attempts `sessionManager.restoreSession()`, verifies eligibility, sets `this._principal = { employeeCode }`, and falls back to rendering a blocking login modal `_renderLoginOverlay(host, resolve)`.
+
+---
+
+### 2.3 Session Binding: `MboSessionManager`
+Location: `src/ui/mbo-session-manager.js` (lines 127–199)
+
+*Literal Source excerpt:*
+```javascript
+  async issueSession(employeeCode) {
+    const kintoneUser = this.getKintoneUser();
+    const kintoneUserCode = kintoneUser?.code;
+
+    if (!kintoneUserCode || typeof kintoneUserCode !== 'string' || kintoneUserCode !== kintoneUserCode.trim() || !kintoneUserCode.trim()) {
+      throw new Error('MISSING_KINTONE_PRINCIPAL');
+    }
+
+    const token = this.generateToken();
+    const tokenHash = await this.hashToken(token);
+
+    const currentTime = this.now();
+    const issuedAt = currentTime.toISOString();
+    const expiresAt = new Date(currentTime.getTime() + ABSOLUTE_TTL_MS).toISOString();
+
+    await this.adapter.storeSession({
+      employeeCode,
+      tokenHash,
+      issuedAt,
+      expiresAt,
+      kintoneUserCode
+    });
+
+    this.setLocalToken(token);
+
+    return { status: 'SESSION_ISSUED', expiresAt };
+  }
+
+  async restoreSession() {
+    const token = this.getLocalToken();
+    if (!token) return null;
+
+    let tokenHash;
+    try {
+      tokenHash = await this.hashToken(token);
+    } catch {
+      this.clearLocalToken();
+      return null;
+    }
+
+    const kintoneUser = this.getKintoneUser();
+    const currentKintoneUserCode = kintoneUser?.code;
+
+    if (!currentKintoneUserCode || typeof currentKintoneUserCode !== 'string' || currentKintoneUserCode !== currentKintoneUserCode.trim() || !currentKintoneUserCode.trim()) {
+      this.clearLocalToken();
+      return null;
+    }
+
+    let res;
+    try {
+      res = await this.adapter.validateSession({
+        tokenHash,
+        currentKintoneUserCode
+      });
+    } catch {
+      this.clearLocalToken();
+      return null;
+    }
+
+    if (res?.status === 'VALID_SESSION' && res.employeeCode) {
+      return {
+        employeeCode: res.employeeCode
+      };
+    }
+
+    this.clearLocalToken();
+    return null;
+  }
+```
+
+**Key Source-Verified Invariants:**
+- `issueSession(employeeCode)` enforces a strict multi-attribute binding stored in App 801: `{ employeeCode, tokenHash, issuedAt, expiresAt, kintoneUserCode }`.
+- `restoreSession()` hashes the local sessionStorage token and calls `adapter.validateSession({ tokenHash, currentKintoneUserCode })`. If the current Kintone user does not match the bound user or token is invalid/expired, the session is invalidated and cleared (`return null`).
+
+---
+
+### 2.4 Current D3 Archive Seam Defect
+Location: `src/main-mbo-app.js` (lines 1386–1414)
+
+*Literal Source excerpt:*
+```javascript
+  const apiAdapter = options.apiAdapter || kintoneApiWrapper;
   const loginUser = options.loginUser || ((typeof kintone !== 'undefined' && typeof kintone.getLoginUser === 'function') ? kintone.getLoginUser() : null);
   const actorCode = String(options.actor || loginUser?.code || '').trim();
-  ...
-  const archiveResult = await archiveService.archiveStageCompletion({
-    sourceRecordKey: String(record?.Record_Key?.value || ...),
-    employeeCode: String(record?.Employee_Code?.value || ...),
-    ...
-    actor: { userCode: actorCode },
-    ...
-  });
+
+  if (!actorCode) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actor login identity for transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'ACTOR_IDENTITY_UNRESOLVED' };
+  }
+...
+    const archiveResult = await archiveService.archiveStageCompletion({
+      sourceRecordKey: String(record?.Record_Key?.value || record?.Record_Key || '').trim(),
+      employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || '').trim(),
+      fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || '').trim(),
+      evaluationStage: targetStage,
+      revisionNumber: Number(record?.Revision_Number?.value || record?.Current_Revision_Number?.value || record?.Revision_Number || record?.Current_Revision_Number),
+      sourceRecordId: rawRecordId > 0 ? rawRecordId : undefined,
+      previousStatus: currentStatus,
+      actor: { userCode: actorCode },
+      archivedAt: options.archivedAt || (typeof clock === 'function' ? clock() : new Date().toISOString()),
+      logicalSnapshot
+    });
+```
+
+**Verified Defect Analysis:**
+1. **Missing Actual Operator in SHARED Mode:** `actorCode` is derived exclusively from `kintone.getLoginUser().code` (e.g. `f2`). The actual human employee authenticated in `mboLoginGate` is never passed to `archiveService.archiveStageCompletion`.
+2. **Subject vs. Operator Separation:** `record.Employee_Code` represents the **Subject Employee** (the owner of the appraisal), NOT the operator performing the workflow transition.
+3. **No Dual Identity Capture:** The current seam cannot distinguish between a dedicated user performing an action versus an operator acting through a shared Kintone user account.
+
+---
+
+## 3. Explanatory Integration Model (Non-Literal Architecture Target)
+
+```text
+[EXPLANATORY_PSEUDOCODE / NOT_LITERAL_SOURCE]
+
+Function executeAuditedWorkflowAction(record, targetStage, currentStatus, nextStatus, uiHost):
+    1. Resolve Actor Context:
+       contextRes = await resolveRuntimeEmployeeSelfContext(uiHost)
+       if contextRes.status != 'SUCCESS':
+           FAIL_CLOSED("ACTOR_AUTHENTICATION_REQUIRED")
+
+    2. Extract Tripartite Identity:
+       subjectEmployeeCode = record.Employee_Code.value
+       actualOperatorCode  = contextRes.context.employeeCode
+       kintoneLoginCode    = contextRes.context.kintoneUserCode
+       identityMode        = contextRes.context.mode  // 'SHARED' or 'DEDICATED'
+
+    3. Construct Audited Archive Payload (App 798):
+       archivePayload = {
+           Source_Record_Key:       record.Record_Key.value,
+           Source_Record_ID:        record.$id.value,
+           Subject_Employee_Code:   subjectEmployeeCode,       // Appraisal owner
+           Actual_Operator_Code:    actualOperatorCode,        // Authenticated human
+           Kintone_Login_User:      kintoneLoginCode,          // Kintone account
+           Identity_Mode:           identityMode,              // SHARED | DEDICATED
+           Action_Name:             "TRANSITION_" + targetStage,
+           Previous_Status:         currentStatus,
+           To_Status:               nextStatus,
+           Snapshot_JSON:           serialize(logicalSnapshot),
+           Snapshot_Hash:           sha256(canonicalJson),
+           Archived_At:             kintonePlatformClock()
+       }
+
+    4. Write Audit Record (App 798) BEFORE Executing Status Transition:
+       auditResult = await writeApp798Record(archivePayload)
+       if not auditResult.success:
+           FAIL_CLOSED("AUDIT_PERSISTENCE_FAILED_TRANSITION_ABORTED")
+
+    5. Execute App 794 Workflow Transition:
+       return executeApp794StatusUpdate(record, nextStatus)
+```
+
+---
+
+## 4. App 798 Anti-Forgery & Kintone-Only Trust Boundary Analysis
+
+### 4.1 Evaluation of Direct Kintone Permissions & Rejection of `GROUP everyone Add = YES`
+In R0, a potential ACL configuration of `GROUP everyone: Add = YES, View = NO` was discussed. **R1 explicitly rejects this proposal as an acceptable secure architecture.**
+
+**Technical Reason:**
+- Kintone client-side customizations (JavaScript running via desktop/mobile customization) execute entirely in the end-user's browser context.
+- If `GROUP everyone` (or any shared business role) is granted `Add = YES` permission on App 798, that permission applies directly to the Kintone REST API endpoint (`/k/v1/record.json`).
+- Any user logged into Kintone possesses a valid session cookie and CSRF token (`kintone.getRequestToken()`).
+- A user can open browser DevTools or execute a headless script to directly `POST` an arbitrary JSON body to App 798:
+  ```json
+  POST /k/v1/record.json
+  {
+    "app": 798,
+    "record": {
+      "Actual_Operator_Employee_Code": { "value": "EMP99999" },
+      "To_Status": { "value": "HR_FINAL_APPROVED" },
+      "Snapshot_Hash": { "value": "fabricated-hash" }
+    }
+  }
   ```
-- **Defect Identified:**
-  - `actorCode` is derived exclusively from `kintone.getLoginUser().code`.
-  - For `SHARED` mode (e.g. login user `f2`), `actor: { userCode: 'f2' }` is passed to the archive service.
-  - The actual authenticated employee code (e.g. `EMP00125`) is **NOT** passed to the archive service.
-  - The `Employee_Code` passed (`record?.Employee_Code?.value`) is the **subject** of the evaluation form (the employee whose performance is being appraised), NOT the operator! When a supervisor (e.g. `EMP00005`) evaluates an employee (e.g. `EMP00125`) under shared account `f2`, the archive record currently loses the identity of the supervisor entirely.
-- **Conclusion:** Repository truth confirms the Owner's finding: the current D3 archive path correctly captures Kintone principal provenance, but is defective and insufficient for human operator attribution under `SHARED` mode.
+- **Kintone Platform Limitations:**
+  1. Kintone has **no server-side pre-commit triggers**, stored procedures, or validation webhooks that can intercept and validate an incoming REST API record before persistence.
+  2. Kintone Field Permissions can restrict who can edit or view a field, but if a role has permission to write a field on record creation, the platform accepts whatever string value the REST client supplies.
+  3. The Kintone platform stamps only its internal system fields:
+     - `$id` (Record ID)
+     - `Created_By` (`Creator` user account code, e.g., `f2`)
+     - `Created_Time` (Server UTC timestamp)
+  4. The platform **cannot** verify whether `Actual_Operator_Employee_Code` matches an active session in App 801, nor whether the snapshot hash corresponds to an actual state in App 794.
 
----
+### 4.2 Detailed Evaluation of Kintone-Native Mechanisms
 
-## 7. App 794 Action / Archive Seam Remediation Architecture
+| Kintone Mechanism | Capability | Can Prevent DevTools REST Forgery of Audit Payload? | Status |
+| :--- | :--- | :--- | :--- |
+| **App Permissions (ACL)** | Controls Add/View/Edit/Delete per App | **No.** If Add=YES, any payload is accepted; if Add=NO, legitimate browser JS cannot write. | Evaluated |
+| **Field Permissions** | Controls View/Edit per field | **No.** Cannot enforce that field values originate from verified JS runtime rather than manual POST. | Evaluated |
+| **Record Permissions** | Controls record-level View/Edit/Delete | **No.** Operates post-insertion; does not validate incoming payload fields. | Evaluated |
+| **Process Management** | Controls status flow on existing records | **No.** Applies to status transitions, not initial append of audit records. | Evaluated |
+| **Platform System Fields** | Platform-stamped `Created_By`, `Created_Time` | **Partial.** Proves *which Kintone account* created the record and *when*, but cannot prove *actual human employee* or *workflow state validity*. | Evaluated |
+| **App 801 Session Cross-Ref** | Stores active session token and mapping | **No.** Kintone platform cannot perform server-side cross-app joins or referential integrity checks during record creation. | Evaluated |
 
-To fulfill the Owner Lock, the App 794 action seam must be updated as follows (architectural specification for future implementation package):
+### 4.3 Explicit Answer to Critical Security Question
 
 ```text
-       App 794 Workflow Action Trigger (e.g. Process Transition Event)
-                                  │
-                                  ▼
-                resolveRuntimeEmployeeSelfContext(uiHost)
-                                  │
-                ┌─────────────────┴─────────────────┐
-                │                                   │
-      status !== 'SUCCESS'                  status === 'SUCCESS'
-                │                                   │
-                ▼                                   ▼
-        FAIL CLOSED                        Extract Context:
-        - Block Transition                 - identityMode = context.mode
-        - Show Error to User               - operatorEmployeeCode = context.employeeCode
-        - Return false                     - kintoneUserCode = context.kintoneUserCode
-                                                    │
-                                                    ▼
-                                   Archive Service Call (Stage Completion / Audit)
-                                   Payload includes:
-                                   - Identity_Mode: identityMode
-                                   - Operator_Employee_Code: operatorEmployeeCode
-                                   - Operator_Kintone_Code: kintoneUserCode
-                                   - Subject_Employee_Code: record.Employee_Code
-                                   - Action_Name: intendedAction
-                                   - Previous_Status: currentStatus
-                                   - To_Status: nextStatus
-                                   - Snapshot / Hash / Reason / Timestamp
-                                                    │
-                                                    ▼
-                                   App 798 Immutable Audit Record Written
-                                                    │
-                                                    ▼
-                                   Process Management Transition Allowed
+================================================================================
+CRITICAL SECURITY EVALUATION:
+CAN A KINTONE-ONLY ARCHITECTURE SIMULTANEOUSLY GUARANTEE:
+1. Shared account user can perform authorized MBO workflow action.
+2. Actual human Employee_Code from Login Lock is preserved.
+3. Shared Kintone account code is preserved.
+4. App798 records cannot be forged directly by normal users.
+5. Existing App798 records cannot be edited/deleted.
+6. Archive evidence is created before protected workflow transition.
+7. Failure to establish authoritative identity/audit context FAILS CLOSED.
+================================================================================
+
+CONCLUSION:
+KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN
+
+ARCHITECTURAL LIMITATION STATEMENT:
+In a 100% Kintone-only environment (with zero external backend, zero server-side
+functions, and zero external secret custody):
+- Application-level / JavaScript enforcement is achievable for normal browser
+  navigation.
+- Platform-level provenance is limited to Kintone system fields (Creator = Kintone
+  principal, Created_Time = server timestamp).
+- PLATFORM-LEVEL ANTI-FORGERY of application fields (Actual_Operator_Employee_Code,
+  Previous_Status, To_Status, Snapshot_Hash) CANNOT be guaranteed against direct
+  REST API / DevTools submission if business users possess App 798 Add permissions.
+- Conversely, if business users are DENIED App 798 Add permissions (to prevent
+  forgery), client-side JavaScript executing in their session CANNOT create audit
+  records, causing the mandatory pre-transition audit gate to FAIL CLOSED.
+================================================================================
 ```
 
 ---
 
-## 8. App 798 Schema Gap Analysis & Extension Specification
+## 5. App 798 Schema Gap Analysis & Specification
 
-### 8.1 Current App 798 Field Inventory
-Inspection of `src/services/revision-archive-service.js` and `src/services/revision-archive-kintone-repository.js` reveals the exact current field set of App 798:
-
-| # | Current Field Code | Kintone Field Type | Current Semantic Usage in Code |
-|---|--------------------|-------------------|--------------------------------|
-| 1 | `Archive_Key` | SINGLE_LINE_TEXT | Unique deduplication key |
-| 2 | `Source_Record_Key` | SINGLE_LINE_TEXT | App 794 Record_Key |
-| 3 | `Fiscal_Year` | SINGLE_LINE_TEXT | Fiscal year string |
-| 4 | `Employee_Code` | SINGLE_LINE_TEXT | **Subject** employee of evaluation record |
-| 5 | `Evaluation_Stage` | SINGLE_LINE_TEXT / DROP_DOWN | OBJECTIVE / MIDYEAR / FINAL |
-| 6 | `Revision_Number` | NUMBER | Revision integer |
-| 7 | `Event_Type` | SINGLE_LINE_TEXT / DROP_DOWN | STAGE_COMPLETION_SNAPSHOT, etc. |
-| 8 | `Reason` | MULTI_LINE_TEXT | Stage change / revision reason |
-| 9 | `Snapshot_JSON` | MULTI_LINE_TEXT | Canonical JSON serialization |
-| 10 | `Snapshot_Hash` | SINGLE_LINE_TEXT | SHA-256 hash |
-| 11 | `Archived_By` | USER_SELECT | `[{ code: actorUserCode }]` (Kintone User) |
-| 12 | `Archived_At` | DATETIME | ISO-8601 timestamp |
-| 13 | `Source_Record_ID` | NUMBER | App 794 $id |
-| 14 | `Previous_Status` | SINGLE_LINE_TEXT | Status prior to action |
-| 15 | `Superseded_By_Revision` | NUMBER | Next revision pointer |
-
-### 8.2 Schema Gap Finding
-- Current App 798 has **NO** field for `Identity_Mode` (`SHARED` vs `DEDICATED`).
-- Current App 798 has **NO** field for `Operator_Employee_Code` (the actual human operator's employee code). The existing `Employee_Code` field is dedicated to the **subject** employee of the MBO evaluation.
-- Current App 798 has `Archived_By` (`USER_SELECT`), which records the Kintone user account, but cannot accept an employee code string (e.g. `EMP00125`) because `USER_SELECT` requires registered Cybozu user objects.
-- Current App 798 has `Previous_Status` (`FROM_STATUS`), but lacks an explicit `To_Status` field and an explicit `Action_Name` field.
-
-### 8.3 Formal Schema Extension Declaration
+Current repository inspection indicates that App 798 does not possess dedicated fields for dual-identity audit tracking.
 
 ```text
-STATUS = SCHEMA_EXTENSION_REQUIRED
-ZERO_LIVE_SCHEMA_CHANGES_IN_THIS_PACKAGE = YES
+SCHEMA_EXTENSION_REQUIRED = YES
+ACL_CHANGE_REQUIRED       = YES
 ```
 
-To support the Kintone-Only Mixed-Identity Audit Architecture, the following minimal, exact schema extension for App 798 is specified for authorization in a subsequent implementation package:
+*Note: In accordance with execution bounds, NO schema or ACL changes are performed in this package.*
 
-```text
-====================================================================================================
-PROPOSED FIELD CODE         KINTONE FIELD TYPE     REQUIRED    PERMITTED VALUES / FORMAT
-====================================================================================================
-1. Identity_Mode            DROP_DOWN / TEXT       YES         'SHARED' | 'DEDICATED'
-2. Operator_Employee_Code   SINGLE_LINE_TEXT       YES         Format: ^EMP\d{5}$ (e.g. EMP00125)
-3. Operator_Kintone_Code    SINGLE_LINE_TEXT       YES         Kintone login name (e.g. f2, somchai.p)
-4. Action_Name              SINGLE_LINE_TEXT       YES         e.g. SUBMIT, APPROVE, REJECT, ARCHIVE
-5. To_Status                SINGLE_LINE_TEXT       YES         Resulting workflow status
-====================================================================================================
-```
-*Note: `Archived_By` (USER_SELECT) remains populated with the ambient Kintone login principal (`[{ code: kintoneLoginUserCode }]`), preserving backwards-compatibility and platform user auditing.*
+### Minimal Proposed Schema Extension for App 798
+
+| Logical Field Name | Proposed Field Code | Kintone Field Type | Allowed Values / Format | Audit Semantics |
+| :--- | :--- | :--- | :--- | :--- |
+| **Identity Mode** | `Identity_Mode` | `DROP_DOWN` | `['SHARED', 'DEDICATED']` | Indicates authentication path of the operator |
+| **Actual Operator Code**| `Operator_Employee_Code` | `SINGLE_LINE_TEXT` | `^EMP\d{5}$` | Authenticated human employee performing the action |
+| **Operator Kintone Code**| `Operator_Kintone_Code`| `SINGLE_LINE_TEXT` | Alphanumeric (e.g. `f2`, `somchai.p`) | Kintone principal account used for session |
+| **Action Name** | `Action_Name` | `SINGLE_LINE_TEXT` | E.g. `SUBMIT`, `APPROVE`, `REJECT` | Business workflow action triggering audit |
+| **Resulting Status** | `To_Status` | `SINGLE_LINE_TEXT` | MBO Workflow Status string | Status of App 794 record resulting from action |
+
+*Distinct Semantics:*
+- `Employee_Code` in App 798 represents the **Subject Employee** (the owner of the MBO form).
+- `Operator_Employee_Code` represents the **Actual Operator** (who clicked the button).
+- `Operator_Kintone_Code` and system `Created_By` represent the **Kintone Principal**.
 
 ---
 
-## 9. Historical Decision Provenance & Supersession Recommendation
+## 6. Treatment of Historical Architecture & Decision 009
 
-### 9.1 Provenance of Decision 009
-In Owner Decision 009 (`D3_DECISION_009_PLATFORM_STAMPED_OAUTH_ATTESTATION_ARCHITECTURE_RATIFICATION.md`), the architecture `NATIVE_KINTONE_PLATFORM_STAMPED_OAUTH_ATTESTATION` was ratified under the following historical assumptions:
-1. App 798 ACL was locked to `USER hr: Addable=YES, Viewable=YES` and `GROUP everyone: Addable=NO, Viewable=NO`.
-2. Direct client writes by employees to App 798 returned `HTTP 403 Forbidden` (`GAIA_IL02`).
-3. To bypass this without giving employees App 798 write access or storing a privileged secret in the browser, an external trusted backend with OAuth and a dedicated Attestation App was designed.
-
-### 9.2 Conflict with Clarified Owner Intent
-On 2026-09-18, the Project Owner issued an explicit, authoritative clarification:
-1. **MBO2026 is strictly a KINTONE-ONLY solution.**
-2. External backends, Redis, SQL databases, cloud container runtimes, external secret vaults, and separate OAuth client infrastructure are **EXPRESSLY REJECTED**.
-3. The existing MBO identity model (Shared + Dedicated) **MUST BE REUSED**.
-
-Decision 009's requirement for an external trusted backend and token store directly violates the Owner's Kintone-only mandate.
-
-### 9.3 Formal Recommendation for Independent Control Plane Review
-It is formally recommended that the Independent Control Plane:
-1. Review and accept this corrective document (`D3_KINTONE_ONLY_MIXED_IDENTITY_AUDIT_ARCHITECTURE_CORRECTIVE_01`).
-2. Mark Owner Decision 009 as **SUPERSEDED BY OWNER MANDATE** in project control documents (`00_MASTER_DELIVERY_CONTROL.md`, `02_ACTIVE_WORK_PACKAGE.md`, `AI_CONTROL_CENTER.md`).
-3. Formally ratify the **KINTONE_ONLY_MIXED_IDENTITY_AUDIT_ARCHITECTURE** as the canonical architectural baseline for D3.
-4. Authorize a bounded implementation work package to:
-   - Perform the specified 5-field App 798 schema extension.
-   - Adjust App 798 Kintone permissions to support native Kintone audit record appending (e.g. `GROUP everyone: Add=YES, View=NO` to allow append-only write while preserving strict read confidentiality for HR only).
-   - Update the App 794 action/archive seam in `src/main-mbo-app.js` and `src/services/revision-archive-service.js` to populate the dual identity fields and fail closed on unauthenticated shared sessions.
+1. **Historical Provenance Preserved:**
+   - Decision 009 (`D3_DECISION_009_PLATFORM_STAMPED_OAUTH_ATTESTATION_ARCHITECTURE_RATIFICATION.md`) established a trusted external backend writer precisely because Kintone cannot natively prevent REST API forgery when users have Add permissions.
+   - Decision 009 remains historical locked provenance. It is NOT deleted or rewritten.
+2. **Authority & Supersession Status:**
+   - Because `KINTONE_ONLY_PLATFORM_LEVEL_ANTI_FORGERY = NOT_PROVEN`, Decision 009 **CANNOT be declared fully superseded on technical security equivalence**.
+   - Instead, Decision 009 stands as proof of the inherent security trade-off:
+     - **Option A (External Trusted Writer - OD-009):** Provides cryptographic and platform-stamped anti-forgery at the cost of requiring an external backend and secret management.
+     - **Option B (Kintone-Only Corrective):** Strictly honors the Owner's infrastructure boundary (zero external servers/databases/vaults) and enforces application-level dual-identity audit, while accepting the documented Kintone platform anti-forgery limitation.
+   - Formal decision on whether to accept Option B and supersede OD-009 rests exclusively with the Owner following Control Plane review.
 
 ---
 
-## 10. Security & Governance Invariants
+## 7. Governance, Verification & Execution Summary
 
-```text
-OWNER_AUTHORIZATION_ID       = MBO2026-D3-KINTONE-ONLY-MIXED-IDENTITY-AUDIT-ARCHITECTURE-CORRECTIVE-01-20260918-OWNER-01
-LIVE_KINTONE_READS           = 0
-LIVE_KINTONE_WRITES          = 0
-REAL_OAUTH_AUTHORIZATIONS    = 0
-REAL_TOKEN_EXCHANGES         = 0
-OAUTH_CLIENT_REGISTRATIONS   = 0
-ATTESTATION_APP_CREATES      = 0
-SCHEMA_WRITES                = 0
-ACL_WRITES                   = 0
-DEPLOYMENTS                  = 0
-UAT_ACTIONS                  = 0
-LIVE_PROVISIONING_AUTHORIZED = NO
-DEPLOYMENT_AUTHORIZED        = NO
-UAT_AUTHORIZED               = NO
-NEXT_GATE_AUTHORIZED         = NO
-AUTO_START_NEXT_WORK_PACKAGE = NO
-FINAL_STATE                  = STOP FOR INDEPENDENT CONTROL PLANE REVIEW THEN OWNER DECISION
-```
+- **Execution Limits Observed:**
+  - `SOURCE_CHANGES = 0`
+  - `TEST_CHANGES = 0`
+  - `KINTONE_READS = 0`
+  - `KINTONE_WRITES = 0`
+  - `SCHEMA_WRITES = 0`
+  - `ACL_WRITES = 0`
+  - `DEPLOYMENT = 0`
+  - `UAT = 0`
+- **Current Stop State:**
+  - `STOP_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW = YES`
+  - No implementation or live mutation may proceed without subsequent Owner authorization.
