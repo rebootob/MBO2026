@@ -109,7 +109,6 @@ function makeMockApp794Record(overrides = {}) {
     const outcome = await executeProcessTransitionArchive(record, event, {
       apiAdapter: adapter,
       actor: 'hr_operator',
-    ...defaultTestIdentityContext,
       ...defaultTestIdentityContext
     });
 
@@ -309,7 +308,6 @@ test('8. missing mandatory provenance fields fail-closed and block transition', 
     const outcome = await executeProcessTransitionArchive(badRecord, event, {
       apiAdapter: adapter,
       actor: 'hr_operator',
-    ...defaultTestIdentityContext,
       ...defaultTestIdentityContext
     });
 
@@ -975,4 +973,25 @@ test('29. Idempotent replay preserves identical Archive_Key and verifies exact 5
   assert.equal(adapter.addRecordCallCount, 1); // no extra addRecord
   assert.equal(outcome2.archiveResult.idempotentReplay, true);
 });
+
+test('30. Fail-closed: D3 target transition without identity context fails with MISSING_IDENTITY_CONTEXT and 0 writes', async () => {
+  const adapter = createMockKintoneAdapter();
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  // Explicitly invoke without employeeSelfContext, identityMode, actualOperatorEmployeeCode, or kintoneLoginUserCode
+  const outcome = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'valid_login_user'
+  });
+
+  assert.equal(outcome.success, false);
+  assert.equal(outcome.error, 'MISSING_IDENTITY_CONTEXT');
+  assert.equal(adapter.addRecordCallCount, 0);
+});
+
 
