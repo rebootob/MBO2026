@@ -809,10 +809,26 @@ export class RevisionArchiveService {
         );
       }
 
+      const trimmedActualOperatorEmployeeCode = actualOperatorEmployeeCode.trim();
+      if (trimmedActualOperatorEmployeeCode.length > 64) {
+        throw new RevisionArchiveError(
+          'ACTUAL_OPERATOR_EMPLOYEE_CODE_EXCEEDS_MAX_LENGTH',
+          `Actual_Operator_Employee_Code length (${trimmedActualOperatorEmployeeCode.length}) exceeds maximum allowed length of 64 characters.`
+        );
+      }
+
       if (!kintoneLoginUserCode || typeof kintoneLoginUserCode !== 'string' || !kintoneLoginUserCode.trim()) {
         throw new RevisionArchiveError(
           'KINTONE_LOGIN_USER_UNRESOLVED',
           'Kintone_Login_User_Code is required and must be a non-empty string.'
+        );
+      }
+
+      const trimmedKintoneLoginUserCode = kintoneLoginUserCode.trim();
+      if (trimmedKintoneLoginUserCode.length > 64) {
+        throw new RevisionArchiveError(
+          'KINTONE_LOGIN_USER_CODE_EXCEEDS_MAX_LENGTH',
+          `Kintone_Login_User_Code length (${trimmedKintoneLoginUserCode.length}) exceeds maximum allowed length of 64 characters.`
         );
       }
 
@@ -831,6 +847,14 @@ export class RevisionArchiveService {
         );
       }
 
+      const trimmedActionName = actionName.trim();
+      if (trimmedActionName.length > 128) {
+        throw new RevisionArchiveError(
+          'ACTION_NAME_EXCEEDS_MAX_LENGTH',
+          `Action_Name length (${trimmedActionName.length}) exceeds maximum allowed length of 128 characters.`
+        );
+      }
+
       if (!toStatus || typeof toStatus !== 'string' || !toStatus.trim()) {
         throw new RevisionArchiveError(
           'MISSING_IDENTITY_CONTEXT',
@@ -838,11 +862,19 @@ export class RevisionArchiveService {
         );
       }
 
+      const trimmedToStatus = toStatus.trim();
+      if (trimmedToStatus.length > 128) {
+        throw new RevisionArchiveError(
+          'TO_STATUS_EXCEEDS_MAX_LENGTH',
+          `To_Status length (${trimmedToStatus.length}) exceeds maximum allowed length of 128 characters.`
+        );
+      }
+
       resolvedIdentityMode = identityMode;
-      resolvedActualOperatorEmployeeCode = actualOperatorEmployeeCode.trim();
+      resolvedActualOperatorEmployeeCode = trimmedActualOperatorEmployeeCode;
       resolvedKintoneLoginUserCode = kintoneLoginUserCode;
-      resolvedActionName = actionName.trim();
-      resolvedToStatus = toStatus.trim();
+      resolvedActionName = trimmedActionName;
+      resolvedToStatus = trimmedToStatus;
     }
 
     const expectedFacts = {

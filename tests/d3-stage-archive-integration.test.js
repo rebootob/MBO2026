@@ -994,4 +994,175 @@ test('30. Fail-closed: D3 target transition without identity context fails with 
   assert.equal(adapter.addRecordCallCount, 0);
 });
 
+test('31. Mixed Identity Max Length: Actual_Operator_Employee_Code length 64 = PASS, length 65 = FAIL CLOSED', async () => {
+  const adapter = createMockKintoneAdapter();
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  // 1. Boundary 64 characters -> PASS
+  const op64 = 'E'.repeat(64);
+  const outcomePass = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: 'operator_kintone',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: op64,
+    kintoneLoginUserCode: 'operator_kintone'
+  });
+  assert.equal(outcomePass.success, true);
+  assert.equal(adapter.addRecordCallCount, 1);
+
+  // Reset adapter store and count
+  const adapterFail = createMockKintoneAdapter();
+
+  // 2. Boundary 65 characters -> FAIL CLOSED with zero writes
+  const op65 = 'E'.repeat(65);
+  const outcomeFail = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapterFail,
+    actor: 'operator_kintone',
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: op65,
+    kintoneLoginUserCode: 'operator_kintone'
+  });
+  assert.equal(outcomeFail.success, false);
+  assert.ok(outcomeFail.error.includes('ACTUAL_OPERATOR_EMPLOYEE_CODE_EXCEEDS_MAX_LENGTH'));
+  assert.equal(adapterFail.addRecordCallCount, 0);
+});
+
+test('32. Mixed Identity Max Length: Kintone_Login_User_Code length 64 = PASS, length 65 = FAIL CLOSED', async () => {
+  const adapter = createMockKintoneAdapter();
+  const record = makeMockApp794Record();
+  const event = {
+    status: { value: '05 Objective Approved' },
+    action: { value: 'Start Mid-Year' },
+    nextStatus: { value: '06 Employee Mid-Year' }
+  };
+
+  // 3. Boundary 64 characters -> PASS
+  const login64 = 'k'.repeat(64);
+  const outcomePass = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapter,
+    actor: login64,
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP_VALID',
+    kintoneLoginUserCode: login64
+  });
+  assert.equal(outcomePass.success, true);
+  assert.equal(adapter.addRecordCallCount, 1);
+
+  // Reset adapter
+  const adapterFail = createMockKintoneAdapter();
+
+  // 4. Boundary 65 characters -> FAIL CLOSED with zero writes
+  const login65 = 'k'.repeat(65);
+  const outcomeFail = await executeProcessTransitionArchive(record, event, {
+    apiAdapter: adapterFail,
+    actor: login65,
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP_VALID',
+    kintoneLoginUserCode: login65
+  });
+  assert.equal(outcomeFail.success, false);
+  assert.ok(outcomeFail.error.includes('KINTONE_LOGIN_USER_CODE_EXCEEDS_MAX_LENGTH'));
+  assert.equal(adapterFail.addRecordCallCount, 0);
+});
+
+test('33. Mixed Identity Max Length: Action_Name length 128 = PASS, length 129 = FAIL CLOSED', async () => {
+  const action128 = 'A'.repeat(128);
+  const record = makeMockApp794Record();
+  const snapshot = buildStageLogicalSnapshot(record, 'OBJECTIVE', '05 Objective Approved');
+  const adapterPass = createMockKintoneAdapter();
+  const servicePass = new RevisionArchiveService(adapterPass, { clock: () => '2026-03-31T00:00:00.000Z' });
+  // Valid call with actionName length 128
+  const resPass = await servicePass.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-TEST-EMP001',
+    employeeCode: 'EMP001',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    actor: { userCode: 'operator_kintone' },
+    logicalSnapshot: snapshot,
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP001',
+    kintoneLoginUserCode: 'operator_kintone',
+    actionName: action128,
+    toStatus: '06 Employee Mid-Year'
+  });
+  assert.equal(resPass.verified, true);
+  assert.equal(adapterPass.addRecordCallCount, 1);
+
+  // Boundary 129 characters -> FAIL CLOSED
+  const adapterFail = createMockKintoneAdapter();
+  const serviceFail = new RevisionArchiveService(adapterFail, { clock: () => '2026-03-31T00:00:00.000Z' });
+  const action129 = 'A'.repeat(129);
+  await assert.rejects(
+    async () => serviceFail.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-TEST-EMP001',
+      employeeCode: 'EMP001',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'operator_kintone' },
+      logicalSnapshot: snapshot,
+      identityMode: 'SHARED',
+      actualOperatorEmployeeCode: 'EMP001',
+      kintoneLoginUserCode: 'operator_kintone',
+      actionName: action129,
+      toStatus: '06 Employee Mid-Year'
+    }),
+    /ACTION_NAME_EXCEEDS_MAX_LENGTH/
+  );
+  assert.equal(adapterFail.addRecordCallCount, 0);
+});
+
+test('34. Mixed Identity Max Length: To_Status length 128 = PASS, length 129 = FAIL CLOSED', async () => {
+  const toStatus128 = 'S'.repeat(128);
+  const record = makeMockApp794Record();
+  const snapshot = buildStageLogicalSnapshot(record, 'OBJECTIVE', '05 Objective Approved');
+  const adapterPass = createMockKintoneAdapter();
+  const servicePass = new RevisionArchiveService(adapterPass, { clock: () => '2026-03-31T00:00:00.000Z' });
+  const resPass = await servicePass.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-TEST-EMP001',
+    employeeCode: 'EMP001',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    actor: { userCode: 'operator_kintone' },
+    logicalSnapshot: snapshot,
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP001',
+    kintoneLoginUserCode: 'operator_kintone',
+    actionName: 'Start Mid-Year',
+    toStatus: toStatus128
+  });
+  assert.equal(resPass.verified, true);
+  assert.equal(adapterPass.addRecordCallCount, 1);
+
+  // Boundary 129 characters -> FAIL CLOSED
+  const adapterFail = createMockKintoneAdapter();
+  const serviceFail = new RevisionArchiveService(adapterFail, { clock: () => '2026-03-31T00:00:00.000Z' });
+  const toStatus129 = 'S'.repeat(129);
+  await assert.rejects(
+    async () => serviceFail.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-TEST-EMP001',
+      employeeCode: 'EMP001',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      actor: { userCode: 'operator_kintone' },
+      logicalSnapshot: snapshot,
+      identityMode: 'SHARED',
+      actualOperatorEmployeeCode: 'EMP001',
+      kintoneLoginUserCode: 'operator_kintone',
+      actionName: 'Start Mid-Year',
+      toStatus: toStatus129
+    }),
+    /TO_STATUS_EXCEEDS_MAX_LENGTH/
+  );
+  assert.equal(adapterFail.addRecordCallCount, 0);
+});
+
 
