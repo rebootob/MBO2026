@@ -270,7 +270,11 @@ export function createD3OAuthAttestationHandler({
         return sendJson(res, 404, { status: 'NONCE_NOT_FOUND' });
       }
 
-      if (entry.ownerSessionBinding && entry.ownerSessionBinding !== authSession.sessionBinding) {
+      if (!entry.ownerSessionBinding || typeof entry.ownerSessionBinding !== 'string' || !entry.ownerSessionBinding.trim()) {
+        return sendJson(res, 403, { status: 'STATUS_NONCE_OWNER_NOT_RESOLVED' });
+      }
+
+      if (entry.ownerSessionBinding !== authSession.sessionBinding) {
         return sendJson(res, 403, { status: 'STATUS_NONCE_SESSION_MISMATCH' });
       }
 

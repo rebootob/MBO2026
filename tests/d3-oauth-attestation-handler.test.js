@@ -337,6 +337,38 @@ test('D3OAuthAttestationHandler: Corrective 3 - transaction status endpoint requ
     }
   });
 
+  mockNonceStore.set('NONCE_OWNER_MISSING', {
+    status: 'UNCONSUMED',
+    issuedAt: Date.now(),
+    expiresAt: Date.now() + 300000,
+    binding: {
+      recordId: 101,
+      intendedAction: 'Start Mid-Year'
+    }
+  });
+
+  mockNonceStore.set('NONCE_OWNER_NULL', {
+    status: 'UNCONSUMED',
+    issuedAt: Date.now(),
+    expiresAt: Date.now() + 300000,
+    ownerSessionBinding: null,
+    binding: {
+      recordId: 102,
+      intendedAction: 'Start Mid-Year'
+    }
+  });
+
+  mockNonceStore.set('NONCE_OWNER_BLANK', {
+    status: 'UNCONSUMED',
+    issuedAt: Date.now(),
+    expiresAt: Date.now() + 300000,
+    ownerSessionBinding: '   ',
+    binding: {
+      recordId: 103,
+      intendedAction: 'Start Mid-Year'
+    }
+  });
+
   const handler = createD3OAuthAttestationHandler({
     authService: mockAuthService,
     attestationVerifier: mockAttestationVerifier
@@ -361,7 +393,37 @@ test('D3OAuthAttestationHandler: Corrective 3 - transaction status endpoint requ
   assert.equal(resNotFound.getStatusCode(), 404);
   assert.equal(resNotFound.getBody().status, 'NONCE_NOT_FOUND');
 
-  // 3. Cross-session lookup: Session B looks up nonce owned by Session A -> 403 STATUS_NONCE_SESSION_MISMATCH
+  // 3. ownerSessionBinding missing -> 403 STATUS_NONCE_OWNER_NOT_RESOLVED
+  const reqMissing = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNER_MISSING' });
+  const resMissing = createMockRes();
+  await handler(reqMissing, resMissing, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_OWNER_MISSING'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resMissing.getStatusCode(), 403);
+  assert.equal(resMissing.getBody().status, 'STATUS_NONCE_OWNER_NOT_RESOLVED');
+
+  // 4. ownerSessionBinding null -> 403 STATUS_NONCE_OWNER_NOT_RESOLVED
+  const reqNull = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNER_NULL' });
+  const resNull = createMockRes();
+  await handler(reqNull, resNull, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_OWNER_NULL'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resNull.getStatusCode(), 403);
+  assert.equal(resNull.getBody().status, 'STATUS_NONCE_OWNER_NOT_RESOLVED');
+
+  // 5. ownerSessionBinding blank/whitespace -> 403 STATUS_NONCE_OWNER_NOT_RESOLVED
+  const reqBlank = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNER_BLANK' });
+  const resBlank = createMockRes();
+  await handler(reqBlank, resBlank, {
+    url: new URL('http://localhost/api/mbo/d3/transaction/status/NONCE_OWNER_BLANK'),
+    token: 'VALID_SESSION_A'
+  });
+  assert.equal(resBlank.getStatusCode(), 403);
+  assert.equal(resBlank.getBody().status, 'STATUS_NONCE_OWNER_NOT_RESOLVED');
+
+  // 6. Cross-session lookup: Session B looks up nonce owned by Session A -> 403 STATUS_NONCE_SESSION_MISMATCH
   const reqCross = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A' });
   const resCross = createMockRes();
   await handler(reqCross, resCross, {
@@ -371,7 +433,7 @@ test('D3OAuthAttestationHandler: Corrective 3 - transaction status endpoint requ
   assert.equal(resCross.getStatusCode(), 403);
   assert.equal(resCross.getBody().status, 'STATUS_NONCE_SESSION_MISMATCH');
 
-  // 4. Same session lookup: Session A looks up its own nonce -> 200 OK
+  // 7. Same session lookup: Session A looks up its own nonce -> 200 OK
   const reqOwner = createMockReq({ method: 'GET', url: '/api/mbo/d3/transaction/status/NONCE_OWNED_BY_A' });
   const resOwner = createMockRes();
   await handler(reqOwner, resOwner, {
