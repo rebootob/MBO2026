@@ -64,7 +64,7 @@ function corsHeaders(req, config) {
 }
 function exactKeys(body, allowed) { return Object.keys(body).every(k => allowed.includes(k)); }
 
-export function createMboGatewayServer({ config, authService, employeeSelfGateway }) {
+export function createMboGatewayServer({ config, authService, employeeSelfGateway, d3Handler }) {
   if (!config || !authService || !employeeSelfGateway) throw new Error('GATEWAY_DEPENDENCY_INCOMPLETE');
   return http.createServer(async (req, res) => {
     try {
@@ -77,6 +77,11 @@ export function createMboGatewayServer({ config, authService, employeeSelfGatewa
         return res.end();
       }
       if (req.method === 'GET' && url.pathname === '/health') return send(res, 200, { status: 'OK' });
+      if (url.pathname.startsWith('/api/mbo/d3/')) {
+        if (!d3Handler) return send(res, 503, { status: 'D3_SERVICE_UNAVAILABLE' });
+        const handled = await d3Handler(req, res, { url, config, token });
+        if (handled !== false) return;
+      }
       if (['POST'].includes(req.method) && !stateChangingAllowed(req, config)) return send(res, 403, { status: 'ORIGIN_DENIED' });
       if (req.method === 'POST' && url.pathname === '/api/mbo/login') {
         const body = await readJson(req);
