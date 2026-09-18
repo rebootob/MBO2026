@@ -14,8 +14,9 @@ import crypto from 'node:crypto';
  * - OAUTH_GRANT_TYPE = AUTHORIZATION_CODE
  * - PKCE_SUPPORT = PROVEN_UNSUPPORTED (zero PKCE code_challenge / code_verifier)
  * - Browser receives NO tokens (zero access_token / refresh_token exposure)
- * - Strict request key allowlists
+ * - Strict request key allowlists (recordId, intendedAction ONLY for prepare-transition)
  * - Zero secret logging / serialization
+ * - Session binding derived server-side via authService.getAuthenticatedPrincipal
  */
 
 const MAX_BODY_BYTES = 16 * 1024;
@@ -51,7 +52,12 @@ async function readJsonBody(req) {
 }
 
 function exactKeys(body, allowed) {
-  return Object.keys(body).every(k => allowed.includes(k));
+  const keys = Object.keys(body);
+  return keys.length === allowed.length && keys.every(k => allowed.includes(k));
+}
+
+function deriveSessionBinding(sessionToken) {
+  return crypto.createHash('sha256').update(String(sessionToken)).digest('hex');
 }
 
 export function createD3OAuthAttestationHandler({
@@ -62,7 +68,7 @@ export function createD3OAuthAttestationHandler({
   attestationVerifier,
   authService
 } = {}) {
-  // Ephemeral state tracker for OAuth state validation: Map<state, { createdAt, userCode }>
+  // Ephemeral state tracker for OAuth state validation: Map<state, { createdAt, sessionBinding }>
   const stateStore = new Map();
   const STATE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -75,6 +81,24 @@ export function createD3OAuthAttestationHandler({
     }
   }
 
+  async function resolveAuthenticatedBinding(req, context) {
+    const rawToken = context?.token || (req.headers.authorization ? req.headers.authorization.replace(/^Bearer\s+/i, '') : null);
+    if (!rawToken || !authService) {
+      return { ok: false, status: 'UNAUTHORIZED', code: 401 };
+    }
+
+    try {
+      const principal = await authService.getAuthenticatedPrincipal(rawToken);
+      if (!principal || principal.status !== 'ACTIVE' || !principal.employeeCode) {
+        return { ok: false, status: 'UNAUTHORIZED', code: 401 };
+      }
+      const sessionBinding = deriveSessionBinding(rawToken);
+      return { ok: true, sessionBinding, principal };
+    } catch {
+      return { ok: false, status: 'UNAUTHORIZED', code: 401 };
+    }
+  }
+
   return async function handleD3Request(req, res, context = {}) {
     const url = context.url || new URL(req.url, 'http://localhost');
     const pathname = url.pathname;
@@ -83,19 +107,27 @@ export function createD3OAuthAttestationHandler({
     // 1. GET /api/mbo/d3/oauth/authorize
     if (req.method === 'GET' && pathname === '/api/mbo/d3/oauth/authorize') {
       if (!oauthClient) {
-        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING', error: 'OAuth client not configured' });
+        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING' });
       }
 
-      // Generate cryptographically random state parameter
+      const authSession = await resolveAuthenticatedBinding(req, context);
+      if (!authSession.ok) {
+        return sendJson(res, authSession.code, { status: authSession.status });
+      }
+
+      // Generate cryptographically random state parameter bound to sessionBinding
       const state = crypto.randomBytes(24).toString('hex');
-      const userCode = url.searchParams.get('userCode') || 'current';
-      stateStore.set(state, { createdAt: Date.now(), userCode });
+      stateStore.set(state, {
+        createdAt: Date.now(),
+        sessionBinding: authSession.sessionBinding
+      });
 
       // PROVEN_UNSUPPORTED: Never generate PKCE code_challenge or code_verifier
+      // EXACT SCOPES: k:app_record:read k:app_record:write
       const authorizeUrl = oauthClient.getAuthorizationUrl({
         state,
         responseType: 'code',
-        scope: 'kintone:record:read kintone:record:write'
+        scope: 'k:app_record:read k:app_record:write'
       });
 
       return sendJson(res, 200, {
@@ -108,20 +140,31 @@ export function createD3OAuthAttestationHandler({
     // 2. GET /api/mbo/d3/oauth/callback
     if (req.method === 'GET' && pathname === '/api/mbo/d3/oauth/callback') {
       if (!oauthClient || !tokenStore) {
-        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING', error: 'OAuth dependencies not configured' });
+        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING' });
+      }
+
+      const authSession = await resolveAuthenticatedBinding(req, context);
+      if (!authSession.ok) {
+        return sendJson(res, authSession.code, { status: authSession.status });
       }
 
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
 
       if (!code || !state) {
-        return sendJson(res, 400, { status: 'INVALID_CALLBACK', error: 'Missing code or state parameter' });
+        return sendJson(res, 400, { status: 'INVALID_CALLBACK' });
       }
 
       const stateEntry = stateStore.get(state);
       if (!stateEntry) {
-        return sendJson(res, 403, { status: 'STATE_INVALID', error: 'Invalid or expired OAuth state' });
+        return sendJson(res, 403, { status: 'STATE_INVALID' });
       }
+
+      if (stateEntry.sessionBinding !== authSession.sessionBinding) {
+        stateStore.delete(state);
+        return sendJson(res, 403, { status: 'OAUTH_STATE_SESSION_MISMATCH' });
+      }
+
       stateStore.delete(state); // Single-use state
 
       try {
@@ -131,17 +174,18 @@ export function createD3OAuthAttestationHandler({
           return sendJson(res, 502, { status: 'OAUTH_EXCHANGE_FAILED' });
         }
 
-        const userCode = grant.userCode || stateEntry.userCode;
-        await tokenStore.storeGrant(userCode, grant);
+        // Store grant under sessionBinding
+        await tokenStore.storeGrant(authSession.sessionBinding, grant);
 
-        // Security Contract: Never return tokens or secrets to browser
+        // Security Contract:
+        // Return NO user identity claim derived from token response
+        // Return NO access_token, NO refresh_token, NO client_secret, NO raw provider payload
         return sendJson(res, 200, {
-          status: 'OAUTH_SUCCESS',
-          userCode
+          status: 'OAUTH_SUCCESS'
         });
-      } catch (err) {
-        // Never log or return raw provider secret details
-        return sendJson(res, 500, { status: 'OAUTH_EXCHANGE_ERROR', message: err.message });
+      } catch {
+        // Never log or return raw provider secret details or internal err.message
+        return sendJson(res, 500, { status: 'OAUTH_EXCHANGE_ERROR' });
       }
     }
 
@@ -154,7 +198,12 @@ export function createD3OAuthAttestationHandler({
       }
 
       if (!transitionService) {
-        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING', error: 'Transition service not configured' });
+        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING' });
+      }
+
+      const authSession = await resolveAuthenticatedBinding(req, context);
+      if (!authSession.ok) {
+        return sendJson(res, authSession.code, { status: authSession.status });
       }
 
       let body;
@@ -164,13 +213,14 @@ export function createD3OAuthAttestationHandler({
         return sendJson(res, 400, { status: err.message || 'INVALID_BODY' });
       }
 
-      // Strict request key allowlist: browser cannot inject arbitrary tokens or grants
-      if (!exactKeys(body, ['recordId', 'intendedAction', 'userCode'])) {
+      // Browser request body must allow EXACTLY: recordId, intendedAction
+      // Reject: userCode, employeeCode, actor, accessToken, refreshToken, grantId, etc.
+      if (!exactKeys(body, ['recordId', 'intendedAction'])) {
         return sendJson(res, 400, { status: 'UNAUTHORIZED_PAYLOAD_KEYS' });
       }
 
-      const { recordId, intendedAction, userCode } = body;
-      if (!recordId || !intendedAction || !userCode) {
+      const { recordId, intendedAction } = body;
+      if (!recordId || !intendedAction) {
         return sendJson(res, 400, { status: 'MISSING_REQUIRED_FIELDS' });
       }
 
@@ -178,10 +228,10 @@ export function createD3OAuthAttestationHandler({
         const result = await transitionService.executeTrustedTransition({
           recordId,
           intendedAction,
-          userCode
+          sessionBinding: authSession.sessionBinding
         });
 
-        // Safe response: zero tokens/secrets
+        // Safe response: zero tokens/secrets, sanitized status/error codes
         return sendJson(res, 200, {
           status: result.status,
           recordId: result.recordId,
@@ -191,10 +241,9 @@ export function createD3OAuthAttestationHandler({
         });
       } catch (err) {
         const statusCode = err.name === 'D3TransitionError' ? 400 : 500;
+        // Never expose err.message, stack, raw provider payload, tokens, or internal secrets to browser
         return sendJson(res, statusCode, {
-          status: err.code || 'TRANSITION_ERROR',
-          message: err.message,
-          ...(err.details || {})
+          status: err.code || 'TRANSITION_ERROR'
         });
       }
     }
@@ -204,7 +253,7 @@ export function createD3OAuthAttestationHandler({
     if (req.method === 'GET' && statusMatch) {
       const nonce = decodeURIComponent(statusMatch[1]);
       if (!attestationVerifier) {
-        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING', error: 'Attestation verifier not configured' });
+        return sendJson(res, 500, { status: 'DEPENDENCY_MISSING' });
       }
 
       const entry = attestationVerifier.nonceStore?.get(nonce);

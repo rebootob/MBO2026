@@ -2,6 +2,7 @@
  * D3 OAuth Token Store Interface and Test-Only In-Memory Implementation.
  *
  * Enforces strict custody contracts:
+ * - TOKEN_STORE_BINDING = AUTHENTICATED_GATEWAY_SESSION
  * - TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY = FORBIDDEN
  * - TOKEN_STORE_FAILS_CLOSED_IF_UNAVAILABLE = YES
  * - TOKEN_LOGGING = FORBIDDEN
@@ -23,19 +24,19 @@ export class D3TokenStoreError extends Error {
  * Abstract Base Class defining Token Store Contract.
  */
 export class D3TokenStore {
-  async storeGrant(userCode, grant) {
+  async storeGrant(sessionBinding, grant) {
     throw new D3TokenStoreError('NOT_IMPLEMENTED', 'storeGrant must be implemented by subclass');
   }
 
-  async loadGrant(userCode) {
+  async loadGrant(sessionBinding) {
     throw new D3TokenStoreError('NOT_IMPLEMENTED', 'loadGrant must be implemented by subclass');
   }
 
-  async rotateGrant(userCode, newGrant) {
+  async rotateGrant(sessionBinding, newGrant) {
     throw new D3TokenStoreError('NOT_IMPLEMENTED', 'rotateGrant must be implemented by subclass');
   }
 
-  async invalidateGrant(userCode) {
+  async invalidateGrant(sessionBinding) {
     throw new D3TokenStoreError('NOT_IMPLEMENTED', 'invalidateGrant must be implemented by subclass');
   }
 }
@@ -69,12 +70,12 @@ export class InMemoryTokenStore extends D3TokenStore {
     }
   }
 
-  _validateUserCode(userCode) {
-    const code = String(userCode || '').trim();
-    if (!code) {
-      throw new D3TokenStoreError('INVALID_USER_CODE', 'User code is required');
+  _validateSessionBinding(sessionBinding) {
+    const binding = String(sessionBinding || '').trim();
+    if (!binding) {
+      throw new D3TokenStoreError('INVALID_SESSION_BINDING', 'Session binding is required');
     }
-    return code;
+    return binding;
   }
 
   _validateGrant(grant) {
@@ -86,13 +87,13 @@ export class InMemoryTokenStore extends D3TokenStore {
     }
   }
 
-  async storeGrant(userCode, grant) {
+  async storeGrant(sessionBinding, grant) {
     this._checkAvailability();
-    const code = this._validateUserCode(userCode);
+    const binding = this._validateSessionBinding(sessionBinding);
     this._validateGrant(grant);
 
     // Deep clone grant to prevent external mutation; never log or inspect sensitive fields
-    this.store.set(code, {
+    this.store.set(binding, {
       accessToken: grant.accessToken,
       refreshToken: grant.refreshToken || null,
       tokenType: grant.tokenType || 'Bearer',
@@ -103,30 +104,30 @@ export class InMemoryTokenStore extends D3TokenStore {
     return { success: true };
   }
 
-  async loadGrant(userCode) {
+  async loadGrant(sessionBinding) {
     this._checkAvailability();
-    const code = this._validateUserCode(userCode);
-    const grant = this.store.get(code);
+    const binding = this._validateSessionBinding(sessionBinding);
+    const grant = this.store.get(binding);
     if (!grant) {
       return null;
     }
     return { ...grant };
   }
 
-  async rotateGrant(userCode, newGrant) {
+  async rotateGrant(sessionBinding, newGrant) {
     this._checkAvailability();
-    const code = this._validateUserCode(userCode);
+    const binding = this._validateSessionBinding(sessionBinding);
     this._validateGrant(newGrant);
-    if (!this.store.has(code)) {
-      throw new D3TokenStoreError('GRANT_NOT_FOUND', 'Cannot rotate grant for non-existent user');
+    if (!this.store.has(binding)) {
+      throw new D3TokenStoreError('GRANT_NOT_FOUND', 'Cannot rotate grant for non-existent session binding');
     }
-    return this.storeGrant(code, newGrant);
+    return this.storeGrant(binding, newGrant);
   }
 
-  async invalidateGrant(userCode) {
+  async invalidateGrant(sessionBinding) {
     this._checkAvailability();
-    const code = this._validateUserCode(userCode);
-    const deleted = this.store.delete(code);
+    const binding = this._validateSessionBinding(sessionBinding);
+    const deleted = this.store.delete(binding);
     return { success: deleted };
   }
 

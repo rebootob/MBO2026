@@ -1324,35 +1324,14 @@ if (typeof kintone !== 'undefined') {
 
     if (isD3TargetTransition) {
       // D3 Trusted Writer Platform-Stamped Architecture:
-      // Browser sends ONLY bounded transaction intent (recordId, intendedAction) to trusted backend.
-      // Browser MUST NOT send snapshot, Snapshot_Hash, Archive_Key, status, revision, or actor/userCode.
+      // Delegate to handleD3BrowserTrustedTransition helper (fail-closed, always returns false)
       const recordId = Number(event.recordId || record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
-      try {
-        const trustedEndpoint = (typeof window !== 'undefined' && window.__MBO_D3_PREPARE_ENDPOINT__)
-          ? window.__MBO_D3_PREPARE_ENDPOINT__
-          : '/api/mbo/d3/transaction/prepare-transition';
-
-        // Perform backend trusted transition if available
-        let backendResult = null;
-        if (typeof fetch === 'function') {
-          const res = await fetch(trustedEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              recordId,
-              intendedAction: actionName
-            })
-          });
-          backendResult = await res.json();
-        }
-
-        // Lock: DOUBLE_PROCESS_TRANSITION = FORBIDDEN
-        // When backend handles the transition or fails, cancel browser-native submission to prevent double transition.
-        return false;
-      } catch (err) {
-        // Ambiguous / fail-closed: cancel browser-native submission
-        return false;
-      }
+      await handleD3BrowserTrustedTransition({
+        recordId,
+        actionName,
+        fetchFn: typeof fetch === 'function' ? fetch : null
+      });
+      return false; // Cancel native transition unconditionally
     }
 
     return event;
@@ -1438,5 +1417,67 @@ export async function executeProcessTransitionArchive(record, event, options = {
   } catch (err) {
     console.error(`[D3 ARCHIVE ERROR] Failed to create ${targetStage} stage completion archive:`, err);
     return { success: false, error: err.message || String(err), details: err };
+  }
+}
+
+/**
+ * Testable helper for D3 browser trusted transition orchestration.
+ * Injected with fetchFn or uses global fetch.
+ * Returns { cancelled: boolean, result?: object, error?: string }
+ *
+ * LOCK: DOUBLE_PROCESS_TRANSITION = FORBIDDEN
+ * Always guarantees cancelled: true (return false to Kintone event)
+ * whether the backend succeeds, fails, or throws a network error.
+ */
+export async function handleD3BrowserTrustedTransition({
+  recordId,
+  actionName,
+  endpoint,
+  fetchFn
+} = {}) {
+  const targetEndpoint = endpoint || ((typeof window !== 'undefined' && window.__MBO_D3_PREPARE_ENDPOINT__)
+    ? window.__MBO_D3_PREPARE_ENDPOINT__
+    : '/api/mbo/d3/transaction/prepare-transition');
+
+  const effectiveFetch = fetchFn || ((typeof fetch === 'function') ? fetch : null);
+
+  if (!effectiveFetch) {
+    return { cancelled: true, error: 'FETCH_UNAVAILABLE' };
+  }
+
+  try {
+    const res = await effectiveFetch(targetEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        recordId: Number(recordId),
+        intendedAction: String(actionName || '').trim()
+      })
+    });
+
+    let json = null;
+    try {
+      json = await res.json();
+    } catch {
+      // Non-JSON or empty response
+    }
+
+    if (!res.ok) {
+      return {
+        cancelled: true,
+        error: json?.status || 'BACKEND_FAILED',
+        statusCode: res.status
+      };
+    }
+
+    return {
+      cancelled: true,
+      result: json
+    };
+  } catch (err) {
+    return {
+      cancelled: true,
+      error: 'NETWORK_OR_TRANSPORT_ERROR'
+    };
   }
 }

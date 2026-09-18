@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
  * - Maximum TTL <= 60 seconds
  * - Full 9-field event-binding envelope
  * - Privileged readback verification
- * - Kintone platform-stamped CREATOR actor extraction
+ * - Kintone platform-stamped CREATOR actor extraction (CREATOR.value.code ONLY)
  */
 
 export class D3AttestationError extends Error {
@@ -37,18 +37,22 @@ export class D3AttestationVerifier {
     const nonce = crypto.randomBytes(32).toString('hex');
     const now = this.clock();
     const expiresAt = now + (this.maxTtlSeconds * 1000);
+    const issuedAtIso = new Date(now).toISOString();
+    const expiresAtIso = new Date(expiresAt).toISOString();
 
     this.nonceStore.set(nonce, {
       status: 'UNCONSUMED',
       issuedAt: now,
       expiresAt,
+      issuedAtIso,
+      expiresAtIso,
       binding: { ...eventBinding }
     });
 
     return {
       nonce,
-      issuedAt: new Date(now).toISOString(),
-      expiresAt: new Date(expiresAt).toISOString()
+      issuedAt: issuedAtIso,
+      expiresAt: expiresAtIso
     };
   }
 
@@ -66,7 +70,7 @@ export class D3AttestationVerifier {
     issuedAt,
     expiresAt
   }) {
-    if (!nonce || !recordId || !archiveKey || !expectedFromStatus || !intendedAction || !expectedTargetStatus || !snapshotHash) {
+    if (!nonce || !recordId || !archiveKey || !expectedFromStatus || !intendedAction || !expectedTargetStatus || !snapshotHash || !issuedAt || !expiresAt) {
       throw new D3AttestationError('MISSING_BINDING_FIELD', 'All event binding fields are required');
     }
 
@@ -119,10 +123,10 @@ export class D3AttestationVerifier {
    * Performs full verification of privileged readback from Attestation App.
    *
    * Enforces:
-   * 1. 9-field event binding exact match
+   * 1. 9-field event binding exact match (including Issued_At and Expires_At)
    * 2. Expiry verification
    * 3. Nonce unconsumed check and consumption
-   * 4. Platform CREATOR extraction
+   * 4. Platform CREATOR extraction strictly via CREATOR.value.code
    */
   verifyAttestationReadback(attestationRecord, expectedBinding) {
     if (!attestationRecord || typeof attestationRecord !== 'object') {
@@ -180,10 +184,30 @@ export class D3AttestationVerifier {
       throw new D3AttestationError('ATTESTATION_SNAPSHOT_HASH_MISMATCH', `Expected snapshotHash "${expectedBinding.snapshotHash}", got "${snapshotHash}"`);
     }
 
-    // Extract platform CREATOR
-    // Kintone CREATOR field type format: { value: { code: "user_code", name: "User Name" } }
-    const creatorObj = attestationRecord.CREATOR?.value || attestationRecord.Creator?.value || attestationRecord.Created_By?.value;
-    const creatorCode = String(creatorObj?.code || (typeof creatorObj === 'string' ? creatorObj : '') || '').trim();
+    // Exact Issued_At match against server-tracked issuedAt
+    const issuedAt = String(this._getFieldVal(attestationRecord.Issued_At) || '').trim();
+    const expectedIssuedAt = String(expectedBinding.issuedAt || tracked.issuedAtIso || '').trim();
+    if (!issuedAt || issuedAt !== expectedIssuedAt) {
+      throw new D3AttestationError('ATTESTATION_ISSUED_AT_MISMATCH', `Expected Issued_At "${expectedIssuedAt}", got "${issuedAt}"`);
+    }
+
+    // Exact Expires_At match against server-tracked expiresAt
+    const expiresAt = String(this._getFieldVal(attestationRecord.Expires_At) || '').trim();
+    const expectedExpiresAt = String(expectedBinding.expiresAt || tracked.expiresAtIso || '').trim();
+    if (!expiresAt || expiresAt !== expectedExpiresAt) {
+      throw new D3AttestationError('ATTESTATION_EXPIRES_AT_MISMATCH', `Expected Expires_At "${expectedExpiresAt}", got "${expiresAt}"`);
+    }
+
+    // Extract platform CREATOR strictly from CREATOR.value.code ONLY
+    // No fallback to Creator, Created_By, Actor_User_Code, etc.
+    if (!attestationRecord.CREATOR || typeof attestationRecord.CREATOR !== 'object') {
+      throw new D3AttestationError('ATTESTATION_ACTOR_NOT_RESOLVED', 'CREATOR field missing or invalid');
+    }
+    const creatorVal = attestationRecord.CREATOR.value;
+    if (!creatorVal || typeof creatorVal !== 'object') {
+      throw new D3AttestationError('ATTESTATION_ACTOR_NOT_RESOLVED', 'CREATOR.value missing or invalid');
+    }
+    const creatorCode = String(creatorVal.code || '').trim();
 
     if (!creatorCode || creatorCode.toUpperCase() === 'SYSTEM') {
       throw new D3AttestationError('ATTESTATION_ACTOR_NOT_RESOLVED', `Invalid or unresolvable CREATOR actor: "${creatorCode}"`);

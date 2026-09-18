@@ -13,8 +13,10 @@ test('D3AttestationVerifier: generates nonce and consumes once', () => {
     snapshotHash: 'HASH_01'
   };
 
-  const { nonce } = verifier.generateNonce(binding);
+  const { nonce, issuedAt, expiresAt } = verifier.generateNonce(binding);
   assert.ok(nonce);
+  assert.ok(issuedAt);
+  assert.ok(expiresAt);
 
   // Consume once succeeds
   verifier.consumeNonce(nonce);
@@ -55,7 +57,7 @@ test('D3AttestationVerifier: verifyAttestationReadback validates full 9-field bi
     snapshotHash: 'HASH_01'
   };
 
-  const { nonce } = verifier.generateNonce(binding);
+  const { nonce, issuedAt, expiresAt } = verifier.generateNonce(binding);
   const expected = { ...binding, nonce };
 
   const mockAttestationRecord = {
@@ -66,6 +68,8 @@ test('D3AttestationVerifier: verifyAttestationReadback validates full 9-field bi
     Intended_Action: { value: 'Start Mid-Year' },
     Expected_Target_Status: { value: '06 Employee Mid-Year' },
     Snapshot_Hash: { value: 'HASH_01' },
+    Issued_At: { value: new Date(issuedAt).toISOString() },
+    Expires_At: { value: new Date(expiresAt).toISOString() },
     CREATOR: { value: { code: 'EMP_ATTEST_01' } }
   };
 
@@ -77,4 +81,110 @@ test('D3AttestationVerifier: verifyAttestationReadback validates full 9-field bi
   assert.throws(() => {
     verifier.verifyAttestationReadback(mockAttestationRecord, expected);
   }, /ATTESTATION_REPLAY_DETECTED/);
+});
+
+test('D3AttestationVerifier: detects tampering for all 9 fields individual fail-closed', () => {
+  const fields = [
+    'Transaction_Nonce',
+    'App794_Record_ID',
+    'Archive_Key',
+    'Expected_From_Status',
+    'Intended_Action',
+    'Expected_Target_Status',
+    'Snapshot_Hash',
+    'Issued_At',
+    'Expires_At'
+  ];
+
+  for (const tamperedField of fields) {
+    const verifier = new D3AttestationVerifier();
+    const binding = {
+      recordId: '101',
+      archiveKey: 'KEY_01',
+      expectedFromStatus: '05 Objective Approved',
+      intendedAction: 'Start Mid-Year',
+      expectedTargetStatus: '06 Employee Mid-Year',
+      snapshotHash: 'HASH_01'
+    };
+
+    const { nonce, issuedAt, expiresAt } = verifier.generateNonce(binding);
+    const expected = { ...binding, nonce };
+
+    const record = {
+      Transaction_Nonce: { value: nonce },
+      App794_Record_ID: { value: '101' },
+      Archive_Key: { value: 'KEY_01' },
+      Expected_From_Status: { value: '05 Objective Approved' },
+      Intended_Action: { value: 'Start Mid-Year' },
+      Expected_Target_Status: { value: '06 Employee Mid-Year' },
+      Snapshot_Hash: { value: 'HASH_01' },
+      Issued_At: { value: new Date(issuedAt).toISOString() },
+      Expires_At: { value: new Date(expiresAt).toISOString() },
+      CREATOR: { value: { code: 'EMP_ATTEST_01' } }
+    };
+
+    // Tamper field
+    record[tamperedField] = { value: 'TAMPERED_VALUE' };
+
+    assert.throws(() => {
+      verifier.verifyAttestationReadback(record, expected);
+    }, (err) => {
+      return err instanceof D3AttestationError;
+    }, `Failed to reject tampered field: ${tamperedField}`);
+  }
+});
+
+test('D3AttestationVerifier: strict CREATOR validation and rejects fallbacks or SYSTEM', () => {
+  const verifier = new D3AttestationVerifier();
+  const binding = {
+    recordId: '101',
+    archiveKey: 'KEY_01',
+    expectedFromStatus: '05 Objective Approved',
+    intendedAction: 'Start Mid-Year',
+    expectedTargetStatus: '06 Employee Mid-Year',
+    snapshotHash: 'HASH_01'
+  };
+  const { nonce, issuedAt, expiresAt } = verifier.generateNonce(binding);
+  const expected = { ...binding, nonce };
+
+  const validRecordBase = {
+    Transaction_Nonce: { value: nonce },
+    App794_Record_ID: { value: '101' },
+    Archive_Key: { value: 'KEY_01' },
+    Expected_From_Status: { value: '05 Objective Approved' },
+    Intended_Action: { value: 'Start Mid-Year' },
+    Expected_Target_Status: { value: '06 Employee Mid-Year' },
+    Snapshot_Hash: { value: 'HASH_01' },
+    Issued_At: { value: new Date(issuedAt).toISOString() },
+    Expires_At: { value: new Date(expiresAt).toISOString() }
+  };
+
+  // Missing CREATOR
+  assert.throws(() => {
+    verifier.verifyAttestationReadback({ ...validRecordBase }, expected);
+  }, /ATTESTATION_ACTOR_NOT_RESOLVED/);
+
+  // Fallback to Creator only
+  assert.throws(() => {
+    verifier.verifyAttestationReadback({
+      ...validRecordBase,
+      Creator: { value: { code: 'FALLBACK_CREATOR' } }
+    }, expected);
+  }, /ATTESTATION_ACTOR_NOT_RESOLVED/);
+
+  // SYSTEM actor
+  assert.throws(() => {
+    verifier.verifyAttestationReadback({
+      ...validRecordBase,
+      CREATOR: { value: { code: 'SYSTEM' } }
+    }, expected);
+  }, /ATTESTATION_ACTOR_NOT_RESOLVED/);
+
+  // Blank code
+  assert.throws(() => {
+    verifier.verifyAttestationReadback({
+      ...validRecordBase,
+      CREATOR: { value: { code: '   ' } }
+    }, expected);
+  }, /ATTESTATION_ACTOR_NOT_RESOLVED/);
 });

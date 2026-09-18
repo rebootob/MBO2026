@@ -62,17 +62,17 @@ export class D3TrustedArchiveTransitionService {
    * @param {object} intent Bounded transition intent
    * @param {string|number} intent.recordId App 794 Record ID
    * @param {string} intent.intendedAction Workflow action (e.g. 'Start Mid-Year')
-   * @param {string} intent.userCode User identity for OAuth token store lookup
+   * @param {string} intent.sessionBinding Server-derived authenticated session binding
    */
-  async executeTrustedTransition({ recordId, intendedAction, userCode }) {
+  async executeTrustedTransition({ recordId, intendedAction, sessionBinding }) {
     if (!recordId || Number(recordId) <= 0) {
       throw new D3TransitionError('INVALID_INTENT', 'recordId must be a positive number');
     }
     if (!intendedAction || typeof intendedAction !== 'string') {
       throw new D3TransitionError('INVALID_INTENT', 'intendedAction is required');
     }
-    if (!userCode || typeof userCode !== 'string') {
-      throw new D3TransitionError('INVALID_INTENT', 'userCode is required');
+    if (!sessionBinding || typeof sessionBinding !== 'string') {
+      throw new D3TransitionError('INVALID_INTENT', 'sessionBinding is required');
     }
 
     const transitionSpec = D3_STAGE_TRANSITION_SPECS[intendedAction];
@@ -80,13 +80,13 @@ export class D3TrustedArchiveTransitionService {
       throw new D3TransitionError('UNSUPPORTED_ACTION', `Action "${intendedAction}" is not a governed D3 stage transition`);
     }
 
-    // Step 2: Load SAME backend-held user OAuth authority
+    // Step 2: Load SAME backend-held user OAuth authority by sessionBinding
     if (!this.tokenStore) {
       throw new D3TransitionError('TOKEN_STORE_UNAVAILABLE', 'Token store dependency missing');
     }
-    const grant = await this.tokenStore.loadGrant(userCode);
+    const grant = await this.tokenStore.loadGrant(sessionBinding);
     if (!grant || !grant.accessToken) {
-      throw new D3TransitionError('OAUTH_GRANT_REQUIRED', `No valid OAuth grant found for user "${userCode}"`);
+      throw new D3TransitionError('OAUTH_GRANT_REQUIRED', 'No valid OAuth grant found for authenticated session');
     }
 
     if (typeof this.userOAuthKintoneAdapterFactory !== 'function') {
@@ -106,7 +106,7 @@ export class D3TrustedArchiveTransitionService {
       throw new D3TransitionError('APP794_RECORD_NOT_FOUND', `App 794 record ${recordId} not found`);
     }
 
-    // Step 4: Validate record identity, current status, revision, action eligibility
+    // Step 4: Validate record identity, current status, and Kintone system $revision
     const fetchedRecordId = String(this._getFieldVal(app794Record.$id) || this._getFieldVal(app794Record.Record_ID) || '').trim();
     if (fetchedRecordId && fetchedRecordId !== String(recordId)) {
       throw new D3TransitionError('RECORD_IDENTITY_MISMATCH', `Fetched record ID ${fetchedRecordId} does not match requested ${recordId}`);
@@ -120,7 +120,18 @@ export class D3TrustedArchiveTransitionService {
       );
     }
 
-    const preRevision = String(this._getFieldVal(app794Record.$revision) || this._getFieldVal(app794Record.Revision) || '1');
+    // Lock: APP794_SYSTEM_REVISION_REQUIRED = YES
+    // Must require Kintone system: $revision (no fallback to Revision, Revision_Number, "1", etc.)
+    // If $revision missing, blank, non-integer, or <= 0: FAIL CLOSED (APP794_REVISION_NOT_RESOLVED)
+    const rawRevisionVal = this._getFieldVal(app794Record.$revision);
+    if (rawRevisionVal === undefined || rawRevisionVal === null || String(rawRevisionVal).trim() === '') {
+      throw new D3TransitionError('APP794_REVISION_NOT_RESOLVED', 'App 794 record missing required system $revision field');
+    }
+    const parsedRevision = Number(rawRevisionVal);
+    if (!Number.isInteger(parsedRevision) || parsedRevision <= 0) {
+      throw new D3TransitionError('APP794_REVISION_NOT_RESOLVED', `App 794 system $revision must be a positive integer, got "${rawRevisionVal}"`);
+    }
+    const preRevision = parsedRevision;
 
     // Step 5: Build canonical snapshot through shared builder
     const targetStage = transitionSpec.targetStage;
@@ -188,7 +199,9 @@ export class D3TrustedArchiveTransitionService {
       expectedFromStatus: transitionSpec.expectedFromStatus,
       intendedAction,
       expectedTargetStatus: transitionSpec.expectedTargetStatus,
-      snapshotHash
+      snapshotHash,
+      issuedAt,
+      expiresAt
     });
 
     const actorCode = verifyResult.actorCode;
@@ -222,10 +235,13 @@ export class D3TrustedArchiveTransitionService {
     }
 
     // Step 12: Execute App 794 Process Management transition using SAME retained user OAuth authority
+    // Lock: APP794_TRANSITION_EXPECTED_REVISION = REQUIRED
     try {
-      const transitionResult = await userKintone.updateRecordStatus(this.app794Id, {
+      const transitionResult = await userKintone.updateRecordStatus({
+        app: this.app794Id,
         id: recordId,
-        action: intendedAction
+        action: intendedAction,
+        revision: preRevision
       });
 
       return {
@@ -272,13 +288,14 @@ export class D3TrustedArchiveTransitionService {
     } catch (rbErr) {
       throw new D3TransitionError(
         'TRANSITION_RESULT_AMBIGUOUS',
-        `Transition timed out/failed (${error.message}) and readback verification failed (${rbErr.message})`,
-        { originalError: error.message, readbackError: rbErr.message }
+        'Transition failed and authoritative readback is unavailable',
+        { originalError: error?.message, readbackError: rbErr?.message }
       );
     }
 
     const currentStatus = String(this._getFieldVal(readbackRecord.Status) || '').trim();
-    const currentRevision = String(this._getFieldVal(readbackRecord.$revision) || this._getFieldVal(readbackRecord.Revision) || '');
+    const rawRbRevision = this._getFieldVal(readbackRecord.$revision);
+    const currentRevision = Number(rawRbRevision);
 
     // Case 1: Target state was already observed!
     if (currentStatus === expectedTargetStatus) {
@@ -292,7 +309,7 @@ export class D3TrustedArchiveTransitionService {
       };
     }
 
-    // Case 2: Status is still pre-status and revision unchanged -> not committed
+    // Case 2: Status is still pre-status and revision unchanged -> not committed, retryable
     if (currentStatus === expectedFromStatus && currentRevision === preRevision) {
       throw new D3TransitionError(
         'TRANSITION_NOT_COMMITTED_RETRYABLE',
