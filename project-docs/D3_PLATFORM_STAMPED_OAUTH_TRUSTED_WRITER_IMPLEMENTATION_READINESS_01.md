@@ -1,9 +1,9 @@
 # D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01
 
-- PACKAGE: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-R2`
-- AUTHORIZATION_ID: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-R2-20260918-OWNER-01`
+- PACKAGE: `D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-R3`
+- AUTHORIZATION_ID: `MBO2026-D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-READINESS-01-R3-20260918-OWNER-01`
 - DATE: `2026-09-18`
-- STATUS: `LOCKED READINESS SPECIFICATION / CORRECTIVE R2`
+- STATUS: `LOCKED READINESS SPECIFICATION / CORRECTIVE R3`
 - CANONICAL_BRANCH: `ai/antigravity-wp002c`
 
 ---
@@ -44,9 +44,29 @@ This document defines the **Implementation-Ready Engineering Contract** for the 
 - `ACCESS_TOKEN_BROWSER_EXPOSURE` = `FORBIDDEN`
 - `BROWSER_SELECTS_SERVER_TOKEN` = `FORBIDDEN`
 - `BROWSER_SUPPLIES_OAUTH_ACCESS_TOKEN` = `FORBIDDEN`
+- `OAUTH_CLIENT_SECRET_BROWSER_EXPOSURE` = `FORBIDDEN`
+- `TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY` = `FORBIDDEN`
+- `TOKEN_STORE_FAILS_CLOSED_IF_UNAVAILABLE` = `YES`
+- `TOKEN_LOGGING` = `FORBIDDEN`
+- `TOKEN_IN_ERROR_PAYLOAD` = `FORBIDDEN`
+- `TOKEN_IN_GIT` = `FORBIDDEN`
+- `IN_MEMORY_TOKEN_STORE` = `TEST_ONLY`
+- `ATTESTATION_NONCE_SERVER_GENERATED` = `YES`
+- `ATTESTATION_NONCE_SINGLE_USE` = `YES`
+- `ATTESTATION_EVENT_BINDING_REQUIRED` = `YES`
+- `ATTESTATION_REPLAY_DETECTED` = `FAIL_CLOSED`
+- `ATTESTATION_NONCE_HIGH_ENTROPY` = `YES`
+- `ATTESTATION_NONCE_FIELD_CODE` = `Transaction_Nonce`
+- `ATTESTATION_EVENT_BINDING_FIELDS` = `Transaction_Nonce + App794_Record_ID + Archive_Key + Expected_From_Status + Intended_Action + Expected_Target_Status + Snapshot_Hash + Issued_At + Expires_At`
+- `ATTESTATION_ACTOR_PROOF_FIELD_TYPE` = `CREATOR`
+- `ATTESTATION_PLATFORM_TIME_FIELD_TYPE` = `CREATED_TIME`
+- `ATTESTATION_EXPIRY_REQUIRED` = `YES`
+- `ATTESTATION_EXPIRED` = `FAIL_CLOSED`
+- `ATTESTATION_MAX_TTL_SECONDS` = `60`
 - `ATTESTATION_RECORD_CREATOR_CALLER` = `TRUSTED_BACKEND_USING_BACKEND_HELD_USER_OAUTH_AUTHORITY`
 - `ACTOR_IDENTITY_PROVENANCE` = `KINTONE_PLATFORM_STAMPED_CREATOR_ONLY`
-- `ATTESTATION_ACTOR_PROOF_FIELD_TYPE` = `CREATOR`
+- `REVISION_ARCHIVE_SERVICE_RESPONSIBILITY` = `ARCHIVE_DOMAIN_ONLY`
+- `APP794_TRANSITION_ORCHESTRATION` = `D3_TRUSTED_ARCHIVE_TRANSITION_SERVICE`
 - `BLIND_TRANSITION_RETRY_AFTER_TIMEOUT` = `FORBIDDEN`
 - `IMPLEMENTATION_AUTHORIZED` = `NO`
 - `DEPLOYMENT_AUTHORIZED` = `NO`
@@ -73,7 +93,9 @@ Pre-implementation inspection of repository code establishes the following facts
 
 2. **Core Archive Service (`src/services/revision-archive-service.js`)**:
    - `buildArchiveKey(...)` is the single canonical exported authority for deriving deterministic archive keys (`ARCHIVE_KEY_AUTHORITY = EXISTING_BUILD_ARCHIVE_KEY`).
-   - RevisionArchiveService coordinates duplicate check, archive write, verification readback, and transition orchestration.
+   - `REVISION_ARCHIVE_SERVICE_RESPONSIBILITY = ARCHIVE_DOMAIN_ONLY`: Core domain responsibilities include archive event validation, actor validation, canonical Archive_Key handling, canonical snapshot/hash validation, duplicate/idempotency check, App 798 append, uncertain-write recovery, and App 798 post-create/readback verification.
+   - `RevisionArchiveService` does NOT fetch authoritative App 794 workflow state, does NOT create OAuth attestation, does NOT orchestrate App 794 Process Management transition, and does NOT perform transition-timeout state recovery.
+   - All transition orchestration and workflow state recovery responsibilities belong to the future trusted backend service (`APP794_TRANSITION_ORCHESTRATION = D3_TRUSTED_ARCHIVE_TRANSITION_SERVICE`).
    - Core archive business logic and invariant validation remain locked (`NO_CHANGE`).
 
 3. **Kintone Archive Repository Interface (`src/services/revision-archive-kintone-repository.js`)**:
@@ -82,7 +104,7 @@ Pre-implementation inspection of repository code establishes the following facts
 
 4. **Main Bootstrap & Snapshot Construction (`src/main-mbo-app.js`)**:
    - Contains browser-side bootstrap, session wiring, and currently houses `buildStageLogicalSnapshot(...)`.
-   - Browser client must NOT serve as archive authority.
+   - Browser client must NOT serve as archive authority (`BROWSER_ARCHIVE_FACT_AUTHORITY = NONE`).
    - Snapshot logic must be extracted into a shared pure module (`src/services/d3-stage-logical-snapshot.js`) consumed by backend using authoritative Kintone records.
 
 5. **Test Harness**:
@@ -99,7 +121,7 @@ Pre-implementation inspection of repository code establishes the following facts
   - `GET /api/mbo/d3/oauth/authorize`: Initiates Cybozu OAuth flow with server-generated cryptographic state.
   - `GET /api/mbo/d3/oauth/callback`: Handles authorization code callback, validates state, executes confidential token exchange server-side.
   - `POST /api/mbo/d3/transaction/prepare-transition`: Receives transaction intent (`recordId`, `intendedAction`), executes full authoritative server-side pipeline.
-  - `GET /api/mbo/d3/transaction/status/:nonce`: Queries transaction state for recovery.
+  - `GET /api/mbo/d3/transaction/status/:nonce`: Queries transaction state for recovery (read-only; never re-authorizes consumed nonce).
 
 ### Contract 2: OAuth Lifecycle & Confidential Client Seam
 - **Client Classification**: `OAUTH_CLIENT_TYPE = CONFIDENTIAL_CLIENT`
@@ -108,10 +130,16 @@ Pre-implementation inspection of repository code establishes the following facts
 - **Client Secret Protection**: `client_secret` is retained strictly server-side in secure runtime configuration; browser exposure is forbidden (`OAUTH_CLIENT_SECRET_BROWSER_EXPOSURE = FORBIDDEN`).
 - **State Validation**: Server generates high-entropy cryptographic state bound to user session, validated upon callback (`STATE_PARAMETER_REQUIRED = YES`, `CALLBACK_STATE_VALIDATION = REQUIRED`).
 - **Token Exchange**: Server-side Basic Auth exchange against Cybozu token endpoint (`TOKEN_EXCHANGE_SERVER_SIDE_ONLY = YES`).
-- **Zero Browser Token Exposure**: Browser never receives, stores, or handles OAuth `access_token` or `refresh_token` (`ACCESS_TOKEN_BROWSER_STORAGE = FORBIDDEN`, `ACCESS_TOKEN_BROWSER_EXPOSURE = FORBIDDEN`).
+- **Zero Browser Token Exposure**: Browser never receives, stores, or handles OAuth `access_token` or `refresh_token` (`ACCESS_TOKEN_BROWSER_STORAGE = FORBIDDEN`, `REFRESH_TOKEN_BROWSER_STORAGE = FORBIDDEN`, `ACCESS_TOKEN_BROWSER_EXPOSURE = FORBIDDEN`, `BROWSER_SELECTS_SERVER_TOKEN = FORBIDDEN`, `BROWSER_SUPPLIES_OAUTH_ACCESS_TOKEN = FORBIDDEN`).
 
 ### Contract 3: Secure Server-Side Token Custody & Actor Identity Provenance
-- **Token Custody**: Tokens are stored server-side via `D3TokenStoreInterface` bound to authenticated gateway session ID.
+- **Token Custody & Security Guardrails**:
+  - Tokens are stored server-side via `D3TokenStoreInterface` bound to authenticated gateway session ID.
+  - `TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY = FORBIDDEN` (Production requires encrypted persistent store; in-memory mock permitted only in unit test suites: `IN_MEMORY_TOKEN_STORE = TEST_ONLY`).
+  - `TOKEN_STORE_FAILS_CLOSED_IF_UNAVAILABLE = YES`.
+  - `TOKEN_LOGGING = FORBIDDEN`.
+  - `TOKEN_IN_ERROR_PAYLOAD = FORBIDDEN`.
+  - `TOKEN_IN_GIT = FORBIDDEN`.
 - **Allowed Grant Metadata**:
   - `accessToken`
   - `refreshToken`
@@ -148,46 +176,71 @@ Pre-implementation inspection of repository code establishes the following facts
   7. **Canonical Snapshot Construction**: Backend builds canonical D3 logical snapshot using `CANONICAL_STAGE_SNAPSHOT_BUILDER = SHARED_PURE_MODULE` (`src/services/d3-stage-logical-snapshot.js`).
   8. **Snapshot Hash Computation**: Backend computes canonical hash using `SNAPSHOT_HASH_AUTHORITY = EXISTING_CANONICAL_D3_SNAPSHOT_SERIALIZER`.
   9. **Archive Key Derivation**: Backend derives deterministic key using `ARCHIVE_KEY_AUTHORITY = EXISTING_BUILD_ARCHIVE_KEY` from `src/services/revision-archive-service.js`.
-  10. **Envelope Binding**: Backend binds authoritative `recordId`, `Archive_Key`, `Expected_From_Status`, `Intended_Action`, `Expected_Target_Status`, `Snapshot_Hash`, and high-entropy nonce into Attestation transaction envelope.
+  10. **Envelope Binding**: Backend binds authoritative `recordId`, `Archive_Key`, `Expected_From_Status`, `Intended_Action`, `Expected_Target_Status`, `Snapshot_Hash`, `Issued_At`, `Expires_At`, and high-entropy nonce into Attestation transaction envelope.
   11. **Pipeline Continuation**: Proceeds to Attestation write, CREATOR verification, App 798 archive write, verification readback, and App 794 transition.
 - **Fail-Closed on App 794 Read Failure**:
   - If App 794 fetch fails (401/403, record not found, malformed record, missing required fields, status/revision unresolvable, OAuth authority unavailable, mismatch), the process halts immediately (`FAIL_CLOSED`).
   - Conceptual error classes: `APP794_AUTHORITATIVE_READ_FAILED`, `APP794_RECORD_NOT_FOUND`, `APP794_AUTHORITATIVE_RECORD_INVALID`, `APP794_STATUS_NOT_RESOLVED`, `APP794_REVISION_NOT_RESOLVED`, `APP794_TRANSITION_INTENT_MISMATCH`.
   - No Attestation App record is written if pre-attestation App 794 fetch fails.
 
-### Contract 5: Attestation App Schema & ACL Contract
+### Contract 5: Attestation App Schema & Full Event-Binding Envelope
 - **Purpose**: A dedicated write-audit app used solely to obtain Kintone server-stamped actor identity (`CREATOR`) and bind transaction event intent.
-- **Field Contract**:
-  - Platform Actor: Field type strictly `CREATOR` (`ATTESTATION_ACTOR_PROOF_FIELD_TYPE = CREATOR`). Value returned by platform is `{ code, name }`. Physical field code to be locked at provisioning (`ATTESTATION_CREATOR_PHYSICAL_FIELD_CODE = PROVISIONING_LOCK_REQUIRED`).
-  - Platform Timestamp: Field type strictly `CREATED_TIME` (`ATTESTATION_PLATFORM_TIME_FIELD_TYPE = CREATED_TIME`).
-  - Nonce (`Transaction_Nonce`): Single-line text, unique indexed string.
-  - App 794 Record ID (`App794_Record_ID`): Number.
-  - Snapshot Hash (`Snapshot_Hash`): Single-line text (SHA-256 hex).
-  - Intended Action (`Intended_Action`): Single-line text.
-  - Target Status (`Target_Status`): Single-line text.
+- **Canonical Envelope Fields**:
+  - `ATTESTATION_EVENT_BINDING_FIELDS = Transaction_Nonce + App794_Record_ID + Archive_Key + Expected_From_Status + Intended_Action + Expected_Target_Status + Snapshot_Hash + Issued_At + Expires_At`
+  - `ATTESTATION_NONCE_FIELD_CODE = Transaction_Nonce` (Single-line text, unique indexed string, server-generated, high-entropy)
+  - `App794_Record_ID` (Number: authoritative record ID)
+  - `Archive_Key` (Single-line text: canonical archive key from `buildArchiveKey`)
+  - `Expected_From_Status` (Single-line text: backend-verified pre-transition status)
+  - `Intended_Action` (Single-line text: validated workflow action intent)
+  - `Expected_Target_Status` (Single-line text: canonical target transition status)
+  - `Snapshot_Hash` (Single-line text: SHA-256 canonical hex string)
+  - `Issued_At` (Server-generated ISO timestamp)
+  - `Expires_At` (Server-generated ISO timestamp: short-lived TTL contract)
+- **Platform System Fields**:
+  - `CREATOR` (`ATTESTATION_ACTOR_PROOF_FIELD_TYPE = CREATOR`): Injected by platform; returns `{ code, name }`. Physical field code to be locked at provisioning (`ATTESTATION_CREATOR_PHYSICAL_FIELD_CODE = PROVISIONING_LOCK_REQUIRED`).
+  - `CREATED_TIME` (`ATTESTATION_PLATFORM_TIME_FIELD_TYPE = CREATED_TIME`): Platform-generated server timestamp.
+- **TTL & Expiry Semantics**:
+  - `ATTESTATION_EXPIRY_REQUIRED = YES`
+  - `ATTESTATION_EXPIRED = FAIL_CLOSED`
+  - `ATTESTATION_MAX_TTL_SECONDS = 60`
 - **ACL Contract**:
-  - `GROUP everyone Add`: Allowed for normal users (or scoped target user group) so user OAuth token can create record.
+  - `GROUP everyone Add`: Allowed for target users so user OAuth token can create record.
   - `GROUP everyone View`: **Forbidden** (`APP_ATTESTATION_GROUP_EVERYONE_VIEW = NO`). Only privileged backend service account may view/read.
   - `GROUP everyone Edit/Delete`: **Forbidden**.
   - `CREATOR_OVERRIDE_BY_NORMAL_WORKFLOW_USER = FORBIDDEN` (Platform system field semantics prevent client tampering).
 
-### Contract 6: Platform-Stamped Created By Verification Flow
-- **Execution Step**:
-  1. Backend posts attestation payload to Attestation App using **backend-held user OAuth access token**.
-  2. Kintone platform stamps `CREATOR` and `CREATED_TIME` system fields. Kintone returns `{ id, revision }`.
-  3. Trusted Backend uses **privileged Attestation Reader credential** to fetch the created record by ID.
-  4. Backend verifies:
-     - Record exists and fetched ID matches returned ID.
-     - `Transaction_Nonce` matches generated transaction nonce.
-     - `App794_Record_ID` matches authoritative record ID.
-     - `Snapshot_Hash` matches computed canonical hash.
-     - `Target_Status` and `Intended_Action` match transaction intent.
-  5. Backend extracts `CREATOR.value.code` as the **authoritative actor identity** (`ARCHIVED_BY_FROM_PLATFORM_CREATED_BY_ONLY = YES`).
-  6. If any check fails: Abort transaction immediately with `FAIL_CLOSED`.
+### Contract 6: Platform-Stamped Created By Verification & Replay Protection
+- **Nonce Single-Use & Replay Defense**:
+  - `ATTESTATION_NONCE_SERVER_GENERATED = YES`
+  - `ATTESTATION_NONCE_SINGLE_USE = YES`
+  - `ATTESTATION_EVENT_BINDING_REQUIRED = YES`
+  - `ATTESTATION_REPLAY_DETECTED = FAIL_CLOSED`
+  - `ATTESTATION_NONCE_HIGH_ENTROPY = YES`
+  - The backend maintains trusted transaction-state tracking whether a nonce is `UNCONSUMED` or `CONSUMED`.
+  - After successful privileged attestation verification, the nonce MUST be marked `CONSUMED` before any App 798 mutation is permitted.
+  - A second execution attempt using a consumed nonce must fail closed (`FAIL_CLOSED`).
+  - Read-only transaction status lookups may reference the transaction identifier, but must never reactivate or re-authorize a consumed nonce.
+  - Replay protection guarantees: No replay may produce a second App 798 archive row, a second App 794 transition attempt, or a second actor attestation acceptance.
+- **Complete Privileged Readback Verification Checklist**:
+  Before App 798 write, privileged backend verification must confirm:
+  1. Attestation record exists (`ATTESTATION_NOT_FOUND`).
+  2. `Transaction_Nonce` matches expected server-generated nonce (`ATTESTATION_NONCE_MISMATCH`).
+  3. Nonce is `UNCONSUMED` (`ATTESTATION_REPLAY_DETECTED`).
+  4. Nonce is not expired (`ATTESTATION_EXPIRED`).
+  5. `App794_Record_ID` matches authoritative backend-fetched App 794 record (`ATTESTATION_RECORD_ID_MISMATCH`).
+  6. `Archive_Key` matches canonical `buildArchiveKey(...)` result (`ATTESTATION_ARCHIVE_KEY_MISMATCH`).
+  7. `Expected_From_Status` matches backend-fetched App 794 status (`ATTESTATION_FROM_STATUS_MISMATCH`).
+  8. `Intended_Action` matches validated transaction intent (`ATTESTATION_ACTION_MISMATCH`).
+  9. `Expected_Target_Status` matches canonical transition mapping (`ATTESTATION_TARGET_STATUS_MISMATCH`).
+  10. `Snapshot_Hash` matches canonical server-computed hash (`ATTESTATION_SNAPSHOT_HASH_MISMATCH`).
+  11. `CREATOR` exists and contains exact nonblank user code (`ATTESTATION_ACTOR_NOT_RESOLVED`).
+  12. Created record is bound to the expected transaction/event.
+  - If ANY check fails: Abort transaction immediately with `FAIL_CLOSED`. No App 798 mutation.
+  - Authoritative actor user code is strictly extracted from `CREATOR.value.code` (`ARCHIVED_BY_FROM_PLATFORM_CREATED_BY_ONLY = YES`).
 
 ### Contract 7: App 798 Trusted Writer Integration & Credential Contract
 - **Credential Scope**:
-  - `APP798_TRUSTED_WRITER_READ = YES` (Required for idempotency check, conflict detection, and post-write verification).
+  - `APP798_TRUSTED_WRITER_READ = YES` (Required for duplicate check, conflict detection, and post-write verification).
   - `APP798_TRUSTED_WRITER_ADD = YES` (Required for append-only archive write).
   - `APP798_TRUSTED_WRITER_EDIT = NO` (Prohibited; archive records are immutable).
   - `APP798_TRUSTED_WRITER_DELETE = NO` (Prohibited; archive records are immutable).
@@ -202,6 +255,7 @@ Pre-implementation inspection of repository code establishes the following facts
   - Service performs pre-write duplicate check via `Archive_Key`, executes `addRecord`, and verifies record identity via readback.
 
 ### Contract 8: App 794 Process-Transition & Timeout Recovery Contract
+- **Orchestration Ownership**: Orchestration is owned by `D3_TRUSTED_ARCHIVE_TRANSITION_SERVICE` (`APP794_TRANSITION_ORCHESTRATION = D3_TRUSTED_ARCHIVE_TRANSITION_SERVICE`).
 - **Execution**: Backend executes App 794 process transition using the SAME backend-held user OAuth authority.
 - **Fail-Closed Invariant**: App 794 transition must never be attempted before App 798 archive write is verified.
 - **Timeout / Ambiguous Result Recovery**:
@@ -242,15 +296,15 @@ The candidate IMPLEMENTATION-01 source file changes are strictly pinned:
    - Native `node:http` request dispatcher for D3 OAuth routes (`/authorize`, `/callback`) and transaction endpoints.
    - Zero Express dependencies.
 3. `src/server/services/d3-token-store-interface.js` (`CREATE_NEW`):
-   - Encrypted server-side token store interface and in-memory/file adapter.
+   - Server-side token-store interface + test-only local mock/in-memory adapter where needed (`IN_MEMORY_TOKEN_STORE = TEST_ONLY`; NOT an approved production in-memory-only storage solution).
 4. `src/server/services/d3-attestation-verifier.js` (`CREATE_NEW`):
-   - Service performing attestation record creation via user OAuth and verification readback via privileged client.
+   - Service performing attestation record creation via user OAuth, nonce tracking/consumption, and privileged readback verification.
 5. `src/server/services/d3-trusted-archive-transition-service.js` (`CREATE_NEW`):
-   - Orchestrates the full pre-attestation App 794 fetch, snapshot generation, attestation, App 798 archive write, and App 794 transition.
+   - Orchestrates the full pre-attestation App 794 fetch, snapshot generation, attestation, App 798 archive write, and App 794 transition (`APP794_TRANSITION_ORCHESTRATION = D3_TRUSTED_ARCHIVE_TRANSITION_SERVICE`).
 6. `src/services/d3-stage-logical-snapshot.js` (`CREATE_NEW`):
    - Shared pure module for building canonical D3 stage logical snapshots from server-fetched Kintone records.
 7. `src/services/revision-archive-service.js` (`NO_CHANGE`):
-   - Preserved as canonical archive domain engine.
+   - Preserved as canonical archive domain engine (`REVISION_ARCHIVE_SERVICE_RESPONSIBILITY = ARCHIVE_DOMAIN_ONLY`).
 8. `src/services/revision-archive-kintone-repository.js` (`NO_CHANGE`):
    - Preserved as canonical Kintone archive repository.
 9. `src/main-mbo-app.js` (`MODIFY_EXISTING`):
@@ -258,33 +312,87 @@ The candidate IMPLEMENTATION-01 source file changes are strictly pinned:
    - Consume shared snapshot builder for local UI displays.
 
 ### Contract 11: Exact Future Implementation Test Plan
-The candidate IMPLEMENTATION-01 test file changes are strictly pinned:
+The candidate IMPLEMENTATION-01 test file changes are strictly pinned across the 7 planned files:
 
 1. `tests/d3-stage-logical-snapshot.test.js` (`CREATE_NEW`):
    - Unit tests for pure snapshot builder: deterministic output, field mapping, missing provenance rejection.
+   - Rejection of client-injected fields and verification of shared snapshot logic.
 2. `tests/d3-oauth-attestation-handler.test.js` (`CREATE_NEW`):
-   - Unit tests for native `node:http` request handling, query parsing, state validation, confidential code exchange.
+   - Native `node:http` request handling, query parsing, state validation, confidential code exchange.
+   - **OAuth / Token Safety Invariants**:
+     - PKCE parameters are never emitted or required (`PKCE_SUPPORT = PROVEN_UNSUPPORTED`).
+     - OAuth `client_secret` never reaches browser output (`OAUTH_CLIENT_SECRET_BROWSER_EXPOSURE = FORBIDDEN`).
+     - `access_token` never reaches browser output (`ACCESS_TOKEN_BROWSER_EXPOSURE = FORBIDDEN`).
+     - `refresh_token` never reaches browser output (`REFRESH_TOKEN_BROWSER_STORAGE = FORBIDDEN`).
+     - Browser cannot submit arbitrary OAuth access token (`BROWSER_SUPPLIES_OAUTH_ACCESS_TOKEN = FORBIDDEN`).
+     - Browser cannot select backend grant/token (`BROWSER_SELECTS_SERVER_TOKEN = FORBIDDEN`).
+     - Tokens and secrets never appear in logs (`TOKEN_LOGGING = FORBIDDEN`).
+     - Tokens and secrets never appear in error payloads (`TOKEN_IN_ERROR_PAYLOAD = FORBIDDEN`).
 3. `tests/d3-token-store.test.js` (`CREATE_NEW`):
-   - Unit tests for token encryption, grant retention, session isolation, expiration checks.
+   - Unit tests for token encryption, grant retention, session isolation, expiration scrubbing.
+   - Guardrails:
+     - Rejection of production in-memory configuration (`TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY = FORBIDDEN`).
+     - Store fails closed if unavailable (`TOKEN_STORE_FAILS_CLOSED_IF_UNAVAILABLE = YES`).
+     - In-memory mock adapter active only in test harness (`IN_MEMORY_TOKEN_STORE = TEST_ONLY`).
 4. `tests/d3-attestation-verifier.test.js` (`CREATE_NEW`):
-   - Unit tests for nonce generation, payload construction, CREATOR extraction, mismatch fail-closed handling.
+   - **Actor / CREATOR Safety Invariants**:
+     - Browser-supplied `userCode` cannot become archive actor (`BROWSER_USERCODE_AS_ACTOR = FORBIDDEN`).
+     - Request actor cannot become archive actor (`REQUEST_USERCODE_AS_ACTOR = FORBIDDEN`).
+     - OAuth grant metadata has no authoritative actor before attestation (`OAUTH_GRANT_AUTHORITATIVE_ACTOR_USERCODE = NONE_BEFORE_ATTESTATION_READBACK`).
+     - Missing CREATOR fails closed (`ATTESTATION_ACTOR_NOT_RESOLVED`).
+     - Malformed CREATOR fails closed (`ATTESTATION_ACTOR_NOT_RESOLVED`).
+     - Blank `CREATOR.code` fails closed (`ATTESTATION_ACTOR_NOT_RESOLVED`).
+     - Platform CREATOR readback is sole `Archived_By` authority.
+   - **Nonce / Replay / Event-Binding Invariants**:
+     - Expired nonce fails closed (`ATTESTATION_EXPIRED`).
+     - Reused nonce fails closed (`ATTESTATION_REPLAY_DETECTED`).
+     - Consumed nonce fails closed (`ATTESTATION_REPLAY_DETECTED`).
+     - Wrong nonce fails closed (`ATTESTATION_NONCE_MISMATCH`).
+     - Nonce bound to another App 794 record fails closed (`ATTESTATION_RECORD_ID_MISMATCH`).
+     - Wrong `App794_Record_ID` fails closed (`ATTESTATION_RECORD_ID_MISMATCH`).
+     - Wrong `Archive_Key` fails closed (`ATTESTATION_ARCHIVE_KEY_MISMATCH`).
+     - Wrong `Expected_From_Status` fails closed (`ATTESTATION_FROM_STATUS_MISMATCH`).
+     - Wrong `Intended_Action` fails closed (`ATTESTATION_ACTION_MISMATCH`).
+     - Wrong `Expected_Target_Status` fails closed (`ATTESTATION_TARGET_STATUS_MISMATCH`).
+     - Wrong `Snapshot_Hash` fails closed (`ATTESTATION_SNAPSHOT_HASH_MISMATCH`).
+     - Missing expiry fails closed (`ATTESTATION_EXPIRED`).
+     - Attestation verification failure occurs before App 798 mutation.
 5. `tests/d3-trusted-archive-transition-service.test.js` (`CREATE_NEW`):
-   - Adversarial unit tests for:
-     - Rejection of browser-supplied snapshot, hash, archive key, status, and revision.
-     - Authoritative App 794 fetch before attestation creation.
-     - Fail-closed on App 794 fetch failure (401/403, malformed record, mismatch).
-     - Token continuity (same user OAuth authority for App 794 read, attestation write, and transition).
-     - App 798 Trusted Writer adapter requiring `READ` + `ADD` (rejecting if read denied).
-     - Zero invocation of `EDIT` or `DELETE` on App 798.
-     - App 794 transition timeout recovery with state readback and classification (`BLIND_TRANSITION_RETRY_AFTER_TIMEOUT = FORBIDDEN`).
+   - **App 794 Authoritative Source Invariants (R2 Retained)**:
+     - Browser snapshot cannot override backend App 794 fetch.
+     - Browser `Snapshot_Hash` cannot override canonical hash.
+     - Browser `Archive_Key` cannot override canonical key.
+     - Browser status cannot override authoritative status.
+     - Browser revision cannot override authoritative revision.
+     - App 794 authoritative fetch occurs before attestation.
+     - App 794 read failure stops before Attestation write.
+     - Shared snapshot builder receives backend-fetched App 794 record.
+   - **App 798 Trusted Writer Invariants (R2 Retained)**:
+     - `READ` permission required (`APP798_TRUSTED_WRITER_READ = YES`).
+     - `ADD` permission required (`APP798_TRUSTED_WRITER_ADD = YES`).
+     - Read denied fails closed.
+     - `EDIT` never invoked (`APP798_TRUSTED_WRITER_EDIT = NO`).
+     - `DELETE` never invoked (`APP798_TRUSTED_WRITER_DELETE = NO`).
+     - Duplicate/archive conflict remains fail-closed.
+     - Uncertain App 798 write uses canonical recovery semantics.
+     - Archive success/readback verification required before transition.
+   - **Transition & Recovery Invariants**:
+     - Token expires before transition -> fail closed.
+     - App 798 archive failure -> no App 794 transition.
+     - Archive succeeds / transition fails -> archive retained.
+     - Transition timeout never causes blind retry (`BLIND_TRANSITION_RETRY_AFTER_TIMEOUT = FORBIDDEN`).
+     - Transition timeout performs authoritative App 794 readback.
+     - Expected target state observed -> do not re-send transition.
+     - Unexpected state/revision -> conflict/fail closed.
+     - Unreadable ambiguous state -> no automatic retry.
 6. `tests/revision-archive-service.test.js` (`NO_CHANGE`):
-   - Preserved baseline archive service unit tests.
+   - Preserved baseline archive service unit tests (`REVISION_ARCHIVE_SERVICE_RESPONSIBILITY = ARCHIVE_DOMAIN_ONLY`).
 7. `tests/revision-archive-kintone-repository.test.js` (`NO_CHANGE`):
    - Preserved baseline repository unit tests.
 
 ### Contract 12: Runtime Secrets & Configuration Contract
 - `KINTONE_OAUTH_CLIENT_ID`: OAuth Client ID (Confidential client).
-- `KINTONE_OAUTH_CLIENT_SECRET`: OAuth Client Secret (Strictly backend-only; zero browser exposure).
+- `KINTONE_OAUTH_CLIENT_SECRET`: OAuth Client Secret (Strictly backend-only; zero browser exposure; zero logging).
 - `KINTONE_OAUTH_REDIRECT_URI`: Registered callback URI pointing to gateway endpoint.
 - `KINTONE_APP798_TRUSTED_WRITER_CREDENTIAL`: Service account or API token with `READ` + `ADD` permissions on App 798 (`EDIT` / `DELETE` strictly forbidden).
 - `KINTONE_ATTESTATION_READER_CREDENTIAL`: Privileged credential with `READ` permission on Attestation App.
@@ -298,17 +406,17 @@ The candidate IMPLEMENTATION-01 test file changes are strictly pinned:
 | Item | Requirement | Status | Verification Note |
 | :--- | :--- | :--- | :--- |
 | 1 | Architecture Locked | **PASS** | `OWNER_DEC_D3_009` ratified; native platform-stamped Created By architecture |
-| 2 | OAuth Client Specification | **PASS** | `CONFIDENTIAL_CLIENT`; PKCE unsupported; state validation mandatory |
-| 3 | Token Custody | **PASS** | Backend-only; zero browser exposure; bound to server session |
+| 2 | OAuth Client Specification | **PASS** | `CONFIDENTIAL_CLIENT`; PKCE unsupported; state validation mandatory; browser token exposure forbidden |
+| 3 | Token Custody & Storage | **PASS** | Server-side only; production in-memory forbidden; test mock allowed; zero logging |
 | 4 | Actor Identity Provenance | **PASS** | Sole source is Kintone platform-stamped `CREATOR` readback |
-| 5 | App 794 Authoritative Source | **PASS** | Server-fetched App 794 record via user OAuth authority; browser has zero archive authority |
-| 6 | Single Snapshot Builder | **PASS** | Shared pure module `src/services/d3-stage-logical-snapshot.js`; no duplicate logic |
-| 7 | Single Key & Hash Authority | **PASS** | Reuses `buildArchiveKey` and canonical D3 snapshot serializer; no duplicate algorithms |
-| 8 | App 798 Writer Permissions | **PASS** | `READ` + `ADD` locked; `EDIT` / `DELETE` forbidden; `everyone` group denied |
-| 9 | Transition Timeout Recovery | **PASS** | Blind retry forbidden; authoritative state readback and classification locked |
-| 10 | Gateway Integration Seam | **PASS** | Native `node:http` handler under existing gateway; zero Express dependencies |
-| 11 | Source Plan Pinned | **PASS** | Exact 9 source files classified (`MODIFY_EXISTING`, `CREATE_NEW`, `NO_CHANGE`) |
-| 12 | Test Plan Pinned | **PASS** | Exact 7 test files classified; adversarial invariants and recovery behaviors mapped |
+| 5 | Nonce Single-Use & Replay | **PASS** | Server-generated; high-entropy; single-use unconsumed/consumed lifecycle; replay fails closed |
+| 6 | Full Event-Binding Envelope | **PASS** | Nonce, App794 ID, Archive Key, From Status, Action, Target Status, Hash, Issued At, Expires At (TTL <= 60s) |
+| 7 | Complete Privileged Readback | **PASS** | 12-point verification checklist; 11 explicit fail-closed conceptual errors |
+| 8 | App 794 Authoritative Source | **PASS** | Server-fetched App 794 record via user OAuth authority; browser has zero archive authority |
+| 9 | Single Snapshot / Key / Hash | **PASS** | Shared pure module; canonical `buildArchiveKey`; canonical D3 serializer; duplicate algorithms forbidden |
+| 10 | App 798 Writer Permissions | **PASS** | `READ` + `ADD` locked; `EDIT` / `DELETE` forbidden; `everyone` group denied |
+| 11 | Source Responsibilities | **PASS** | `RevisionArchiveService` = archive domain only; `d3-trusted-archive-transition-service` = transition orchestration |
+| 12 | Transition Timeout Recovery | **PASS** | Blind retry forbidden; authoritative state readback and classification locked |
 
 ---
 
@@ -317,12 +425,46 @@ The candidate IMPLEMENTATION-01 test file changes are strictly pinned:
 ```text
 IMPLEMENTATION_READINESS = PASS
 IMPLEMENTATION_BOUNDARY = LOCKED
+NONCE_SINGLE_USE_REPLAY_CONTRACT = LOCKED
+FULL_EVENT_BINDING_CONTRACT = LOCKED
+TOKEN_STORE_SECURITY_GUARDRAILS = LOCKED
+R1_ADVERSARIAL_TEST_CONTRACT = RETAINED
+R2_AUTHORITATIVE_SOURCE_FIXES = RETAINED
+R2_APP798_PERMISSION_FIXES = RETAINED
+ATTESTATION_NONCE_SERVER_GENERATED = YES
+ATTESTATION_NONCE_SINGLE_USE = YES
+ATTESTATION_EVENT_BINDING_REQUIRED = YES
+ATTESTATION_REPLAY_DETECTED = FAIL_CLOSED
+ATTESTATION_NONCE_HIGH_ENTROPY = YES
+ATTESTATION_NONCE_FIELD_CODE = Transaction_Nonce
+ATTESTATION_EVENT_BINDING_FIELDS = Transaction_Nonce + App794_Record_ID + Archive_Key + Expected_From_Status + Intended_Action + Expected_Target_Status + Snapshot_Hash + Issued_At + Expires_At
+ATTESTATION_ACTOR_PROOF_FIELD_TYPE = CREATOR
+ATTESTATION_PLATFORM_TIME_FIELD_TYPE = CREATED_TIME
+ATTESTATION_EXPIRY_REQUIRED = YES
+ATTESTATION_EXPIRED = FAIL_CLOSED
+ATTESTATION_MAX_TTL_SECONDS = 60
+TOKEN_STORE_PRODUCTION_IN_MEMORY_ONLY = FORBIDDEN
+TOKEN_STORE_FAILS_CLOSED_IF_UNAVAILABLE = YES
+TOKEN_LOGGING = FORBIDDEN
+TOKEN_IN_ERROR_PAYLOAD = FORBIDDEN
+TOKEN_IN_GIT = FORBIDDEN
+IN_MEMORY_TOKEN_STORE = TEST_ONLY
+OAUTH_CLIENT_SECRET_BROWSER_EXPOSURE = FORBIDDEN
+ACCESS_TOKEN_BROWSER_EXPOSURE = FORBIDDEN
+ACCESS_TOKEN_BROWSER_STORAGE = FORBIDDEN
+REFRESH_TOKEN_BROWSER_STORAGE = FORBIDDEN
+BROWSER_SUPPLIES_OAUTH_ACCESS_TOKEN = FORBIDDEN
+BROWSER_SELECTS_SERVER_TOKEN = FORBIDDEN
+REVISION_ARCHIVE_SERVICE_RESPONSIBILITY = ARCHIVE_DOMAIN_ONLY
+APP794_TRANSITION_ORCHESTRATION = D3_TRUSTED_ARCHIVE_TRANSITION_SERVICE
 APP794_AUTHORITATIVE_RECORD_SOURCE = BACKEND_FETCHED_KINTONE_APP794_RECORD
 APP794_AUTHORITATIVE_READ_AUTHORITY = SAME_BACKEND_HELD_USER_OAUTH_AUTHORITY
 CANONICAL_STAGE_SNAPSHOT_BUILDER = SHARED_PURE_MODULE
 BROWSER_ARCHIVE_FACT_AUTHORITY = NONE
 ARCHIVE_KEY_AUTHORITY = EXISTING_BUILD_ARCHIVE_KEY
 SNAPSHOT_HASH_AUTHORITY = EXISTING_CANONICAL_D3_SNAPSHOT_SERIALIZER
+DUPLICATE_ARCHIVE_KEY_ALGORITHM = FORBIDDEN
+DUPLICATE_SNAPSHOT_HASH_ALGORITHM = FORBIDDEN
 APP798_TRUSTED_WRITER_READ = YES
 APP798_TRUSTED_WRITER_ADD = YES
 APP798_TRUSTED_WRITER_EDIT = NO
@@ -332,12 +474,10 @@ OAUTH_BACKEND_CONTRACT = PASS
 PKCE_SUPPORT = PROVEN_UNSUPPORTED
 OAUTH_CLIENT_TYPE = CONFIDENTIAL_CLIENT
 TOKEN_CUSTODY_CONTRACT = PASS
-ACCESS_TOKEN_BROWSER_EXPOSURE = FORBIDDEN
 ACTOR_IDENTITY_PROVENANCE = KINTONE_PLATFORM_STAMPED_CREATOR_ONLY
 GATEWAY_RUNTIME_MODEL = NODE_HTTP
 FRAMEWORK_MIGRATION_AUTHORIZED = NO
 ATTESTATION_SYSTEM_FIELD_CONTRACT = PASS
-ATTESTATION_ACTOR_PROOF_FIELD_TYPE = CREATOR
 TRANSITION_AMBIGUOUS_RESULT_RECOVERY = PASS
 BLIND_TRANSITION_RETRY_AFTER_TIMEOUT = FORBIDDEN
 NEXT_RECOMMENDED_GATE = D3-ARCHIVE-RUNTIME-TRUSTED-WRITER-PLATFORM-STAMPED-OAUTH-IMPLEMENTATION-01
@@ -352,4 +492,5 @@ D3_CLOSURE = NOT_CLAIMED
 PRODUCTION_READY = NO
 NEXT_GATE_AUTHORIZED = NO
 AUTO_START_NEXT_WORK_PACKAGE = NO
+INDEPENDENT_CONTROL_PLANE_REVIEW = REQUIRED
 ```
