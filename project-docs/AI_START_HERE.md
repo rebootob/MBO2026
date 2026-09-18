@@ -1,7 +1,7 @@
 # AI START HERE — MBO2026
 
 > Mandatory lean entry point. This file is routing guidance, **not current project-status authority**.
-> Updated: 2026-09-09 ICT.
+> Updated: 2026-09-18 ICT.
 
 ## 1. Canonical startup order
 
@@ -9,12 +9,13 @@ Before planning, reviewing, coding, changing Kintone or reporting status:
 
 1. Fresh-fetch current HEAD of `ai/antigravity-wp002c`.
 2. Read `project-docs/AI_CONTROL_CENTER.md` — primary current control truth.
-3. Read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` — exact active authorization/scope, if any.
-4. Read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` — D1-D7 stage scoreboard.
-5. Read `project-docs/AI_ACTIVE_TASK.md` only when execution/review details are needed.
-6. Read `project-docs/AI_DOCUMENT_INDEX.md` to route to exact locked decisions/baselines/evidence.
-7. Read `project-docs/CHAT_HANDOFF.md` only as a convenience handoff pointer; it is not status authority.
-8. Inspect exact source/tests/diff/live evidence only when the current gate requires it.
+3. Read `project-docs/AI_DIRECTION_LOCK.md` — mandatory direction/scope guardrails for every AI agent.
+4. Read `project-docs/control/02_ACTIVE_WORK_PACKAGE.md` — exact active authorization/scope, if any.
+5. Read `project-docs/control/00_MASTER_DELIVERY_CONTROL.md` — D1-D7 stage scoreboard.
+6. Read `project-docs/AI_ACTIVE_TASK.md` only when execution/review details are needed.
+7. Read `project-docs/AI_DOCUMENT_INDEX.md` to route to exact locked decisions/baselines/evidence.
+8. Read `project-docs/CHAT_HANDOFF.md` only as a convenience handoff pointer; it is not status authority.
+9. Inspect exact source/tests/diff/live evidence only when the current gate requires it.
 
 Do not broad-scan historical documents by default.
 
@@ -56,6 +57,12 @@ Claude / other agents = specialist / second opinion / STOP by default
 - Closed functions reopen only for proven regression or explicit Owner change request.
 - App53 and protected legacy apps are read-only by default.
 - Docs-only approval never implies implementation or deployment authorization.
+- `OWNER_DEC_D3_010` is the current D3 architecture boundary: Kintone-only, mixed-identity business auditability.
+- Any proposal that introduces external backend/OAuth custody/Redis/SQL/cloud runtime/trusted writer/attestation is scope drift unless the Owner explicitly changes Decision 010.
+- Security limitations may be documented; they MUST NOT be converted into new infrastructure requirements automatically.
+- Preserve existing repository contracts before inventing replacements. In particular: preserve `buildArchiveKey()` semantics, preserve exact Kintone user-code case, and never fabricate/backfill historical operator identity.
+- D3 execution order is local-first: design -> local implementation -> local tests/regression -> schema preflight -> schema deploy -> customization deploy -> live readback -> SHARED UAT -> DEDICATED UAT -> D3 closure.
+- If an agent detects scope drift or a conflict with `AI_DIRECTION_LOCK.md`, STOP and report it instead of expanding the work.
 
 ## 5. Review behavior
 

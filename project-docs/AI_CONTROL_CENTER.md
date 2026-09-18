@@ -47,6 +47,8 @@
 Updated: 2026-09-18 ICT (D3-KINTONE-ONLY-SCOPE-RECONCILIATION-01)
 
 > **PRIMARY CURRENT CONTROL TRUTH** for MBO2026. Fresh-fetch canonical branch before acting. Latest explicit Owner decision remains highest authority, subject to locked role-specific authority where explicitly required.
+>
+> **MANDATORY AI DIRECTION LOCK:** Every agent must also read and obey `project-docs/AI_DIRECTION_LOCK.md`. Any scope expansion beyond Decision 010 must STOP for Owner decision.
 
 ## 1. Current project control state
 ```text
@@ -130,6 +132,15 @@ AUTO_START_NEXT_WORK_PACKAGE = NO
 * **Login Constraint:** Reuse existing MBO Login Lock; NO second login or PIN system.
 
 ## 4. Current Technical Reality & Next Step
+
+Direction guardrails:
+- `AI_DIRECTION_LOCK = ACTIVE / OWNER DIRECTIVE`
+- `SCOPE_DRIFT_STOP = YES`
+- `EXTERNAL_ARCHITECTURE_AUTO_REOPEN = FORBIDDEN`
+- `HISTORICAL_IDENTITY_FABRICATION = FORBIDDEN`
+- `KINTONE_USER_CODE_CASE_NORMALIZATION = FORBIDDEN`
+- `LOCAL_FIRST_DELIVERY = REQUIRED`
+
 * Live App 794 artifact is byte-identical to repo `dist/mbo-employee-app.js` (Rev 76).
 * Standard live caller does not supply `options.actor`, causing SHARED mode transactions to record only the shared Kintone user without employee identity (`LIVE_SHARED_ACTUAL_OPERATOR_GAP = PRESENT`).
 * Next Technical Path (Informational only — requires separate Owner authorization):
