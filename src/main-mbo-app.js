@@ -1324,19 +1324,10 @@ if (typeof kintone !== 'undefined') {
 
     if (isD3TargetTransition) {
       // D3 Architecture (Decision 010 - Kintone Only):
-      // Archive stage completion directly in Kintone before or during process transition.
-      // If external prepare endpoint is explicitly configured for backward compatibility/testing, handle via handleD3BrowserTrustedTransition;
-      // otherwise execute direct Kintone Process Transition Archive.
-      if (typeof window !== 'undefined' && window.__MBO_D3_PREPARE_ENDPOINT__) {
-        const recordId = Number(event.recordId || record?.$id?.value || record?.$id || record?.Record_ID?.value || record?.Record_ID || 0);
-        await handleD3BrowserTrustedTransition({
-          recordId,
-          actionName,
-          fetchFn: typeof fetch === 'function' ? fetch : null
-        });
-        return false; // Cancel native transition unconditionally when delegated to external prepare endpoint
-      }
-
+      // Canonical production D3 target path:
+      // currentEmployeeSelfContext -> identity validation -> executeProcessTransitionArchive(...)
+      // -> RevisionArchiveService -> RevisionArchiveKintoneRepository -> App798
+      // Note: External prepare endpoint (Decision 009) is completely removed from production process.proceed.
       const archiveOutcome = await executeProcessTransitionArchive(record, event, {
         employeeSelfContext: currentEmployeeSelfContext
       });
@@ -1420,29 +1411,37 @@ export async function executeProcessTransitionArchive(record, event, options = {
     if (!kintoneLoginUserCode) kintoneLoginUserCode = selfContext.kintoneUserCode;
   }
 
-  // Validate identity mode if provided or required
-  if (identityMode !== undefined || actualOperatorEmployeeCode !== undefined || kintoneLoginUserCode !== undefined) {
-    if (!identityMode || (identityMode !== 'SHARED' && identityMode !== 'DEDICATED')) {
-      const errorMsg = `[D3 ARCHIVE ERROR] Invalid or missing identityMode: "${identityMode}". Transition blocked.`;
-      console.error(errorMsg);
-      return { success: false, error: 'UNSUPPORTED_IDENTITY_MODE' };
-    }
-    if (!actualOperatorEmployeeCode || !String(actualOperatorEmployeeCode).trim()) {
-      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actual operator employee code. Transition blocked.`;
-      console.error(errorMsg);
-      return { success: false, error: 'ACTUAL_OPERATOR_UNRESOLVED' };
-    }
-    if (!kintoneLoginUserCode || !String(kintoneLoginUserCode).trim()) {
-      const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve Kintone login user code. Transition blocked.`;
-      console.error(errorMsg);
-      return { success: false, error: 'KINTONE_LOGIN_USER_UNRESOLVED' };
-    }
-    // Exact case equality between Kintone login user code and actorCode / loginUser.code
-    if (kintoneLoginUserCode !== actorCode) {
-      const errorMsg = `[D3 ARCHIVE ERROR] Identity mismatch: kintoneLoginUserCode ("${kintoneLoginUserCode}") !== actorCode ("${actorCode}"). Transition blocked.`;
-      console.error(errorMsg);
-      return { success: false, error: 'IDENTITY_CONTEXT_MISMATCH' };
-    }
+  // Mandatory Mixed Identity Context for ALL D3 target transitions (Fail-Closed)
+  // Strict check: if requireIdentity is requested or by default for D3 transitions.
+  // To preserve backward compatibility for internal non-transition calls while strictly enforcing
+  // fail-closed on D3 target events when neither selfContext nor identity fields are present:
+  if (!identityMode && !actualOperatorEmployeeCode && !kintoneLoginUserCode) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Missing mixed identity context for D3 target transition ${currentStatus} -> ${nextStatus}. Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'MISSING_IDENTITY_CONTEXT' };
+  }
+
+  // Validate identity mode completeness and values
+  if (!identityMode || (identityMode !== 'SHARED' && identityMode !== 'DEDICATED')) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Invalid or missing identityMode: "${identityMode}". Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'UNSUPPORTED_IDENTITY_MODE' };
+  }
+  if (!actualOperatorEmployeeCode || !String(actualOperatorEmployeeCode).trim()) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve actual operator employee code. Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'ACTUAL_OPERATOR_UNRESOLVED' };
+  }
+  if (!kintoneLoginUserCode || !String(kintoneLoginUserCode).trim()) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Cannot resolve Kintone login user code. Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'KINTONE_LOGIN_USER_UNRESOLVED' };
+  }
+  // Exact case equality between Kintone login user code and actorCode / loginUser.code
+  if (kintoneLoginUserCode !== actorCode) {
+    const errorMsg = `[D3 ARCHIVE ERROR] Identity mismatch: kintoneLoginUserCode ("${kintoneLoginUserCode}") !== actorCode ("${actorCode}"). Transition blocked.`;
+    console.error(errorMsg);
+    return { success: false, error: 'IDENTITY_CONTEXT_MISMATCH' };
   }
 
   try {

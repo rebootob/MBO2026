@@ -91,26 +91,34 @@ function makeMockApp794Record(overrides = {}) {
 }
 
 // 1. exact 05/action/06 creates OBJECTIVE archive
-test('1. exact 05/action/06 creates OBJECTIVE archive', async () => {
-  const adapter = createMockKintoneAdapter();
-  const record = makeMockApp794Record();
-  const event = {
-    status: { value: '05 Objective Approved' },
-    action: { value: 'Start Mid-Year' },
-    nextStatus: { value: '06 Employee Mid-Year' }
+  const defaultTestIdentityContext = {
+    identityMode: 'SHARED',
+    actualOperatorEmployeeCode: 'EMP_TEST_OPERATOR',
+    kintoneLoginUserCode: 'hr_operator'
   };
 
-  const outcome = await executeProcessTransitionArchive(record, event, {
-    apiAdapter: adapter,
-    actor: 'hr_operator'
-  });
+  test('1. exact 05/action/06 creates OBJECTIVE archive', async () => {
+    const adapter = createMockKintoneAdapter();
+    const record = makeMockApp794Record();
+    const event = {
+      status: { value: '05 Objective Approved' },
+      action: { value: 'Start Mid-Year' },
+      nextStatus: { value: '06 Employee Mid-Year' }
+    };
 
-  assert.equal(outcome.success, true);
-  assert.equal(outcome.targetStage, 'OBJECTIVE');
-  assert.equal(outcome.archiveResult.eventType, ARCHIVE_EVENT_TYPES.STAGE_COMPLETION_SNAPSHOT);
-  assert.equal(outcome.archiveResult.evaluationStage, 'OBJECTIVE');
-  assert.equal(adapter.addRecordCallCount, 1);
-});
+    const outcome = await executeProcessTransitionArchive(record, event, {
+      apiAdapter: adapter,
+      actor: 'hr_operator',
+    ...defaultTestIdentityContext,
+      ...defaultTestIdentityContext
+    });
+
+    assert.equal(outcome.success, true);
+    assert.equal(outcome.targetStage, 'OBJECTIVE');
+    assert.equal(outcome.archiveResult.eventType, ARCHIVE_EVENT_TYPES.STAGE_COMPLETION_SNAPSHOT);
+    assert.equal(outcome.archiveResult.evaluationStage, 'OBJECTIVE');
+    assert.equal(adapter.addRecordCallCount, 1);
+  });
 
 // 2. exact 10/action/11 creates MIDYEAR archive
 test('2. exact 10/action/11 creates MIDYEAR archive', async () => {
@@ -124,7 +132,8 @@ test('2. exact 10/action/11 creates MIDYEAR archive', async () => {
 
   const outcome = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, true);
@@ -146,7 +155,8 @@ test('3. exact 15/action/16 creates FINAL archive', async () => {
 
   const outcome = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, true);
@@ -168,7 +178,8 @@ test('4. wrong action at status 05 does not archive', async () => {
 
   const outcome = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.skipped, true);
@@ -187,7 +198,8 @@ test('5. wrong action at status 10 does not archive', async () => {
 
   const outcome = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.skipped, true);
@@ -206,7 +218,8 @@ test('6. wrong action at status 15 does not archive', async () => {
 
   const outcome = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.skipped, true);
@@ -225,7 +238,8 @@ test('7. wrong nextStatus does not archive', async () => {
   };
   const outcome05 = await executeProcessTransitionArchive(record, event05, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome05.skipped, true);
 
@@ -236,7 +250,8 @@ test('7. wrong nextStatus does not archive', async () => {
   };
   const outcome10 = await executeProcessTransitionArchive(record, event10, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome10.skipped, true);
 
@@ -247,7 +262,8 @@ test('7. wrong nextStatus does not archive', async () => {
   };
   const outcome15 = await executeProcessTransitionArchive(record, event15, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome15.skipped, true);
   assert.equal(adapter.addRecordCallCount, 0);
@@ -292,7 +308,9 @@ test('8. missing mandatory provenance fields fail-closed and block transition', 
 
     const outcome = await executeProcessTransitionArchive(badRecord, event, {
       apiAdapter: adapter,
-      actor: 'hr_operator'
+      actor: 'hr_operator',
+    ...defaultTestIdentityContext,
+      ...defaultTestIdentityContext
     });
 
     assert.equal(outcome.success, false, `Expected failure when ${field} is missing`);
@@ -315,7 +333,8 @@ test('9. malformed scorer snapshot fails closed and blocks transition', async ()
 
   const outcome = await executeProcessTransitionArchive(badRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, false);
@@ -339,7 +358,8 @@ test('10. scorer and K_expected mismatch fails closed and blocks transition', as
 
   const outcome = await executeProcessTransitionArchive(badRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, false);
@@ -364,7 +384,8 @@ test('11. duplicate scorer/appraiser fails closed and blocks transition', async 
 
   const outcome1 = await executeProcessTransitionArchive(badRecord1, event, {
     apiAdapter: adapter1,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome1.success, false);
   assert.ok(outcome1.error.includes('PROVENANCE_DUPLICATE'));
@@ -378,7 +399,8 @@ test('11. duplicate scorer/appraiser fails closed and blocks transition', async 
 
   const outcome2 = await executeProcessTransitionArchive(badRecord2, event, {
     apiAdapter: adapter2,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome2.success, false);
   assert.ok(outcome2.error.includes('PROVENANCE_DUPLICATE'));
@@ -400,7 +422,8 @@ test('12. validation failure causes zero addRecord calls', async () => {
 
   const outcome = await executeProcessTransitionArchive(invalidRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, false);
@@ -446,7 +469,8 @@ test('14. repository failure blocks transition', async () => {
 
   const outcome = await executeProcessTransitionArchive(record, event, {
     apiAdapter: failingAdapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, false);
@@ -465,7 +489,8 @@ test('15. idempotent retry creates no duplicate record', async () => {
 
   const outcome1 = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome1.success, true);
   assert.equal(outcome1.archiveResult.idempotentReplay, false);
@@ -473,7 +498,8 @@ test('15. idempotent retry creates no duplicate record', async () => {
 
   const outcome2 = await executeProcessTransitionArchive(record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcome2.success, true);
   assert.equal(outcome2.archiveResult.idempotentReplay, true);
@@ -615,7 +641,8 @@ test('20. physical objective matrix validation enforces required fields and reje
 
   const outcomeA = await executeProcessTransitionArchive(missingObjTextRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcomeA.success, false);
   assert.ok(outcomeA.error.includes('Objective_1 is required'));
@@ -627,7 +654,8 @@ test('20. physical objective matrix validation enforces required fields and reje
   });
   const outcomeB = await executeProcessTransitionArchive(missingScoreRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcomeB.success, false);
   assert.ok(outcomeB.error.includes('PartA_Raw_Score is required'));
@@ -639,7 +667,8 @@ test('20. physical objective matrix validation enforces required fields and reje
   });
   const outcomeC = await executeProcessTransitionArchive(badCountRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcomeC.success, false);
   assert.ok(outcomeC.error.includes('Objective_Count must be an integer between 2 and 10'));
@@ -666,7 +695,8 @@ test('21. K1 route pattern produces exact 100% scorer weight', async () => {
 
   const outcome = await executeProcessTransitionArchive(k1Record, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
 
   assert.equal(outcome.success, true);
@@ -700,7 +730,8 @@ test('22. active slot with multiple users or non-ALL rule fails closed', async (
 
   const outcomeA = await executeProcessTransitionArchive(multiUserRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcomeA.success, false);
   assert.ok(outcomeA.error.includes('must have exactly one user, found 2'));
@@ -711,7 +742,8 @@ test('22. active slot with multiple users or non-ALL rule fails closed', async (
   });
   const outcomeB = await executeProcessTransitionArchive(badRuleRecord, event, {
     apiAdapter: adapter,
-    actor: 'hr_operator'
+    actor: 'hr_operator',
+    ...defaultTestIdentityContext
   });
   assert.equal(outcomeB.success, false);
   assert.ok(outcomeB.error.includes('must be "ALL", received: "ANY"'));
@@ -870,38 +902,48 @@ test('27. Fail-closed: case-sensitive mismatch between kintoneLoginUserCode and 
   assert.equal(outcome.error, 'IDENTITY_CONTEXT_MISMATCH');
 });
 
-test('28. Historical row policy: null 5 fields on historical records do not cause failure on readBack', async () => {
+test('28. Historical row policy: historical App798 row without the 5 new fields can be normalized and read without fabricating identity', async () => {
   const adapter = createMockKintoneAdapter();
-  const origAdd = adapter.addRecord;
-  adapter.addRecord = async (appId, recordPayload) => {
-    const rec = recordPayload || (typeof appId === 'object' ? appId.record : undefined);
-    const cloned = JSON.parse(JSON.stringify(rec));
-    delete cloned.Identity_Mode;
-    delete cloned.Actual_Operator_Employee_Code;
-    delete cloned.Kintone_Login_User_Code;
-    delete cloned.Action_Name;
-    delete cloned.To_Status;
-    return origAdd(appId, cloned);
+  const repo = new RevisionArchiveKintoneRepository(adapter);
+
+  // Simulate existing historical App798 record in store without the 5 Decision-010 fields
+  const historicalRecordKey = 'APP794-REC-999:MIDYEAR:REV-01';
+  const historicalRawRecord = {
+    $id: { type: '__ID__', value: '79801' },
+    $revision: { type: '__REVISION__', value: '1' },
+    Archive_Key: { type: 'SINGLE_LINE_TEXT', value: historicalRecordKey },
+    Event_Type: { type: 'SINGLE_LINE_TEXT', value: 'STAGE_COMPLETION_SNAPSHOT' },
+    Evaluation_Stage: { type: 'SINGLE_LINE_TEXT', value: 'MIDYEAR' },
+    Target_App_Id: { type: 'NUMBER', value: '794' },
+    Target_Record_Id: { type: 'NUMBER', value: '999' },
+    Target_Record_Key: { type: 'SINGLE_LINE_TEXT', value: 'APP794-REC-999' },
+    Target_Revision_Number: { type: 'NUMBER', value: '1' },
+    Source_State_Hash: { type: 'SINGLE_LINE_TEXT', value: 'hash_abc123' },
+    Snapshot_JSON: { type: 'MULTI_LINE_TEXT', value: '{"test":true}' },
+    Snapshot_Hash: { type: 'SINGLE_LINE_TEXT', value: 'hash_xyz789' },
+    Archived_By: { type: 'SINGLE_LINE_TEXT', value: 'legacy_user' },
+    Archived_At: { type: 'SINGLE_LINE_TEXT', value: '2025-01-01T00:00:00.000Z' },
+    Is_Historical_Replay: { type: 'SINGLE_LINE_TEXT', value: 'false' },
+    Status: { type: 'SINGLE_LINE_TEXT', value: 'RECORDED' }
+    // Intentionally omit: Identity_Mode, Actual_Operator_Employee_Code, Kintone_Login_User_Code, Action_Name, To_Status
   };
 
-  const record = makeMockApp794Record();
-  const event = {
-    status: { value: '15 HR Final Check' },
-    action: { value: 'Complete' },
-    nextStatus: { value: '16 Completed' }
-  };
+  adapter.store.set('79801', historicalRawRecord);
 
-  // When identityMode is not provided (legacy/historical test invocation)
-  const outcome = await executeProcessTransitionArchive(record, event, {
-    apiAdapter: adapter,
-    actor: 'hr_admin'
-  });
+  // Read back historical record
+  const normalized = await repo.readBackExactArchiveRecord(historicalRecordKey);
 
-  assert.equal(outcome.success, true);
-  assert.equal(outcome.targetStage, 'FINAL');
-  assert.equal(adapter.addRecordCallCount, 1);
-  const archived = Array.from(adapter.store.values())[0];
-  assert.equal(archived.Identity_Mode, undefined);
+  assert.ok(normalized);
+  assert.equal(normalized.archiveKey, historicalRecordKey);
+  assert.equal(normalized.archivedAt, '2025-01-01T00:00:00.000Z');
+  // Prove that 5 fields normalize to null without fabricating identity or throwing
+  assert.equal(normalized.identityMode, null);
+  assert.equal(normalized.actualOperatorEmployeeCode, null);
+  assert.equal(normalized.kintoneLoginUserCode, null);
+  assert.equal(normalized.actionName, null);
+  assert.equal(normalized.toStatus, null);
+  // Prove no new record was created in the process
+  assert.equal(adapter.addRecordCallCount, 0);
 });
 
 test('29. Idempotent replay preserves identical Archive_Key and verifies exact 5 fields', async () => {
