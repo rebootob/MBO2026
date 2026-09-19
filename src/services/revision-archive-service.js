@@ -607,9 +607,24 @@ function compareArchiveRecordToExpected(persisted, expected, mode) {
     }
   }
 
-  // Post-create readback checks Archived_At written by this attempt
+  // Post-create readback checks Archived_At written by this attempt.
+  // Kintone DATETIME fields store at minute precision (truncates seconds/ms).
+  // Normalize both sides to minute precision before comparing so that a
+  // sub-minute gap between the expected value and the persisted value does
+  // not produce a false-positive failure.  A mismatch at minute level still
+  // fails closed.
   if (isReadback) {
-    if (persisted.archivedAt !== expected.archivedAt) {
+    const toMinutePrecision = (iso) => {
+      if (!iso || typeof iso !== 'string') return iso;
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return iso;
+      // Zero out seconds and milliseconds, re-emit as ISO string
+      d.setUTCSeconds(0, 0);
+      return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    };
+    const persistedMinute = toMinutePrecision(persisted.archivedAt);
+    const expectedMinute = toMinutePrecision(expected.archivedAt);
+    if (persistedMinute !== expectedMinute) {
       fail('Archived_At', persisted.archivedAt, expected.archivedAt);
     }
   }

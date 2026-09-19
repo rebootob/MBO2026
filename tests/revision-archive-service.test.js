@@ -1119,6 +1119,156 @@ test('TC_READBACK_01: Post-Create Read-back: complete exact read-back passes', a
   assert.equal(res.idempotentReplay, false);
 });
 
+// TC_READBACK_PREC_01 — Kintone minute-precision Archived_At: sub-minute truncation does NOT fail readback
+test('TC_READBACK_PREC_01: Post-Create Read-back: Kintone minute-precision Archived_At passes when same minute', async () => {
+  // Simulate Kintone storing at minute precision: strip seconds+ms from the stored value
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+
+  // Override getRecords to return Archived_At truncated to minute precision (as Kintone does)
+  const origGetRecords = adapter.getRecords;
+  adapter.getRecords = async (appId, query) => {
+    const result = await origGetRecords(appId, query);
+    for (const rec of result.records) {
+      if (rec.Archived_At) {
+        const d = new Date(rec.Archived_At.value);
+        d.setUTCSeconds(0, 0);
+        rec.Archived_At = { value: d.toISOString().replace(/\.\d{3}Z$/, 'Z') };
+      }
+    }
+    return result;
+  };
+
+  const service = new RevisionArchiveService(adapter, {
+    clock: () => '2026-09-19T14:24:39.281Z' // expected has seconds+ms
+  });
+
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'tmh' },
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.verified, true);
+  assert.equal(res.idempotentReplay, false);
+  // Evidence: archivedAt is the Kintone-persisted value (minute precision)
+  assert.equal(res.archivedAt, '2026-09-19T14:24:00Z');
+});
+
+// TC_READBACK_PREC_02 — Expected timestamp with full seconds/ms accepted by normalization
+test('TC_READBACK_PREC_02: Post-Create Read-back: expected timestamp with seconds/milliseconds normalizes correctly', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+
+  // Kintone returns minute-truncated value
+  const origGetRecords = adapter.getRecords;
+  adapter.getRecords = async (appId, query) => {
+    const result = await origGetRecords(appId, query);
+    for (const rec of result.records) {
+      if (rec.Archived_At) {
+        rec.Archived_At = { value: '2026-09-19T14:24:00Z' };
+      }
+    }
+    return result;
+  };
+
+  const service = new RevisionArchiveService(adapter, {
+    clock: () => '2026-09-19T14:24:39.281Z'
+  });
+
+  const res = await service.archiveStageCompletion({
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'tmh' },
+    logicalSnapshot: snap
+  });
+
+  assert.equal(res.verified, true);
+});
+
+// TC_READBACK_PREC_03 — Mismatch outside permitted minute precision STILL fails closed
+test('TC_READBACK_PREC_03: Post-Create Read-back: Archived_At mismatch at minute level still fails closed', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+
+  // Kintone returns a DIFFERENT minute entirely (tampered / wrong row)
+  const origGetRecords = adapter.getRecords;
+  adapter.getRecords = async (appId, query) => {
+    const result = await origGetRecords(appId, query);
+    for (const rec of result.records) {
+      if (rec.Archived_At) {
+        rec.Archived_At = { value: '2026-09-19T13:00:00Z' }; // wrong hour
+      }
+    }
+    return result;
+  };
+
+  const service = new RevisionArchiveService(adapter, {
+    clock: () => '2026-09-19T14:24:39.281Z'
+  });
+
+  await assert.rejects(
+    async () => service.archiveStageCompletion({
+      sourceRecordKey: 'FY2026-EMP100',
+      employeeCode: 'EMP100',
+      fiscalYear: 'FY2026',
+      evaluationStage: 'OBJECTIVE',
+      revisionNumber: 1,
+      sourceRecordId: 101,
+      actor: { userCode: 'tmh' },
+      logicalSnapshot: snap
+    }),
+    (err) => {
+      assert.equal(err.code, 'ARCHIVE_READBACK_VERIFICATION_FAILED');
+      assert.ok(err.message.includes('Archived_At'), `Expected Archived_At in message, got: ${err.message}`);
+      return true;
+    }
+  );
+});
+
+// TC_READBACK_PREC_04 — Existing archive row idempotent replay does NOT create duplicate
+test('TC_READBACK_PREC_04: Idempotent replay: existing archive row is returned without creating duplicate', async () => {
+  const snap = makeValidLogicalSnapshot();
+  const adapter = createInMemoryKintoneAdapter();
+
+  const service = new RevisionArchiveService(adapter, {
+    clock: () => '2026-09-19T14:24:39.281Z'
+  });
+
+  const params = {
+    sourceRecordKey: 'FY2026-EMP100',
+    employeeCode: 'EMP100',
+    fiscalYear: 'FY2026',
+    evaluationStage: 'OBJECTIVE',
+    revisionNumber: 1,
+    sourceRecordId: 101,
+    actor: { userCode: 'tmh' },
+    logicalSnapshot: snap
+  };
+
+  const first = await service.archiveStageCompletion(params);
+  assert.equal(first.idempotentReplay, false);
+  assert.equal(adapter.store.size, 1);
+
+  // Replay with a later clock tick (within same minute, simulating retry)
+  const service2 = new RevisionArchiveService(adapter, {
+    clock: () => '2026-09-19T14:24:55.000Z'
+  });
+  const second = await service2.archiveStageCompletion(params);
+  assert.equal(second.idempotentReplay, true);
+  assert.equal(adapter.store.size, 1); // No duplicate row
+  assert.equal(second.archiveKey, first.archiveKey);
+});
+
 test('TC_READBACK_02: Post-Create Read-back: field mismatches fail closed with ARCHIVE_READBACK_VERIFICATION_FAILED', async () => {
   const fieldsToTest = [
     { field: 'Snapshot_Hash', tampered: { value: 'TAMPERED_HASH' } },
