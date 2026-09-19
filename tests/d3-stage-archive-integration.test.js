@@ -54,26 +54,32 @@ function createMockKintoneAdapter(initialRecords = []) {
 }
 
 function makeMockApp794Record(overrides = {}) {
+  // Live-shaped App794 record (confirmed 2026-09-19 provenance reconciliation):
+  // - $revision       : Kintone system field — authoritative revision source
+  // - Routing_Topology: live App794 field — Route_Pattern derived from it, NOT stored
+  // - Route_Pattern   : NOT present in App794 — must not be injected into mocks
+  // - Department_Hoshin_Key: NOT present in App794 — NOT a mandatory field
+  // - Revision_Number / Current_Revision_Number: NOT present in App794 live schema
   return {
     $id: { value: '18' },
+    $revision: { value: '1' },        // Kintone system field — authoritative revision source
     Record_Key: { value: 'FY2026-TEST-EMP001' },
     Employee_Code: { value: 'EMP001' },
     Fiscal_Year: { value: 'FY2026' },
-    Revision_Number: { value: '1' },
+    // Route_Pattern intentionally absent: derived from Routing_Topology via D3_ROUTE_PATTERNS
+    Routing_Topology: { value: 'M1_G1' },
     Profile_Code: { value: 'PROF_STAFF_CHIEF' },
     Frozen_Profile_Code: { value: 'PROF_STAFF_CHIEF' },
     K_expected_Snapshot: { value: '2' },
     Effective_Routing_Key: { value: 'TME1' },
     Effective_Route_Version_Key: { value: 'TME1#v1' },
-    Route_Pattern: { value: 'PATTERN_2_M1_G1' },
-    Routing_Topology: { value: 'M1_G1' },
     // Canonical physical USER_SELECT and approval rule fields (App 794)
     Manager_Level1_Approvers: { value: [{ code: 'mgr_somchai', name: 'Somchai Mgr' }] },
     Manager_Level1_Approval_Rule: { value: 'ALL' },
     GM_Level1_Approvers: { value: [{ code: 'gm_somrudee', name: 'Somrudee GM' }] },
     GM_Level1_Approval_Rule: { value: 'ALL' },
     Effective_Scorer_Slots_Snapshot: { value: '[1, 2]' },
-    Department_Hoshin_Key: { value: 'DHK_2026_01' },
+    // Department_Hoshin_Key intentionally absent: NOT an App794 live field
     Configuration_Hash: { value: 'cfg_hash_verified_99' },
     // Canonical physical objective matrix fields (App 794)
     Objective_Count: { value: '2' },
@@ -270,18 +276,20 @@ test('7. wrong nextStatus does not archive', async () => {
 
 // 8. missing mandatory provenance ทุก field ต้อง block
 test('8. missing mandatory provenance fields fail-closed and block transition', async () => {
+  // Fields that are mandatory and live in App794 schema.
+  // Route_Pattern is NOT mandatory (derived from Routing_Topology).
+  // Revision_Number / Current_Revision_Number are NOT mandatory ($revision is authoritative).
+  // Department_Hoshin_Key is NOT mandatory (no authoritative App794 source — CONTRACT_DECISION).
   const mandatoryFields = [
     'Record_Key',
     'Employee_Code',
     'Fiscal_Year',
-    'Revision_Number',
+    '$revision',
     'Frozen_Profile_Code',
     'K_expected_Snapshot',
-    'Route_Pattern',
     'Routing_Topology',
     'Effective_Routing_Key',
     'Effective_Route_Version_Key',
-    'Department_Hoshin_Key',
     'Configuration_Hash',
     'Objective_Count',
     'PartA_Raw_Score'
@@ -294,9 +302,6 @@ test('8. missing mandatory provenance fields fail-closed and block transition', 
     });
     if (field === 'Frozen_Profile_Code') {
       badRecord.Profile_Code = { value: '' };
-    }
-    if (field === 'Revision_Number') {
-      badRecord.Current_Revision_Number = { value: '' };
     }
 
     const event = {
@@ -408,8 +413,9 @@ test('11. duplicate scorer/appraiser fails closed and blocks transition', async 
 // 12. validation failure causes zero addRecord calls
 test('12. validation failure causes zero addRecord calls', async () => {
   const adapter = createMockKintoneAdapter();
+  // Route_Pattern does not exist in App794 — invalid topology triggers fail-closed
   const invalidRecord = makeMockApp794Record({
-    Route_Pattern: { value: 'INVALID_PATTERN_KEY' }
+    Routing_Topology: { value: 'INVALID_TOPOLOGY_KEY' }
   });
 
   const event = {

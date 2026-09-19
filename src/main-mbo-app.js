@@ -1457,7 +1457,18 @@ export async function executeProcessTransitionArchive(record, event, options = {
       employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || '').trim(),
       fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || '').trim(),
       evaluationStage: targetStage,
-      revisionNumber: Number(record?.Revision_Number?.value || record?.Current_Revision_Number?.value || record?.Revision_Number || record?.Current_Revision_Number),
+      // FIX(RUNTIME-FIX-01): Use Kintone native $revision as authoritative revision source.
+      // App794 does not have custom Revision_Number / Current_Revision_Number fields.
+      // $revision is the system field always present on every Kintone record.
+      // Fallback to custom fields only for historical compatibility with non-live test data.
+      revisionNumber: Number(
+        record?.$revision?.value
+        ?? record?.Revision_Number?.value
+        ?? record?.Current_Revision_Number?.value
+        ?? record?.$revision
+        ?? record?.Revision_Number
+        ?? record?.Current_Revision_Number
+      ),
       sourceRecordId: rawRecordId > 0 ? rawRecordId : undefined,
       previousStatus: currentStatus,
       actor: { userCode: actorCode },

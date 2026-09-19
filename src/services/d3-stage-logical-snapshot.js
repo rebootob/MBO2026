@@ -32,7 +32,12 @@ export function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
 
   const rawRecordId = Number(getVal('$id') || getVal('Record_ID') || 0);
 
-  const rawRev = getVal('Revision_Number') ?? getVal('Current_Revision_Number');
+  // Revision authority: Kintone native $revision is the live authoritative source.
+  // Custom fields Revision_Number / Current_Revision_Number do not exist in App794 live schema.
+  // $revision Kintone shape: { value: "10" } — a string-valued integer.
+  const rawRevSystem = getVal('$revision');
+  const rawRevCustom = getVal('Revision_Number') ?? getVal('Current_Revision_Number');
+  const rawRev = rawRevSystem ?? rawRevCustom;
   const revisionNumber = Number(rawRev);
   if (!Number.isInteger(revisionNumber) || revisionNumber < 1) {
     throw new Error(`PROVENANCE_INVALID: Revision_Number must be a positive integer, got "${rawRev}"`);
@@ -49,19 +54,23 @@ export function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
     throw new Error(`PROVENANCE_INVALID: K_expected_Snapshot must be 1 or 2, got "${rawK}"`);
   }
 
-  const routePattern = String(getVal('Route_Pattern') || '').trim();
-  if (!routePattern || !D3_ROUTE_PATTERNS[routePattern]) {
-    throw new Error(`PROVENANCE_INVALID: Route_Pattern "${routePattern}" is invalid or unmapped`);
-  }
-  const patternDef = D3_ROUTE_PATTERNS[routePattern];
-
+  // Route_Pattern does NOT exist in App794 live schema.
+  // Routing_Topology IS a live App794 field. Derive Route_Pattern deterministically
+  // from the locked D3_ROUTE_PATTERNS contract using Routing_Topology.
   const routingTopology = String(getVal('Routing_Topology') || '').trim();
   if (!routingTopology) {
     throw new Error('PROVENANCE_MISSING: Routing_Topology is required');
   }
-  if (routingTopology !== patternDef.topology) {
-    throw new Error(`PROVENANCE_MISMATCH: Routing_Topology "${routingTopology}" does not match pattern topology "${patternDef.topology}"`);
+
+  // Build topology→pattern lookup once from the authoritative D3_ROUTE_PATTERNS contract.
+  const topologyToPattern = Object.fromEntries(
+    Object.entries(D3_ROUTE_PATTERNS).map(([patternKey, def]) => [def.topology, patternKey])
+  );
+  const routePattern = topologyToPattern[routingTopology];
+  if (!routePattern) {
+    throw new Error(`PROVENANCE_INVALID: Routing_Topology "${routingTopology}" has no locked D3 route pattern mapping`);
   }
+  const patternDef = D3_ROUTE_PATTERNS[routePattern];
 
   const effectiveRoutingKey = String(getVal('Effective_Routing_Key') || '').trim();
   if (!effectiveRoutingKey) {
@@ -196,10 +205,10 @@ export function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
     });
   }
 
-  const departmentHoshinKey = String(getVal('Department_Hoshin_Key') || '').trim();
-  if (!departmentHoshinKey) {
-    throw new Error('PROVENANCE_MISSING: Department_Hoshin_Key is required');
-  }
+  // Department_Hoshin_Key is NOT an authoritative App794 live field (CONTRACT_DECISION: NO_AUTHORITY_FOUND).
+  // It MUST NOT block the D3 stage snapshot. Read as optional; set undefined when absent so serializer omits it.
+  const rawDepartmentHoshinKey = String(getVal('Department_Hoshin_Key') || '').trim();
+  const departmentHoshinKey = rawDepartmentHoshinKey || undefined;
 
   const configurationHash = String(getVal('Configuration_Hash') || '').trim();
   if (!configurationHash) {
