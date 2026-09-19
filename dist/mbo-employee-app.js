@@ -11855,6 +11855,44 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
     }
   };
 
+  // src/services/d3-revision-resolver.js
+  function readField(record, fieldCode) {
+    const raw = record?.[fieldCode];
+    if (raw && typeof raw === "object" && "value" in raw) {
+      return raw.value;
+    }
+    return raw;
+  }
+  function resolveRevisionNumber(record) {
+    const rawRevision = readField(record, "$revision") ?? readField(record, "Revision_Number") ?? readField(record, "Current_Revision_Number");
+    const revisionNumber = Number(rawRevision);
+    if (!Number.isInteger(revisionNumber) || revisionNumber < 1) {
+      throw new Error(`PROVENANCE_INVALID: Revision_Number must be a positive integer, got "${rawRevision}"`);
+    }
+    return revisionNumber;
+  }
+
+  // src/services/d3-route-pattern-resolver.js
+  function getDefaultRoutePatterns() {
+    return D3_ROUTE_PATTERNS;
+  }
+  function resolveRoutePattern(routingTopology, routePatterns) {
+    const topology = String(routingTopology || "").trim();
+    if (!topology) {
+      throw new Error("PROVENANCE_MISSING: Routing_Topology is required");
+    }
+    const contract = routePatterns ?? getDefaultRoutePatterns();
+    const matches = Object.entries(contract).filter(([, def]) => def?.topology === topology);
+    if (matches.length === 0) {
+      throw new Error(`PROVENANCE_INVALID: Routing_Topology "${topology}" has no locked D3 route pattern mapping`);
+    }
+    if (matches.length > 1) {
+      throw new Error(`PROVENANCE_AMBIGUOUS: Routing_Topology "${topology}" matches ${matches.length} route patterns, expected exactly 1`);
+    }
+    const [patternKey] = matches[0];
+    return patternKey;
+  }
+
   // src/services/d3-stage-logical-snapshot.js
   function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
     const getVal = (f) => record && record[f] && typeof record[f] === "object" && "value" in record[f] ? record[f].value : record?.[f];
@@ -11871,11 +11909,7 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       throw new Error("PROVENANCE_MISSING: Fiscal_Year is required");
     }
     const rawRecordId = Number(getVal("$id") || getVal("Record_ID") || 0);
-    const rawRev = getVal("Revision_Number") ?? getVal("Current_Revision_Number");
-    const revisionNumber = Number(rawRev);
-    if (!Number.isInteger(revisionNumber) || revisionNumber < 1) {
-      throw new Error(`PROVENANCE_INVALID: Revision_Number must be a positive integer, got "${rawRev}"`);
-    }
+    const revisionNumber = resolveRevisionNumber(record);
     const frozenProfileCode = String(getVal("Frozen_Profile_Code") || getVal("Profile_Code") || "").trim();
     if (!frozenProfileCode) {
       throw new Error("PROVENANCE_MISSING: Frozen_Profile_Code is required");
@@ -11885,18 +11919,9 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
     if (kExpected !== 1 && kExpected !== 2) {
       throw new Error(`PROVENANCE_INVALID: K_expected_Snapshot must be 1 or 2, got "${rawK}"`);
     }
-    const routePattern = String(getVal("Route_Pattern") || "").trim();
-    if (!routePattern || !D3_ROUTE_PATTERNS[routePattern]) {
-      throw new Error(`PROVENANCE_INVALID: Route_Pattern "${routePattern}" is invalid or unmapped`);
-    }
-    const patternDef = D3_ROUTE_PATTERNS[routePattern];
     const routingTopology = String(getVal("Routing_Topology") || "").trim();
-    if (!routingTopology) {
-      throw new Error("PROVENANCE_MISSING: Routing_Topology is required");
-    }
-    if (routingTopology !== patternDef.topology) {
-      throw new Error(`PROVENANCE_MISMATCH: Routing_Topology "${routingTopology}" does not match pattern topology "${patternDef.topology}"`);
-    }
+    const routePattern = resolveRoutePattern(routingTopology, D3_ROUTE_PATTERNS);
+    const patternDef = D3_ROUTE_PATTERNS[routePattern];
     const effectiveRoutingKey = String(getVal("Effective_Routing_Key") || "").trim();
     if (!effectiveRoutingKey) {
       throw new Error("PROVENANCE_MISSING: Effective_Routing_Key is required");
@@ -12005,10 +12030,8 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
         weight: dec036Weights[idx]
       });
     }
-    const departmentHoshinKey = String(getVal("Department_Hoshin_Key") || "").trim();
-    if (!departmentHoshinKey) {
-      throw new Error("PROVENANCE_MISSING: Department_Hoshin_Key is required");
-    }
+    const rawDepartmentHoshinKey = String(getVal("Department_Hoshin_Key") || "").trim();
+    const departmentHoshinKey = rawDepartmentHoshinKey || void 0;
     const configurationHash = String(getVal("Configuration_Hash") || "").trim();
     if (!configurationHash) {
       throw new Error("PROVENANCE_MISSING: Configuration_Hash is required");
@@ -13283,7 +13306,10 @@ ${errorMsgEN}`);
         employeeCode: String(record?.Employee_Code?.value || record?.Employee_Code || "").trim(),
         fiscalYear: String(record?.Fiscal_Year?.value || record?.Fiscal_Year || "").trim(),
         evaluationStage: targetStage,
-        revisionNumber: Number(record?.Revision_Number?.value || record?.Current_Revision_Number?.value || record?.Revision_Number || record?.Current_Revision_Number),
+        // RUNTIME-FIX-01-R1: revision resolution delegated to the shared pure
+        // resolver (src/services/d3-revision-resolver.js) so this call site
+        // and buildStageLogicalSnapshot() do not duplicate parsing logic.
+        revisionNumber: resolveRevisionNumber(record),
         sourceRecordId: rawRecordId > 0 ? rawRecordId : void 0,
         previousStatus: currentStatus,
         actor: { userCode: actorCode },
