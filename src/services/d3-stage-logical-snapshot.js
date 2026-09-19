@@ -1,4 +1,6 @@
 import { D3_ROUTE_PATTERNS, D3_SLOT_DEFINITIONS } from '../config/d3-route-contract.js';
+import { resolveRevisionNumber } from './d3-revision-resolver.js';
+import { resolveRoutePattern } from './d3-route-pattern-resolver.js';
 
 /**
  * Canonical Stage Logical Snapshot Builder (Shared Pure Module).
@@ -32,16 +34,10 @@ export function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
 
   const rawRecordId = Number(getVal('$id') || getVal('Record_ID') || 0);
 
-  // Revision authority: Kintone native $revision is the live authoritative source.
-  // Custom fields Revision_Number / Current_Revision_Number do not exist in App794 live schema.
-  // $revision Kintone shape: { value: "10" } — a string-valued integer.
-  const rawRevSystem = getVal('$revision');
-  const rawRevCustom = getVal('Revision_Number') ?? getVal('Current_Revision_Number');
-  const rawRev = rawRevSystem ?? rawRevCustom;
-  const revisionNumber = Number(rawRev);
-  if (!Number.isInteger(revisionNumber) || revisionNumber < 1) {
-    throw new Error(`PROVENANCE_INVALID: Revision_Number must be a positive integer, got "${rawRev}"`);
-  }
+  // Revision authority: resolved via dedicated pure resolver module.
+  // See src/services/d3-revision-resolver.js for priority order and
+  // fail-closed contract.
+  const revisionNumber = resolveRevisionNumber(record);
 
   const frozenProfileCode = String(getVal('Frozen_Profile_Code') || getVal('Profile_Code') || '').trim();
   if (!frozenProfileCode) {
@@ -55,21 +51,11 @@ export function buildStageLogicalSnapshot(record, targetStage, currentStatus) {
   }
 
   // Route_Pattern does NOT exist in App794 live schema.
-  // Routing_Topology IS a live App794 field. Derive Route_Pattern deterministically
-  // from the locked D3_ROUTE_PATTERNS contract using Routing_Topology.
+  // Routing_Topology IS a live App794 field. Resolved via dedicated pure
+  // resolver module against the existing locked D3_ROUTE_PATTERNS contract.
+  // See src/services/d3-route-pattern-resolver.js for fail-closed contract.
   const routingTopology = String(getVal('Routing_Topology') || '').trim();
-  if (!routingTopology) {
-    throw new Error('PROVENANCE_MISSING: Routing_Topology is required');
-  }
-
-  // Build topology→pattern lookup once from the authoritative D3_ROUTE_PATTERNS contract.
-  const topologyToPattern = Object.fromEntries(
-    Object.entries(D3_ROUTE_PATTERNS).map(([patternKey, def]) => [def.topology, patternKey])
-  );
-  const routePattern = topologyToPattern[routingTopology];
-  if (!routePattern) {
-    throw new Error(`PROVENANCE_INVALID: Routing_Topology "${routingTopology}" has no locked D3 route pattern mapping`);
-  }
+  const routePattern = resolveRoutePattern(routingTopology, D3_ROUTE_PATTERNS);
   const patternDef = D3_ROUTE_PATTERNS[routePattern];
 
   const effectiveRoutingKey = String(getVal('Effective_Routing_Key') || '').trim();
