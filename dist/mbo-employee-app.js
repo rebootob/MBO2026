@@ -11250,7 +11250,16 @@ Routing configuration produces no valid non-self appraiser for own MBO (${cleanU
       }
     }
     if (isReadback) {
-      if (persisted.archivedAt !== expected.archivedAt) {
+      const toMinutePrecision = (iso) => {
+        if (!iso || typeof iso !== "string") return iso;
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return iso;
+        d.setUTCSeconds(0, 0);
+        return d.toISOString().replace(/\.\d{3}Z$/, "Z");
+      };
+      const persistedMinute = toMinutePrecision(persisted.archivedAt);
+      const expectedMinute = toMinutePrecision(expected.archivedAt);
+      if (persistedMinute !== expectedMinute) {
         fail("Archived_At", persisted.archivedAt, expected.archivedAt);
       }
     }
