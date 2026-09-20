@@ -1,0 +1,104 @@
+# D3 Separate Shared Test Employee Fixture Creation Evidence
+
+## Executive Summary
+- **Package ID**: `D3-SEPARATE-SHARED-TEST-EMPLOYEE-FIXTURE-CREATE-01`
+- **Authorization ID**: `MBO2026-D3-SEPARATE-SHARED-TEST-EMPLOYEE-FIXTURE-CREATE-01-20260920-OWNER-01`
+- **Authorized Base HEAD**: `44559790c4d843903c401685d17b44b994db31fe`
+- **Execution Mode**: Bounded App 53 + App 801 Create-Only Shared Test Fixture
+- **Status**: Complete & Verified (PASS)
+
+---
+
+## 1. Identity & Pre-Check Verification
+- **Shared Test Employee Code**: `MBO2026_D3_SHARED_UAT_OPERATOR_01`
+- **EMPLOYEE_CODE_VALID**: `YES` (Validated against `isValidEmployeeCode()`)
+- **APP53_EXISTING_MATCH_COUNT_BEFORE**: `0`
+- **APP801_EXISTING_MATCH_COUNT_BEFORE**: `0`
+
+---
+
+## 2. App 53 Live Creation & Readback
+- **APP53_CREATED_RECORD_ID**: `652`
+- **APP53_RECORD_CREATE_COUNT**: `1`
+- **APP53_TARGET_RECORD_COUNT_AFTER**: `1`
+- **APP53_EMPLOYEE_CODE**: `MBO2026_D3_SHARED_UAT_OPERATOR_01`
+- **APP53_NUMBER_0**: `1`
+- **MBO_KINTONE_USER_COUNT**: `0`
+- **MBO_KINTONE_USER_RAW_VALUE**: `[]`
+- **Display Names**:
+  - English: `MBO2026 D3 Shared UAT Test Operator`
+  - Thai: `MBO2026 D3 ผู้ใช้งานทดสอบ Shared UAT`
+- **SYNTHETIC_TEST_IDENTITY**: `YES`
+
+---
+
+## 3. Mandatory Live Shared Eligibility Proof
+Executed read-only `EmployeeService.checkSharedLoginEligibility("MBO2026_D3_SHARED_UAT_OPERATOR_01", kintoneApi)` against live App 53 record:
+- **SHARED_ELIGIBILITY_ELIGIBLE**: `true`
+- **SHARED_ELIGIBILITY_STATUS**: `SHARED_ELIGIBLE`
+- **SHARED_ELIGIBILITY_EMPLOYEE_CODE**: `MBO2026_D3_SHARED_UAT_OPERATOR_01`
+- **SHARED_ELIGIBILITY_PROOF_RESULT**: `PASS`
+
+---
+
+## 4. App 801 Initial Credential Creation & Readback
+Created exactly one initial credential record in App 801:
+- **APP801_CREATED_RECORD_ID**: `130`
+- **APP801_RECORD_CREATE_COUNT**: `1`
+- **APP801_TARGET_RECORD_COUNT_AFTER**: `1`
+- **APP801_EMPLOYEE_CODE**: `MBO2026_D3_SHARED_UAT_OPERATOR_01`
+- **APP801_ACCOUNT_STATUS**: `ACTIVE`
+- **APP801_FORCE_PASSWORD_CHANGE**: `YES`
+- **APP801_FAILED_ATTEMPTS**: `0`
+- **APP801_CREDENTIAL_VERSION**: `1`
+- **PASSWORD_ALGORITHM**: `PBKDF2-SHA256`
+- **PBKDF2_ITERATIONS**: `100000`
+- **INITIAL_TEST_CREDENTIAL_CREATED**: `YES`
+- **TEST_CREDENTIAL_CONTROLLED**: `YES`
+- **PASSWORD_HASH_PRESENT**: `YES`
+- **SESSION_CREATED**: `NO`
+- **SESSION_TOKEN_PRESENT**: `NO`
+- **SESSION_KINTONE_USER_PRESENT**: `NO`
+- **SESSION_EXPIRY_PRESENT**: `NO`
+
+---
+
+## 5. Non-Target Integrity & Immutability Check
+- **APP53_RECORD649_REVISION**: `2` (Unchanged)
+- **APP53_RECORD649_MUTATION_COUNT**: `0`
+- **APP801_RECORD129_REVISION**: `1` (Unchanged)
+- **APP801_RECORD129_MUTATION_COUNT**: `0`
+- **Existing App 53 Records Update Count**: `0`
+- **Existing App 801 Records Update Count**: `0`
+
+---
+
+## 6. Strict Mutation Accounting
+- **APP53_RECORD_CREATE_COUNT**: `1` (Record 652)
+- **APP53_EXISTING_RECORD_UPDATE_COUNT**: `0`
+- **APP801_RECORD_CREATE_COUNT**: `1` (Record 130)
+- **APP801_EXISTING_RECORD_UPDATE_COUNT**: `0`
+- **APP53_RECORD649_MUTATION_COUNT**: `0`
+- **APP801_RECORD129_MUTATION_COUNT**: `0`
+- **APP794_WRITE_COUNT**: `0`
+- **APP795_WRITE_COUNT**: `0`
+- **APP796_WRITE_COUNT**: `0`
+- **APP798_WRITE_COUNT**: `0`
+- **LOGIN_ATTEMPT_COUNT**: `0`
+- **PASSWORD_CHANGE_COUNT**: `0`
+- **PASSWORD_RESET_COUNT**: `0`
+- **SESSION_CREATE_COUNT**: `0`
+- **NOTIFICATION_CONFIG_WRITE_COUNT**: `0`
+- **NOTIFICATION_TRIGGER_COUNT**: `0`
+- **SOURCE_CHANGE_COUNT**: `0`
+- **TEST_CHANGE_COUNT**: `0`
+- **SCHEMA_WRITE_COUNT**: `0`
+- **ACL_WRITE_COUNT**: `0`
+- **PROCESS_CONFIG_WRITE_COUNT**: `0`
+- **RECORD15_MUTATION_COUNT**: `0`
+
+---
+
+## 7. Package Outcome
+- **FIXTURE_CREATE_RESULT**: `PASS`
+- **GATE**: `STOP_FOR_INDEPENDENT_CONTROL_PLANE_REVIEW`
